@@ -59,13 +59,23 @@ set(src_dirs
     ${BTSTACK_ROOT}/src/le-audio/gatt-service
     ${BTSTACK_ROOT}/src/mesh
     ${BTSTACK_ROOT}/src
-#    ${BTSTACK_ROOT}/platform/embedded
+    ${BTSTACK_ROOT}/platform/embedded
     ${BTSTACK_ROOT}/platform/freertos
     ${BTSTACK_ROOT}/platform/lwip
     ${IDF_PATH}/components/lwip/lwip/src/apps/http
     .)
 
-set( exclude_srcs )
+set( exclude_srcs
+    ${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c
+    ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c
+    ${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c
+    ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c
+    ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_binary.c
+    ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c
+)
+
+set( srcs btstack_port_esp32.c btstack_stdio_esp32.c btstack_tlv_esp32.c )
+
 if(${CONFIG_BTSTACK_AUDIO})
     if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
         list(APPEND exclude_srcs "btstack_audio_esp32_v4.c")
@@ -106,4 +116,3 @@ idf_component_register(
     PRIV_REQUIRES "${priv_requires}"
     REQUIRES btstack_config
 )
-
