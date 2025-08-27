@@ -313,6 +313,28 @@ static void ancs_client_trigger_next_request(void) {
             break;
     }
 }
+
+static void ancs_client_handle_gatt_client_event_in_subscribed(uint8_t* packet) {
+    switch(hci_event_packet_get_type(packet)){
+        case GATT_EVENT_NOTIFICATION:
+            ancs_client_handle_notification(
+                gatt_event_notification_get_value_handle(packet),
+                gatt_event_notification_get_value(packet),
+                gatt_event_notification_get_value_length(packet)
+            );
+            break;
+        case GATT_EVENT_INDICATION:
+            ancs_client_handle_notification(
+                gatt_event_indication_get_value_handle(packet),
+                gatt_event_indication_get_value(packet),
+                gatt_event_indication_get_value_length(packet)
+            );
+            break;
+        default:
+            break;
+    }
+}
+
 static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(packet_type);
@@ -362,24 +384,7 @@ static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             break;
 
         case TC_SUBSCRIBED:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_NOTIFICATION:
-                    ancs_client_handle_notification(
-                        gatt_event_notification_get_value_handle(packet),
-                        gatt_event_notification_get_value(packet),
-                        gatt_event_notification_get_value_length(packet)
-                    );
-                    break;
-                case GATT_EVENT_INDICATION:
-                    ancs_client_handle_notification(
-                        gatt_event_indication_get_value_handle(packet),
-                        gatt_event_indication_get_value(packet),
-                        gatt_event_indication_get_value_length(packet)
-                    );
-                break;
-                default:
-                    break;
-            }
+            ancs_client_handle_gatt_client_event_in_subscribed(packet);
             break;
 
         default:
