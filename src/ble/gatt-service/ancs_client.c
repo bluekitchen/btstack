@@ -297,6 +297,22 @@ static void ancs_client_handle_characteristic_query_result(uint8_t* packet) {
     }
 }
 
+static void ancs_client_trigger_next_request(void) {
+    uint8_t status;
+    switch(tc_state){
+        case TC_W2_QUERY_SERVICE:
+        case TC_W2_QUERY_CARACTERISTIC:
+        case TC_W2_ENABLE_NOTIFICATION:
+        case TC_W2_SUBSCRIBE_DATA_SOURCE:
+            status = gatt_client_request_to_send_gatt_query(&ancs_client_handle_can_send_now, gc_handle);
+            if (status != ERROR_CODE_SUCCESS){
+                notify_client_simple(ANCS_SUBEVENT_CLIENT_DISCONNECTED);
+            }
+            break;
+        default:
+            break;
+    }
+}
 static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(packet_type);
@@ -370,21 +386,7 @@ static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             break;
     }
 
-    uint8_t status;
-    switch(tc_state){
-        case TC_W2_QUERY_SERVICE:
-        case TC_W2_QUERY_CARACTERISTIC:
-        case TC_W2_ENABLE_NOTIFICATION:
-        case TC_W2_SUBSCRIBE_DATA_SOURCE:
-            status = gatt_client_request_to_send_gatt_query(&ancs_client_handle_can_send_now, gc_handle);
-            if (status != ERROR_CODE_SUCCESS){
-                notify_client_simple(ANCS_SUBEVENT_CLIENT_DISCONNECTED);
-            }
-            break;
-
-        default:
-            break;
-    }
+    ancs_client_trigger_next_request();
 }
 
 static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
