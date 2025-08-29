@@ -9,6 +9,7 @@ CFLAGS  = @CFLAGS@ \
     -I ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
     -I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
     -I ${BTSTACK_ROOT}/3rd-party/rijndael  \
+    -I ${BTSTACK_ROOT}/3rd-party/yxml \
     -I ${BTSTACK_ROOT}/chipset/intel \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
@@ -23,6 +24,7 @@ USB_LDFLAGS           = @USB_LDFLAGS@
 
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
+VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 VPATH += ${BTSTACK_ROOT}/chipset/intel
 VPATH += ${BTSTACK_ROOT}/platform/daemon/src
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
@@ -50,7 +52,7 @@ libBTstack_SOURCES =    \
     spp_server.o        \
     btstack_util.o             \
     $(btstack_run_loop_sources) \
-			  
+
 BTdaemon_SOURCES =      \
     $(libBTstack_SOURCES)       \
     $(usb_sources)              \
@@ -94,7 +96,7 @@ all: libBTstack.$(BTSTACK_LIB_EXTENSION) BTdaemon libBTstackServer.$(BTSTACK_LIB
 
 # Intel Firmware files
 include ${BTSTACK_ROOT}/chipset/intel/Makefile.inc
-all: @FIRMWARE_FILES@ 
+all: @FIRMWARE_FILES@
 
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
 		$(BTSTACK_ROOT)/tool/get_version.sh
@@ -113,8 +115,8 @@ libBTstackServer.$(BTSTACK_LIB_EXTENSION): $(BTdaemon_SOURCES)
 
 clean:
 	rm -rf libBTstack* BTdaemon *.o
-	
-install:    
+
+install:
 	echo "Installing BTdaemon in $(prefix)..."
 	mkdir -p $(prefix)/bin $(prefix)/lib $(prefix)/include
 	# cp libBTstack.a $(prefix)/lib/
