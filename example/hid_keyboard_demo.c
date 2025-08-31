@@ -198,8 +198,8 @@ static uint8_t                send_modifier;
 static uint8_t                send_keycode;
 static bool                   send_active;
 
-#ifdef HAVE_BTSTACK_STDIN
 static bd_addr_t device_addr;
+#ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 #endif
 
