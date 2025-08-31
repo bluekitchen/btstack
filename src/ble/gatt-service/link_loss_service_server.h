@@ -30,14 +30,14 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
 
 /**
  * @title Link Loss Service Server
- * 
+ *
  */
 
 #ifndef LINK_LOSS_SERVICE_SERVER_H
@@ -52,7 +52,7 @@ extern "C" {
 
 
 /**
- * @ To use with your application, add `#import <link_loss_service.gatt>` to your .gatt file. 
+ * @ To use with your application, add `#import <link_loss_service.gatt>` to your .gatt file.
  */
 
 /* API_START */
@@ -72,7 +72,7 @@ void link_loss_service_server_register_packet_handler(btstack_packet_handler_t p
  * @brief Set alert level. Default is no alert.
  * @param alert_level
  */
-uint8_t link_loss_service_client_set_alert_level(lls_alert_level_t alert_level);
+uint8_t link_loss_service_server_set_alert_level(lls_alert_level_t alert_level);
 
 /**
  * @brief Set alert timeout. Default is 0 that equals to no timeout.
@@ -90,4 +90,3 @@ void link_loss_service_server_stop_alerting(void);
 #endif
 
 #endif
-
