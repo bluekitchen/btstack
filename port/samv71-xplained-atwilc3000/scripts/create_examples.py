@@ -26,20 +26,20 @@ clean:
 \tdone
 '''
 
-# 
+#
 le_examples = [
-'ancs_client_demo.c', 
-'gap_le_advertisements.c', 
-'gatt_battery_query.c', 
-'gatt_browser.c', 
-'hog_keyboard_demo.c', 
-'hog_mouse_demo.c', 
-'gatt_counter.c', 
-'gatt_streamer.c', 
-'le_streamer_client.c', 
-'led_counter.c', 
-'sm_pairing_central.c', 
-'sm_pairing_peripheral.c', 
+'ancs_client_demo.c',
+'gap_le_advertisements.c',
+'gatt_battery_query.c',
+'gatt_browser.c',
+'hog_keyboard_demo.c',
+'hog_mouse_demo.c',
+'gatt_counter.c',
+'gatt_streamer_server.c',
+'le_streamer_client.c',
+'led_counter.c',
+'sm_pairing_central.c',
+'sm_pairing_peripheral.c',
 ]
 
 # get script path
