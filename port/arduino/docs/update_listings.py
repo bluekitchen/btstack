@@ -58,12 +58,12 @@ def latexText(text, ref_prefix):
         return ""
     brief = text.replace(" in the BTstack manual","")
 
-    refs = re.match('.*(Listing\s+)(\w+).*',brief)
+    refs = re.match(r'.*(Listing\s+)(\w+).*',brief)
     if refs:
         brief = brief.replace(refs.group(1), "[code snippet below]")
         brief = brief.replace(refs.group(2), "(#"+ref_prefix+":" + refs.group(2)+")")
 
-    refs = re.match('.*(Section\s+)(\w+).*',brief)
+    refs = re.match(r'.*(Section\s+)(\w+).*',brief)
     if refs:
         brief = brief.replace(refs.group(1), "[here]")
         brief = brief.replace(refs.group(2), "(#section:"+refs.group(2)+")")
@@ -72,39 +72,39 @@ def latexText(text, ref_prefix):
 
 
 def isEmptyCommentLine(line):
-    return re.match('(\s*\*\s*)\n',line)
+    return re.match(r'(\s*\*\s*)\n',line)
 
 
 def isCommentLine(line):
-    return re.match('(\s*\*\s*).*',line)
+    return re.match(r'(\s*\*\s*).*',line)
 
 
 def isEndOfComment(line):
-    return re.match('\s*\*/.*', line) 
+    return re.match(r'\s*\*/.*', line) 
 
 
 def isNewItem(line):
-    return re.match('(\s*\*\s*\-\s*)(.*)',line)
+    return re.match(r'(\s*\*\s*\-\s*)(.*)',line)
 
 
 def isTextTag(line):
-    return re.match('.*(@text).*', line)
+    return re.match(r'.*(@text).*', line)
 
 
 def isItemizeTag(line):
-    return re.match("(\s+\*\s+)(-\s)(.*)", line)
+    return re.match(r"(\s+\*\s+)(-\s)(.*)", line)
 
 
 def processTextLine(line, ref_prefix):
     if isTextTag(line):
-        text_line_parts = re.match(".*(@text)(.*)", line)
+        text_line_parts = re.match(r".*(@text)(.*)", line)
         return " " + latexText(text_line_parts.group(2), ref_prefix)
 
     if isItemizeTag(line):
-        text_line_parts = re.match("(\s*\*\s*\-\s*)(.*)", line)
+        text_line_parts = re.match(r"(\s*\*\s*\-\s*)(.*)", line)
         return "\n- " + latexText(text_line_parts.group(2), ref_prefix)
     
-    text_line_parts = re.match("(\s+\*\s+)(.*)", line)
+    text_line_parts = re.match(r"(\s+\*\s+)(.*)", line)
     if text_line_parts:
         return " " + latexText(text_line_parts.group(2), ref_prefix)
     return ""
@@ -113,7 +113,7 @@ def getExampleTitle(example_path):
     example_title = ''
     with open(example_path, 'r') as fin:
         for line in fin:
-            parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
+            parts = re.match(r'.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
             if parts: 
                 example_title = parts.group(3).replace("_","\_")
                 continue
@@ -154,7 +154,7 @@ def writeListings(aout, infile_name, ref_prefix):
     with open(infile_name, 'r') as fin:
         for line in fin:
             if state == State.SearchExampleStart:
-                parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
+                parts = re.match(r'.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
                 if parts: 
                     lable = parts.group(2).replace("_","")
                     title = latexText(parts.group(2), ref_prefix)
@@ -164,13 +164,13 @@ def writeListings(aout, infile_name, ref_prefix):
                 continue
            
             # detect @section
-            section_parts = re.match('.*(@section)\s*(.*)(:?\s*.?)\*?/?\n',line)
+            section_parts = re.match(r'.*(@section)\s*(.*)(:?\s*.?)\*?/?\n',line)
             if section_parts:
                 aout.write("\n" + example_subsection.replace("SECTION_TITLE", section_parts.group(2)))
                 continue
 
             # detect @subsection
-            subsection_parts = re.match('.*(@section)\s*(.*)(:?\s*.?)\*?/?\n',line)
+            subsection_parts = re.match(r'.*(@section)\s*(.*)(:?\s*.?)\*?/?\n',line)
             if section_parts:
                 subsubsection = example_subsection.replace("SECTION_TITLE", section_parts.group(2)).replace('section', 'subsection')
                 aout.write("\n" + subsubsection)
@@ -215,7 +215,7 @@ def writeListings(aout, infile_name, ref_prefix):
                 #continue
 
             if state == State.SearchListingStart:
-                parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*)(\s+\*/).*',line)
+                parts = re.match(r'.*(LISTING_START)\((.*)\):\s*(.*)(\s+\*/).*',line)
                 
                 if parts: 
                     lst_lable = parts.group(2).replace("_","")
@@ -227,9 +227,9 @@ def writeListings(aout, infile_name, ref_prefix):
                 continue
             
             if state == State.SearchListingEnd:
-                parts_end = re.match('.*(LISTING_END).*',line)
-                parts_pause = re.match('.*(LISTING_PAUSE).*',line)
-                end_comment_parts = re.match('.*(\*/)\s*\n', line);
+                parts_end = re.match(r'.*(LISTING_END).*',line)
+                parts_pause = re.match(r'.*(LISTING_PAUSE).*',line)
+                end_comment_parts = re.match(r'.*(\*/)\s*\n', line)
                 
                 if parts_end:
                     aout.write(code_in_listing)
@@ -248,12 +248,12 @@ def writeListings(aout, infile_name, ref_prefix):
                 continue
                 
             if state == State.SearchListingResume:
-                parts = re.match('.*(LISTING_RESUME).*',line)
+                parts = re.match(r'.*(LISTING_RESUME).*',line)
                 if parts:
                     state = State.SearchListingEnd
                 continue
         
-            parts = re.match('.*(EXAMPLE_END).*',line)
+            parts = re.match(r'.*(EXAMPLE_END).*',line)
             if parts:
                 if state != State.SearchListingStart:
                     print("Formating error detected")
@@ -280,7 +280,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
                 example.append(example_title)
                     
         aout.write(examples_header)
-        aout.write("\n\n");
+        aout.write("\n\n")
 
         for group_title in list_of_groups:
             if not group_title in list_of_examples.keys(): continue
@@ -291,7 +291,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
                 group_title = group_title + "s"
             group_title = group_title + ":"
 
-            aout.write("- " + group_title + "\n");
+            aout.write("- " + group_title + "\n")
             for example in examples:
                 ref_prefix = example[0].replace("_", "")
                 title = latexText(example[0], ref_prefix)

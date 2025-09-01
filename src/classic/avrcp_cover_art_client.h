@@ -136,8 +136,7 @@ void avrcp_cover_art_client_init(void);
  * @param   avrcp_cover_art_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @return status     
  */
-uint8_t
-avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btstack_packet_handler_t packet_handler,
+uint8_t avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btstack_packet_handler_t packet_handler,
                                bd_addr_t remote_addr, uint8_t *ertm_buffer, uint32_t ertm_buffer_size,
                                const l2cap_ertm_config_t *ertm_config, uint16_t *avrcp_cover_art_cid);
 

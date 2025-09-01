@@ -25,6 +25,9 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 ### Supported Protocols and Profiles
 
+**Bluetooth Features:** LE 2M, LE Coded, Isochronous Channels, Extended
+Advertising, Periodic Advertising, LE Secure Connections, Classic Audio
+
 **Protocols:** L2CAP (incl. Enhanced Retransmission Mode, LE Credit-Based Flow-Control Mode and LE Enhanced Credit-Based Flow-Control Mode), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections and Cross-Transport Key Derivation).
 
 **Profiles:** A2DP, AVRCP incl. Browsing (CT+TG) and Cover Art (CT), GAP, GATT, HFP, HID, HSP, IOP, MAP, OPP, SPP, PAN, PBAP.
@@ -105,7 +108,7 @@ For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, 
 | Infineon CYW207xx                    | Dual mode        | H4, H5, USB    | Probably         | bcm            |                                                |
 | Infineon CYW20819                    | Dual mode        | H4, H5, USB    | Probably         | bcm            | Keep CTS high during power cycle               |
 | Infineon CYW43xxx                    | Dual mode + Wifi | H4, H5         | Don't know       | bcm            | Bluetooth + Wifi Combo Controller              |
-| Infineon CYW5557x                    | Dual mode + Wifi | H4             | Yes              | bcm            | autobaud-mode needed, see posix-h4-bcm         |
+| Infineon CYW5551x, CYW5551x          | Dual mode + Wifi | H4             | Yes              | bcm            | autobaud-mode needed, see posix-h4-bcm         |
 | Infineon PSoC 4                      | LE               | H4             | n.a.             |                | HCI Firmware part of PSoC Creator kit examples |
 | Dialog Semiconductor DA145xx         | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
 | Dialog Semiconductor DA1469x         | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |
@@ -115,7 +118,7 @@ For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, 
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
 | Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
 | NXP 88W88997, IW416, IW61x           | Dual mode + Wifi | H4             | Yes              | nxp            | Requires initial firmware                      |
-| Realtek RTL8822CS                    | Dual mode + Wifi | H5             | Yes              |                | Requires initial firmware and config           |
+| Realtek UART                         | Dual mode + Wifi | H5             | Yes              | realtek        | Requires initial firmware and config           |
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes              | realtek        | Requires initial firmware and config           |
 | Renesas RX23W                        | LE               | H4             | n.a.             |                | HCI Firmware part of BTTS                      |
 | STM STLC2500D                        | Classic          | H4             | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported     |

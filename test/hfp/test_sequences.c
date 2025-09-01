@@ -4122,6 +4122,16 @@ hfp_test_item_t pts_hf_rhh_tests[] = {
     // TEST_SEQUENCE(TC_HF_RHH_BV_08_I)
 };
 
+
+const char * TC_HF_ISSUES_BVRA_01[] = {
+};
+
+hfp_test_item_t pts_hf_issues_tests[] = {
+    TEST_SEQUENCE(TC_HF_ISSUES_BVRA_01),
+};
+
+hfp_test_item_t pts_ag_issues_tests[] = {
+};
 /////////
 static int test_item_size = sizeof(hfp_test_item_t);
 
@@ -4168,4 +4178,8 @@ hfp_test_item_t * hfp_pts_ag_rhh_tests(void){ return pts_ag_rhh_tests;}
 int hfp_pts_hf_rhh_tests_size(void){ return sizeof(pts_hf_rhh_tests)/test_item_size;}
 hfp_test_item_t * hfp_pts_hf_rhh_tests(void){ return pts_hf_rhh_tests;}
 
-
+// HFP Issues
+int hfp_pts_ag_issues_tests_size(void){ return sizeof(pts_ag_issues_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_ag_issues_tests(void){ return pts_ag_issues_tests;}
+int hfp_pts_hf_issues_tests_size(void){ return sizeof(pts_hf_issues_tests)/test_item_size;}
+hfp_test_item_t * hfp_pts_hf_issues_tests(void){ return pts_hf_issues_tests;}

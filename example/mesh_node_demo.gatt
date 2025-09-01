@@ -1,5 +1,7 @@
 PRIMARY_SERVICE, GAP_SERVICE
 CHARACTERISTIC, GAP_DEVICE_NAME, READ | DYNAMIC, 
+// GAP Appearance Laptop = 0x0083
+CHARACTERISTIC, GAP_APPEARANCE, READ, 83 00
 
 #import <mesh_provisioning_service.gatt>
 #import <mesh_proxy_service.gatt>

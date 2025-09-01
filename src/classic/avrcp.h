@@ -90,13 +90,16 @@ extern "C" {
 #define AVRCP_PLAYER_SUBTYPE_FEATURE_MASK_AUDIO_BOOK                       0x01u
 #define AVRCP_PLAYER_SUBTYPE_FEATURE_MASK_PODCAST                          0x02u
 
+#define AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES      10
+#define AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE     200
+    
 typedef enum {
-    AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
+    AVRCP_STATUS_INVALID_COMMAND = 0,           // Sent if TG received a PDU that it did not understand.
     AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
-    AVRCP_STATUS_SPECIFIED_PARAMETER_NOT_FOUND, // sent if the parameter ID is understood, but content is wrong or corrupted.
-    AVRCP_STATUS_INTERNAL_ERROR,                // sent if there are error conditions not covered by a more specific error code.
-    AVRCP_STATUS_SUCCESS,                       // sent if the operation was successful. 
-    AVRCP_STATUS_UID_CHANGED,                   // sent if the UIDs on the device have changed.
+    AVRCP_STATUS_PARAMETER_CONTENT_ERROR,       // Sent if the parameter ID is understood, but content is wrong or corrupted.
+    AVRCP_STATUS_INTERNAL_ERROR,                // Sent if there are error conditions not covered by a more specific error code.
+    AVRCP_STATUS_SUCCESS,                       // Sent if the operation was successful.
+    AVRCP_STATUS_UID_CHANGED,                   // Sent if the UIDs on the device have changed.
     AVRCP_STATUS_RESERVED_6,
     AVRCP_STATUS_INVALID_DIRECTION,             // The Direction parameter is invalid. Valid for command: Change Path
     AVRCP_STATUS_NOT_A_DIRECTORY,               // The UID provided does not refer to a folder item. Valid for command: Change Path
@@ -347,7 +350,8 @@ typedef enum {
     AVRCP_OPERATION_ID_RESERVED_6 = 0x76,
 
     AVRCP_OPERATION_ID_VENDOR_UNIQUE = 0x7E,
-    AVRCP_OPERATION_ID_RESERVED_7 = 0x7F
+    AVRCP_OPERATION_ID_RESERVED_7 = 0x7F,
+    AVRCP_OPERATION_ID_INVALID = 0xFF
 } avrcp_operation_id_t;
 
 typedef enum{
@@ -373,12 +377,14 @@ typedef enum {
     AVRCP_SYSTEM_STATUS_UNPLUGGED
 } avrcp_system_status_t;
 
+
 typedef enum {
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_ILLEGAL = 0x00,       // ValueIDs with descriptions:
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_EQUALIZER_STATUS,     // 1 - off, 2 - on
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS,   // 1 - off, 2 - single track repeat, 3 - all tracks repeat, 4 - group repeat
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS,       // 1 - off, 2 - all tracks shuffle , 3 - group shuffle
-    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SCAN_STATUS           // 1 - off, 2 - all tracks scan    , 3 - group scan
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SCAN_STATUS,          // 1 - off, 2 - all tracks scan    , 3 - group scan
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU
 } avrcp_player_application_setting_attribute_id_t;
 
 typedef enum {
@@ -421,7 +427,8 @@ typedef enum {
     AVRCP_SHUFFLE_MODE_INVALID,
     AVRCP_SHUFFLE_MODE_OFF,
     AVRCP_SHUFFLE_MODE_ALL_TRACKS,
-    AVRCP_SHUFFLE_MODE_GROUP
+    AVRCP_SHUFFLE_MODE_GROUP,
+    AVRCP_SHUFFLE_MODE_RFU
 } avrcp_shuffle_mode_t;
 
 typedef enum {
@@ -429,8 +436,24 @@ typedef enum {
     AVRCP_REPEAT_MODE_OFF,
     AVRCP_REPEAT_MODE_SINGLE_TRACK,
     AVRCP_REPEAT_MODE_ALL_TRACKS,
-    AVRCP_REPEAT_MODE_GROUP
+    AVRCP_REPEAT_MODE_GROUP,
+    AVRCP_REPEAT_MODE_RFU
 } avrcp_repeat_mode_t;
+
+typedef enum {
+    AVRCP_EQUALIZER_MODE_INVALID,
+    AVRCP_EQUALIZER_MODE_OFF,
+    AVRCP_EQUALIZER_MODE_ON,
+    AVRCP_EQUALIZER_MODE_RFU
+} avrcp_equalizer_mode_t;
+
+typedef enum {
+    AVRCP_SCAN_MODE_INVALID,
+    AVRCP_SCAN_MODE_OFF,
+    AVRCP_SCAN_MODE_ALL_TRACKS,
+    AVRCP_SCAN_MODE_GROUP,
+    AVRCP_SCAN_MODE_RFU
+} avrcp_scan_mode_t;
 
 typedef enum {
     RFC2978_CHARSET_MIB_UTF8 = 106
@@ -670,7 +693,6 @@ typedef struct {
     avctp_packet_type_t    avctp_packet_type;
     // AVRCP header
     avrcp_packet_type_t    avrcp_packet_type;
-    uint16_t               avrcp_frame_bytes_sent;
     avrcp_subunit_type_t   subunit_type;
     avrcp_subunit_id_t     subunit_id;
     uint32_t               company_id;
@@ -714,6 +736,9 @@ typedef struct {
     btstack_timer_source_t controller_press_and_hold_cmd_timer;
     bool     controller_press_and_hold_cmd_active;
     bool     controller_press_and_hold_cmd_release;
+
+    btstack_timer_source_t controller_response_cmd_timer;
+    uint8_t response_transaction_id;
 
     avrcp_remote_capabilities_state_t remote_capabilities_state;
     bool     controller_notifications_supported_by_target_suppress_emit_result;

@@ -10,8 +10,8 @@ The A2DP profile defines how to stream audio over a Bluetooth connection from on
 
 ## AVRCP - Audio/Video Remote Control Profile
 
-The AVRCP profile defines how audio playback on a remote device (e.g. a music app on a smartphone) can be controlled as well as how to state changes such as volume, information on currently played media, battery, etc. can be received from a remote device (e.g. a speaker). Usually, each device implements two roles: 
-- The Controller role allows to query information on currently played media, such are title, artist and album, as well as to control the playback, i.e. to play, stop, repeat, etc. 
+The AVRCP profile defines how audio playback on a remote device (e.g. a music app on a smartphone) can be controlled as well as how to state changes such as volume, information on currently played media, battery, etc. can be received from a remote device (e.g. a speaker). Usually, each device implements two roles:
+- The Controller role allows to query information on currently played media, such are title, artist and album, as well as to control the playback, i.e. to play, stop, repeat, etc.
 - The Target role responds to commands, e.g. playback control, and queries, e.g. playback status, media info, from the Controller currently played media.
 
 
@@ -184,7 +184,7 @@ bonding via the *gap_dedicated_bonding* function.
 ## SPP - Serial Port Profile
 
 The SPP profile defines how to set up virtual serial ports and connect
-two Bluetooth enabled devices. Please keep in mind that a serial port does not 
+two Bluetooth enabled devices. Please keep in mind that a serial port does not
 preserve packet boundaries if you try to send data as packets and read about
 [RFCOMM packet boundaries](../protocols/#sec:noRfcommPacketBoundaries).
 
@@ -305,47 +305,47 @@ Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and 
 
 | Define for AG Supported Feature         |  Description  |
 | --------------------------------------- |  ----------------------------  |
-| HFP_AGSF_THREE_WAY_CALLING              |  Three-way calling             |
-| HFP_AGSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
-| HFP_AGSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
-| HFP_AGSF_IN_BAND_RING_TONE              |  In-band ring tone capability |
-| HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
-| HFP_AGSF_ABILITY_TO_REJECT_A_CALL       |  Ability to reject a call |
-| HFP_AGSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
-| HFP_AGSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
-| HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    |  Extended Error Result Codes |
-| HFP_AGSF_CODEC_NEGOTIATION              |  Codec negotiation |
-| HFP_AGSF_HF_INDICATORS                  |  HF Indicators |
-| HFP_AGSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
-| HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
-| HFP_AGSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+| HFP_AGSF_<br>THREE_WAY_CALLING              |  Three-way calling             |
+| HFP_AGSF_<br>EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_AGSF_<br>VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_AGSF_<br>IN_BAND_RING_TONE              |  In-band ring tone capability |
+| HFP_AGSF_<br>ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_AGSF_<br>ABILITY_TO_REJECT_A_CALL       |  Ability to reject a call |
+| HFP_AGSF_<br>ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_AGSF_<br>ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_AGSF_<br>EXTENDED_ERROR_RESULT_CODES    |  Extended Error Result Codes |
+| HFP_AGSF_<br>CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_AGSF_<br>HF_INDICATORS                  |  HF Indicators |
+| HFP_AGSF_<br>ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_AGSF_<br>ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_AGSF_<br>VOICE_RECOGNITION_TEXT         |  Voice recognition text |
 
 
 | Define for HF Supported Feature         |  Description  |
 | --------------------------------------- |  ----------------------------  |
-| HFP_HFSF_THREE_WAY_CALLING              |  Three-way calling  |
-| HFP_HFSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
-| HFP_HFSF_CLI_PRESENTATION_CAPABILITY    |  CLI presentation capability |
-| HFP_HFSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
-| HFP_HFSF_REMOTE_VOLUME_CONTROL          |  Remote volume control |
-| HFP_HFSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
-| HFP_HFSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
-| HFP_HFSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
-| HFP_HFSF_CODEC_NEGOTIATION              |  Codec negotiation |
-| HFP_HFSF_HF_INDICATORS                  |  HF Indicators |
-| HFP_HFSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
-| HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
-| HFP_HFSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+| HFP_HFSF_<br>THREE_WAY_CALLING              |  Three-way calling  |
+| HFP_HFSF_<br>EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_HFSF_<br>CLI_PRESENTATION_CAPABILITY    |  CLI presentation capability |
+| HFP_HFSF_<br>VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_HFSF_<br>REMOTE_VOLUME_CONTROL          |  Remote volume control |
+| HFP_HFSF_<br>ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_HFSF_<br>ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_HFSF_<br>ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_HFSF_<br>CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_HFSF_<br>HF_INDICATORS                  |  HF Indicators |
+| HFP_HFSF_<br>ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_HFSF_<br>ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_HFSF_<br>VOICE_RECOGNITION_TEXT         |  Voice recognition text |
 
 
 ### Audio Voice Recognition Activation {#sec:hfpAVRActivation}
 
-Audio voice recognition (AVR) requires that HF and AG have the following  features enabled: 
+Audio voice recognition (AVR) requires that HF and AG have the following  features enabled:
 
 - HF: HFP_HFSF_VOICE_RECOGNITION_FUNCTION and
 
-- AG: HFP_AGSF_VOICE_RECOGNITION_FUNCTION. 
- 
+- AG: HFP_AGSF_VOICE_RECOGNITION_FUNCTION.
+
 It can be activated or deactivated on both sides by calling:
 
     // AG
@@ -356,12 +356,12 @@ It can be activated or deactivated on both sides by calling:
     uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
     uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
-On activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_(DE)ACTIVATED event will be emitted with status field set to ERROR_CODE_SUCCESS on success. 
+On activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_(DE)ACTIVATED event will be emitted with status field set to ERROR_CODE_SUCCESS on success.
 
 Voice recognition will stay active until either the deactivation command is called, or until the current Service Level Connection between the AG and the HF is dropped for any reason.
 
-| Use cases                                              |  Expected behavior  |
-|--------------------------------------------------------|---------------------|
+| Use cases           |  Expected behavior  |
+|---------------------|---------------------|
 | No previous audio connection, AVR activated then deactivated | Audio connection will be opened by AG upon AVR activation, and upon AVR deactivation closed|
 | AVR activated and deactivated during existing audio connection | Audio remains active upon AVR deactivation |
 | Call to close audio connection during active AVR session       | The audio connection shut down will be refused |
@@ -371,7 +371,7 @@ Beyond the audio routing and voice recognition activation capabilities, the rest
 
 ### Enhanced Audio Voice Recognition {#sec:hfpeAVRActivation}
 
-Similarly to AVR, Enhanced Audio voice recognition (eAVR) requires that HF and AG have the following features enabled: 
+Similarly to AVR, Enhanced Audio voice recognition (eAVR) requires that HF and AG have the following features enabled:
 
 - HF: HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS and
 
@@ -381,7 +381,7 @@ In addition, to allow textual representation of audio that is parsed by eAVR (no
 
 - HF: HFP_HFSF_VOICE_RECOGNITION_TEXT and
 
-- AG: HFP_AGSF_VOICE_RECOGNITION_TEXT. 
+- AG: HFP_AGSF_VOICE_RECOGNITION_TEXT.
 
 eAVR implements the same use cases as AVR (see previous section) and it can be activated or deactivated using the same API as for AVR, see above.
 
@@ -389,18 +389,18 @@ When eAVR and audio channel are established there are several additional command
 
 | HFP Role | eVRA API | Description |
 -----------|----------|-------------|
-|HF | hfp_hf_enhanced_voice_recognition_report_ready_for_audio| Ready to accept audio input. |
-|AG | hfp_ag_enhanced_voice_recognition_report_ready_for_audio | Voice recognition engine is ready to accept audio input. |
-|AG | hfp_ag_enhanced_voice_recognition_report_sending_audio | The voice recognition engine will play a sound, e.g. starting sound. |
-|AG | hfp_ag_enhanced_voice_recognition_report_processing_input | Voice recognition engine is processing the audio input. |
-|AG | hfp_ag_enhanced_voice_recognition_send_message | Report textual representation from the voice recognition engine. |
+|HF | hfp_hf_enhanced_voice_recognition_<br>report_ready_for_audio| Ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>report_ready_for_audio | Voice recognition engine is ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>report_sending_audio | The voice recognition engine will play a sound, e.g. starting sound. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>report_processing_input | Voice recognition engine is processing the audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>send_message | Report textual representation from the voice recognition engine. |
 
 
 ## HID - Human-Interface Device Profile
 
-The HID profile allows an HID Host to connect to one or more HID Devices and communicate with them. 
+The HID profile allows an HID Host to connect to one or more HID Devices and communicate with them.
 Examples of Bluetooth HID devices are keyboards, mice, joysticks, gamepads, remote controls, and also voltmeters and temperature sensors.
-Typical HID hosts would be a personal computer, tablets, gaming console, industrial machine, or data-recording device. 
+Typical HID hosts would be a personal computer, tablets, gaming console, industrial machine, or data-recording device.
 
 Please refer to:
 
@@ -471,87 +471,236 @@ into the Connected state. However, it does not start broadcasting
 advertisements on disconnect again. To re-enable it, please send the
 *hci_le_set_advertise_enable* again .
 
-## GATT Client {#sec:GATTClientProfiles}
+## GATT - Generic Attribute Profile {#sec:gatt}
 
-The GATT profile uses ATT Attributes to represent a hierarchical
-structure of GATT Services and GATT Characteristics. Each Service has
-one or more Characteristics. Each Characteristic has meta data attached
-like its type or its properties. This hierarchy of Characteristics and
-Services are queried and modified via ATT operations.
+The GATT profile uses ATT Attributes to represent a hierarchical structure of GATT Services and GATT Characteristics. A GATT Service is a standardized entity which is performing a specific function on a device. For example, the main purpose of the Battery Service is to enable connected devices to report battery level information. GATT Services that define the main functionality of a device are known as Primary Services. Services can also include other Services, known as Included (Secondary) Services.
 
-GATT defines both a server and a client role. A device can implement one
-or both GATT roles.
+Each Service has one or more Characteristics. Each Characteristic has meta data attached like its type or its properties that declare the set of allowed operations and their access permissions.
+This hierarchy of GATT Characteristics and Services are queried and modified via ATT operations.
 
-The GATT Client is used to discover services, characteristics
-and their descriptors on a peer device. It allows to subscribe for
-notifications or indications that the characteristic on the GATT server
-has changed its value.
+Officially adopted GATT Services and Characteristics are identified by unique 16-bit UUIDs, whereas a custom made Services use 128-bit UUIDs. A complete list of [officially adopted GATT Services is available on the Bluetooth Developer Portal](https://www.bluetooth.com/specifications/specs/).
 
-To perform GATT queries, it provides a rich interface. Before calling
-queries, the GATT client must be initialized with *gatt_client_init*
-once.
+As an example, the Scan Parameters Service (UUID: 0x1813) is used to optimize the way a Central device (like a smartphone or tablet) scans for advertising packets from a Peripheral device (like a BLE sensor, wearable, or HID device). It allows the Peripheral device to suggest preferred scanning parameters by means of two Characteristics:
 
-To allow for modular profile implementations, GATT client can be used
-independently by multiple entities.
+- Scan Interval Window (0x2A31) – mandatory Characteristic comprising two 16-bit values: LE_Scan_Interval and LE_Scan_Window. It stores the Client’s scan parameters and is only writable by the Client.
 
-After an LE connection was created using the GAP LE API, you can query
-for the connection MTU with *gatt_client_get_mtu*.
+- Scan Refresh (0x2A31) – optional Characteristic used to notify the Client that the Server requires an update of the Scan Interval Window value.
 
-Multiple GATT queries to the same GATT Server cannot be interleaved.
-Therefore, you can either use a state machine or similar to perform the 
-queries in sequence, or you can check if you can perform a GATT query
-on a particular connection right now using
-*gatt_client_is_ready*, and retry later if it is not ready.
-As a result to a GATT query, zero to many
-*GATT_EVENT_X*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
-completes the query.
+Two connected Bluetooth LE devices exchange data by taking on two GATT roles: one acts as the GATT Server, and the other as the GATT Client.
+
+### GATT Client {#sec:GATTClientProfiles}
+
+The GATT Client's role is to discover available Services and Characteristics on the GATT Server. Depending on the Service configuration, it can read or write values of a Characteristic, or subscribe to receive updates when those values change.
+
+If you're looking to implement a standard GATT (Generic Attribute Profile) Service Client, your starting point will be the corresponding Bluetooth GATT Service Profile specification provided by the Bluetooth SIG. This document outlines how a GATT Client interacts with a GATT Server, but only those steps after the service has been discovered, characteristics have been queried, and all allowed notifications and indications have been subscribed to. While there is no mystery to this setup process — it follows a well-defined sequence of queries and responses — its implementation is repetitive and time-consuming.
+
+To streamline this effort, we introduced a GATT Service Client component that encapsulates the entire discover-and-subscribe workflow. The component removes the overhead of boilerplate setup code, so that developers can now dive straight into implementing the core logic defined by the GATT Service Profile specification.
+
+#### GATT Client Discovery Workflow
+
+Before a GATT Client can perform operations on Characteristics or process responses from the GATT Server, it must first complete a sequence of GATT queries, typically including:
+
+- Discover services
+
+- Query characteristics and their subscription properties
+
+- Subscribe to notifications or indications, if allowed
+
+GATT queries in most Bluetooth stacks, including BTstack, are asynchronous. Therefore, a state machine is required to manage the sequence of operations. One part of this state machine is responsible for issuing GATT queries - one at a time. The other part handles the GATT Server responses. For example, a "discover all primary services with UUID X” query may result in multiple GATT events, one for each matching service, followed by a final “service query complete" event indicating that all results have been received. These two parts are illustrated below in pseudocode.
+
+Pseudocode: Send GATT Query
+
+    switch (STATE):
+        case W2_QUERY_SERVICES:
+            - Set state to W4_SERVICES_RESULT and wait for SERVICE_QUERY_RESULT GATT event
+            - Execute query to search for all services with the given UUID
+
+        case W2_QUERY_CHARACTERISTICS:
+            - Set state to W4_QUERY_CHARACTERISTICS_RESULT
+            - Execute query to get all characteristics of the current service
+
+        case W2_SUBSCRIBE:
+            - Set state to W4_SUBSCRIPTION
+            - Subscribe to notifications or indications
+
+
+
+Pseudocode: Handle GATT Response
+
+    switch (STATE):
+        case W4_SERVICES_RESULT:
+            switch (GATT_EVENT):
+                case SERVICE_QUERY_RESULT:
+                   * A matching service was found
+                   * Store the service in the client’s service list
+                case SERVICE_QUERY_COMPLETE:
+                   * Set state to W2_QUERY_CHARACTERISTICS
+
+        case W4_QUERY_CHARACTERISTICS_RESULT:
+            switch (GATT_EVENT):
+                case CHARACTERISTIC_QUERY_RESULT:
+                   * A characteristic for a given service was found
+                   * Store the characteristic and its properties in the service’s characteristic list
+                case CHARACTERISTIC_QUERY_COMPLETE:
+                   * All characteristics for the current service have been reported
+                   * Choose the first characteristic that supports notification or indication
+                   * If such characteristic exists set state to W2_SUBSCRIBE, otherwise to CONNECTED
+
+        case W4_SUBSCRIPTION:
+            switch (GATT_EVENT):
+                case CHARACTERISTIC_QUERY_COMPLETE:
+                   * Characteristic was subscribed
+                   * Choose the next characteristic that supports notification or indication
+                   * If such characteristic exists set state to W2_SUBSCRIBE, otherwise to CONNECTED
+
+
+While not conceptually complex, implementing the described discovery workflow can be tedious and time-consuming, diverting attention from the core development of the GATT Client. To simplify this process, we introduced the GATT Service Client component (btstack/src/ble/gatt_service_client.h) that encapsulates all discovery steps - from querying services to subscribing to all allowed Characteristics. Let’s see how it it is used…
+
+
+#### GATT Service Client Component Setup
+
+To setup a GATT Service Client component for a custom service, we need to initialize both the GATT Client as well as the GATT Service Client and then register an instance of the new GATT Service Client. This usually happens before the Bluetooth stack is started:
+
+- gatt_client_init function to initialize the GATT Client,
+
+- gatt_service_client_init function to initialize the GATT Service Client component, and
+
+- gatt_service_client_register_client_with_uuid(16|128)s function to register the new GATT Service Client instance with the list of Characteristic UUIDs (16-bit or 128-bit respectively). The connection and notification callback is used to receive GATT Service Client connected and disconnected events, as well as notifications and identifications.
+
+The following code snippet shows the setup code of the GATT Streamer Client (btstack/examples/le_streamer_client.c), which we rewrote as our first experiment. The GATT Streamer provides a custom GATT Service created to test the maximal GATT throughput - its core functionality is to stream data over GATT as fast as possible using write without response operations and notifications on the RX Characteristic.
+
+    # define LE_STREAMER_SERVICE_NUM_CHARACTERISTICS      2
+    // LE Streamer GATT Service Client instance
+    static gatt_service_client_t                         le_streamer_client;
+
+    // 128-bit (custom) LE Streamer Service UUID
+    static uuid128_t LE_STREAMER_SERVICE_UUID = {
+        0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB
+    };
+
+    // 128-bit UUIDs if the LE Streamer Service Characteristics
+    static enum {
+        LE_STREAMER_SERVICE_CHARACTERISTIC_INDEX_RX = 0,
+        LE_STREAMER_SERVICE_CHARACTERISTIC_INDEX_TX
+    } le_streamer_service_characteristic_index_t;
+
+    static const uuid128_t le_streamer_uuid128s[] = {
+        { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}, // RX
+        { 0x00, 0x00, 0xFF, 0x12, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}  // TX
+    };
+
+    /*
+     *  Callback to receive GATT Service Client events: connected, disconnected, notifications and identifications
+     */
+    static void gatt_service_client_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+    static void setup(void){
+        ...
+        gatt_client_init();
+        gatt_service_client_init();
+        gatt_service_client_register_client_uuid128(&le_streamer_client, &gatt_service_client_handler,
+                                                      le_streamer_uuid128s, LE_STREAMER_SERVICE_NUM_CHARACTERISTICS);
+        …
+    }
+
+
+#### GATT Service Client Component Connect
+
+After the setup is performed and a Bluetooth HCI connection between two devices has been established, we can trigger the GATT Service discovery workflow by calling a single function gatt_service_client_connect_primary_service_with_uuid(16|128). This function requires the connection handle, the GATT Service UUID as well as storage for the information on the characteristics that will be discovered during the discover-and-subscribe phase. The following code snippet shows how to place a call to this function directly after the HCI connection has been established. The value ERROR_CODE_SUCCESS of the returned status indicates that the service discovery workflow has started. The end of the discovery is marked by the GATTSERVICE_SUBEVENT_CLIENT_CONNECTED event in the gatt_service_client_handler.
+
+
+    static hci_con_handle_t                     connection_handle;
+    static gatt_service_client_connection_t     le_streamer_connection;
+    static gatt_service_client_characteristic_t le_streamer_connection_characteristics_storage[NUM_CHARACTERISTICS];
+
+    /*
+     - Callback to receive GATT Service Client events: connected, disconnected, notifications and identifications
+     */
+    static void gatt_service_client_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        if (packet_type != HCI_EVENT_PACKET) return;
+        switch(hci_event_packet_get_type(packet){
+            case HCI_EVENT_GATTSERVICE_META:
+                switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+                    case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
+                       …
+                       break;
+                   case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
+                       …
+                       break;
+                    default:
+                        break;
+                }
+                break;
+            case GATT_EVENT_NOTIFICATION:
+                …
+                break;
+            case GATT_EVENT_INDICATION:
+                …
+                break;
+            default:
+                break;
+        }
+    }
+
+    static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        if (hci_event_packet_get_type(packet) == HCI_EVENT_META_GAP) {
+            if (hci_event_gap_meta_get_subevent_code(packet) != GAP_SUBEVENT_LE_CONNECTION_COMPLETE){
+
+                uint8_t status = gatt_service_client_connect_primary_service_with_uuid128(
+                                           connection_handle,
+                                           &le_streamer_client,
+                                           &le_streamer_connection,
+                                           &LE_STREAMER_SERVICE_UUID,
+                                           le_streamer_connection_characteristics_storage,
+                                           LE_STREAMER_SERVICE_NUM_CHARACTERISTICS);
+                …
+            }
+        }
+        …
+    }
+
+    static void setup(void){
+         ...
+        hci_event_callback_registration.callback = &hci_event_handler;
+        hci_add_event_handler(&hci_event_callback_registration);
+        …
+    }
+
+
+#### GATT Service Client Queries
+
+If the status of the received GATTSERVICE_SUBEVENT_CLIENT_CONNECTED event is ERROR_CODE_SUCCESS, we can start scheduling service specific GATT Queries if needed. The complete list of supported GATT queries is defined in (btstack/src/ble/gatt_client.h). From this point on a query will most likely be either read, write or write without response on a specific characteristic of the GATT Service. These queries use a characteristic’s attribute value handle to identify the characteristic. The attribute value handle can be accessed using the gatt_service_client_characteristic_value_handle_for_index function. The index parameter for this function matches the order of the UUIDs stored in the UUID array.
+
+The following code snippet shows how to perform write without response.
+
+    static uint8_t  data[200];
+    static uint16_t data_len;
+
+    static void le_streamer_write_without_response(le_streamer_client_connection_t * connection){
+        uint8_t status = gatt_client_write_value_of_characteristic_without_response(
+                                connection_handle,
+                                gatt_service_client_characteristic_value_handle_for_index(connection, CHARACTERISTIC_INDEX_RX),
+                                data_len, data);
+        …
+    }
+
+
 
 For more details on the available GATT queries, please consult
 [GATT Client API](#sec:gattClientAPIAppendix).
 
-### Authentication
 
-By default, the GATT Server is responsible for security and the GATT Client does not enforce any kind of authentication.
-If the GATT Client accesses Characteristic that require encrytion or authentication, the remote GATT Server will return an error,
-which is returned in the *att status* of the *GATT_EVENT_QUERY_COMPLETE*.
 
-You can define *ENABLE_GATT_CLIENT_PAIRING* to instruct the GATT Client to trigger pairing in this case and to repeat the request.
+### GATT Server {#sec:GATTServerProfiles}
 
-This model allows for an attacker to spoof another device, but don't require authentication for the Characteristics.
-As a first improvement, you can define *ENABLE_LE_PROACTIVE_AUTHENTICATION* in *btstack_config.h*. When defined, the GATT Client will
-request the Security Manager to re-encrypt the connection if there is stored bonding information available.
-If this fails, the  *GATT_EVENT_QUERY_COMPLETE* will return with the att status *ATT_ERROR_BONDING_INFORMATION_MISSING*.
-
-With *ENABLE_LE_PROACTIVE_AUTHENTICATION* defined and in Central role, you need to delete the local bonding information if the remote
-lost its bonding information, e.g. because of a device reset. See *example/sm_pairing_central.c*.
-
-Even with the Proactive Authentication, your device may still connect to an attacker that provides the same advertising data as 
-your actual device. If the device that you want to connect requires pairing, you can instruct the GATT Client to automatically
-request an encrypted connection before sending any GATT Client request by calling *gatt_client_set_required_security_level()*.
-If the device provides sufficient IO capabilities, a MITM attack can then be prevented. We call this 'Mandatory Authentication'.
-
-The following diagrams provide a detailed overview about the GATT Client security mechanisms in different configurations:
-
--  [Reactive Authentication as Central](picts/gatt_client_security_reactive_authentication_central.svg)
--  [Reactive Authentication as Peripheral](picts/gatt_client_security_reactive_authentication_peripheral.svg)
--  [Proactive Authentication as Central](picts/gatt_client_security_proactive_authentication_central.svg)
--  [Proactive Authentication as Peripheral](picts/gatt_client_security_proactive_authentication_peripheral.svg)
--  [Mandatory Authentication as Central](picts/gatt_client_security_mandatory_authentication_central.svg)
--  [Mandatory Authentication as Peripheral](picts/gatt_client_security_mandatory_authentication_peripheral.svg)
-
-## GATT Server {#sec:GATTServerProfiles}
-
-The GATT server stores data and accepts GATT client requests, commands
-and confirmations. The GATT server sends responses to requests and when
-configured, sends indication and notifications asynchronously to the
-GATT client.
+The GATT Server’s role is to store Characteristics and make them available through Services. The GATT Server can notify the client when the value of a Characteristic changes and it responds to the Client’s read and write requests.
 
 To save on both code space and memory, BTstack does not provide a GATT
 Server implementation. Instead, a textual description of the GATT
 profile is directly converted into a compact internal ATT Attribute
 database by a GATT profile compiler. The ATT protocol server -
 provided by `att_db.h` and `att_server.h` - answers incoming ATT
-requests based on information provided in the compiled database and 
+requests based on information provided in the compiled database and
 provides read- and write-callbacks for dynamic attributes.
 
 GATT profiles are defined by a simple textual comma separated value
@@ -633,12 +782,12 @@ Similar to other protocols, it might be not possible to send any time.
 To send a Notification, you can call *att_server_request_to_send_notification*
 to request a callback, when yuo can send the Notification.
 
-### Deferred Handling of ATT Read / Write Requests
+#### Deferred Handling of ATT Read / Write Requests
 
 If your application cannot handle an ATT Read Request in the *att_read_callback*
 in some situations, you can enable support for this by adding ENABLE_ATT_DELAYED_RESPONSE
 to *btstack_config.h*. Now, you can store the requested attribute handle and return
-*ATT_READ_RESPONSE_PENDING* instead of the length of the provided data when you don't have the data ready. 
+*ATT_READ_RESPONSE_PENDING* instead of the length of the provided data when you don't have the data ready.
 For ATT operations that read more than one attribute, your *att_read_callback*
 might get called multiple times as well. To let you know that all necessary
 attribute handles have been 'requested' by the *att_server*, you'll get a final
@@ -654,7 +803,7 @@ call *att_server_response_ready*, which then triggers the  *att_write_callback* 
 
 Please have a look at the [ATT Delayed Response example](../examples/examples/#sec:attdelayedresponseExample).
 
-### Implementing Standard GATT Services {#sec:GATTStandardServices}
+#### Implementing Standard GATT Services {#sec:GATTStandardServices}
 
 Implementation of a standard GATT Service consists of the following 4 steps:
 
@@ -670,7 +819,7 @@ All GATT Service specifications can be found [here](https://www.bluetooth.com/sp
 
 Step 2:
 
-The Service Characteristics table is usually in chapter "Service Characteristics". 
+The Service Characteristics table is usually in chapter "Service Characteristics".
 
 Let's have a look at an actual example, the [Battery Service Specification v1.0](https://www.bluetooth.org/docman/handlers/downloaddoc.ashx?doc_id=245138).
 In it, we find this:
@@ -679,11 +828,21 @@ Characteristic | Ref | Mandatory/Optional
 ---------------|-----|-------------------
 Battery Level  | 3.1 | M
 
-So, the Battery Service has a single mandatory Characteristic.
+So, the Battery Service has a single mandatory Characteristic "Battery Level".
 
-Characteristic | Broadcast | Read | Write without Response | Write | Notify | Indicate | Signed Write | Reliable Write | Writable Auxiliaries
----------------|-----------|------|------------------------|-------|--------|----------|--------------|----------------|---------
-Battery Level  |      x    |  M   |            x           |  x    |  O     |     x    |      x       |        x       |     x
+
+Properties | Mandatory/Optional/Excluded
+---------------|-------------------------
+Broadcast              | x    
+Read                   | M
+Write without Response | x
+Write                  | x
+Notify                 | O
+Indicate               | x
+Signed Write           | x
+Reliable Write         | x
+Writable Auxiliaries   | x
+
 
 The Battery Level Characteristic must supports Read and optionally allows for Notifications.
 
@@ -733,20 +892,19 @@ To see how this works together, please check out the Battery Service Server in *
 
 ### GATT Database Hash
 
-When a GATT Client connects to a GATT Server, it cannot know if the GATT Database has changed 
+When a GATT Client connects to a GATT Server, it cannot know if the GATT Database has changed
 and has to discover the provided GATT Services and Characteristics after each connect.
- 
-To speed this up, the Bluetooth
-specification defines a GATT Service Changed Characteristic, with the idea that a GATT Server would notify
-a bonded GATT Client if its database changed. However, this is quite fragile and it is not clear how it can be implemented
-in a robust way.
 
-The Bluetooth Core Spec 5.1 introduced the GATT Database Hash Characteristic, which allows for a simple 
+To speed this up, the Bluetooth specification defines a GATT Service Changed Characteristic,
+with the idea that a GATT Server would notify a bonded GATT Client if its database changed.
+However, this is quite fragile and it is not clear how it can be implemented in a robust way.
+
+The Bluetooth Core Spec 5.1 introduced the GATT Database Hash Characteristic, which allows for a simple
 robust mechanism to cache a remote GATT Database. The GATT Database Hash is a 16-byte value that is calculated
 over the list of Services and Characteristics. If there is any change to the database, the hash will change as well.
 
 To support this on the GATT Server, you only need to add a GATT Service with the GATT Database Characteristic to your .gatt file.
-The hash value is then calculated by the GATT compiler. 
+The hash value is then calculated by the GATT compiler.
 
 
     PRIMARY_SERVICE, GATT_SERVICE
@@ -756,3 +914,33 @@ Note: make sure to install the PyCryptodome python package as the hash is calcul
 e.g. with:
 
     pip install pycryptodomex
+
+### GATT Authentication
+
+By default, the GATT Server is responsible for security and the GATT Client does not enforce any kind of authentication.
+If the GATT Client accesses Characteristic that require encrytion or authentication, the remote GATT Server will return an error,
+which is returned in the *att status* of the *GATT_EVENT_QUERY_COMPLETE*.
+
+You can define *ENABLE_GATT_CLIENT_PAIRING* to instruct the GATT Client to trigger pairing in this case and to repeat the request.
+
+This model allows for an attacker to spoof another device, but don't require authentication for the Characteristics.
+As a first improvement, you can define *ENABLE_LE_PROACTIVE_AUTHENTICATION* in *btstack_config.h*. When defined, the GATT Client will
+request the Security Manager to re-encrypt the connection if there is stored bonding information available.
+If this fails, the  *GATT_EVENT_QUERY_COMPLETE* will return with the att status *ATT_ERROR_BONDING_INFORMATION_MISSING*.
+
+With *ENABLE_LE_PROACTIVE_AUTHENTICATION* defined and in Central role, you need to delete the local bonding information if the remote
+lost its bonding information, e.g. because of a device reset. See *example/sm_pairing_central.c*.
+
+Even with the Proactive Authentication, your device may still connect to an attacker that provides the same advertising data as
+your actual device. If the device that you want to connect requires pairing, you can instruct the GATT Client to automatically
+request an encrypted connection before sending any GATT Client request by calling *gatt_client_set_required_security_level()*.
+If the device provides sufficient IO capabilities, a MITM attack can then be prevented. We call this 'Mandatory Authentication'.
+
+The following diagrams provide a detailed overview about the GATT Client security mechanisms in different configurations:
+
+-  [Reactive Authentication as Central](picts/gatt_client_security_reactive_authentication_central.svg)
+-  [Reactive Authentication as Peripheral](picts/gatt_client_security_reactive_authentication_peripheral.svg)
+-  [Proactive Authentication as Central](picts/gatt_client_security_proactive_authentication_central.svg)
+-  [Proactive Authentication as Peripheral](picts/gatt_client_security_proactive_authentication_peripheral.svg)
+-  [Mandatory Authentication as Central](picts/gatt_client_security_mandatory_authentication_central.svg)
+-  [Mandatory Authentication as Peripheral](picts/gatt_client_security_mandatory_authentication_peripheral.svg)

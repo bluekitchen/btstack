@@ -469,6 +469,7 @@ typedef struct sm_connection {
     int                      sm_le_db_index;
     bool                     sm_pairing_active;
     bool                     sm_reencryption_active;
+    bool                     sm_advertising_set_terminated_received;
 } sm_connection_t;
 
 //
@@ -561,13 +562,17 @@ typedef struct {
     uint32_t bonding_flags;
     uint8_t  bonding_status;
 
+    // link key type for currently active encryption
+    link_key_type_t encryption_key_type;
+
     // encryption key size (in octets)
     uint8_t encryption_key_size;
 
     // requested security level
     gap_security_level_t requested_security_level;
     
-    // link key and its type for Classic connections
+    // latest link key and type for Classic connection
+    // - from link key db or link key notification event
     // LTK and LTK valid flag for LE connections
     link_key_t      link_key;
     link_key_type_t link_key_type;
@@ -707,9 +712,6 @@ typedef struct {
 
 } hci_connection_t;
 
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-
-
 typedef enum {
     HCI_ISO_TYPE_INVALID = 0,
     HCI_ISO_TYPE_BIS,
@@ -757,6 +759,7 @@ typedef struct {
     hci_con_handle_t acl_handle;
 
     // connection info
+    hci_role_t role;
     uint8_t  number_of_subevents;
     uint8_t  burst_number_c_to_p;
     uint8_t  burst_number_p_to_c;
@@ -783,7 +786,7 @@ typedef struct {
     bool emit_ready_to_send;
 
 } hci_iso_stream_t;
-#endif
+
 
 /**
  * HCI Initialization State Machine
@@ -807,6 +810,7 @@ typedef enum hci_init_state{
     HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET,
 
     HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY,
+    HCI_INIT_W4_CUSTOM_INIT_BCM_RESET,
 
     // Support for Pre-Init before HCI Reset
     HCI_INIT_CUSTOM_PRE_INIT,
@@ -1537,10 +1541,15 @@ uint8_t hci_send_sco_packet_buffer(int size);
 uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle);
 
 /**
- * @brief Request emission of HCI_EVENT_CIS_CAN_SEND_NOW for CIS as soon as possible
- * @param cis_con_handle
+ * @brief Request emission of HCI_EVENT_CIS_CAN_SEND_NOW for all outgoing CIS of referenced CIG
+ *
+ * @note As CIG_IDs are only unique for Central, a CIS Connection Handle is used to identify the CIG.
+ *       The group_complete field in HCI_EVENT_CIS_CAN_SEND_NOW can be used to request again.
+ *
  * @note HCI_EVENT_CIS_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
+ *
+ * @param cis_con_handle
  */
 uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle);
 
@@ -1880,6 +1889,9 @@ uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool
 
 // Disable automatic L2CAP disconnect if no L2CAP connection is established
 void hci_disable_l2cap_timeout_check(void);
+
+// called from test/ble_client/advertising_data_parser.c
+void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 // setup test connections, used for fuzzing

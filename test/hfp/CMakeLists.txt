@@ -5,10 +5,13 @@ project(test-hfp)
 find_package(PkgConfig REQUIRED)
 
 # CppuTest
-pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+pkg_check_modules(CPPUTEST REQUIRED cpputest)
 include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARY_DIRS})
 link_libraries(${CPPUTEST_LIBRARIES})
+
+# enable test features
+add_compile_definitions(ENABLE_TESTING_SUPPORT)
 
 include_directories(.)
 include_directories(..)

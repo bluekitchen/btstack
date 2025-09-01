@@ -55,51 +55,31 @@
 #include "bluetooth.h"
 #include "ble/gatt_client.h"
 #include "btstack_linked_list.h"
+#include "ble/gatt_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+// number of characteristics in Scan Parameters Service
+#define SCAN_PARAMETERS_SERVICE_CLIENT_NUM_CHARACTERISTICS 2
+
 typedef enum {
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_IDLE,
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-#ifdef ENABLE_TESTING_SUPPORT   
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CCC,
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CCC,
-#endif
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS,
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED,
-    
-    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CONNECTION,
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_READY,
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_WRITE_WITHOUT_RESPONSE
 } scan_parameters_service_client_state_t;
-
 
 typedef struct {
     btstack_linked_item_t item;
 
-    hci_con_handle_t con_handle;
-    uint16_t cid;
+    gatt_service_client_connection_t basic_connection;
     scan_parameters_service_client_state_t  state;
-    btstack_packet_handler_t client_handler;
+    btstack_packet_handler_t packet_handler;
 
-    // service
-    uint16_t start_handle;
-    uint16_t end_handle;
-
-    // characteristic
-    uint16_t scan_interval_window_value_handle;
-
-    uint16_t scan_refresh_value_handle;
-    uint16_t scan_refresh_end_handle;
-    uint16_t scan_refresh_properties;
-
-    bool     scan_interval_window_value_update;
-
-    gatt_client_notification_t notification_listener;
-} scan_parameters_service_client_t;
+    gatt_service_client_characteristic_t characteristics_storage[SCAN_PARAMETERS_SERVICE_CLIENT_NUM_CHARACTERISTICS];
+} sps_client_connection_t;
 
 /* API_START */
 
@@ -131,24 +111,21 @@ void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_wi
  *
  * @param con_handle
  * @param packet_handler
- * @param scan_parameters_cid
+ * @param sps_connection
+ * @param sps_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle not found
  */
-uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle,  btstack_packet_handler_t packet_handler, uint16_t * scan_parameters_cid);
-
-/**
- * @brief Enable notifications
- * @param scan_parameters_cid
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found
- */
-uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parameters_cid);
+uint8_t scan_parameters_service_client_connect(
+        hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler,
+        sps_client_connection_t * sps_connection,
+        uint16_t * sps_cid);
 
 /**
  * @brief Disconnect from Scan Parameters Service.
  * @param scan_parameters_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found
  */
-uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_cid); 
+uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_cid);
 
 
 /**

@@ -195,8 +195,8 @@ def plot(exp_name, sensor_name, sensor_title, prefix):
     plot_colors0 = ['r-','k-','b-','g-']
     hist_colors0 = ['red','black','blue','green']
 
-    group_index1 = 2;
-    group_index2 = 3;
+    group_index1 = 2
+    group_index2 = 3
     
     plot_data = [plot_data0[group_index1], plot_data0[group_index2]]
     hist_data = [hist_data0[group_index1], hist_data0[group_index2]]

@@ -548,13 +548,6 @@ uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
     if (!connection_target){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
-    if (!connection_controller->browsing_connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!connection_target->browsing_connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
 
     if (connection_controller->browsing_connection->state != AVCTP_CONNECTION_W4_ERTM_CONFIGURATION){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -574,13 +567,6 @@ uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid){
     }
     avrcp_connection_t * connection_target = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!connection_target){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
-    if (!connection_controller->browsing_connection){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!connection_target->browsing_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 

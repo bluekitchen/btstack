@@ -250,34 +250,8 @@ ssize_t _read(int fd, void * buf, size_t count){
     return -1;
 }
 
-int _close(int file){
-    UNUSED(file);
-    return -1;
-}
-
-int _isatty(int file){
-    UNUSED(file);
-    return -1;
-}
-
-int _lseek(int file){
-    UNUSED(file);
-    return -1;
-}
-
-int _fstat(int file){
-    UNUSED(file);
-    return -1;
-}
-
-int _kill (pid_t pid, int sig) {
-    UNUSED(pid);
-    UNUSED(sig);
-    return -1;
-}
-
-pid_t _getpid (void) {
-    return 0;
+void hal_led_toggle(void){
+    HAL_GPIO_TogglePin( LD3_GPIO_Port, LD3_Pin);
 }
 
 // main.c

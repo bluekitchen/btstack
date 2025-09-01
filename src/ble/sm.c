@@ -403,6 +403,9 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
 static void sm_cache_ltk(sm_connection_t * connection, const sm_key_t ltk);
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 static sm_connection_t * sm_get_connection_for_bd_addr_and_type(bd_addr_t address, bd_addr_type_t addr_type);
+static void sm_ctkd_start_from_le(sm_connection_t* connection);
+static bool sm_ctkd_from_le(void);
+static bool sm_ctkd_from_le_could_update(const sm_connection_t * sm_connection);
 #endif
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
@@ -1221,6 +1224,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 	if ((auth_req & auth_req_for_ct2) == auth_req_for_ct2){
 		auth_req |= SM_AUTHREQ_CT2;
 	}
+    setup->sm_link_key_type = INVALID_LINK_KEY;
 #endif
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, setup->sm_have_oob_data);
@@ -1554,6 +1558,15 @@ static void sm_store_bonding_information(sm_connection_t * sm_conn){
 
         }
     }
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+    if ((setup->sm_link_key_type != INVALID_LINK_KEY) &&
+        (sm_ctkd_from_le_could_update(sm_conn))) {
+
+        // store link key derived via CTKD from LTK
+        log_info("sm: store link key type %u", setup->sm_link_key_type);
+        gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_link_key, setup->sm_link_key_type);
+    }
+#endif
 }
 
 static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
@@ -1693,9 +1706,8 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     sm_connection_t * sm_conn = sm_cmac_connection;
     sm_cmac_connection = NULL;
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-    link_key_type_t link_key_type;
-#endif
+
+    log_info("state %u", (unsigned) sm_conn->sm_engine_state);
 
     switch (sm_conn->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
@@ -1750,7 +1762,14 @@ static void sm_sc_cmac_done(uint8_t * hash){
                     sm_conn->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
                 }
             } else {
-                sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+                if (sm_ctkd_from_le()) {
+                    sm_ctkd_start_from_le(sm_conn);
+                } else
+#endif
+                {
+                    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                }
             }
             break;
         case SM_SC_W4_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK:
@@ -1759,8 +1778,14 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 break;
             }
             if (IS_RESPONDER(sm_conn->sm_role)){
-                // responder
-                sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+                if (sm_ctkd_from_le()) {
+                    sm_ctkd_start_from_le(sm_conn);
+                } else
+#endif
+                {
+                    sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
+                }
             } else {
                 // initiator
                 sm_conn->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
@@ -1772,18 +1797,11 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY;
             break;
         case SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY:
-            reverse_128(hash, setup->sm_t);
-            link_key_type = sm_conn->sm_connection_authenticated ?
+            reverse_128(hash, setup->sm_link_key);
+            setup->sm_link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
-            log_info("Derived classic link key from LE using h6, type %u", (int) link_key_type);
-			gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_t, link_key_type);
-            if (IS_RESPONDER(sm_conn->sm_role)){
-                sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
-            } else {
-                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-            }
-            sm_pairing_complete(sm_conn, ERROR_CODE_SUCCESS, 0);
-            sm_done_for_handle(sm_conn->sm_handle);
+            log_info("Derived classic link key from LE, type %u", (int) setup->sm_link_key_type);
+            sm_conn->sm_engine_state = SM_SC_SEND_DHKEY_CHECK_COMMAND;
             break;
         case SM_BR_EDR_W4_CALCULATE_ILK:
             (void)memcpy(setup->sm_t, hash, 16);
@@ -2579,14 +2597,8 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
     btstack_assert(false);
 }
 
-static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-    // requirements to derive link key from  LE:
-    // - use secure connections
-    if (setup->sm_use_secure_connections == 0) return false;
-    // - bonding needs to be enabled:
-    bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
-    if (!bonding_enabled) return false;
+static bool sm_ctkd_from_le_could_update(const sm_connection_t * sm_connection) {
     // - need identity address / public addr
     bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0) || (setup->sm_peer_addr_type == 0);
     if (!have_identity_address_info) return false;
@@ -2597,20 +2609,22 @@ static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
     uint8_t link_key[16];
     link_key_type_t link_key_type;
     bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
+    if (have_link_key == false) return true;
     bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type);
     bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
-    if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
-        return false;
-    }
-    // get started (all of the above are true)
-    return true;
-#else
-    UNUSED(sm_connection);
-	return false;
-#endif
+    return !link_key_authenticated || derived_key_authenticated;
 }
 
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+static bool sm_ctkd_from_le(void) {
+    // requirements to derive link key from  LE:
+    // - use secure connections
+    if (setup->sm_use_secure_connections == 0) return false;
+    // - bonding needs to be enabled:
+    bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
+    return bonding_enabled;
+    return false;
+}
+
 static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
     hci_connection_t * hci_connection = hci_connection_for_handle(sm_connection->sm_handle);
     btstack_assert(hci_connection != NULL);
@@ -2630,26 +2644,21 @@ static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
     }
     return true;
 }
+
+static void sm_ctkd_start_from_le(sm_connection_t* connection) {
+    bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+    connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
+}
 #endif
 
 static void sm_key_distribution_complete_responder(sm_connection_t * connection){
-    if (sm_ctkd_from_le(connection)){
-        bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
-        connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
-    } else {
-        connection->sm_engine_state = SM_RESPONDER_IDLE;
-        sm_pairing_complete(connection, ERROR_CODE_SUCCESS, 0);
-        sm_done_for_handle(connection->sm_handle);
-    }
+    connection->sm_engine_state = SM_RESPONDER_IDLE;
+    sm_pairing_complete(connection, ERROR_CODE_SUCCESS, 0);
+    sm_done_for_handle(connection->sm_handle);
 }
 
 static void sm_key_distribution_complete_initiator(sm_connection_t * connection){
-    if (sm_ctkd_from_le(connection)){
-        bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
-        connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
-    } else {
-        sm_master_pairing_success(connection);
-    }
+    sm_master_pairing_success(connection);
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -3986,10 +3995,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			                    // responder - use own address from advertisements
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
                                 if (hci_le_extended_advertising_supported()){
-                                    // cache local resolvable address
-                                    // note: will be overwritten if random or private address was used in adv set by HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
-                                    sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_RANDOM;
-                                    gap_subevent_le_connection_complete_get_local_resolvable_private_address(packet,sm_conn->sm_own_address);
+                                    // store resolved address if received set terminated and used identity address
+                                    // cache resolved address if we haven't received set terminated yet and don't what address types was used
+                                    if ((sm_conn->sm_advertising_set_terminated_received == false) || hci_is_le_identity_address_type(sm_conn->sm_own_addr_type)){
+                                        sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_RANDOM;
+                                        gap_subevent_le_connection_complete_get_local_resolvable_private_address(packet,sm_conn->sm_own_address);
+                                        log_info("Cache local resolvable private address %s", bd_addr_to_str(sm_conn->sm_own_address));
+                                    }
                                 } else
 #endif
                                 {
@@ -4020,8 +4032,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 con_handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
                                 sm_conn = sm_get_connection_for_handle(con_handle);
                                 if (!sm_conn) break;
-
-                                gap_le_get_own_advertising_set_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address, advertising_handle);
+                                sm_conn->sm_advertising_set_terminated_received = true;
+                                uint8_t addr_type = BD_ADDR_TYPE_UNKNOWN;
+                                gap_le_get_own_advertising_set_address(&addr_type, sm_conn->sm_own_address, advertising_handle);
+                                if (hci_is_le_identity_address_type(addr_type) == false) {
+                                    sm_conn->sm_own_addr_type = addr_type;
+                                }
                                 log_info("Adv set %u terminated -> use addr type %u, addr %s for con handle 0x%04x", advertising_handle, sm_conn->sm_own_addr_type,
                                          bd_addr_to_str(sm_conn->sm_own_address), con_handle);
                             }

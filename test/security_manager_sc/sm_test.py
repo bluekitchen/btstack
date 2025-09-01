@@ -278,7 +278,7 @@ def run(test_descriptor, nodes):
                     return
                 elif line.startswith('COUNTER'):
                     print('%s notification received' % node.get_name())
-                    return;
+                    return
 
 def write_config(fout, test_descriptor):
     attributes = [

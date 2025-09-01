@@ -158,6 +158,17 @@ int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
 }
 
 /**
+  * @brief  Retrive the audio frequency.
+  * @retval AudioFreq: Audio frequency used to play the audio stream.
+  * @note   This API should be called after the BSP_AUDIO_OUT_Init() to adjust the
+  *         audio frequency.
+  */
+uint32_t hal_audio_sink_get_frequency(void)
+{
+	return sink_sample_rate;
+}
+
+/**
  * @brief Start stream
  */
 void hal_audio_sink_start(void){

@@ -36,6 +36,7 @@ include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
 include_directories(../../3rd-party/lwip/core/src/include)
 include_directories(../../3rd-party/lwip/dhcp-server)
+include_directories(../../3rd-party/qr-code-generator)
 include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
@@ -57,6 +58,7 @@ file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_QRCODEGEN "../../3rd-party/qr-code-generator/qrcodegen.c")
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
@@ -130,6 +132,7 @@ set(SOURCES
 	${SOURCES_CLASSIC} 
 	${SOURCES_UECC}
 	${SOURCES_HXCMOD}
+	${SOURCES_QRCODEGEN}
 	${SOURCES_REALTEK}
 	${SOURCES_ZEPHYR}
 )
@@ -143,23 +146,27 @@ find_package(PkgConfig REQUIRED)
 
 # libusb
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
+target_include_directories(btstack PUBLIC ${LIBUSB_INCLUDE_DIRS})
+target_link_directories(btstack PUBLIC ${LIBUSB_LIBRARY_DIRS})
+target_link_libraries(btstack ${LIBUSB_LIBRARIES})
 
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
 	message("HAVE_PORTAUDIO")
-	include_directories(${PORTAUDIO_INCLUDE_DIRS})
-	link_directories(${PORTAUDIO_LIBRARY_DIRS})
-	link_libraries(${PORTAUDIO_LIBRARIES})
+	target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+	target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
 	add_compile_definitions(HAVE_PORTAUDIO)
 endif()
 
 # pthread
 find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
+
+# libm
+target_link_libraries(btstack m)
+
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")

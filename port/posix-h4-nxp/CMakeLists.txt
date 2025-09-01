@@ -43,7 +43,7 @@ include_directories(${BTSTACK_ROOT}/platform/lwip)
 include_directories(${BTSTACK_ROOT}/platform/lwip/port)
 include_directories(${BTSTACK_ROOT}/platform/posix)
 
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/*demo_util*.c")
+file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/sco_demo_util*.c")
 file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
 file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
@@ -137,16 +137,20 @@ if (PkgConfig_FOUND)
 	pkg_check_modules(PORTAUDIO portaudio-2.0)
 	if(PORTAUDIO_FOUND)
 		message("HAVE_PORTAUDIO")
-		include_directories(${PORTAUDIO_INCLUDE_DIRS})
-		link_directories(${PORTAUDIO_LIBRARY_DIRS})
-		link_libraries(${PORTAUDIO_LIBRARIES})
+		target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+		target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+		target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
 		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
 
 # pthread
 find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
+
+# libm
+target_link_libraries(btstack m)
+
 
 # Add NXP Support
 include(${BTSTACK_ROOT}/chipset/nxp/nxp.cmake)

@@ -82,6 +82,13 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
 #endif           
     };
 
+    // explode variable data for CONFIGURE RESPONSE with unknown options
+    bool explode_config_options = false;
+    if (cmd == CONFIGURE_RESPONSE_UNKNOWN_OPTIONS){
+        explode_config_options = true;
+        cmd = CONFIGURE_RESPONSE;
+    }
+
     btstack_assert(0 < cmd);
     uint8_t cmd_index = (uint8_t) cmd;
     static const uint8_t num_l2cap_commands = (uint8_t) (sizeof(l2cap_signaling_commands_format) / sizeof(const char *));
@@ -124,7 +131,14 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
             case 'D': // variable data. passed: len, ptr
                 word = va_arg(argptr, int);         // LCOV_EXCL_BR_LINE
                 ptr_u8  = va_arg(argptr, uint8_t *);   // LCOV_EXCL_BR_LINE
-                (void)memcpy(&acl_buffer[pos], ptr_u8, word);
+                if (explode_config_options) {
+                    for (int i = 0; i < word; i++){
+                        acl_buffer[pos++] = ptr_u8[i];
+                        acl_buffer[pos++] = 0;
+                    }
+                } else {
+                    (void)memcpy(&acl_buffer[pos], ptr_u8, word);
+                }
                 pos += word;
                 break;
             default:

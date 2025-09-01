@@ -101,7 +101,7 @@ uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
  * @param data_length
  * @return 0 if ok, ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if not enough space in buffer
  */
-int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length); 
+int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length);
 
 /**
  * Read from ring buffer

@@ -1244,7 +1244,7 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * gatt_client, u
     uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT,
                                                          descriptor_handle, value,
                                                          value_length, gatt_client->service_id, gatt_client->connection_id);
-    emit_event_new(gatt_client->callback, packet, value_length + 8u);
+    emit_event_new(gatt_client->callback, packet, value_length + CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE);
 }
 
 static void report_gatt_long_characteristic_descriptor(gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t *blob, uint16_t blob_length, uint16_t value_offset){
@@ -2022,11 +2022,10 @@ static void gatt_client_handle_att_write_response(gatt_client_t *gatt_client) {
 }
 
 static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {
-    uint8_t att_status;
-    switch (packet[0]) {
-        case ATT_EXCHANGE_MTU_RESPONSE: {
-            if (size < 3u) break;
-            bool update_gatt_server_att_mtu = false;
+    // handle MTU Exchange, continue if we receive an error response
+    if (gatt_client->mtu_state == SENT_MTU_EXCHANGE){
+        bool update_gatt_server_att_mtu = false;
+        if ((packet[0] == ATT_EXCHANGE_MTU_RESPONSE) && (size >= 3)){
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
             switch (gatt_client->bearer_type){
@@ -2043,21 +2042,27 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                     break;
             }
 
-            uint16_t mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
+            uint16_t mtu = (uint16_t) btstack_min(local_rx_mtu, remote_rx_mtu);
 
             // set gatt client mtu
             gatt_client->mtu = mtu;
-            gatt_client->mtu_state = MTU_EXCHANGED;
-
-            if (update_gatt_server_att_mtu){
-                // set per connection mtu state - for fixed channel
-                hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-                hci_connection->att_connection.mtu = gatt_client->mtu;
-                hci_connection->att_connection.mtu_exchanged = true;
-            }
-            emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
-            break;
         }
+
+        gatt_client->mtu_state = MTU_EXCHANGED;
+
+        if (update_gatt_server_att_mtu){
+            // set per connection mtu state - for fixed channel
+            hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+            hci_connection->att_connection.mtu = gatt_client->mtu;
+            hci_connection->att_connection.mtu_exchanged = true;
+        }
+        emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
+        return;
+    }
+
+    uint8_t att_status;
+    switch (packet[0]) {
+
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
             switch (gatt_client->state) {
                 case P_W4_SERVICE_QUERY_RESULT:
@@ -2138,7 +2143,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                             gatt_client->client_characteristic_configuration_handle = little_endian_read_16(packet, offset);
                             gatt_client->state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
                             log_info("CCC found %x", gatt_client->client_characteristic_configuration_handle);
-                            break;
+                            return;
                         }
                         offset += pair_size;
                     }
@@ -2600,6 +2605,11 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t
 }
 
 uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t * uuid128){
+    return gatt_client_discover_primary_services_by_uuid128_with_context(callback, con_handle, uuid128, 0, 0);
+}
+
+uint8_t gatt_client_discover_primary_services_by_uuid128_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                      const uint8_t * uuid128, uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -2607,6 +2617,8 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
     }
 
     gatt_client->callback = callback;
+    gatt_client->service_id = service_id;
+    gatt_client->connection_id = connection_id;
     gatt_client->start_group_handle = 0x0001;
     gatt_client->end_group_handle   = 0xffff;
     gatt_client->uuid16 = 0;
@@ -3525,7 +3537,7 @@ static uint8_t gatt_client_le_enhanced_num_eatt_clients_in_state(gatt_client_t *
 static void gatt_client_eatt_finalize(gatt_client_t * gatt_client) {
     // free eatt clients
     btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &gatt_client_connections);
+    btstack_linked_list_iterator_init(&it, &gatt_client->eatt_clients);
     while (btstack_linked_list_iterator_has_next(&it)) {
         gatt_client_t *eatt_client = (gatt_client_t *) btstack_linked_list_iterator_next(&it);
         btstack_linked_list_iterator_remove(&it);

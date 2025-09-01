@@ -88,13 +88,13 @@ def writeAPI(fout, fin, mk_codeidentation):
     
     for line in fin:
         if state == State.SearchStartAPI:
-            parts = re.match('.*API_START.*',line)
+            parts = re.match(r'.*API_START.*',line)
             if parts:
                 state = State.SearchEndAPI
             continue
         
         if state == State.SearchEndAPI:
-            parts = re.match('.*API_END.*',line)
+            parts = re.match(r'.*API_END.*',line)
             if parts:
                 state = State.DoneAPI
                 continue
@@ -115,13 +115,13 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
         linenr = linenr + 1
         
         if state == State.SearchStartAPI:
-            parts = re.match('.*API_START.*',line)
+            parts = re.match(r'.*API_START.*',line)
             if parts:
                 state = State.SearchEndAPI
             continue
         
         if state == State.SearchEndAPI:
-            parts = re.match('.*API_END.*',line)
+            parts = re.match(r'.*API_END.*',line)
             if parts:
                 state = State.DoneAPI
                 continue
@@ -129,22 +129,22 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
         if isComment(line):
             continue
 
-        param = re.match(".*@brief.*", line)
+        param = re.match(r".*@brief.*", line)
         if param:
             continue
-        param = re.match(".*@param.*", line)
+        param = re.match(r".*@param.*", line)
         if param:
             continue
-        param = re.match(".*@return.*", line)
+        param = re.match(r".*@return.*", line)
         if param:
             continue
-        param = re.match(".*@result.*", line)
+        param = re.match(r".*@result.*", line)
         if param:
             continue
-        param = re.match(".*@note.*", line)
+        param = re.match(r".*@note.*", line)
         if param:
             continue
-        param = re.match(".*return.*", line)
+        param = re.match(r".*return.*", line)
         if param:
             continue
         
@@ -172,10 +172,10 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
 
         one_line_function_definition = re.match(r'(.*?)\s*\(.*\(*.*;\n', line)
         if one_line_function_definition:
-            parts = one_line_function_definition.group(1).split(" ");
+            parts = one_line_function_definition.group(1).split(" ")
             name = parts[len(parts)-1]
             if len(name) == 0:
-                print(parts);
+                print(parts)
                 sys.exit(10)
             # ignore typedef for callbacks
             if parts[0] == 'typedef':
@@ -185,11 +185,11 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
 
         multi_line_function_definition = re.match(r'.(.*?)\s*\(.*\(*.*', line)
         if multi_line_function_definition:
-            parts = multi_line_function_definition.group(1).split(" ");
+            parts = multi_line_function_definition.group(1).split(" ")
 
             name = parts[len(parts)-1]
             if len(name) == 0:
-                print(parts);
+                print(parts)
                 sys.exit(10)
             multiline_function_def = 1
             functions[name] = codeReference(name, githuburl, filename, api_filepath, linenr)

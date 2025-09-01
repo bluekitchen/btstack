@@ -270,7 +270,7 @@ static void setup_mod_player(void){
         btstack_assert(hxcmod_initialized != 0);
     }
     hxcmod_unload(&mod_context);
-    hxcmod_setcfg(&mod_context, sampling_frequency_hz, 16, 1, 1, 1);
+    hxcmod_setcfg(&mod_context, sampling_frequency_hz, 1, 1);
     hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
 }
 
@@ -293,7 +293,7 @@ static void generate_audio(void){
             break;
         case AUDIO_SOURCE_MODPLAYER:
             // mod player configured for stereo
-            hxcmod_fillbuffer(&mod_context, (unsigned short *) pcm, number_samples_per_frame, &trkbuf);
+            hxcmod_fillbuffer(&mod_context, pcm, number_samples_per_frame, &trkbuf);
             if (num_bis == 1) {
                 // stereo -> mono
                 uint16_t i;

@@ -928,7 +928,22 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         
         case AVRCP_SUBEVENT_OPERATION_COMPLETE:
-            printf("AVRCP Controller: %s complete\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+            switch ((avrcp_command_opcode_t) avrcp_subevent_operation_complete_get_command_opcode(packet)){
+                case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+                    printf("AVRCP Controller: PDU_ID 0x%02X - status %s\n",
+                           avrcp_subevent_operation_complete_get_pdu_id(packet),
+                           avrcp_subevent_operation_complete_get_status(packet) == ERROR_CODE_SUCCESS ? "done" : "failed");
+                    break;
+                case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
+                case AVRCP_CMD_OPCODE_UNIT_INFO:
+                case AVRCP_CMD_OPCODE_PASS_THROUGH:
+                    printf("AVRCP Controller: Operation ID 0x%02X - status %s\n",
+                           avrcp_subevent_operation_complete_get_operation_id(packet),
+                           avrcp_subevent_operation_complete_get_status(packet) == ERROR_CODE_SUCCESS ? "done" : "failed");
+                    break;
+                default:
+                    break;
+            }
             break;
         
         case AVRCP_SUBEVENT_OPERATION_START:

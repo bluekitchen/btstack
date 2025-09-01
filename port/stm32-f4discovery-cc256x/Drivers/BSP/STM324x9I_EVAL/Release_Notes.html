@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for STM324x9I_EVAL Evaluation Board</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="_htmresc/mini-st_2020.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <link rel="icon" type="image/x-icon" href="_htmresc/favicon.png" />
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<center>
+<h1 id="release-notes-for">Release Notes for</h1>
+<h1 id="stm324x9i_eval-evaluation-board"><mark>STM324x9I_EVAL Evaluation Board</mark></h1>
+<p>Copyright © 2017 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="_htmresc/st_logo_2020.png" alt="ST logo" /></a>
+</center>
+<h1 id="purpose">Purpose</h1>
+<p>This directory contains the board drivers to demonstrate the capabilities of the STM324x9I_EVAL Evaluation Board.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section16" checked aria-hidden="true"> <label for="collapse-section16" aria-hidden="true">V3.0.3 / 22-September-2023</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<ul>
+<li>Update Release_Notes.html to support new format</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section15" aria-hidden="true"> <label for="collapse-section15" aria-hidden="true">V3.0.2 / 11-Fabruary-2022</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<ul>
+<li>All source files: update disclaimer to add reference to the new license agreement.</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section14" aria-hidden="true"> <label for="collapse-section14" aria-hidden="true">V3.0.1 / 21-September-2017</label>
+<div>
+<h2 id="main-changes-2">Main Changes</h2>
+<ul>
+<li>Remove date &amp; version</li>
+<li>Add general description of BSP drivers</li>
+<li>stm324x9i_eval_audio.c/.h:
+<ul>
+<li>Aligned with PDM library v3.0.0</li>
+</ul></li>
+<li>stm324x9i_eval_lcd.c:
+<ul>
+<li>Update BSP_LCD_DrawBitmap() API to fix functional misbehaviour with SW4STM32 Toolchain</li>
+</ul></li>
+<li>Notes:
+<ul>
+<li>This version must be used with v3.0.0 of PDM library</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section13" aria-hidden="true"> <label for="collapse-section13" aria-hidden="true">V3.0.0 / 27-January-2017</label>
+<div>
+<h2 id="main-changes-3">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval_sd.c/.h:
+<ul>
+<li>Update BSP SD APIs following new HAL SD drivers implementation</li>
+<li>Fix BlockSize to 512 bytes</li>
+</ul></li>
+<li>stm324x9i_eval_audio.c/.h:
+<ul>
+<li>Add BSP_AUDIO_OUT_MspInit, BSP_AUDIO_OUT_MspDeInit and BSP_AUDIO_OUT_ClockConfig APIs as weak</li>
+<li>Add BSP_AUDIO_IN_MspInit, BSP_AUDIO_IN_MspDeInit and BSP_AUDIO_IN_ClockConfig APIs as weak</li>
+<li>Add BSP_AUDIO_OUT_DeInit and BSP_AUDIO_IN_DeInit APIs</li>
+</ul></li>
+<li>stm324x9i_eval_sram.c/.h:
+<ul>
+<li>Add BSP_SRAM_MspInit API as weak</li>
+</ul></li>
+<li>stm324x9i_eval_sdram.c/.h:
+<ul>
+<li>Add BSP_SDRAM_MspInit API as weak</li>
+</ul></li>
+<li>stm324x9i_eval_camera.c/.h:
+<ul>
+<li>Add BSP_CAMERA_MspInit API as weak</li>
+</ul></li>
+<li>Notes:
+<ul>
+<li>These BSP drivers break the compatibility with previous versions.</li>
+<li>If FatFs is required, “FatFS R0.11 ST modified 20161223” must be used with this version of BSP drivers.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section12" aria-hidden="true"> <label for="collapse-section12" aria-hidden="true">V2.2.1 / 07-October-2015</label>
+<div>
+<h2 id="main-changes-4">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval.c/.h
+<ul>
+<li>Rework LCD initialization to ensure refresh rate of 60Hz.
+<ul>
+<li>Add new API “BSP_LCD_InitEx(uint32_t PclkConfig)” to propoerly manage LTCD pixel clock configuration.</li>
+<li>Update “BSP_LCD_Init” to call new API BSP_LCD_InitEx().</li>
+<li>Add LCD_MAX_PCLK/LCD_MIN_PCLK defines.</li>
+<li>Add BSP_LCD_InitEx() function prototype.</li>
+</ul></li>
+<li>Update VBP and HBP values used to calculate AccumulatedActiveH and AccumulatedActiveW for AMPIRE 480x272</li>
+</ul></li>
+<li>stm324x9i_eval_ts.c:
+<ul>
+<li>Update BSP_TS_GetState() to return correct values of Touch Screen status and positions.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section11" aria-hidden="true"> <label for="collapse-section11" aria-hidden="true">V2.2.0 / 14-August-2015</label>
+<div>
+<h2 id="main-changes-5">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval.c/.h
+<ul>
+<li>Add AUDIO_IO_DeInit() function to align with Common V4.0.0</li>
+</ul></li>
+<li>stm324x9i _eval_audio.c
+<ul>
+<li>Remove CODEC_Reset() function</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section10" aria-hidden="true"> <label for="collapse-section10" aria-hidden="true">V2.1.0 / 26-June-2015</label>
+<div>
+<h2 id="main-changes-6">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval.c/.h
+<ul>
+<li>Update to support new 5.7" VGA LCD (AM640480FTNQW-T07H-A)
+<ul>
+<li>Update I2Cx_ReadMultiple() API to considers the multiple read of the exc7200 touch screen position</li>
+<li>Add BSP_TS3510_IsDetected() API to detect which LCD is mounted on the board</li>
+<li>In header file, add new defines for ts3510 and exc7200 touch screen components I2C addresses</li>
+</ul></li>
+</ul></li>
+<li>stm324x9i _eval_ts.c/.h
+<ul>
+<li>Update to support new 5.7" VGA LCD (AM640480FTNQW-T07H-A)
+<ul>
+<li>Update BSP_TS_Init() API to initialize the connected LCD device</li>
+<li>Update BSP_TS_GetState() API to calculate the (x,y) position for the mounted LCD device</li>
+<li>In header file, update to include the new touch screen component driver (exc7200)</li>
+</ul></li>
+</ul></li>
+<li>stm324x9i _eval_sdram.c/.h
+<ul>
+<li>Update BSP_SDRAM_Init() API to set the right column bits number configuration according to the IS42S32800(ISSI) component available on the board</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section9" aria-hidden="true"> <label for="collapse-section9" aria-hidden="true">V2.0.4 / 03-March-2015</label>
+<div>
+<h2 id="main-changes-7">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval.c/.h
+<ul>
+<li>Align to STM32F4xx HAL Driver V1.3.0 for __HAL_RCC_PPP_CLK_ENABLE()</li>
+</ul></li>
+<li>stm324x9i _eval_audio.c/.h
+<ul>
+<li>BSP_AUDIO_OUT_Play()/BSP_AUDIO_OUT_ChangeBuffer() add cast uint8_t on data pointer: update according to the HAL SAI driver update to support companding mode which works only with data type on 8-bits.</li>
+</ul></li>
+<li>stm324x9i _eval_lcd.c
+<ul>
+<li>BSP_LCD_Init() update to check if DATA_IN_ExtSDRAM is enabled or not to avoid the re-initialization for SDRAM interface.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section8" aria-hidden="true"> <label for="collapse-section8" aria-hidden="true">V2.0.3 / 10-December-2014</label>
+<div>
+<h2 id="main-changes-8">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval.c/.h
+<ul>
+<li>Change I2C_SPEED used define by BSP_I2C_SPEED</li>
+</ul></li>
+<li>stm324x9i_eval_camera.c
+<ul>
+<li>BSP_CAMERA_Init(): Update the Initialization and Stop APIs to set and reset the STANDBY pin (to avoid conflict with SDCard detect pin)</li>
+</ul></li>
+<li>stm324x9i_eval_camera.h, stm324x9i_eval_audio.h, stm324x9i_eval_eeprom.h, stm324x9i_eval_io.h, stm324x9i_eval_ts.h and stm324x9i_eval_lcd.c/.h
+<ul>
+<li>Change “" by”/" in the include path to fix compilation issue under Linux</li>
+</ul></li>
+<li>stm324x9i_eval_nor.c/.h
+<ul>
+<li>Change NOR status definition NOR_OK and NOR_ERROR by NOR_STATUS_OK and NOR_STATUS_ERROR, respectively</li>
+</ul></li>
+<li>stm324x9i_eval_sdram.c
+<ul>
+<li>BSP_SDRAM_Initialization_sequence(): Fix wrong configuration of the burst length</li>
+</ul></li>
+<li>Miscellaneous comments update</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section7" aria-hidden="true"> <label for="collapse-section7" aria-hidden="true">V2.0.2 / 19-June-2014</label>
+<div>
+<h2 id="main-changes-9">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval.c/.h
+<ul>
+<li>Add protection for double initialization of IO_Init within LCD_IO_Init()</li>
+<li>Enhance BSP_PB_Init() function by removing the call of __SYSCFG_CLK_ENABLE() already enabled in the HAL_GPIO_Init()</li>
+</ul></li>
+<li>stm324x9i _eval_audio.c/.h
+<ul>
+<li>Add note that only the audio stereo format is supported</li>
+</ul></li>
+<li>stm324x9i_eval_sd.c/.h
+<ul>
+<li>Ensure compatibility with the updated version of FatFs sd_diskio driver (i.e. FatFs R0.10 ST modified 20140422) supporting SDIO/SPI to interface uSD</li>
+</ul></li>
+<li>stm324x9i_eval_lcd.c/.h
+<ul>
+<li>Update LCD clock configuration of 5.7" screen to avoid flicker effect within BSP_LCD_Init()</li>
+<li>Comments clean up and typo corrections</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section6" aria-hidden="true"> <label for="collapse-section6" aria-hidden="true">V2.0.1 / 26-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-10">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval_sd.c/.h
+<ul>
+<li>Update SD_DATATIMEOUT value</li>
+</ul></li>
+<li>stm324x9i_eval_eeprom.c/.h
+<ul>
+<li>Update usage of BSP_EEPROM_TIMEOUT_UserCallback() function</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section5" aria-hidden="true"> <label for="collapse-section5" aria-hidden="true">V2.0.0 / 18-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-11">Main Changes</h2>
+<ul>
+<li>Major update based on STM32Cube specification: drivers architecture and APIs modified vs. V1.0.3, and thus the 2 versions are not compatible.</li>
+<li>This version has to be used only with STM32CubeF4 based development</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V1.0.3 / 13-November-2013</label>
+<div>
+<h2 id="main-changes-12">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval_ioe8.c/.h
+<ul>
+<li>Enhance the Touch panel detection in IOE_TS_GetState() function : Add a check on FIFO Threshold value before reading X and Y position</li>
+</ul></li>
+</ul>
+<h2 id="known-limitations">Known Limitations</h2>
+<ul>
+<li>stm324x9i_eval_audio_codec.c/.h
+<ul>
+<li>If 2 audio streams are played in TDM format (the first stream is configured in codec SLOT0 and second stream in codec SLOT1) the Pause/Resume, Volume Control and Mute action will apply on both streams.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section3" aria-hidden="true"> <label for="collapse-section3" aria-hidden="true">V1.0.2 / 08-November-2013</label>
+<div>
+<h2 id="main-changes-13">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval_lcd.c
+<ul>
+<li>Update BUFFER_OFFSET define value from 0x130000 to 0x12C000 and comment to explain how to compute this value</li>
+<li>LCD_DeInit() function: remove SDRAM pins configuration, this is done in SDRAM driver</li>
+<li>LCD_Init() function: in case where AMPIRE 640x480 LCD is used, add a call to LCD_I2C_Config() to initialize I2C for touch panel usage</li>
+<li>Update and optimize LCD_Clear() function</li>
+<li>Update and optimize putPixel() function: write directly to the SDRAM instead of the use of LCD_DrawLine() function</li>
+<li>GetPosition() function: add more comments in the header about the format of the data returned by this function</li>
+<li>GetPosition() function: remove the I2C configuration (it’s already done in LCD_Init() function)</li>
+<li>LCD_CheckDevice() function: replace LCD_I2C_Config() by IOE_Config()</li>
+<li>LCD_I2C_Config() function: add a test, if I2C is already configured, then there is no need to reconfigure it again</li>
+</ul></li>
+<li>stm324x9i_eval_ioe8.c/.h
+<ul>
+<li>Remove EXTI line configuration macros</li>
+<li>Remove VERIFY_WRITTENDATA macro, and remove verify written data block from I2C_WriteDeviceRegister() function</li>
+</ul></li>
+<li>stm324x9i_eval_ioe16.c/.h
+<ul>
+<li>Remove VERIFY_WRITTENDATA macro, and remove verify written data block from IOE16_I2C_WriteDeviceRegister() function</li>
+</ul></li>
+<li>stm324x9i_eval_audio_codec.c/.h
+<ul>
+<li>In Audio_MAL_IRQHandler() Remove local variables pAddr and Size and replace them by existing global variables CurrentPos and AudioRemSize</li>
+</ul></li>
+</ul>
+<h2 id="known-limitations-1">Known Limitations</h2>
+<ul>
+<li>stm324x9i_eval_audio_codec.c/.h
+<ul>
+<li>If 2 audio streams are played in TDM format (the first stream is configured in codec SLOT0 and second stream in codec SLOT1) the Pause/Resume, Volume Control and Mute action will apply on both streams.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.0.1 / 11-October-2013</label>
+<div>
+<h2 id="main-changes-14">Main Changes</h2>
+<ul>
+<li>stm324x9i_eval_lcd.c
+<ul>
+<li>Update LCD_DisplayOff() function : Remove GPIO PA8 and PC6 configuration in low level, as we don’t need to configure any more these GPIO w/ STM32x9I-EVAL Boards RevB</li>
+<li>Add comments for LCD_GetPosition() and LCD_CheckDevice function</li>
+</ul></li>
+<li>stm324x9i_eval_ioe8.c/.h
+<ul>
+<li>Update IOE_TS_GetState() function : Enhance the TS detection algorithm</li>
+<li>Update IOE_TS_Config() function : Update IOE FIFO threshold register value to 0x01 instead of 0x0F and update touch screen operation mode register value to 0x01 instead of 0x03</li>
+<li>Add condition in IOE_GPIO_Config() and IOE_I2C_Config() functions to prevent I2C and its GPIOs reconfiguration</li>
+<li>Update I2C_ReadDataBuffer() function: remove check at “I2C_FLAG_BUSY” in the beginning of the function</li>
+</ul></li>
+<li>stm324x9i_eval_ioe16.c/.h
+<ul>
+<li>Add condition in IOE16_GPIO_Config() and IOE16_I2C_Config() functions to prevent I2C and its GPIOs reconfiguration</li>
+</ul></li>
+</ul>
+<h2 id="known-limitations-2">Known Limitations</h2>
+<ul>
+<li>stm324x9i_eval_audio_codec.c/.h
+<ul>
+<li>If 2 audio streams are played in TDM format (the first stream is configured in codec SLOT0 and second stream in codec SLOT1) the Pause/Resume, Volume Control and Mute action will apply on both streams.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section1" aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 19-September-2013</label>
+<div>
+<h2 id="main-changes-15">Main Changes</h2>
+<ul>
+<li>First official release for STM324x9I_EVAL board drivers.</li>
+</ul>
+<h2 id="known-limitations-3">Known Limitations</h2>
+<ul>
+<li>stm324x9i_eval_audio_codec.c/.h
+<ul>
+<li>If 2 audio streams are played in TDM format (the first stream is configured in codec SLOT0 and second stream in codec SLOT1) the Pause/Resume, Volume Control and Mute action will apply on both streams.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<footer class="sticky">
+For complete documentation on <mark>STM32 Microcontrollers</mark> , visit: <a href="http://www.st.com/STM32">http://www.st.com/STM32</a>
+</footer>
+</body>
+</html>

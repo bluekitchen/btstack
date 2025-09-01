@@ -1325,7 +1325,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
 	// Start trasnsfer
 	WINUSB_SETUP_PACKET setup_packet;
 	memset(&setup_packet, 0, sizeof(setup_packet));
-	setup_packet.RequestType =  USB_REQUEST_TYPE_CLASS | USB_RECIPIENT_INTERFACE;
+	setup_packet.RequestType =  USB_REQUEST_TYPE_CLASS | USB_RECIPIENT_DEVICE;
 	setup_packet.Length = sizeof(size);
 	BOOL result = WinUsb_ControlTransfer(usb_interface_0_handle, setup_packet, packet, size,  NULL, &usb_overlapped_command_out);
 	if (!result) {

@@ -133,7 +133,7 @@ static const uint16_t iso_packet_size_for_alt_setting[] = {
 
 // Outgoing SCO packet queue
 // simplified ring buffer implementation
-#define SCO_OUT_BUFFER_COUNT  (20)
+#define SCO_OUT_BUFFER_COUNT  (8)
 #define SCO_OUT_BUFFER_SIZE (SCO_OUT_BUFFER_COUNT * SCO_PACKET_SIZE)
 
 // seems to be the max depth for USB 3
@@ -1386,7 +1386,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     void *user_data = transfer->user_data;
 
     // async
-    libusb_fill_control_setup(data, LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, size);
+    libusb_fill_control_setup(data, LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_DEVICE, 0, 0, 0, size);
     memcpy(data + LIBUSB_CONTROL_SETUP_SIZE, packet, size);
 
     // prepare transfer

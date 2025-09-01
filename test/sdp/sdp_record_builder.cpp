@@ -148,11 +148,9 @@ TEST(SDPRecordBuilder, AVRCP_TARGET){
     const char * service_name;
     const char * service_provider_name;
     int expected_len;
-    int descriptor_size;
 
     service_name = ".";
     service_provider_name = ".";
-    descriptor_size = 0;
     expected_len = avrcp_target_record_size(service_name, service_provider_name);
     avrcp_target_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
@@ -177,11 +175,9 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
     const char * service_name;
     const char * service_provider_name;
     int expected_len;
-    int descriptor_size;
 
     service_name = ".";
     service_provider_name = ".";
-    descriptor_size = 0;
     expected_len = avrcp_controller_record_size(service_name, service_provider_name);
     avrcp_controller_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
@@ -206,7 +202,9 @@ TEST(SDPRecordBuilder, HID_DEVICE){
     descriptor_size = 0;
     expected_len = hid_device_record_size(descriptor_size, name);
     
-    hid_sdp_record_t hid_params = {0, 0, 0, 0, 0, false, false, 0xFFFF, 0xFFFF, 3200, NULL, descriptor_size, name};
+    hid_sdp_record_t hid_params = {0, 0, 0, 0, 0, false, false, 0xFFFF, 0xFFFF, 3200, NULL, 0, NULL};
+    hid_params.hid_descriptor_size = descriptor_size;
+    hid_params.device_name = name;
     hid_create_sdp_record(service_buffer, 0x0001, &hid_params);
 
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);

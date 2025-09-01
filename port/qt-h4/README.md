@@ -1,9 +1,9 @@
 # BTstack Port for QT with H4 Bluetooth Controller
 
-Uses libusb Library on macOS and Linux and WinUSB on Windows.
 Windows is supported with the MinGW Kit.
 
 Windows with MSVC or Embedded (bare metal) platforms not supported yet.
+
 
 ## Configuration
 
@@ -30,6 +30,10 @@ On macOS/Linux [libusb-1.0](http://libusb.info) or higher is required, too.
 When everything is ready, you can open the provided CMakelists.txt project in Qt Creator and run any of the provided examples.
 See Qt documentation on how to compile on the command line or with other IDEs
 
+You can also compile the project in a shell if you provide the path to the cmake folder of your Qt installation, e.g. on macOS with brew providing QT 5.15.16
+	
+	cmake -DCMAKE_PREFIX_PATH=/opt/homebrew/Cellar/qt@5/5.15.16/lib/cmake/Qt5 ..
+
 
 ## Running the examples
 
@@ -37,7 +41,7 @@ BTstack's HCI USB transport will try to find a suitable Bluetooth module and use
 
 On start, BTstack will try to find a suitable Bluetooth module. It will also print the path to the packet log as well as the USB path.
 
-	$ ./le_counter
+	$ ./gattcounter
 	Packet Log: /tmp/hci_dump.pklg
 	BTstack counter 0001
 	USB Path: 06

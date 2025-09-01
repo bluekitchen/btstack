@@ -29,3 +29,5 @@ build-coverage
 .vs
 .vscode
 ninja
+__pycache__
+.DS_Store

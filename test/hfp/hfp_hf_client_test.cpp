@@ -79,7 +79,40 @@ static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
 static uint8_t call_termiated = 0;
 
-static int supported_features_with_codec_negotiation = 438;    
+
+static void dump_vra_state(hfp_connection_t * connection, const char * desc){
+    const char * vra_state[] = {
+            "VOICE_RECOGNITION_OFF",
+            "W2_SEND_VOICE_RECOGNITION_OFF",
+            "W4_VOICE_RECOGNITION_OFF",
+            "W2_SEND_VOICE_RECOGNITION_ACTIVATED",
+            "W4_VOICE_RECOGNITION_ACTIVATED",
+            "VOICE_RECOGNITION_ACTIVATED",
+            "W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO",
+            "W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO",
+            "ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO",
+            "W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS",
+            "W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG"
+    };
+    printf("%s: %s -> %s, delay emit %d, ok pending %d\n",
+           desc,
+           vra_state[connection->vra_engine_current_state],
+           vra_state[connection->vra_engine_requested_state],
+           connection->emit_vra_on_after_audio_established, connection->ok_pending);
+}
+
+// static int supported_features_with_codec_negotiation = 438;
+static int supported_features_with_codec_negotiation =
+        (1<<HFP_HFSF_ESCO_S4)               |
+        (1<<HFP_HFSF_CLI_PRESENTATION_CAPABILITY) |
+        (1<<HFP_HFSF_HF_INDICATORS)         |
+        (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
+        (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
+        (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION)  |
+        (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT) |
+        (1<<HFP_HFSF_EC_NR_FUNCTION) |
+        (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
 
 static uint16_t acl_handle = -1;
 
@@ -297,7 +330,7 @@ static void user_command(char cmd){
             break;
         case '!':
             printf("Update HF indicator with assigned number 1 (HFI)\n");
-            hfp_hf_set_hf_indicator(acl_handle, 1, 1);
+            hfp_hf_set_hf_indicator(1, 1);
             break;
         default:
             printf("HF: undefined user command\n");
@@ -313,7 +346,7 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
     int previous_step = -1;
     while ( i < test_item->len){
         previous_step++;
-        CHECK_EQUAL(i >= previous_step, 1);
+        CHECK_EQUAL(i >= previous_step, true);
         
         char * expected_cmd = test_steps[i];
         int expected_cmd_len = strlen(expected_cmd);
@@ -460,6 +493,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
         case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
             printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
             break;
+        case HFP_SUBEVENT_AG_INDICATOR_MAPPING:
+            printf("Received HFP_SUBEVENT_AG_INDICATOR_MAPPING\n");
+            break;
+        case HFP_SUBEVENT_CALL_ANSWERED:
+            printf("Received HFP_SUBEVENT_CALL_ANSWERED\n");
+            break;
+        case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
+            printf("Received HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED\n");
+            break;
+        case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
+            printf("Received HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED\n");
+            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;
@@ -537,6 +582,14 @@ TEST(HFPClient, PTSSLCTests){
     for (int i = 0; i < hfp_pts_hf_slc_tests_size(); i++){
         setup();
         simulate_test_sequence(&hfp_pts_hf_slc_tests()[i]);
+        teardown();
+    }
+}
+
+TEST(HFPClient, IssuesTests){
+    for (int i = 0; i < hfp_pts_hf_issues_tests_size(); i++){
+        setup();
+        simulate_test_sequence(&hfp_pts_hf_issues_tests()[i]);
         teardown();
     }
 }

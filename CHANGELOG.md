@@ -13,6 +13,80 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 
+## Release v1.7
+
+### Added
+- HCI: support newer AIROC Controller that require Download Mode with ENABLE_AIROC_DOWNLOAD_MODE
+- GAP: simulate HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE if HCI Remote Name Request fails 
+- btstack_base64_encoder: add implementation
+- ATT DB: add gatt_server_get_database_hash
+- AVRCP Controller: Add send generic PASS THROUGH command
+- AVRCP Controller: handle response timout
+- AVRCP Controller: emit AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST event
+- AVRCP Controller: emit AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST event
+- GATT Server: store Database Hash in TLV and discard stored CCCs if database changes
+- GATT Service Client: component that discovers characteristics and enables notifications/indications
+- HID Host: storage for HID Descriptors is now optional
+- HID Device: allow for SDP Record without Service Name attribute
+- Chipset: support for Realtek Controller with H4 transport, e.g. RTL8761CTV
+- Zephyr: provide hal_flash_bank implementation for native flash driver
+- Zephyr: explicit run loop and HCI transport implementations
+- POSIX: support error condition for file descriptors in btstack_run_loop
+- Linux: HCI Transport for Linux HCI Kernel Socket
+- Linux: Audio sink implementation for Linux ALSA
+- esp32: support stdin over USB Serial/JTAG Console
+- HID Keyboard Demo: Reconnect to last bonded device on startup
+- PBAP Client: add pbap_get_vcard_listing_size
+
+### Fixed
+- HCI: fix incorrect assert/regression in num completed packets handling introduced in 6ec1ca0
+- HCI: handle connection collision, ignore page timeout after incoming connection event
+- L2CAP: do not sent I-Frames in ERTM WAIT_F state
+- L2CAP: trigger retransmission for ERTM Reject and RR
+- L2CAP: fix transmission for ERTM if num rx buffers different from num tx buffers
+- RFCOMM: limit max frame size by size of outgoing buffer when ERTM enabled
+- BNEP: emit channel opened with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION if connection cannot be set up
+- GAP: store link key for standard/non-SSP pairing
+- GAP: fix gap_sniff_subrating_configure
+- SM: fix pairing as Peripheral with Extended Advertising and LE Advertisement Set Terminated after Connection Complete 
+- AVRCP Target: fix UNIT INFO response
+- AVRCP Target: fix Set Absolute Volume Response
+- AVRCP Target: fix Get Element Attributes Response
+- AVDTP: trigger SEP discovery for incoming AVDTP connection after outgoing connection was triggered
+- HID Host: emit HID_SUBEVENT_INCOMING_CONNECTION if memory allocation fails
+- HFP AG: avoid recursion with synchronous HCI transport 
+- HFP HF: return ERROR_CODE_COMMAND_DISALLOWED if indicator is not enabled
+- HFP HF: send Apple Accessory information after service level connection
+- HFP HF: send phone service info with +CNUM
+- HFP HF: handle rfcomm messages larger than 255 bytes
+ 
+### Changed
+- HCI: hci_request_cis_can_send_now_events for CIG in Central role will emit can send now events for all streams in group
+- HCI: improve sco send without sco flow control for smaller packets
+- HCI: use page scan repetition mode R1 for classic connections
+- L2CAP: return list of unknown options for invalid configuration request
+- GAP: validate params in gap_set_scan_params
+- GAP: emit Dedicated Bonding Complete after pairing without enabling encryption
+- SM: derive BR/EDR Link Key from LE LTK before sending DHKey Check
+- AVRCP Controller: avrcp_controller_query_player_application_setting_value_text queries subset of attribute values
+- AVRCP Controller: avrcp_controller_query_player_application_setting_attribute_text queries subset of attribute ids
+- HFP HF: replace HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_(READY_TO_ACCEPT_AUDIO_INPUT | IS_STARTING_SOUND | 
+          IS_PROCESSING_AUDIO_INPUT | MESSAGE) with a single HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE event
+- HFP HF: introduce timeout of 5 seconds for receiving AG OK|ERROR response on VRA commands
+- HFP HF: notify all connected AGs on HF indicator change in hfp_hf_set_hf_indicator
+- HFP HF: emit HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED with status code ERROR_CODE_UNSPECIFIED_ERROR if AG disables VRA before SCO
+- HID Host: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
+- HID Host: emit HID_SUBEVENT_INCOMING_CONNECTION if memory allocation fails
+- GATT Compiler: make profile_data static to allow one per source file
+- esp32: rework build that avoids copy of btstack files into esp-idf components folder
+- esp32: provide skeleton project for out-of-tree builds
+- max32630-fthr: updated
+- POSIX: use -b for baudrate and -m for BD_ADDR on command line
+- POSIX-H4 variants: exit on power on failure
+- POSIX: rename posix-h4-bcm to posix-h4-airoc for newer AIROC Controllers
+- STM32: updated ports to STM32CubeF4 v1.28.0
+- Zephyr: update for Zephyr v4.0
+
 ## Release v1.6.2
 
 ### Added

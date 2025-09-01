@@ -42,6 +42,7 @@
 #include "ble/att_db.h"
 #include "ble/core.h"
 #include "bluetooth.h"
+#include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
@@ -100,7 +101,7 @@ static void att_persistent_ccc_cache(att_iterator_t * it);
 static uint8_t const * att_database = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
-static int      att_prepare_write_error_code   = 0;
+static uint16_t att_prepare_write_error_code   = 0;
 static uint16_t att_prepare_write_error_handle = 0x0000;
 
 // single cache for att_is_persistent_ccc - stores flags before write callback
@@ -296,7 +297,7 @@ static void att_prepare_write_update_errors(uint8_t error_code, uint16_t handle)
         return;
     }
     // first ATT_ERROR_INVALID_OFFSET is next
-    if ((error_code == (uint8_t)ATT_ERROR_INVALID_OFFSET) && (att_prepare_write_error_code == 0)){
+    if ((error_code == (uint8_t)ATT_ERROR_INVALID_OFFSET) && (att_prepare_write_error_code == 0u)){
         att_prepare_write_error_code = error_code;
         att_prepare_write_error_handle = handle;
         return;
@@ -641,7 +642,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         }
         
         // skip handles that cannot be read but remember that there has been at least one
-        if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+        if ((it.flags & ATT_PROPERTY_READ) == 0u) {
             if (first_matching_but_unreadable_handle == 0u) {
                 first_matching_but_unreadable_handle = it.handle;
             }
@@ -752,7 +753,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     }
     
     // check if handle can be read
-    if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+    if ((it.flags & ATT_PROPERTY_READ) == 0u) {
         return setup_error_read_not_permitted(response_buffer, request_type, handle);
     }
 
@@ -810,7 +811,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     }
     
     // check if handle can be read
-    if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+    if ((it.flags & ATT_PROPERTY_READ) == 0u) {
         return setup_error_read_not_permitted(response_buffer, request_type, handle);
     }
 
@@ -895,7 +896,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
 
         // check if handle can be read
-        if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+        if ((it.flags & ATT_PROPERTY_READ) == 0u) {
             error_code = (uint8_t)ATT_ERROR_READ_NOT_PERMITTED;
             break;
         }
@@ -1125,19 +1126,19 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (att_write_callback == NULL) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_WRITE) == 0u) {
+    if ((it.flags & ATT_PROPERTY_WRITE) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_DYNAMIC) == 0u) {
+    if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
-    int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
-    if (error_code != 0) {
+    uint16_t error_code = (uint16_t) att_validate_security(att_connection, ATT_WRITE, &it);
+    if (error_code != 0u) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     att_persistent_ccc_cache(&it);
-    error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0u, request_buffer + 3u, request_len - 3u);
+    error_code = (uint16_t)(unsigned int)(*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0u, request_buffer + 3u, request_len - 3u);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (error_code == ATT_ERROR_WRITE_RESPONSE_PENDING){
@@ -1145,7 +1146,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     }
 #endif
 
-    if (error_code != 0) {
+    if (error_code != 0u) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     response_buffer[0] = (uint8_t)ATT_WRITE_RESPONSE;
@@ -1172,10 +1173,10 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     if (att_find_handle(&it, handle) == false) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_WRITE) == 0u) {
+    if ((it.flags & ATT_PROPERTY_WRITE) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_DYNAMIC) == 0u) {
+    if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
@@ -1234,8 +1235,8 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 
     if (request_buffer[1] != 0u) {
         // validate queued write
-        if (att_prepare_write_error_code == 0){
-            att_prepare_write_error_code = (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+        if (att_prepare_write_error_code == 0u){
+            att_prepare_write_error_code = (uint16_t)(unsigned int)(*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
         }
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (att_prepare_write_error_code == ATT_ERROR_WRITE_RESPONSE_PENDING){
@@ -1243,7 +1244,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         }
 #endif
         // deliver queued errors
-        if (att_prepare_write_error_code != 0){
+        if (att_prepare_write_error_code != 0u){
             att_clear_transaction_queue(att_connection);
             uint8_t  error_code = att_prepare_write_error_code;
             uint16_t handle     = att_prepare_write_error_handle;
@@ -1414,7 +1415,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
     return response_len;
 }
 
-// returns 1 if service found. only primary service.
+// returns 1 if service found.
 bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
     bool in_group    = false;
     uint16_t prev_handle = 0;
@@ -1639,6 +1640,28 @@ bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_
                 *out_included_service_end_handle = little_endian_read_16(it.value, 2);
                 return true;
             }
+        }
+    }
+    return false;
+}
+
+bool gatt_server_get_database_hash(uint8_t * hash) {
+    att_iterator_t it;
+    att_iterator_init(&it);
+    uint16_t value_handle = 0xffff;
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        // Find Characteristic declaration for Database Hash
+        if ((it.value_len == 5u) && (att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID))){
+            uint16_t characteristic_uuid = little_endian_read_16(it.value, 3);
+            if (characteristic_uuid == (uint16_t) ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH){
+                value_handle = little_endian_read_16(it.value, 1);
+            }
+        }
+        // Find Characteristic Value for Database Hash and get value
+        if ((it.handle == value_handle) && (it.value_len == 16u)){
+            att_copy_value(&it, 0, hash, 16, HCI_CON_HANDLE_INVALID);
+            return true;
         }
     }
     return false;

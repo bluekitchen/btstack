@@ -324,10 +324,18 @@ static bool l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
     return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
 }
 
-static void l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel_t * l2cap_channel){
-    log_info("Retransmit unacknowleged frames");
-    l2cap_channel->unacked_frames = 0;;
-    l2cap_channel->tx_send_index  = l2cap_channel->tx_read_index;
+static void l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel_t * l2cap_channel){
+    uint8_t tx_index = l2cap_channel->tx_read_index;
+    l2cap_channel->tx_send_index = tx_index;
+    for (uint8_t unacked_frames = l2cap_channel->unacked_frames; unacked_frames > 0 ; unacked_frames--){
+        l2cap_ertm_tx_packet_state_t * tx_packet_state = &l2cap_channel->tx_packets_state[tx_index];
+        tx_packet_state->tx_state = L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED;
+        log_info("Retransmit tx seq %u", tx_packet_state->tx_seq);
+        tx_index++;
+        if (tx_index >= l2cap_channel->num_tx_buffers){
+            tx_index = 0;
+        }
+    }
 }
 
 static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
@@ -378,7 +386,7 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
         tx_state->retry_count++;
 
         // start retransmit
-        l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+        l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
 
         // start monitor timer
         l2cap_ertm_start_monitor_timer(l2cap_channel);
@@ -404,20 +412,24 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
     tx_state->retry_count = 1;
 
     // start retransmit
-    l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+    l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
 
     // start monitor timer
     l2cap_ertm_start_monitor_timer(l2cap_channel);
  
+    // XMIT-> WAIT_F as retransmission timer has fired
+    l2cap_channel->tx_wait_for_final = true;
+
     // send RR/P=1
     l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
     l2cap_run();
 }
 
 static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index, int final){
-    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, tx_state->sar);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
@@ -427,6 +439,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     // (re-)start retransmission timer on 
     l2cap_ertm_start_retransmission_timer(channel);
     // send
+    tx_state->tx_state = L2CAP_ERTM_TX_STATE_SENT;
     return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
 }
 
@@ -438,6 +451,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     tx_state->tx_seq = channel->next_tx_seq;
     tx_state->sar = sar;
     tx_state->retry_count = 0;
+    tx_state->tx_state = L2CAP_ERTM_TX_STATE_NEW;
 
     uint8_t * tx_packet = &channel->tx_packets_data[index * channel->remote_mps];
     log_debug("index %u, local mps %u, remote mps %u, packet tx %p, len %u", index, channel->local_mps, channel->remote_mps, tx_packet, len);
@@ -778,6 +792,11 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
     }
     if (channel->local_busy){
         channel->local_busy = 0;
+
+        // XMIT-> WAIT_F as local busy has cleared
+        channel->tx_wait_for_final = true;
+
+        // send RR/P=1
         channel->send_supervisor_frame_receiver_ready_poll = 1;
         l2cap_run();
     }
@@ -810,14 +829,16 @@ static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t 
         log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
 
         l2cap_channel->tx_read_index++;
-        if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
+        if (l2cap_channel->tx_read_index >= l2cap_channel->num_tx_buffers){
+            log_info("TX Read Index %u >= Num TX Buffers %u => reset to zero",
+                l2cap_channel->tx_read_index, l2cap_channel->num_tx_buffers);
             l2cap_channel->tx_read_index = 0;
         }
     }
     if (num_buffers_acked){
         log_info("num_buffers_acked %u", num_buffers_acked);
-    l2cap_ertm_notify_channel_can_send(l2cap_channel);
-}     
+        l2cap_ertm_notify_channel_can_send(l2cap_channel);
+    }
 }     
 
 static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * l2cap_channel, uint8_t tx_seq){
@@ -902,8 +923,11 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
 }
 
 static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel){
-    channel->unacked_frames++;
     int index = channel->tx_send_index;
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
+    if (tx_state->tx_state == L2CAP_ERTM_TX_STATE_NEW){
+        channel->unacked_frames++;
+    }
     channel->tx_send_index++;
     if (channel->tx_send_index >= channel->num_tx_buffers){
         channel->tx_send_index = 0;
@@ -1731,7 +1755,7 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                     l2cap_send_classic_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id,
                                                         channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS,
-                                                        1, &channel->unknown_option);
+                                                        channel->unknown_options_count * 2, channel->unknown_options_list);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
@@ -1853,8 +1877,7 @@ static void l2cap_run_for_classic_channel_ertm(l2cap_channel_t * channel){
         int i;
         for (i=0;i<channel->num_tx_buffers;i++){
             l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
-            if (tx_state->retransmission_requested) {
-                tx_state->retransmission_requested = 0;
+            if (tx_state->tx_state == L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED) {
                 uint8_t final = channel->set_final_bit_after_packet_with_poll_bit_set;
                 channel->set_final_bit_after_packet_with_poll_bit_set = 0;
                 l2cap_ertm_send_information_frame(channel, i, final);
@@ -2653,10 +2676,27 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
         case L2CAP_CHANNEL_TYPE_CLASSIC:
             if (channel->state != L2CAP_STATE_OPEN) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-            // send if we have more data and remote windows isn't full yet
+            // send new frames or retransmit unacknowledged frames
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
-                if (channel->unacked_frames >= btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)) return false;
-                return hci_can_send_acl_packet_now(channel->con_handle);
+                if (channel->tx_wait_for_final) return false;
+                uint8_t max_tx_frames = (uint8_t) btstack_min(channel->remote_tx_window_size, channel->num_stored_tx_frames);
+                bool request_send = channel->unacked_frames < max_tx_frames;
+                uint8_t tx_index = channel->tx_read_index;
+                for (uint8_t unacked_frames = channel->unacked_frames; (request_send == false) && (unacked_frames > 0) ; unacked_frames--){
+                    const l2cap_ertm_tx_packet_state_t * tx_packet_state = &channel->tx_packets_state[tx_index];
+                    if (tx_packet_state->tx_state == L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED) {
+                        channel->tx_send_index = tx_index;
+                        request_send = true;
+                    } else {
+                        tx_index++;
+                        if (tx_index >= channel->num_tx_buffers){
+                            tx_index = 0;
+                        }
+                    }
+                }
+                if (request_send) {
+                    return hci_can_send_acl_packet_now(channel->con_handle);
+                }
             }
 #endif
             if (!channel->waiting_for_can_send_now) return false;
@@ -3223,6 +3263,20 @@ void l2cap_decline_connection(uint16_t local_cid){
     l2cap_run();
 }
 
+static void l2cap_signaling_handle_unknown_option_type(l2cap_channel_t* channel, uint8_t option_type) {
+    // check if already reported
+    for (int i = 0; i < channel->unknown_options_count; i++){
+        if (channel->unknown_options_list[i] == option_type){
+            return;
+        }
+    }
+    if (channel->unknown_options_count < MAX_NR_L2CAP_UNKNOWN_OPTIONS){
+        log_info("l2cap cid %u, unknown option 0x%02x -> pos %u", channel->local_cid, option_type, channel->unknown_options_count);
+        channel->unknown_options_list[channel->unknown_options_count++] = option_type;
+    }
+    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+}
+
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
 
@@ -3231,6 +3285,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 #endif
 
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+    channel->unknown_options_count = 0;
 
     uint16_t flags = little_endian_read_16(command, 6);
     if (flags & 1) {
@@ -3328,30 +3383,34 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             use_fcs = command[pos];
         }        
 #endif        
-        // check for unknown options
+        // handle unknown option
         if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
-            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
-            channel->unknown_option = option_type;
-            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+            l2cap_signaling_handle_unknown_option_type(channel, option_type);
         }
         pos += length;
     }
 
+    if (channel->unknown_options_count > 0) {
+        log_info("Unknown options: %u\n", channel->unknown_options_count);
+        log_info_hexdump(channel->unknown_options_list, channel->unknown_options_count * 2);
+    }
+
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-        // "FCS" has precedence over "No FCS"
-        uint8_t update = channel->fcs_option || use_fcs;
-        log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
-        channel->fcs_active = update;
-        // If ERTM mandatory, but remote didn't send Retransmission and Flowcontrol options -> disconnect
-        if (((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM) == 0) & (channel->ertm_mandatory)){
-            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-        }
+    // "FCS" has precedence over "No FCS"
+    uint8_t update = channel->fcs_option || use_fcs;
+    log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
+    channel->fcs_active = update;
+    // If ERTM mandatory, but remote didn't send Retransmission and Flowcontrol options -> disconnect
+    if (((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM) == 0) & (channel->ertm_mandatory)){
+        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    }
 #endif
 }
 
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint16_t result, uint8_t *command){
     log_info("l2cap_signaling_handle_configure_response");
+    channel->unknown_options_count = 0;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 10;
@@ -3387,11 +3446,9 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
             }
         }
 
-        // check for unknown options
-        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
-            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
-            channel->unknown_option = option_type;
-            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+        // handle unknown option
+        if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
+            l2cap_signaling_handle_unknown_option_type(channel, option_type);
         }
 
         pos += length;
@@ -4639,6 +4696,12 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
         uint16_t control = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
         uint8_t  req_seq = (control >> 8) & 0x3f;
         int final = (control >> 7) & 0x01;
+
+        // WAIT_F -> XMIT on receive packet with F=1
+        if (final) {
+            l2cap_channel->tx_wait_for_final = false;
+        }
+
         if (control & 1){
             // S-Frame
             int poll  = (control >> 4) & 0x01;
@@ -4682,14 +4745,16 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                             l2cap_ertm_start_retransmission_timer(l2cap_channel);
                         }
                         // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
-                        l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                        l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
                     }
+                    l2cap_notify_channel_can_send();
                     break;
                 case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                     log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
                     l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
-                    // restart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
-                    l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                    // restart transmission from last unacknowledged packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                    l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
+                    l2cap_notify_channel_can_send();
                     break;
                 case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
                     log_error("L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY");
@@ -4704,7 +4769,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                     if (tx_state){
                         log_info("Retransmission for tx_seq %u requested", req_seq);
                         l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = poll;
-                        tx_state->retransmission_requested = 1;
+                        tx_state->tx_state = L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED;
                         l2cap_channel->srej_active = 1;
                     }
                     break;
@@ -4722,7 +4787,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
             l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
             if (final){
                 // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
-                l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
             }
 
             // get SDU

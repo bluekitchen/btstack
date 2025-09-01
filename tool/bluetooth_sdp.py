@@ -38,8 +38,8 @@ defines = []
 
 # Convert CamelCase to snake_case from http://stackoverflow.com/a/1176023
 def camel_to_underscore(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).upper()
+    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).upper()
 
 def create_pretty_define(name):
     name = name.lstrip()
@@ -105,7 +105,7 @@ def scrape_page(fout, url):
 
     # test: fetch from local file 'service-discovery.html'
     # f = codecs.open("service-discovery.html", "r", "utf-8")
-    # content = f.read();
+    # content = f.read()
 
     tree = html.fromstring(content)
 
@@ -166,7 +166,7 @@ def scrape_page(fout, url):
         process_rows(fout, rows, '#define BLUETOOTH_ATTRIBUTE_%-54s %s // %s\n')
         # scrape_attributes(fout, tree, table_name)
     # see above
-    fout.write('#define BLUETOOTH_ATTRIBUTE_GNSS_SUPPORTED_FEATURES                                0x0200\n');
+    fout.write('#define BLUETOOTH_ATTRIBUTE_GNSS_SUPPORTED_FEATURES                                0x0200\n')
     
 
 

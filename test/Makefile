@@ -90,6 +90,8 @@ clean:
 	done
 	rm -f *.info
 	rm -rf coverage coverage-unit-ble
+	find . -name "*.gcda" -delete
+	find . -name "*.gcno" -delete
 
 subdirs-coverage:
 	echo Run all tests for coverage
@@ -107,29 +109,25 @@ subdirs-coverage-ble:
 
 
 coverage-unit.info: subdirs-coverage
-	# delete trace data
-	find . -name "*.gcda" -type f -delete
 	# run tests
 	$(MAKE) subdirs-coverage
 	# collect traces
-	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
+	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
 
 coverage-unit-ble.info: subdirs-coverage-ble
-	# delete trace data
-	find . -name "*.gcda" -type f -delete
 	# run tests
 	$(MAKE) subdirs-coverage-ble
 	# collect traces
-	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
+	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
 
 
 coverage-all: coverage-unit.info
 	# generate html output
-	genhtml coverage-unit.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
+	genhtml coverage-unit.info --ignore-errors inconsistent --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
 
 coverage-unit-ble: coverage-unit-ble.info
 	# generate html output
-	genhtml coverage-unit-ble.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit-ble
+	genhtml coverage-unit-ble.info --ignore-errors inconsistent --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit-ble
 
 
 coverage: coverage-all coverage-unit-ble

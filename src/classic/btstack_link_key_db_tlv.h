@@ -40,6 +40,7 @@
  *
  * Interface to provide link key storage via BTstack's TLV storage.
  *
+ * @TLV 'BLT' x
  */
 
 #ifndef BTSTACK_LINK_KEY_DB_TLV_H

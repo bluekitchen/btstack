@@ -90,8 +90,9 @@ int btstack_main(int argc, const char * argv[]){
         printf("BTstack Audio Sink not setup\n");
         return 10;
     }
-    audio->init(NUM_CHANNELS, 44100, &audio_playback);
-    audio->start_stream();
+    audio->init(NUM_CHANNELS, 48000, &audio_playback);
+    audio->set_volume(70);
+	audio->start_stream();
 
     return 0;
 }

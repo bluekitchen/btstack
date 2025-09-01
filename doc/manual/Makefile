@@ -17,7 +17,7 @@ docs-markdown:
 
 	# create mkdocs-temp.yml
 	./update_mkdocs_yml.sh
-	
+
 	# following should create files in docs-markdown
 
 	# Use chipsets/readme as chipsets.md
@@ -38,21 +38,37 @@ docs-markdown:
 	# create docs-markdown/gatt_clients.md and  docs-template/gatt_services.md
 	./markdown_create_gatt_services_and_clients.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
 
-docs: docs-markdown 
+docs: docs-markdown
 	# create new docs
 	rm -rf ${MKDOCS_FOLDER}
 	cp -r ${MARKDOWN_FOLDER} ${MKDOCS_FOLDER}
 
 	# docs-markdown -> docs
 	./markdown_update_references.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} -g ${GITHUB_URL}
-	
+
 
 html: docs
 	# generate HTML into btstack folder
 	mkdocs build --clean
-	
-	# post-process HTML using references.p 
+
+	# post-process HTML using references.p
 	./html_postprocess_code_blocks.py -o ${HTML_FOLDER}
+
+pdf_old: docs
+	rm -rf ${LATEX_FOLDER}
+	mkdir -p ${LATEX_FOLDER}
+	cp -r ${MKDOCS_FOLDER}/picts ${LATEX_FOLDER}
+
+	cp mkdocs-latex.yml mkdocs.yml
+	# create latex/btstack_gettingstartec.tex with version
+	./update_getting_started.sh ${LATEX_FOLDER}
+
+	# create latex/btstack_generated.md -> latex/btstack_final.tex
+	./markdown2tex.py  -i ${MKDOCS_FOLDER} -o ${LATEX_FOLDER}
+
+	cp ${MKDOCS_FOLDER}/ports/*.jpg ${MKDOCS_FOLDER}/ports/*.png ${LATEX_FOLDER}
+	cd ${LATEX_FOLDER} && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
+	mv ${LATEX_FOLDER}/btstack_gettingstarted.pdf btstack.pdf
 
 pdf: docs
 	rm -rf ${LATEX_FOLDER}
@@ -62,13 +78,19 @@ pdf: docs
 	cp mkdocs-latex.yml mkdocs.yml
 	# create latex/btstack_gettingstartec.tex with version
 	./update_getting_started.sh ${LATEX_FOLDER}
-	
+
 	# create latex/btstack_generated.md -> latex/btstack_final.tex
 	./markdown2tex.py  -i ${MKDOCS_FOLDER} -o ${LATEX_FOLDER}
-	
+
 	cp ${MKDOCS_FOLDER}/ports/*.jpg ${MKDOCS_FOLDER}/ports/*.png ${LATEX_FOLDER}
-	cd ${LATEX_FOLDER} && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
-	mv ${LATEX_FOLDER}/btstack_gettingstarted.pdf btstack.pdf
+	cd ${LATEX_FOLDER} && pandoc -f markdown -t pdf --listings btstack_generated.md -o btstack_generated.pdf --pdf-engine=weasyprint
+
+	# create cover page
+	echo "" > ${LATEX_FOLDER}/btstack_final.tex
+	cd ${LATEX_FOLDER} && pdflatex btstack_gettingstarted.tex
+
+	# combine title with reset: it uses bookmarks from first file but combines the other two
+	qpdf latex/btstack_generated.pdf --pages latex/btstack_gettingstarted.pdf 1 latex/btstack_generated.pdf -- btstack.pdf
 
 preview: docs
 	# race condition, open browser before starting MKdocs server
@@ -77,8 +99,6 @@ preview: docs
 
 clean:
 	rm -rf ${MARKDOWN_FOLDER} ${LATEX_FOLDER} ${HTML_FOLDER} ${MKDOCS_FOLDER}
-	rm -f *.pdf 
-	rm -f references.p 
-	rm -f mkdocs.yml mkdocs-latex.yml mkdocs-temp.yml 
-
-	
+	rm -f *.pdf
+	rm -f references.p
+	rm -f mkdocs.yml mkdocs-latex.yml mkdocs-temp.yml

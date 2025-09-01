@@ -1265,8 +1265,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
 
-                    btstack_assert(client->required_protocol_mode != HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT);
-                            
                     switch (client->required_protocol_mode){
                         case HID_PROTOCOL_MODE_REPORT:
                             for (i = 0; i < client->num_instances; i++){

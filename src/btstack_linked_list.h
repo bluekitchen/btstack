@@ -114,7 +114,7 @@ btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t
  * @param list
  * @return first element or NULL if list is empty
  */
-btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);   
+btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);
 
 /**
  * @brief Counts number of items in list

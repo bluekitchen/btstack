@@ -96,9 +96,11 @@ ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
 ${BTSTACK_ROOT}/src/ble/gatt_client.c \
+${BTSTACK_ROOT}/src/ble/gatt_service_client.c \
 ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
 ${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
 ${BTSTACK_ROOT}/src/ble/sm.c \
@@ -144,8 +146,9 @@ ${BTSTACK_ROOT}/src/classic/hid_device.c \
 ${BTSTACK_ROOT}/src/classic/hid_host.c \
 ${BTSTACK_ROOT}/src/classic/hsp_ag.c \
 ${BTSTACK_ROOT}/src/classic/hsp_hs.c \
-${BTSTACK_ROOT}/src/classic/obex_parser.c \
 ${BTSTACK_ROOT}/src/classic/obex_message_builder.c \
+${BTSTACK_ROOT}/src/classic/obex_parser.c \
+${BTSTACK_ROOT}/src/classic/obex_srm_client.c \
 ${BTSTACK_ROOT}/src/classic/pan.c \
 ${BTSTACK_ROOT}/src/classic/pbap_client.c \
 ${BTSTACK_ROOT}/src/classic/rfcomm.c \

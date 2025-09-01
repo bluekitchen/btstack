@@ -8,51 +8,64 @@ import shutil
 import subprocess
 import sys
 
+from create_project_makefile import createProjectMakefile
+
 # build all template
 build_all = '''
 SUBDIRS =  \\
 %s
 
+include template/Categories.mk
+
 all:
-\techo Building all examples
+\t@echo Building all examples
 \tfor dir in $(SUBDIRS); do \\
-\t$(MAKE) -C $$dir || exit 1; \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+general:
+\t@echo Building general examples
+\tfor dir in $(EXAMPLES_GENERAL); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+classic:
+\t@echo Building classic examples
+\tfor dir in $(EXAMPLES_CLASSIC_ONLY); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+ble:
+\t@echo Building ble examples
+\tfor dir in $(EXAMPLES_LE_ONLY); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+dual:
+\t@echo Building dual examples
+\tfor dir in $(EXAMPLES_DUAL_MODE); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 clean:
-\techo Cleaning all ports
+\t@echo Cleaning all examples
 \tfor dir in $(SUBDIRS); do \\
-\t$(MAKE) -C $$dir clean; \\
+\t\t$(MAKE) -C $$dir clean; \\
 \tdone
 '''
 
 # get script path
-script_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../'
-
+print(os.path.dirname(sys.argv[0]))
+script_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '..'))
+print(script_path)
 # get btstack root
-btstack_root = script_path + '../../'
-
-## pick correct init script based on your hardware
-# - init script for CC2564B
-cc256x_init_script = 'bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c'
-
-subprocess.call("make -f ../Makefile -C src " + cc256x_init_script, shell=True)
-
-# fetch init script
-# print("Creating init script %s" % cc256x_init_script)
-# make_template = 'make -f {BTSTACK_ROOT}chipset/cc256x/Makefile.inc -C {SCRIPT_PATH}src/ {INIT_SCRIPT} BTSTACK_ROOT={BTSTACK_ROOT}'
-# make_command = make_template.format(BTSTACK_ROOT=btstack_root, SCRIPT_PATH=script_path, INIT_SCRIPT=cc256x_init_script)
-# print(make_command)
-# subprocess.call(make_command)
-
+btstack_root = os.path.abspath(os.path.join(script_path, '../..'))
+print(btstack_root)
 # path to examples
-examples_embedded = btstack_root + 'example/'
+examples_embedded = os.path.join(btstack_root, 'example')
 
 # path to generated example projects
-projects_path = script_path + "example/"
-
-# path to template
-template_path = script_path + 'example/template/Makefile'
+projects_path = os.path.join(script_path, "example")
 
 print("Creating example projects:")
 
@@ -64,38 +77,28 @@ examples = []
 for file in example_files:
     if not file.endswith(".c"):
         continue
-    if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c']:
+    if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'mesh_node_demo.c']:
         continue
+    if file.startswith('le_audio_demo'):
+        continue
+
     example = file[:-2]
     examples.append(example)
 
     # create folder
-    project_folder = projects_path + example + "/"
+    project_folder = os.path.join(projects_path, example)
     if not os.path.exists(project_folder):
         os.makedirs(project_folder)
 
     # check if .gatt file is present
-    gatt_path = examples_embedded + example + ".gatt"
+    gatt_path = os.path.join(examples_embedded, example + ".gatt")
     gatt_h = ""
     if os.path.exists(gatt_path):
-        gatt_h = example+'.h'
+        gatt_h = example + '.h'
 
-    # create makefile
-    with open(project_folder + 'Makefile', 'wt') as fout:
-        with open(template_path, 'rt') as fin:
-            for line in fin:
-                if 'PROJECT=spp_and_le_streamer' in line:
-                    fout.write('PROJECT=%s\n' % example)
-                    continue
-                if 'all: spp_and_le_streamer.h' in line:
-                    if len(gatt_h):
-                        fout.write("all: %s\n" % gatt_h)
-                    continue
-                fout.write(line)
+    createProjectMakefile(project_folder, btstack_root, gatt_h)
 
-    print("- %s" % example)
-
-with open(projects_path+'Makefile', 'wt') as fout:
+with open(os.path.join(projects_path, 'Makefile'), 'wt') as fout:
     fout.write(build_all % ' \\\n'.join(examples))
 
 print("Projects are ready for compile in example folder. See README for details.")

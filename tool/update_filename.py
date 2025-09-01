@@ -5,7 +5,7 @@ import re
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 
 filetag = '#define BTSTACK_FILE__ "%s"\n'
-filetag_re = '#define BTSTACK_FILE__ \"(.*)\"'
+filetag_re = r'#define BTSTACK_FILE__ "(.*)"'
 
 ignoreFolders = ["3rd-party", "pic32-harmony", "msp430", "cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset/cc256x", "docs", "mtk", "port"]
 ignoreFiles =   ["ant_cmds.h", "rijndael.c", "btstack_config.h", "btstack_version.h", "profile.h", "bluetoothdrv.h", 
@@ -32,13 +32,13 @@ def update_filename_tag(dir_name, file_name, has_tag):
 			for line in fin:
 				if state == State.SearchStartComment:
 					fout.write(line)
-					parts = re.match('\s*(/\*).*(\*/)',line)
+					parts = re.match(r'\s*(/\*).*(\*/)',line)
 					if parts:
 						if len(parts.groups()) == 2:
 							# one line comment
 							continue
 						
-					parts = re.match('\s*(/\*).*',line)
+					parts = re.match(r'\s*(/\*).*',line)
 					if parts: 
 						# beginning of comment
 						state = State.SearchCopyrighter
@@ -46,7 +46,7 @@ def update_filename_tag(dir_name, file_name, has_tag):
 					
 				if state == State.SearchCopyrighter:
 					fout.write(line)
-					parts = re.match('.*(\*/)',line)
+					parts = re.match(r'.*(\*/)',line)
 					if parts:
 						# end of comment
 						state = State.SearchStartComment

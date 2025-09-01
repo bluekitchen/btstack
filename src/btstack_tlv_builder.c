@@ -61,11 +61,11 @@ void btstack_tlv_builder_init(btstack_tlv_builder_context_t * context, uint8_t *
     context->write_pos = 0;
 }
 
-uint16_t btstack_tlv_builder_remaining_space(btstack_tlv_builder_context_t * context){
+uint16_t btstack_tlv_builder_remaining_space(const btstack_tlv_builder_context_t* context){
     return context->size - context->write_pos;
 }
 
-uint16_t btstack_tlv_builder_get_length(btstack_tlv_builder_context_t * context){
+uint16_t btstack_tlv_builder_get_length(const btstack_tlv_builder_context_t* context){
     return context->write_pos;
 }
 

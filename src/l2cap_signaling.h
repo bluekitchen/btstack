@@ -45,7 +45,8 @@
 
 #include <stdint.h>
 #include <stdarg.h>
-#include "btstack_util.h"
+
+#include "btstack_config.h"
 #include "hci_cmd.h"
 
 #if defined __cplusplus
@@ -79,7 +80,8 @@ typedef enum {
 #endif     
     // internal to BTstack
     SM_PAIRING_FAILED = 0x1E,
-    COMMAND_REJECT_LE = 0x1F
+    COMMAND_REJECT_LE = 0x1F,
+    CONFIGURE_RESPONSE_UNKNOWN_OPTIONS = 0x20,
 } L2CAP_SIGNALING_COMMANDS;
 
 typedef enum {

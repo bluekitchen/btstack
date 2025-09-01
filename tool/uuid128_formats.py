@@ -17,7 +17,7 @@ def twoByteLEFor(value):
     return [ (value & 0xff), (value >> 8)]
 
 def parseUUID128(uuid):
-    parts = re.match("([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})", uuid)
+    parts = re.match(r"([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})", uuid)
     uuid_bytes = []
     for i in range(8, 0, -1):
         uuid_bytes = uuid_bytes + twoByteLEFor(int(parts.group(i),16))

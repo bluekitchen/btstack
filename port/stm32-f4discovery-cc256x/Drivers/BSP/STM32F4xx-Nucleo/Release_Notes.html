@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for STM32F4xx-Nucleo Board Drivers</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="_htmresc/mini-st_2020.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <link rel="icon" type="image/x-icon" href="_htmresc/favicon.png" />
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<center>
+<h1 id="release-notes-for">Release Notes for</h1>
+<h1 id="stm32f4xx-nucleo-board-drivers"><mark>STM32F4xx-Nucleo Board Drivers</mark></h1>
+<p>Copyright © 2017 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="_htmresc/st_logo_2020.png" alt="ST logo" /></a>
+</center>
+<h1 id="purpose">Purpose</h1>
+<p>This directory contains the board drivers to demonstrate the capabilities of the STM32F4xx-Nucleo Board Drivers.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section13" checked aria-hidden="true"> <label for="collapse-section13" aria-hidden="true">V1.2.9 / 22-September-2023</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<ul>
+<li>Update Release_Notes.html to support new format</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section12" aria-hidden="true"> <label for="collapse-section12" aria-hidden="true">V1.2.8 / 11-Fabruary-2022</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<ul>
+<li>All source files: update disclaimer to add reference to the new license agreement</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section11" aria-hidden="true"> <label for="collapse-section11" aria-hidden="true">V1.2.7 / 25-September-2017</label>
+<div>
+<h2 id="main-changes-2">Main Changes</h2>
+<ul>
+<li>Add general description of BSP drivers</li>
+<li>Remove date &amp; version</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section10" aria-hidden="true"> <label for="collapse-section10" aria-hidden="true">V1.2.6 / 27-January-2017</label>
+<div>
+<h2 id="main-changes-3">Main Changes</h2>
+<ul>
+<li>Replace __PPP_CLK_ENABLE/DISABLE with __HAL_RCC_PPP_ENABLE/DISABLE</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section9" aria-hidden="true"> <label for="collapse-section9" aria-hidden="true">V1.2.5 / 06-May-2016</label>
+<div>
+<h2 id="main-changes-4">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.c
+<ul>
+<li>BSP_JOY_GetState() alignment with HAL ADC driver V1.4.4</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section8" aria-hidden="true"> <label for="collapse-section8" aria-hidden="true">V1.2.4 / 12-January-2016</label>
+<div>
+<h2 id="main-changes-5">Main Changes</h2>
+<ul>
+<li>General updates to fix doxygen errors</li>
+<li>Add STM32F4-Nucleo_BSP_User_Manual.chm file</li>
+<li>Add use of UNUSED(data) in LCD_IO_WriteMultipleData() to fix “Unused variable” warning with SW4STM32</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section7" aria-hidden="true"> <label for="collapse-section7" aria-hidden="true">V1.2.3 / 13-November-2015</label>
+<div>
+<h2 id="main-changes-6">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.c
+<ul>
+<li>Add SD_IO_CSSState(), SD_IO_WriteReadData() and SD_IO_WriteReadData() APIs for proper support of the Adafruit shield V2.0.1</li>
+<li>Add new API for Button, LED and Joystick deinitialization: BSP_PB_DeInit(), BSP_LED_DeInit(), BSP_JOY_DeInit()</li>
+<li>Replace static APIs SPIx_Read(), SD_IO_ReadByte(), SD_IO_WriteCmd(), SD_IO_WaitResponse() and SD_IO_WriteDummy() by SD_IO_WriteReadData() API.</li>
+</ul></li>
+<li>stm32f4xx_nucleo.h
+<ul>
+<li>Add new define “ADAFRUIT_TFT_JOY_SD_ID802” for the Adafruit TFT shield support.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section6" aria-hidden="true"> <label for="collapse-section6" aria-hidden="true">V1.2.2 / 14-August-2015</label>
+<div>
+<h2 id="main-changes-7">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.h
+<ul>
+<li>Add alias to BUTTON_USER for backward compatibility.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section5" aria-hidden="true"> <label for="collapse-section5" aria-hidden="true">V1.2.1 / 02-March-2015</label>
+<div>
+<h2 id="main-changes-8">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.c/.h
+<ul>
+<li>Align to STM32F4xx HAL Driver V1.3.0 for __HAL_RCC_PPP_CLK_ENABLE() .</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V1.2.0 / 26-December-2014</label>
+<div>
+<h2 id="main-changes-9">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.c
+<ul>
+<li>Add LCD_IO_WriteMultipleData() LCD IO function, needed for ST7735 BSP component driver.</li>
+</ul></li>
+<li>Note: This driver version V1.2.0 needs ST7735 BSP component driver V1.1.0 and later.</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section3" aria-hidden="true"> <label for="collapse-section3" aria-hidden="true">V1.1.1 / 10-December-2014</label>
+<div>
+<h2 id="main-changes-10">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.c
+<ul>
+<li>BSP_BP_Init(): Fix limitation on button pin configuration (change EXTI polarity from rising to falling)</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.1.0 / 19-June-2014</label>
+<div>
+<h2 id="main-changes-11">Main Changes</h2>
+<ul>
+<li>stm32f4xx_nucleo.c/.h
+<ul>
+<li>Update driver to support LCD, joystick and microSD available on Adafruit 1.8" shield (reference ID 802) by adding the SPI and ADC IO link operations</li>
+<li>Enhance BSP_PB_Init() function by removing the call of __SYSCFG_CLK_ENABLE() already enabled in the HAL_GPIO_Init()</li>
+<li>Correct BSP_LED_Off() and BSP_LED_On() by inverting GPIO_PIN_RESET/ GPIO_PIN_SET values written on GPIO pins</li>
+<li>Comments clean up and typo corrections</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section1" aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 18-February-2014</label>
+<div>
+<h2 id="main-changes-12">Main Changes</h2>
+<ul>
+<li>First official release</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<footer class="sticky">
+For complete documentation on <mark>STM32 Microcontrollers</mark> , visit: <a href="http://www.st.com/STM32">http://www.st.com/STM32</a>
+</footer>
+</body>
+</html>

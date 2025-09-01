@@ -44,7 +44,7 @@ list(REMOVE_ITEM SOURCES_BLE ${SOURCES_OFF})
 
 set(SOURCES_MESH_NEW main.c)
 
-set(SOURCES 
+set(SOURCES
 	${SOURCES_POSIX}
 	${SOURCES_LIBUSB}
 	${SOURCES_SRC}
@@ -71,7 +71,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-    		COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h > /dev/null
+            COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h > /dev/null
 		)
 		add_executable(${EXAMPLE} ${EXAMPLE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 	else()
@@ -85,7 +85,7 @@ endforeach(EXAMPLE_FILE)
 find_package(PkgConfig REQUIRED)
 
 # CppuTest
-pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+pkg_check_modules(CPPUTEST REQUIRED cpputest)
 include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARY_DIRS})
 link_libraries(${CPPUTEST_LIBRARIES})

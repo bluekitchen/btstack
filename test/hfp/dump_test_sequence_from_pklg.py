@@ -60,9 +60,9 @@ with open (infile, 'rb') as fin:
                 packet = packet.replace("\r","\\r")
                 packet = packet.replace("\"","\\\"")
                 
-                parts = re.match('HFP_RX(.*)',packet)
+                parts = re.match(r'HFP_RX(.*)',packet)
                 if not parts:
-                    parts = re.match('HFP_TX(.*)',packet)
+                    parts = re.match(r'HFP_TX(.*)',packet)
                 
                 cmd = 0
                 if parts:
@@ -75,7 +75,7 @@ with open (infile, 'rb') as fin:
                             separator = ",\n"
                         
                 else:
-                    parts = re.match('USER:\'(.*)\'.*',packet)
+                    parts = re.match(r"USER:'(.*)'.*",packet)
                     if parts:
                         cmd = 'USER:'+parts.groups()[0]
                         print (separator+spaces+"\""+cmd+"\"",)

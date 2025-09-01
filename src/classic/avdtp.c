@@ -243,6 +243,7 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
     }
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
     connection->a2dp_source_config_process.discover_seps = false;
     connection->a2dp_sink_config_process.discover_seps = false;
@@ -325,12 +326,12 @@ static void avdtp_handle_start_sdp_client_query(void * context){
                         break;
                     default:
                         btstack_unreachable();
-                        break;
+                        return;
                 }
                 break;
             default:
                 btstack_unreachable();
-                break;
+                return;
         }
 
         // Start & track query
@@ -499,6 +500,15 @@ void avdtp_source_register_media_config_validator(uint8_t (*callback)(const avdt
 
 uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
                                            uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec) {
+
+    uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
+    uint16_t size = 0;
+    codec_specific_error_code_t codec_specific_error_code = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec, &size);
+
+    if (codec_specific_error_code != CODEC_SPECIFIC_ERROR_CODE_ACCEPT){
+        return (uint8_t) codec_specific_error_code;
+    }
+
     uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
     if (stream_endpoint->sep.type == AVDTP_SOURCE){
         callback = avdtp_source_media_config_validator;
@@ -507,10 +517,8 @@ uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream
     }
     if (callback == NULL) {
         // config valid
-        return 0;
+        return ERROR_CODE_SUCCESS;
     }
-    uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
-    uint16_t size = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec);
     return (*callback)(stream_endpoint, event, size);
 }
 
@@ -683,6 +691,19 @@ static void avdtp_finalize_connection(avdtp_connection_t * connection){
     btstack_memory_avdtp_connection_free(connection);
 }
 
+static void avdtp_start_sep_query_if_idle(avdtp_connection_t * connection, bool have_get_all_capabilities) {
+    if (connection->acceptor_connection_state == AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE) {
+        if (have_get_all_capabilities){
+            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
+        } else {
+            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
+        }
+        avdtp_request_can_send_now_initiator(connection);
+    } else {
+        log_info("avdtp_start_sep_query_if_idle: sep query already active");
+    }
+}
+
 static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8_t status){
     switch (connection->state){
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
@@ -692,8 +713,7 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
 
         case AVDTP_SIGNALING_CONNECTION_OPENED:
             // SDP query failed: try query that must be supported
-            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
-			avdtp_request_can_send_now_initiator(connection);
+            avdtp_start_sep_query_if_idle(connection, false);
             return;
         
         default:
@@ -710,12 +730,7 @@ static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
     
     switch (connection->state){
         case AVDTP_SIGNALING_CONNECTION_OPENED:
-            if (connection->avdtp_version < 0x0103){
-                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
-            } else {
-                connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
-            }
-			avdtp_request_can_send_now_initiator(connection);
+            avdtp_start_sep_query_if_idle(connection, connection->avdtp_version >= 0x0103);
             break;
         default:
             connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
@@ -884,8 +899,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             if (channel == stream_endpoint->l2cap_media_cid){
-                btstack_assert(avdtp_sink_handle_media_data);
-                (*avdtp_sink_handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
+                if (avdtp_sink_handle_media_data != NULL){
+                    (*avdtp_sink_handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
+                }
                 break;
             } 
 

@@ -49,6 +49,20 @@ extern "C" {
 #endif
 
 /**
+ * Mesh Network Stack
+ *
+ * @TLV 'MA' x x
+ * @TLV 'MB' x x
+ * @TLV 'MFIS
+ * @TLV 'MFND
+ * @TLV 'MN' x x
+ * @TLV 'MP' x x
+ * @TLV 'MS' x x
+ * @TLV 'MV' x x
+ * @TLV 'PROV'
+ */
+
+/**
  * Init Mesh network stack
  */
 void mesh_init(void);

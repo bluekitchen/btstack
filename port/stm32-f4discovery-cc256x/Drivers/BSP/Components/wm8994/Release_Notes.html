@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for WM8994 Component Drivers</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="_htmresc/mini-st_2020.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <link rel="icon" type="image/x-icon" href="_htmresc/favicon.png" />
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<center>
+<h1 id="release-notes-for">Release Notes for</h1>
+<h1 id="wm8994-component-drivers"><mark>WM8994 Component Drivers</mark></h1>
+<p>Copyright © 2016 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="_htmresc/st_logo_2020.png" alt="ST logo" /></a>
+</center>
+<h1 id="purpose">Purpose</h1>
+<p>This directory contains the board drivers to demonstrate the capabilities of the WM8994 Component Drivers.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section9" checked aria-hidden="true"> <label for="collapse-section9" aria-hidden="true">V2.3.2 / 19-June-2023</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<ul>
+<li>Update Release_Notes.html to support new format</li>
+<li>All source files: update disclaimer to add reference to the new license agreement</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section8" aria-hidden="true"> <label for="collapse-section8" aria-hidden="true">V2.3.1 / 03-April-2019</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<ul>
+<li>Update release notes format</li>
+<li>Reformat the BSD 3-Clause license declaration in the files header (replace license terms by a web reference to OSI website where those terms lie)</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section7" aria-hidden="true"> <label for="collapse-section7" aria-hidden="true">V2.3.0 / 24-January-2018</label>
+<div>
+<h2 id="main-changes-2">Main Changes</h2>
+<ul>
+<li>wm8994.c: fix no audio output issue</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section6" aria-hidden="true"> <label for="collapse-section6" aria-hidden="true">V2.2.0 / 05-June-2017</label>
+<div>
+<h2 id="main-changes-3">Main Changes</h2>
+<ul>
+<li>Add support of ColdStartup sequence for headphone
+<ul>
+<li>Unmute is performed in a gradual way to minimize pop noise.</li>
+<li>Update wm8994_SetFrequency to support AUDIO_FREQUENCY_32K</li>
+<li>Update comments to be used for PDSC generation</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section5" aria-hidden="true"> <label for="collapse-section5" aria-hidden="true">V2.1.0 / 22-Fabruary-2016</label>
+<div>
+<h2 id="main-changes-4">Main Changes</h2>
+<ul>
+<li>wm8994.c
+<ul>
+<li>Update wm8994_Init() by adding the support of analog microphone connected to INPUT LINE 1, INPUT_DEVICE_DIGITAL_MICROPHONE_1 and INPUT_DEVICE_DIGITAL_MIC1_MIC2</li>
+<li>Add AUDIO_FREQUENCY_32K as possible AudioFreq value</li>
+</ul></li>
+<li>wm8994.h
+<ul>
+<li>Add INPUT_DEVICE_DIGITAL_MIC1_MIC2 define</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V2.0.0 / 24-June-2015</label>
+<div>
+<h2 id="main-changes-5">Main Changes</h2>
+<ul>
+<li>wm8994.h
+<ul>
+<li>Add codec de-initialization function: wm8994_DeInit()</li>
+<li>Add Audio IO de-initialization function prototype: AUDIO_IO_DeInit()</li>
+<li>Add INPUT_DEVICE_INPUT_LINE_1 and INPUT_DEVICE_INPUT_LINE_1 support for AUDIO IN</li>
+<li>Add Input audio volume control support</li>
+</ul></li>
+<li>wm8994.c
+<ul>
+<li>Update wm8994_Init() function to support the Audio IN</li>
+<li>Update wm8994_Stop() function to only stop the codec if it was configured</li>
+<li>Enable VMID_BUF_ENA bit in R57 ANTIPOP register (address 0x39) for all configurations</li>
+</ul></li>
+</ul>
+<p><strong><span class="underline"><span style="font-size: 10pt; font-family: Verdana; color: black;">NOTE</span></span></strong> This release must be used with BSP Common driver V4.0.0 or later.</p>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section3" aria-hidden="true"> <label for="collapse-section3" aria-hidden="true">V1.0.2 / 12-Fabruary-2015</label>
+<div>
+<h2 id="main-changes-6">Main Changes</h2>
+<ul>
+<li>wm8994.c: Update the wm8994_Init() function to set the volume after enabling the dynamic charge pump power control mode</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.0.1 / 28-November-2014</label>
+<div>
+<h2 id="main-changes-7">Main Changes</h2>
+<ul>
+<li>wm8994.h: change “” by “/” in the include path to fix compilation issue with Linux</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section1" aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 18-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-8">Main Changes</h2>
+<ul>
+<li>First official release</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<footer class="sticky">
+For complete documentation on <mark>STM32 Microcontrollers</mark> , visit: <a href="http://www.st.com/STM32">http://www.st.com/STM32</a>
+</footer>
+</body>
+</html>

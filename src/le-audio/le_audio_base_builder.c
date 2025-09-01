@@ -58,7 +58,6 @@ void le_audio_base_builder_init(le_audio_base_builder_t * builder, uint8_t  * bu
     little_endian_store_24(builder->buffer, 4, presentation_delay_us);
     builder->len += 3;
     builder->buffer[builder->len++] = 0;
-    builder->subgroup_offset = builder->len;
 }
 
 void le_audio_base_builder_add_subgroup(le_audio_base_builder_t * builder,
@@ -68,6 +67,9 @@ void le_audio_base_builder_add_subgroup(le_audio_base_builder_t * builder,
     // check len
     uint16_t additional_len = 1 + 5 + 1 + codec_specific_configuration_length + 1 + metadata_length;
     btstack_assert((builder->len + additional_len) <= builder->size);
+
+    // cache subgroup start
+    builder->subgroup_offset = builder->len;
 
     builder->buffer[builder->len++] = 0;
     memcpy(&builder->buffer[builder->len], codec_id, 5);

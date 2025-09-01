@@ -5,36 +5,100 @@ The DAPLINK allows to upload firmware via a virtual mass storage device (like mb
 
 The port uses non-blocking polling UART communication with hardware flow control for Bluetooth controller. It was tested and achieved up to 1.8 Mbps bandwidth between two Max32630FTHR boards.
 
-## Software 
+## Prerequisites
 
-The [Maxim ARM Toolchain](https://www.maximintegrated.com/en/products/microcontrollers/MAX32630.html/tb_tab2) is free software that provides peripheral libraries, linker files, initial code and some board files. It also provides Eclipse Neon and Maxim modified OpenOCD to program the microcontroller together with various examples for Maxim Cortex M4F ARM processors.
+### Maxim SDK
 
-For debugging, OpenOCD can be used. The regular OpenOCD does not support Maxim ARM microcontrollers yet, but a modified OpenOCD for use with Maxim devices can be found in the Maxim ARM Toolchain.
+The Maxim has dropped the support for MAX32630 and is not recommended for new designs and it is also dropped from the latest SDK.
 
-## Toolchain Setup
+#### Maxim SDK Mirror
 
-In the Maxim Toolchain installation directory, there is a setenv.sh file that sets the MAXIM_PATH. MAXIM_PATH needs to point to the root directory where the tool chain installed. If you're lucky and have a compatible ARM GCC Toolchain in your PATH, it might work without calling setenv.sh script.
+The required minimum set of files from the SDK are included in the port files [port/max32630-fthr/maxim](https://github.com/bluekitchen/btstack/tree/develop/port/max32630-fthr/maxim) for convenience and to support linux build.
 
-## Usage
+>#### (For reference) ARM Cortex Toolchain - a.k.a. the old Maxim SDK
+>The [ARM Cortex Toolchain](https://download.analog.com/sds/exclusive/SFW0001500A/ARMCortexToolchain.exe) is free software that provides peripheral libraries, linker files, initial code and some board files. It also provides Eclipse Neon and Maxim modified OpenOCD to program the microcontroller together with various examples for Maxim Cortex M4F ARM processors.
 
-The examples can be compiled using GNU ARM Toolchain. A firmware binary can be flashed either by copying the .bin file to the DAPLINK mass storage drive, or by using OpenOCD on the command line, or from Eclipse CDT.
+>For debugging, OpenOCD can be used. The regular OpenOCD does not support Maxim ARM microcontrollers yet, but a modified OpenOCD for use with Maxim devices can be found in the Maxim ARM Toolchain.
+
+>Toolchain and Eclipse guide can be found in README.pdf file where the Maxim Toolchain is installed. Please note that this port was done using Makefiles.
+
+### ARM Toolchain Setup
+
+Download and extract arm toolchain. Record extract folder as `TOOLCHAIN_PATH`.
+
+Windows msys:
+[arm-gnu-toolchain-14.2.rel1-mingw-w64-x86_64-arm-none-eabi.zip](https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-mingw-w64-x86_64-arm-none-eabi.zip)
+
+WSL Linux:
+[arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi.tar.xz](https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi.tar.xz)
+
+### Python - 3.12 or newer
+
+Download and install python and make sure the alias `python` is accessible in the build terminal.
+
+### MSYS2 setup - (windows only)
+The [ARM Cortex Toolchain](https://download.analog.com/sds/exclusive/SFW0001500A/ARMCortexToolchain.exe) contains msys1.0, but it is complete (lacking unzip) and it is recommended that to use a more recent msys2.
+
+Download and install msys2 - https://github.com/msys2/msys2-installer/releases/
+- Install with option to Run msys2 after completion.
+- Record install folder as `MSYS_PATH`
+- Install required packages make and unzip.
+  `pacman -S make unzip`
+- close msys2
+
+### Environment Variables
+
+The `BTSTACK_ROOT`, `MAXIM_PATH`, and `PATH` must point to the previously setup tools as absolute paths.
+
+The `BTSTACK_ROOT` is provided as relative path for examples in `port/max32630-fthr/example/project/Makefile`, but must be provided otherwise.
+
+If not provided the `MAXIM_PATH` is set based on `BTSTACK_ROOT`.
+
+Windows msys:
+
+Run scripts/setenv.bat or set manually
+```batch
+# TOOLCHAIN_PATH=%EXTRACT_PATH%
+# MSYS_BIN=%MSYS_PATH%\usr\bin
+set PATH=%TOOLCHAIN_PATH%/bin;%MSYS_BIN%;%PATH%
+```
+
+WSL Linux:
+```bash
+PATH="${TOOLCHAIN_PATH}/bin:${PATH}"
+```
 
 ## Build
 
-Checkt that MAXIM_PATH points to the root directory where the tool chain installed.
-Then, go to the port/max32630-fthr folder and run "make" command in terminal to generate example projects in the example folder.
+The examples can be compiled using `make`. The build is implemented as a combination of several make and python scripts. For details see the scripts `port/max32630-fthr`, `port/max323630-fthr/scripts`, and `port/max32630-fthr/example/template` folders.
 
-In each example folder, e.g. port/max323630-fthr/example/spp_and_le_streamer, you can run "make" again to build an .elf file in the build folder which is convenient for debugging using Eclipse or GDB.
+Running the make script `port/max32630-fthr/Makefile` will create Makefiles for the projects. And the projects are built running make scripts `port/max32630-fthr/example/Makefile` or `port/max32630-fthr/example/project/Makefile`.
 
-For flashing via the virtual USB drive, the "make release" command will generate .bin file in the build folder.
+```bash
+cd %BTSTACK_ROOT%/port/max32630-fthr
+.../port/max32630-fthr$ make
+> Creating example projects:
+> project - a2dp_sink_demo
+> project - a2dp_source_demo
+> project - ancs_client_demo
+> ...
+.../port/max32630-fthr$ cd example
+# build a make target default(all), dual, general, classic, or ble
+.../port/max32630-fthr/example$ make
+# or build individual project e.g. gatt_counter
+.../port/max32630-fthr/example$ cd gatt_counter
+.../port/max32630-fthr/example/gatt_counter$ make
+```
 
-## Eclipse
+In each example/project folder the make target is to build .elf file in the build folder which is convenient for debugging using Eclipse or GDB. 
 
-Toolchain and Eclipse guide can be found in README.pdf file where the Maxim Toolchain is installed. Please note that this port was done using Makefiles.
+For flashing via the virtual USB drive, the make also builds .bin file relative to the project ../bin/project.bin e.g. which is for the examples `example/bin`.
 
 ## Flashing Max32630 ARM Processor
 
-There are two ways to program the board. The simplest way is drag and drop the generated .bin file to the DAPLINK mass storage drive. Once the file is copied to the mass storage device, the DAPLINK should program and then run the new firmware.
+A firmware binary can be flashed either by copying the .bin file to the DAPLINK mass storage drive, or by using OpenOCD on the command line, or from Eclipse CDT.
+
+The simplest way is drag and drop the generated .bin file to the DAPLINK mass storage drive. Once the file is copied to the mass storage device, the DAPLINK should program and then run the new firmware.
 
 Alternatively, OpenOCD can be used to flash and debug the device. A suitable programming script can be found in the scripts folder.
 

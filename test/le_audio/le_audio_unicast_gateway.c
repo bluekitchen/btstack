@@ -46,6 +46,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <btstack_debug.h>
+#include <le_audio_demo_util_sink.h>
+#include <le_audio_demo_util_source.h>
 
 #include "bluetooth_data_types.h"
 #include "bluetooth_company_id.h"

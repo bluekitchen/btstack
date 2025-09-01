@@ -141,6 +141,14 @@ uint8_t avrcp_controller_start_press_and_hold_cmd(uint16_t avrcp_cid, avrcp_oper
 uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid);
 
 /**
+ * Send PASS THROUGH command. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @param operation_id
+ * @return
+ */
+uint8_t avrcp_controller_send_pass_through_cmd(uint16_t avrcp_cid, avrcp_operation_id_t operation_id);
+
+/**
  * @brief Play. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
@@ -198,14 +206,14 @@ uint8_t avrcp_controller_backward(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_backward(uint16_t avrcp_cid);
 
 /**
- * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @brief Turn up volume. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
  */
 uint8_t avrcp_controller_volume_up(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_volume_up(uint16_t avrcp_cid);
 /**
- * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @brief Turn down volume. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
  */
@@ -213,12 +221,26 @@ uint8_t avrcp_controller_volume_down(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid);
 
 /**
- * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @brief Mute sound. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
  */
 uint8_t avrcp_controller_mute(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid);
+
+/**
+ * @brief Record. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @return status
+ */
+uint8_t avrcp_controller_record(uint16_t avrcp_cid);
+
+/**
+ * @brief Eject. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @return status
+ */
+uint8_t avrcp_controller_eject(uint16_t avrcp_cid);
 
 // Basic Group Navigation
 /**
@@ -344,8 +366,8 @@ uint8_t avrcp_controller_skip(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id);
 
-uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid);
-uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid);
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, avrcp_player_application_setting_attribute_id_t * attr_ids);
+uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_id_values_num, uint8_t * attr_id_values);
 
 uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set);
 uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);

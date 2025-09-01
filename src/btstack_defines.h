@@ -82,6 +82,17 @@ typedef struct {
  */
 typedef uint8_t sm_key_t[16];
 
+/**
+ * @brief 128 bit UUID
+ */
+typedef uint8_t uuid128_t[16];
+
+// provide ssize_t on windows
+#ifdef _MSC_VER
+#include <basetsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 // DEFINES
 
 // hci con handles (12 bit): 0x0000..0x0fff
@@ -703,8 +714,9 @@ typedef uint8_t sm_key_t[16];
  #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03u
 
 /**
- * @format 1HD
+ * @format 11HD
  * @param subevent_code
+ * @param status
  * @param connection_handle
  * @param le_features
  */
@@ -1153,8 +1165,12 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_BIS_CAN_SEND_NOW                         0x6Bu
 
 /**
- * @format H
+ * @format 11H11
+ * @param cig_id
+ * @param cis_id
  * @param cis_con_handle
+ * @param stream_index
+ * @param group_complete
  */
 #define HCI_EVENT_CIS_CAN_SEND_NOW                         0x6Cu
 
@@ -2430,32 +2446,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO  0x20u
-
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param acl_handle
- * @param status
- */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT 0x21u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param acl_handle
- * @param status
- */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND 0x22u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param acl_handle
- * @param status
- */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT 0x23u
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED  0x20u
 
 /**
  * @format 1H1
@@ -2465,18 +2456,19 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x24u
 
-
 /**
- * @format 1H211LV
+ * @format 1H11211LV
  * @param subevent_code
  * @param acl_handle
+ * @param status
+ * @param state
  * @param text_id
  * @param text_type
  * @param text_operation
  * @param text_length
  * @param text
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x25u
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE            0x25u
 
 /**
  * @format 1H1
@@ -3441,11 +3433,14 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_OPERATION_START                                    0x16u
 
 /**
- * @format 1211
+ * @format 1211111
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
+ * @param command_opcode
+ * @param pdu_id
  * @param operation_id
+ * @param status
  */
 #define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x17u
 
@@ -3465,7 +3460,7 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x19u
 
 /**
- * @format 121111
+ * @format 1211JV
  * @param subevent_code
  * @param avrcp_cid
  * @param operation_id
@@ -3745,7 +3740,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param item_id
  */
-#define AVRCP_SUBEVENT_PLAY_ITEM                                                       0x42u
+#define AVRCP_SUBEVENT_PLAY_ITEM                                                       0x43u
 
 /**
  * @format 1221D
@@ -3755,7 +3750,53 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param item_id
  */
-#define AVRCP_SUBEVENT_ADD_TO_NOW_PLAYING                                              0x43u
+#define AVRCP_SUBEVENT_ADD_TO_NOW_PLAYING                                              0x44u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param num_attributes
+ * @param attributes_ids
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST                       0x45u
+
+/**
+ * @format 121JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param attribute_id
+ * @param num_values
+ * @param values_ids
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST                           0x46u
+
+/**
+ * @format 121112JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param num_attributes
+ * @param attribute_index
+ * @param attribute_id
+ * @param character_set_id
+ * @param attribute_name_len
+ * @param attribute_name
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST                 0x47u
+
+/**
+ * @format 1211112JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param attribute_id
+ * @param num_values
+ * @param value_index
+ * @param value_id
+ * @param character_set_id
+ * @param value_name_len
+ * @param value_name
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST                     0x48u
 
 /**
  * @format 12BH
@@ -3912,11 +3953,12 @@ typedef uint8_t sm_key_t[16];
 // HID Meta Event Group
 
 /**
- * @format 12BH
+ * @format 12BH1
  * @param subevent_code
  * @param hid_cid
  * @param address
  * @param handle
+ * @param status
  */
 #define HID_SUBEVENT_INCOMING_CONNECTION                                   0x01u
 

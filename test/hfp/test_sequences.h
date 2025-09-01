@@ -97,6 +97,12 @@ hfp_test_item_t * hfp_pts_ag_rhh_tests();
 int hfp_pts_hf_rhh_tests_size();
 hfp_test_item_t * hfp_pts_hf_rhh_tests();
 
+/* Test sequences - Issues Group */
+int hfp_pts_ag_issues_tests_size();
+hfp_test_item_t * hfp_pts_ag_issues_tests();
+int hfp_pts_hf_issues_tests_size();
+hfp_test_item_t * hfp_pts_hf_issues_tests();
+
 #if defined __cplusplus
 }
 #endif

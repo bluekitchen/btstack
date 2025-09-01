@@ -237,8 +237,10 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
     de_pop_sequence(service, attribute); 
 
     // 0x0100 "ServiceName"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, (uint16_t) strlen(params->device_name), (uint8_t *) params->device_name);
+    if (params->device_name != NULL){
+        de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(params->device_name), (uint8_t *) params->device_name);
+    }
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);

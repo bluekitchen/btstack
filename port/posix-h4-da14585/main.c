@@ -55,9 +55,7 @@
 #include "btstack_chipset_da145xx.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "btstack_run_loop_posix.h"
+#include "btstack_main_config.h"
 #include "btstack_signal.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
@@ -85,11 +83,12 @@ static bool shutdown_triggered;
 int btstack_main(int argc, const char * argv[]);
 
 static hci_transport_config_uart_t transport_config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    0,  // main baudrate
-    1,  // flow control
-    NULL,
+    .type = HCI_TRANSPORT_CONFIG_UART,
+    .device_name = "/dev/ttyACM0",
+    .baudrate_init = 115200,
+    .baudrate_main = 0,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
+    .parity = BTSTACK_UART_PARITY_OFF,
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -97,6 +96,10 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)) {
+        case BTSTACK_EVENT_POWERON_FAILED:
+            printf("Terminating.\n");
+            exit(EXIT_FAILURE);
+            break;
         case BTSTACK_EVENT_STATE:
             switch (btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
@@ -152,7 +155,7 @@ static void phase2(int status){
     // init HCI
     const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
     hci_init(transport, (void*) &transport_config);
-    
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -167,19 +170,7 @@ static void phase2(int status){
 
 int main(int argc, const char * argv[]){
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
-    hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", pklg_path);
-
-    // pick serial port and configure uart block driver
-    transport_config.device_name = "/dev/tty.usbmodem1461";
+    btstack_main_config( argc, argv, &transport_config, NULL, NULL );
     uart_driver = btstack_uart_posix_instance();
 
     // extract UART config from transport config, but overide initial uart speed
@@ -198,6 +189,6 @@ int main(int argc, const char * argv[]){
     btstack_chipset_da145xx_download_firmware_with_uart(uart_driver, da145xx_fw_data, da145xx_fw_size, &phase2);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
     return 0;
 }

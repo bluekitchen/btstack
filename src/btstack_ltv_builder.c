@@ -73,7 +73,7 @@ void btstack_ltv_builder_add_tag(btstack_ltv_builder_context_t * context, uint8_
     // track len field position
     context->len_pos = context->write_pos;
     // add empty tag
-    context->buffer[context->write_pos++] = 0;
+    context->buffer[context->write_pos++] = 1;
     context->buffer[context->write_pos++] = tag;
 }
 

@@ -81,6 +81,7 @@ int _write(int file, char *ptr, int len){
 
 #endif
 
+#if 0
 int _read(int file, char * ptr, int len){
     UNUSED(file);
     UNUSED(ptr);
@@ -88,23 +89,12 @@ int _read(int file, char * ptr, int len){
     return -1;
 }
 
-
 int _close(int file){
     UNUSED(file);
     return -1;
 }
 
-int _isatty(int file){
-    UNUSED(file);
-    return -1;
-}
-
 int _lseek(int file){
-    UNUSED(file);
-    return -1;
-}
-
-int _fstat(int file){
     UNUSED(file);
     return -1;
 }
@@ -122,6 +112,19 @@ void * _sbrk(int incr){
     heap += incr;
     return prev_heap;
 }
+#endif
+
+int _isatty(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _fstat(int file){
+    UNUSED(file);
+    return -1;
+}
+
+
 
 void abort(void){
     btstack_assert(false);
@@ -683,5 +686,3 @@ int main(void)
     // go
     btstack_run_loop_execute();
 }
-
-

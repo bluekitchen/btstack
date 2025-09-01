@@ -1713,13 +1713,49 @@ static inline hci_con_handle_t hci_event_bis_can_send_now_get_con_handle(const u
 }
 
 /**
+ * @brief Get field cig_id from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return cig_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_cig_id(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field cis_id from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return cis_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_cis_id(const uint8_t * event){
+    return event[3];
+}
+/**
  * @brief Get field cis_con_handle from event HCI_EVENT_CIS_CAN_SEND_NOW
  * @param event packet
  * @return cis_con_handle
  * @note: btstack_type H
  */
 static inline hci_con_handle_t hci_event_cis_can_send_now_get_cis_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 2);
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field stream_index from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return stream_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_stream_index(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field group_complete from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return group_complete
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_group_complete(const uint8_t * event){
+    return event[7];
 }
 
 
@@ -4857,13 +4893,22 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
 }
 
 /**
+ * @brief Get field status from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_read_remote_features_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
  * @param event packet
  * @return connection_handle
  * @note: btstack_type H
  */
 static inline hci_con_handle_t hci_subevent_le_read_remote_features_complete_get_connection_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
+    return little_endian_read_16(event, 4);
 }
 /**
  * @brief Get field le_features from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
@@ -4872,7 +4917,7 @@ static inline hci_con_handle_t hci_subevent_le_read_remote_features_complete_get
  * @note: btstack_type D
  */
 static inline const uint8_t * hci_subevent_le_read_remote_features_complete_get_le_features(const uint8_t * event){
-    return (const uint8_t *) &event[5];
+    return (const uint8_t *) &event[6];
 }
 
 /**
@@ -7574,78 +7619,21 @@ static inline uint8_t hfp_subevent_voice_recognition_deactivated_get_status(cons
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_activated_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO
+ * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT
- * @param event packet
- * @return acl_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_acl_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_status(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND
- * @param event packet
- * @return acl_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_acl_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_status(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT
- * @param event packet
- * @return acl_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_acl_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_status(const uint8_t * event){
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_activated_get_status(const uint8_t * event){
     return event[5];
 }
 
@@ -7669,58 +7657,76 @@ static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_message_sent_ge
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_message_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_state_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field text_id from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field state from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_state(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field text_id from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_id
  * @note: btstack_type 2
  */
-static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_id(const uint8_t * event){
-    return little_endian_read_16(event, 5);
+static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_id(const uint8_t * event){
+    return little_endian_read_16(event, 7);
 }
 /**
- * @brief Get field text_type from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_type from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_type
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_type(const uint8_t * event){
-    return event[7];
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_type(const uint8_t * event){
+    return event[9];
 }
 /**
- * @brief Get field text_operation from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_operation from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_operation
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_operation(const uint8_t * event){
-    return event[8];
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_operation(const uint8_t * event){
+    return event[10];
 }
 /**
- * @brief Get field text_length from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_length from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_length
  * @note: btstack_type L
  */
-static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_length(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_length(const uint8_t * event){
+    return little_endian_read_16(event, 11);
 }
 /**
- * @brief Get field text from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text
  * @note: btstack_type V
  */
-static inline const uint8_t * hfp_subevent_enhanced_voice_recognition_ag_message_get_text(const uint8_t * event){
-    return &event[11];
+static inline const uint8_t * hfp_subevent_enhanced_voice_recognition_ag_state_get_text(const uint8_t * event){
+    return &event[13];
 }
 
 /**
@@ -8948,9 +8954,9 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_sbc_configuration_ge
     return little_endian_read_16(event, 9);
 }
 /**
- * @brief Get field channels_num from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @brief Get field channel_mode from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(const uint8_t * event){
@@ -9075,9 +9081,9 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_audio_configurat
     return event[10];
 }
 /**
- * @brief Get field channels_num from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
+ * @brief Get field channel_mode from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_audio_configuration_get_channel_mode(const uint8_t * event){
@@ -9284,9 +9290,9 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_atrac_configuration_g
     return event[9];
 }
 /**
- * @brief Get field channels_num from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
+ * @brief Get field channel_mode from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_atrac_configuration_get_channel_mode(const uint8_t * event){
@@ -9780,9 +9786,9 @@ static inline uint16_t a2dp_subevent_signaling_media_codec_sbc_configuration_get
     return little_endian_read_16(event, 9);
 }
 /**
- * @brief Get field channels_num from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(const uint8_t * event){
@@ -9907,9 +9913,9 @@ static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_audio_configurati
     return event[10];
 }
 /**
- * @brief Get field channels_num from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_audio_configuration_get_channel_mode(const uint8_t * event){
@@ -10116,9 +10122,9 @@ static inline uint8_t a2dp_subevent_signaling_media_codec_atrac_configuration_ge
     return event[9];
 }
 /**
- * @brief Get field channels_num from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_atrac_configuration_get_channel_mode(const uint8_t * event){
@@ -11506,13 +11512,40 @@ static inline uint8_t avrcp_subevent_operation_complete_get_command_type(const u
     return event[5];
 }
 /**
+ * @brief Get field command_opcode from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return command_opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_command_opcode(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field pdu_id from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return pdu_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_pdu_id(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field operation_id from event AVRCP_SUBEVENT_OPERATION_COMPLETE
  * @param event packet
  * @return operation_id
  * @note: btstack_type 1
  */
 static inline uint8_t avrcp_subevent_operation_complete_get_operation_id(const uint8_t * event){
-    return event[6];
+    return event[8];
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_status(const uint8_t * event){
+    return event[9];
 }
 
 /**
@@ -11575,7 +11608,7 @@ static inline uint8_t avrcp_subevent_operation_get_button_pressed(const uint8_t 
  * @brief Get field operands_length from event AVRCP_SUBEVENT_OPERATION
  * @param event packet
  * @return operands_length
- * @note: btstack_type 1
+ * @note: btstack_type J
  */
 static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t * event){
     return event[7];
@@ -11584,10 +11617,10 @@ static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t
  * @brief Get field operand from event AVRCP_SUBEVENT_OPERATION
  * @param event packet
  * @return operand
- * @note: btstack_type 1
+ * @note: btstack_type V
  */
-static inline uint8_t avrcp_subevent_operation_get_operand(const uint8_t * event){
-    return event[8];
+static inline const uint8_t * avrcp_subevent_operation_get_operand(const uint8_t * event){
+    return &event[8];
 }
 
 /**
@@ -12539,6 +12572,208 @@ static inline const uint8_t * avrcp_subevent_add_to_now_playing_get_item_id(cons
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_attributes_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_attributes from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @param event packet
+ * @return num_attributes
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_list_get_num_attributes(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attributes_ids from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @param event packet
+ * @return attributes_ids
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_attributes_list_get_attributes_ids(const uint8_t * event){
+    return &event[6];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_values_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_list_get_attribute_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field num_values from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
+ * @param event packet
+ * @return num_values
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_list_get_num_values(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field values_ids from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
+ * @param event packet
+ * @return values_ids
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_values_list_get_values_ids(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_attributes_names_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_attributes from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return num_attributes
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_num_attributes(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attribute_index from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_index(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_id(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field character_set_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return character_set_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_attributes_names_list_get_character_set_id(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field attribute_name_len from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_name_len
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_name_len(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field attribute_name from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_name(const uint8_t * event){
+    return &event[11];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_values_names_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_attribute_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field num_values from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return num_values
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_num_values(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value_index from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_value_index(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field value_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_value_id(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field character_set_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return character_set_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_values_names_list_get_character_set_id(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field value_name_len from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_name_len
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_value_name_len(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field value_name from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_values_names_list_get_value_name(const uint8_t * event){
+    return &event[12];
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_INCOMING_CONNECTION
  * @param event packet
  * @return goep_cid
@@ -13128,6 +13363,15 @@ static inline void hid_subevent_incoming_connection_get_address(const uint8_t * 
  */
 static inline hci_con_handle_t hid_subevent_incoming_connection_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 11);
+}
+/**
+ * @brief Get field status from event HID_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_incoming_connection_get_status(const uint8_t * event){
+    return event[13];
 }
 
 /**

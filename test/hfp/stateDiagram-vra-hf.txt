@@ -1,0 +1,58 @@
+stateDiagram-v2
+    classDef criticalState fill:#f00,color:white,font-weight:bold,stroke-width:2px,stroke:black
+
+    [*] --> OFF
+
+    # AG initiated actions
+    
+    OFF                --> ACTIVE             : ag_activate    / if (sco_established) {emit event ACTIVE} else {emit_activated_when_sco_established = 1}
+    ACTIVE             --> OFF                : ag_deactivate  / emit event OFF
+    ACTIVE             --> ACTIVE             : sco_established [emit_activated_when_sco_established == 1] / emit event ACTIVE, requested_state = IDLE, emit_activated_when_sco_established = 0
+    ENHANCED_ACTIVE    --> OFF                : ag_deactivate  / emit event OFF
+    ENHANCED_ACTIVE    --> ENHANCED_ACTIVE    : ag_state       / emit event AG_STATE_EVENT
+
+    # HF initiated actions, happy path
+
+    OFF                --> W4_ACTIVE          : hf_activate     assert (requested_state == IDLE)/ requested_state = ACTIVE          (wait for ready2send event to send activate    command)
+    ACTIVE             --> W4_ENHANCED_ACTIVE : hf_activate_enhanced  / requested_state = ENHANCED_ACTIVE (wait for ready2send event to send ready4audio command)
+    ACTIVE             --> W4_OFF             : hf_deactivate         / requested_state = OFF             (wait for ready2send event to send deactivate  command)
+    ENHANCED_ACTIVE    --> W4_OFF             : hf_deactivate         / requested_state = OFF             (wait for ready2send event to send deactivate  command)
+    ENHANCED_ACTIVE    --> W4_ENHANCED_ACTIVE : hf_activate_enhanced / requested_state = ENHANCED_ACTIVE (wait for ready2send event to send ready4audio command)
+
+    W4_ACTIVE          --> W4_ACTIVE          : ready2send      [ok_pending == 0] / ok_pending = 1, send activate   command, start timer
+    W4_ENHANCED_ACTIVE --> W4_ENHANCED_ACTIVE : ready2send      [ok_pending == 0] / ok_pending = 1, send ready4audio command, start timer
+    W4_OFF             --> W4_OFF             : ready2send      [ok_pending == 0] / ok_pending = 1, send deactivate command, start timer
+
+    W4_ACTIVE          --> ACTIVE             : ok              assert (ok_pending == 1) / ok_pending = 0, if (sco_established) {requested_state = IDLE, emit event ACTIVE} else {emit_activated_when_sco_established = 1}; stop timer
+    W4_ACTIVE          --> OFF                : error           assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event ACTIVE with status error
+    W4_ACTIVE          --> OFF                : timeout         assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event ACTIVE with status error
+    W4_ENHANCED_ACTIVE --> ENHANCED_ACTIVE    : ok              assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event ENHANCED_ACTIVE
+    W4_ENHANCED_ACTIVE --> ACTIVE             : error           assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event ENHANCED_ACTIVE with status error
+    W4_ENHANCED_ACTIVE --> ACTIVE             : timeout         assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event ENHANCED_ACTIVE with status error
+    W4_OFF             --> OFF                : ok              assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event OFF
+    W4_OFF             --> ACTIVE             : error           assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event OFF with status error
+    W4_OFF             --> ACTIVE             : timeout         assert (ok_pending == 1) / requested_state = IDLE, ok_pending = 0, emit event OFF with status error
+
+    # SCO Disconnects
+
+    ACTIVE             --> OFF                : sco_disconnect / requested_state = IDLE, emit event OFF
+    ENHANCED_ACTIVE    --> OFF                : sco_disconnect / requested_state = IDLE, emit event OFF
+    W4_ENHANCED_ACTIVE --> OFF                : sco_disconnect / requested_state = IDLE, emit READY_FOR_AUDIO with status error, requested_state = NONE
+    W4_OFF             --> OFF                : sco_disconnect / requested_state = IDLE, emit event OFF
+
+
+    # overlapping HF and AG
+
+    W4_ACTIVE          --> ACTIVE             : ag_activate    / current_state = ACTIVE, if (sco_established) {emit event ACTIVE, requested_state = IDLE} else {emit_activated_when_sco_established = 1}
+    W4_ENHANCED_ACTIVE --> OFF                : ag_deactivate  / current_state = OFF, requested_state = IDLE, emit READY_FOR_AUDIO with status error, emit OFF
+    W4_OFF             --> OFF                : ag_deactivate  / current_state = OFF, requested_state = IDLE, emit OFF
+    W4_OFF             --> ACTIVE             : ag_activate    / current_state = ACTIVE, requested_state = IDLE, emit off with status error, emit ACTIVE
+    
+    # Overlap case ok_pending == 1: 
+    OFF                --> OFF                : ok | error | timeout if (ok_pending == 1){ ok_pending = 0; }
+    ACTIVE             --> ACTIVE             : ok | error | timeout if (ok_pending == 1){ ok_pending = 0; }
+    ENHANCED_ACTIVE    --> ENHANCED_ACTIVE    : ok | error | timeout if (ok_pending == 1){ ok_pending = 0; }
+    
+    # emit event ACTIVE when state Active and sco_established
+
+    class W4_ACTIVE, W4_ENHANCED_ACTIVE, W4_OFF criticalState

@@ -234,7 +234,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                     pos += 2;
 
                     switch(browsing_connection->pdu_id){
-                        case AVRCP_PDU_ID_SEARCH:{
+                        case AVRCP_PDU_ID_SEARCH:
                             if (parameter_length < 4){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
@@ -250,14 +250,13 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 break;
                             }
 
-                            uint16_t string_len = strlen(browsing_connection->target_search_str);
-                            if ((browsing_connection->target_search_str_len != string_len) || (browsing_connection->target_search_str_len > (size-pos))){
+                            if (browsing_connection->target_search_str_len > (size-pos)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_PARAMETER);
                                 break;
                             }
                             avrcp_browsing_target_emit_search(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
-                        }
+
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
                             if (parameter_length < 10){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
@@ -323,7 +322,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             avrcp_browsing_target_emit_change_path(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->direction, browsing_connection->item_uid);
                             break;
 
-                        case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:{
+                        case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:
                             if (parameter_length < 12){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
@@ -340,7 +339,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             avrcp_browsing_target_emit_get_item_attributes(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter,
                                                                            browsing_connection->scope, browsing_connection->item_uid, browsing_connection->attr_list_size, browsing_connection->attr_list);
                             break;
-                        }
 
                         default:
                             avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
@@ -396,10 +394,6 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -408,9 +402,9 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
 
     uint16_t pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
-    uint8_t param_length = 5;
     uint8_t param_length_pos = pos;
     pos += 2;
+    uint16_t param_length = 5;
 
     avrcp_status_code_t status = AVRCP_STATUS_SUCCESS;
     uint8_t status_pos = pos;
@@ -427,25 +421,25 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
         return 1;
     }
 
-    uint16_t items_byte_len = 0;
+    uint16_t num_items_to_send = 0;
     if (connection->start_item < num_items) {
         if (connection->end_item < num_items) {
-            items_byte_len =  connection->end_item - connection->start_item + 1;
+            num_items_to_send = connection->end_item - connection->start_item + 1;
         } else {
-            items_byte_len = num_items - connection->start_item;
+            num_items_to_send = num_items - connection->start_item;
         }
 
     } else {
         big_endian_store_16(connection->cmd_operands, pos, 0);
         pos += 2;
     }
-    big_endian_store_16(connection->cmd_operands, pos, items_byte_len);
+    big_endian_store_16(connection->cmd_operands, pos, num_items_to_send);
     pos += 2;
-    param_length += items_byte_len;
 
-    if (items_byte_len > 0){
+    if (num_items_to_send > 0){
         (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
         pos += attr_list_size;
+        param_length += attr_list_size;
         connection->cmd_operands_length = pos;
     } else {
         status = AVRCP_STATUS_RANGE_OUT_OF_BOUNDS;
@@ -457,7 +451,6 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     connection->cmd_operands[status_pos] = status;
 
     btstack_assert(pos <= 400);
-
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
@@ -472,10 +465,6 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -508,10 +497,6 @@ uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_b
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -528,7 +513,7 @@ uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_b
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES;
 
     uint8_t param_length_pos = pos;
-    big_endian_store_16(connection->cmd_operands, pos, 1);
+    big_endian_store_16(connection->cmd_operands, param_length_pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
 
@@ -558,11 +543,6 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -605,11 +585,6 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_brow
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -617,6 +592,8 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_brow
     
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_BROWSED_PLAYER;
+    
+    // When not accepted, status is the only field present in the response. AVRCP 6.9.3
     big_endian_store_16(connection->cmd_operands, pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
@@ -635,11 +612,6 @@ uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_b
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -669,10 +641,6 @@ uint8_t avrcp_browsing_target_send_search_response(uint16_t avrcp_browsing_cid, 
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -680,21 +648,25 @@ uint8_t avrcp_browsing_target_send_search_response(uint16_t avrcp_browsing_cid, 
     uint16_t pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_SEARCH;
     // param len
-    big_endian_store_16(connection->cmd_operands, pos, 7);
+    uint8_t param_length_pos = pos;
+    big_endian_store_16(connection->cmd_operands, param_length_pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
+
+    if (status != AVRCP_STATUS_SUCCESS){
+        connection->cmd_operands_length = pos;
+        connection->state = AVCTP_W2_SEND_RESPONSE;
+        avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
+        return ERROR_CODE_SUCCESS;
+    }
+
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
-
-//    if (status != AVRCP_STATUS_SUCCESS){
-//        connection->cmd_operands_length = pos;
-//        connection->state = AVCTP_W2_SEND_RESPONSE;
-//        avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
-//        return ERROR_CODE_SUCCESS;
-//    }
-
     big_endian_store_32(connection->cmd_operands, pos, num_items);
     pos += 4;
+    // update param length
+    big_endian_store_16(connection->cmd_operands, param_length_pos, 7);
+
     connection->cmd_operands_length = pos;
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);

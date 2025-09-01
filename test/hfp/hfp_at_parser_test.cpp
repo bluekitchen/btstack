@@ -92,6 +92,7 @@ TEST_GROUP(HFPParser){
     char packet[200];
     int pos;
     int offset;
+    uint16_t indicators[10];
 
     void setup(void){
         hfp_init();
@@ -104,6 +105,7 @@ TEST_GROUP(HFPParser){
         context.bnip_number[0] = 0;
         context.bnip_type = 0;
         memset(packet,0, sizeof(packet));
+        hfp_set_hf_indicators(sizeof(indicators), indicators);
     }
 
     void teardown(void){
@@ -252,13 +254,12 @@ TEST(HFPParser, HFP_GENERIC_STATUS_INDICATOR_READ){
 }
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
+    context.hf_indicators_supported_by_ag[0].state = 0;
     snprintf(packet, sizeof(packet), "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    // context.command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-    context.state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
 
     parse_hf(packet);
     CHECK_EQUAL(HFP_CMD_OK, context.command);
-    CHECK_EQUAL(1, context.generic_status_indicators[0].state);
+    CHECK_EQUAL(1, context.hf_indicators_supported_by_ag[0].state);
 }
 
 TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
@@ -376,11 +377,10 @@ TEST(HFPParser, HFP_AG_GENERIC_STATUS_INDICATOR){
     snprintf(packet, sizeof(packet), "\r\nAT%s=0,1,2,3,4\r\n", HFP_GENERIC_STATUS_INDICATOR);
     parse_ag(packet);
     CHECK_EQUAL(context.command, HFP_CMD_LIST_GENERIC_STATUS_INDICATORS);
-    CHECK_EQUAL(5, context.generic_status_indicators_nr);
-    
-    for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
-        CHECK_EQUAL(pos, context.generic_status_indicators[pos].uuid);
-    } 
+
+    for (pos = 0; pos < 5; pos++){
+        CHECK_EQUAL(pos, context.hf_indicators_supported_by_ag[pos].uuid);
+    }
 }
 
 TEST(HFPParser, HFP_AG_ENABLE_INDICATOR_STATUS_UPDATE){

@@ -34,7 +34,7 @@ def uuid128_at_offset(data, offset):
 	return uuid128[0:4].hex() + "-" + uuid128[4:6].hex() + "-" + uuid128[6:8].hex() + "-" + uuid128[8:10].hex() + "-" + uuid128[10:].hex()
 
 def handle_at_offset(data, offset):
-	return struct.unpack_from("<H", data, offset)[0];
+	return struct.unpack_from("<H", data, offset)[0]
 
 def bd_addr_at_offset(data, offset):
 	peer_addr = reversed(data[8:8 + 6])
@@ -143,7 +143,7 @@ class l2cap_reassembler:
 
 	payload_data = bytes()
 	payload_len = 0
-	channel = 0;
+	channel = 0
 
 	def handle_acl(self, pb, data):
 		if pb in [0, 2]:
@@ -165,7 +165,7 @@ class hci_connection:
 
 	def __init__(self, bd_addr, con_handle):
 		self.bd_addr = bd_addr
-		self.con_handle = con_handle;
+		self.con_handle = con_handle
 		self.remote_gatt_server = gatt_server(bd_addr)
 
 	def handle_att_pdu(self, direction_in, pdu):
@@ -210,7 +210,7 @@ def handle_evt(event):
 	if event[0] == 0x3e:
 		if event[2] == 0x01:
 			# LE Connection Complete
-			con_handle = handle_at_offset(event, 4);
+			con_handle = handle_at_offset(event, 4)
 			peer_addr = bd_addr_at_offset(event, 8)
 			connection = hci_connection(peer_addr, con_handle)
 			connections[con_handle] = connection
@@ -242,7 +242,7 @@ with open (infile, 'rb') as fin:
 			(entry_len, ts_sec, ts_usec, type) = read_header(fin)
 			if entry_len < 0:
 				break
-			packet_len = entry_len - 9;
+			packet_len = entry_len - 9
 			if (packet_len > 66000):
 				print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
 				break

@@ -40,15 +40,15 @@ with open(cstat_file, 'rt') as fin:
             location = location.replace(project_prefix, '').replace('\\','/')
         parts = location.split(':')
         (path, lineno) = parts
-        match = re.match("The operands `(.+)' and `(.+)' have essential type categories (.*) and (.*), which do not match.", msg)
+        match = re.match(r"The operands `(.+)' and `(.+)' have essential type categories (.*) and (.*), which do not match.", msg)
         # fix if operand is signed literal and cstat complains about signednesss
         if match:
             (op1, op2, t1, t2) = match.groups()
-            if re.match("[(0x)0-9]+", op1) and t1.startswith('signed'):
+            if re.match(r"[(0x)0-9]+", op1) and t1.startswith('signed'):
                 fix(path, int(lineno), op1)
                 fixed += 1
                 continue
-            if re.match("[(0x)0-9]+", op2) and t2.startswith('signed'):
+            if re.match(r"[(0x)0-9]+", op2) and t2.startswith('signed'):
                 fix(path, int(lineno), op2)
                 fixed += 1
                 continue

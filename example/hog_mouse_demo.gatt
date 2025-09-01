@@ -1,5 +1,7 @@
 PRIMARY_SERVICE, GAP_SERVICE
 CHARACTERISTIC, GAP_DEVICE_NAME, READ, "HID Mouse"
+// GAP Appearance Mouse = 0x03C2
+CHARACTERISTIC, GAP_APPEARANCE, READ, C2 03
 
 // add Battery Service
 #import <battery_service.gatt>

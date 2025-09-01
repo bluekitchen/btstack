@@ -240,7 +240,7 @@ static void ias_client_run_for_connection(void * context){
 }
 
 void immediate_alert_service_client_init(void){
-    gatt_service_client_register_client(&ias_client, &ias_client_packet_handler_internal, ias_uuid16s,  sizeof(ias_uuid16s)/sizeof(uint16_t));
+    gatt_service_client_register_client_with_uuid16s(&ias_client, &ias_client_packet_handler_internal, ias_uuid16s,  sizeof(ias_uuid16s)/sizeof(uint16_t));
 
     ias_client_handle_can_send_now.callback = &ias_client_run_for_connection;
 }
@@ -262,7 +262,7 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &ias_client,
                                                                              &ias_connection->basic_connection,
-                                                                             ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
+                                                                             ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT,
                                                                              ias_connection->characteristics_storage,
                                                                              IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 

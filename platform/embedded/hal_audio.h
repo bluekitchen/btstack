@@ -65,6 +65,15 @@ void hal_audio_sink_init(uint8_t channels,
                          uint32_t sample_rate,
                          void (*buffer_played_callback)(uint8_t buffer_index));
 
+
+/**
+  * @brief  Retrive the audio frequency.
+  * @retval AudioFreq: Audio frequency used to play the audio stream.
+  * @note   This API should be called after the hal_audio_sink_init() to adjust the
+  *         audio frequency.
+  */
+uint32_t hal_audio_sink_get_frequency(void);
+
 /**
  * @brief Get number of output buffers in HAL
  * @returns num buffers

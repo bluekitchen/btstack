@@ -1003,11 +1003,12 @@ void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, 
 	avdtp_signaling_emit_capability_done(avdtp_cid, remote_seid);
 }
 
-static uint16_t
+static codec_specific_error_code_t
 avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size,
                                                    const avdtp_stream_endpoint_t *stream_endpoint,
                                                    uint16_t avdtp_cid, uint8_t reconfigure,
-                                                   const uint8_t *media_codec_information) {
+                                                   const uint8_t *media_codec_information,
+                                                   uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
 
@@ -1030,6 +1031,54 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     uint8_t channel_mode_bitmap = media_codec_information[0] & 0x0F;
     uint8_t block_length_bitmap = media_codec_information[1] >> 4;
     uint8_t subbands_bitmap = (media_codec_information[1] & 0x0F) >> 2;
+    uint8_t allocation_method_bitmap = media_codec_information[1] & 0x03;
+    uint8_t minimum_bitpool_value = media_codec_information[2];
+    uint8_t maximum_bitpool_value = media_codec_information[3];
+
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    uint8_t sampling_frequency_capabilities_bitmap = codec_capabilities[0] >> 4;
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
+    uint8_t channel_mode_capabilities_bitmap = codec_capabilities[0] & 0x0F;
+    if ((channel_mode_capabilities_bitmap & channel_mode_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE;
+    }
+
+    if (count_set_bits_uint32(block_length_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_BLOCK_LENGTH;
+    }
+
+    if (count_set_bits_uint32(subbands_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SUBBANDS;
+    }
+    uint8_t subbands_capabilities_bitmap = (codec_capabilities[1] & 0x0F) >> 2;
+    if ((subbands_capabilities_bitmap & subbands_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SUBBANDS;
+    }
+
+    if (count_set_bits_uint32(allocation_method_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_ALLOCATION_METHOD;
+    }
+    uint8_t allocation_method_capabilities_bitmap = codec_capabilities[1] & 0x03;
+    if ((allocation_method_capabilities_bitmap & allocation_method_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_ALLOCATION_METHOD;
+    }
+
+    if (maximum_bitpool_value > 250){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_MAXIMUM_BITPOOL_VALUE;
+    }
+    if ((minimum_bitpool_value < 2) || (minimum_bitpool_value > maximum_bitpool_value)){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_MINIMUM_BITPOOL_VALUE;
+    }
 
     uint8_t num_channels = 0;
     avdtp_channel_mode_t channel_mode;
@@ -1084,20 +1133,21 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     event[pos++] = num_channels;
     event[pos++] = block_length;
     event[pos++] = subbands;
-    event[pos++] = media_codec_information[1] & 0x03;
-    event[pos++] = media_codec_information[2];
-    event[pos++] = media_codec_information[3];
+    event[pos++] = allocation_method_bitmap;
+    event[pos++] = minimum_bitpool_value;
+    event[pos++] = maximum_bitpool_value;
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
-
-    return pos;
+    *out_size = pos;
+    return CODEC_SPECIFIC_ERROR_CODE_ACCEPT;
 }
 
-static uint16_t
+static codec_specific_error_code_t
 avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16_t size,
                                                           const avdtp_stream_endpoint_t *stream_endpoint,
                                                           uint16_t avdtp_cid, uint8_t reconfigure,
-                                                          const uint8_t *media_codec_information) {
+                                                          const uint8_t *media_codec_information,
+                                                          uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
 
@@ -1123,6 +1173,56 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     uint8_t sampling_frequency_bitmap =  (media_codec_information[1] & 0x3F);
     uint8_t vbr                       =  (media_codec_information[2] >> 7) & 0x01;
     uint16_t bit_rate_index_bitmap    = ((media_codec_information[2] & 0x3f) << 8) | media_codec_information[3];
+
+    if (count_set_bits_uint32(layer_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_LAYER;
+    }
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    uint8_t layer_capabilities_bitmap = codec_capabilities[0] >> 5;
+    if ((layer_capabilities_bitmap & layer_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_LAYER;
+    }
+    uint8_t crc_capability = (codec_capabilities[0] >> 4) & 0x01;
+    if ((crc_capability == 0u) && (crc != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CRC;
+    }
+
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
+    uint8_t channel_mode_capability_bitmap = codec_capabilities[0] & 0x07;
+    if ((channel_mode_capability_bitmap & channel_mode_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE;
+    }
+
+    uint8_t mpf_capability = (codec_capabilities[1] >> 6) & 0x01;
+    if ((mpf_capability == 0u) && (mpf != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_MPF;
+    }
+
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    uint8_t sampling_frequency_capability_bitmap = (codec_capabilities[1] & 0x3F);
+    if ((sampling_frequency_capability_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    uint8_t vbr_capability = (codec_capabilities[2] >> 7) & 0x01;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
+    }
+
+    if (count_set_bits_uint32(bit_rate_index_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_BITRATE;
+    }
+    if ( (bit_rate_index_bitmap & (1 << 15)) != 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_BITRATE;
+    }
+    uint8_t bit_rate_capability_bitmap = ((codec_capabilities[2] & 0x3f) << 8) | codec_capabilities[3];
+    if ((bit_rate_capability_bitmap & bit_rate_index_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_BITRATE;
+    }
 
     uint8_t layer = 0;
     if (layer_bitmap & 0x04){
@@ -1183,15 +1283,16 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     event[pos++] = bitrate_index;
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
-
-    return pos;
+    *out_size = pos;
+    return CODEC_SPECIFIC_ERROR_CODE_ACCEPT;
 }
 
-static uint16_t
+static codec_specific_error_code_t
 avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t size,
                                                         const avdtp_stream_endpoint_t *stream_endpoint,
                                                         uint16_t avdtp_cid, uint8_t reconfigure,
-                                                        const uint8_t *media_codec_information) {
+                                                        const uint8_t *media_codec_information,
+                                                        uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN);
 
@@ -1216,6 +1317,40 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     uint8_t  channels_bitmap           =   media_codec_information[2] & 0x0F;
     uint8_t  vbr                       =   media_codec_information[3] >> 7;
     uint32_t bit_rate                  = ((media_codec_information[3] & 0x7f) << 16) | (media_codec_information[4] << 8) | media_codec_information[5];
+
+    if (count_set_bits_uint32(object_type_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
+    }
+
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+
+    uint8_t object_type_capabilities_bitmap = codec_capabilities[0] >> 1;
+    if ( (object_type_capabilities_bitmap & object_type_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_OBJECT_TYPE;
+    }
+    if ((object_type_bitmap & 0x40) && (drc != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_DRC;
+    }
+
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    uint16_t sampling_frequency_capabilities_bitmap = (codec_capabilities[1] << 4) | (codec_capabilities[2] >> 4);
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    if (count_set_bits_uint32(channels_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNELS;
+    }
+    uint8_t channels_capabilities_bitmap = codec_capabilities[2] & 0x0F;
+    if ((channels_capabilities_bitmap & channels_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNELS;
+    }
+    uint8_t vbr_capability = codec_capabilities[3] >> 7;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
+    }
 
     uint8_t object_type = 0;
     if (object_type_bitmap & 0x01){
@@ -1257,15 +1392,16 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     event[pos++] = drc;
     
     btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN == pos);
-
-    return pos;
+    *out_size = pos;
+    return CODEC_SPECIFIC_ERROR_CODE_ACCEPT;
 }
 
-static uint16_t
+static codec_specific_error_code_t
 avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t size,
-                                                        const avdtp_stream_endpoint_t *stream_endpoint,
-                                                        uint16_t avdtp_cid, uint8_t reconfigure,
-                                                        const uint8_t *media_codec_information) {
+                                                     const avdtp_stream_endpoint_t *stream_endpoint,
+                                                     uint16_t avdtp_cid, uint8_t reconfigure,
+                                                     const uint8_t *media_codec_information,
+                                                     uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN);
 
@@ -1296,6 +1432,40 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
 
     uint32_t bit_rate                  = ((media_codec_information[3] & 0x7f) << 16) | (media_codec_information[4] << 8) | media_codec_information[5];
 
+    if (count_set_bits_uint32(object_type_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
+    }
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+
+    uint8_t object_type_capabilities_bitmap = codec_capabilities[0] >> 6;
+    if ( (object_type_capabilities_bitmap & object_type_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_OBJECT_TYPE;
+    }
+
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    uint32_t sampling_frequency_capabilities_bitmap = ((codec_capabilities[0] & 0x3F) << 20) |
+                                         (codec_capabilities[1] << 12) |
+                                         (codec_capabilities[2] << 4) |
+                                         (codec_capabilities[3] >> 4);
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    if (count_set_bits_uint32(channels_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNELS;
+    }
+    uint8_t  channels_capabilities_bitmap  = (codec_capabilities[3] >> 2) & 0x03;
+    if ((channels_capabilities_bitmap & channels_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNELS;
+    }
+
+    uint8_t vbr_capability = (codec_capabilities[4] >> 7) & 0x01;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
+    }
+
     uint8_t object_type = 0;
     if (object_type_bitmap & 0x10){
         object_type = AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC;
@@ -1321,14 +1491,15 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
     pos += 3;
 
     btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN == pos);
-
-    return pos;
+    *out_size = pos;
+    return CODEC_SPECIFIC_ERROR_CODE_ACCEPT;
 }
 
-static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *event, uint16_t size,
-                                                                     const avdtp_stream_endpoint_t *stream_endpoint,
-                                                                     uint16_t avdtp_cid, uint8_t reconfigure,
-                                                                     const uint8_t *media_codec_information) {
+static codec_specific_error_code_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *event, uint16_t size,
+                                                                                        const avdtp_stream_endpoint_t *stream_endpoint,
+                                                                                        uint16_t avdtp_cid, uint8_t reconfigure,
+                                                                                        const uint8_t *media_codec_information,
+                                                                                        uint16_t *out_size) {
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
@@ -1348,10 +1519,56 @@ static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *ev
 
     avdtp_atrac_version_t  version     = (avdtp_atrac_version_t) (media_codec_information[0] >> 5);
     uint8_t  channel_mode_bitmap       = (media_codec_information[0] >> 2) & 0x07;
-    uint16_t sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
+    uint8_t  sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
     uint8_t  vbr                       = (media_codec_information[1] >> 3) & 0x01;
     uint16_t bit_rate_index_bitmap     = ((media_codec_information[1]) & 0x07) << 16 | (media_codec_information[2] << 8) | media_codec_information[3];
     uint16_t maximum_sul               = (media_codec_information[4] << 8) | media_codec_information[5];
+
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+
+    if (version >= AVDTP_ATRAC_VERSION_RFU){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_VERSION;
+    }
+    uint8_t version_capability = (avdtp_atrac_version_t) (codec_capabilities[0] >> 5);
+    if (version_capability != version){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VERSION;
+    }
+
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
+    uint8_t channel_mode_capabilities_bitmap = (codec_capabilities[0] >> 2) & 0x07;
+    if ((channel_mode_capabilities_bitmap & channel_mode_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE;
+    }
+
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    uint8_t sampling_frequency_capabilities_bitmap = (codec_capabilities[1] >> 4) & 0x03;
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    uint8_t vbr_capability = (codec_capabilities[1] >> 3) & 0x01;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
+    }
+
+    if (vbr == 0u){
+        if (count_set_bits_uint32(bit_rate_index_bitmap) != 1) {
+            return CODEC_SPECIFIC_ERROR_CODE_INVALID_BITRATE;
+        }
+        uint8_t bit_rate_index_capabilities_bitmap = ((codec_capabilities[1]) & 0x07) << 16 | (codec_capabilities[2] << 8) | codec_capabilities[3];
+        if ((bit_rate_index_capabilities_bitmap & bit_rate_index_bitmap) == 0u){
+            return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_BITRATE;
+        }
+    }
+
+    uint16_t maximum_sul_capability = (codec_capabilities[4] << 8) | codec_capabilities[5];
+    if ( maximum_sul_capability < maximum_sul){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_MAXIMUM_SUL;
+    }
 
     uint8_t num_channels = 0;
     avdtp_channel_mode_t channel_mode = AVDTP_CHANNEL_MODE_JOINT_STEREO;
@@ -1393,13 +1610,15 @@ static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *ev
     pos += 2;
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
-    return pos;
+    *out_size = pos;
+    return CODEC_SPECIFIC_ERROR_CODE_ACCEPT;
 }
 
-static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *event, uint16_t size,
-                                                                     const avdtp_stream_endpoint_t *stream_endpoint,
-                                                                     uint16_t avdtp_cid, uint8_t reconfigure,
-                                                                     const adtvp_media_codec_capabilities_t *media_codec) {
+static codec_specific_error_code_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *event, uint16_t size,
+                                                                                        const avdtp_stream_endpoint_t *stream_endpoint,
+                                                                                        uint16_t avdtp_cid, uint8_t reconfigure,
+                                                                                        const adtvp_media_codec_capabilities_t *media_codec,
+                                                                                        uint16_t *out_size) {
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
@@ -1426,7 +1645,8 @@ static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *ev
     (void)memcpy(event + pos, media_codec->media_codec_information, media_codec_len);
     pos += media_codec_len;
     event[1] = pos - 2;
-    return pos;
+    *out_size = pos;
+    return CODEC_SPECIFIC_ERROR_CODE_ACCEPT;
 }
 
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay) {
@@ -1443,29 +1663,50 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     avdtp_emit_source(event, pos);
 }
 
-uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
-                                              uint16_t avdtp_cid, uint8_t reconfigure,
-                                              const adtvp_media_codec_capabilities_t * media_codec) {
+codec_specific_error_code_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
+                                                                 uint16_t avdtp_cid, uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec, uint16_t *out_size) {
+    codec_specific_error_code_t status;
+    if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != media_codec->media_codec_type){
+        if ((media_codec->media_codec_type >= AVDTP_CODEC_START_RFU) && (media_codec->media_codec_type < AVDTP_CODEC_NON_A2DP)){
+            return CODEC_SPECIFIC_ERROR_CODE_INVALID_CODEC_TYPE;
+        } else {
+            return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CODEC_TYPE;
+        }
+    }
+
     switch (media_codec->media_codec_type){
         case AVDTP_CODEC_SBC:
-            return avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                     media_codec->media_codec_information);
+            status = avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                            media_codec->media_codec_information, out_size);
+            break;
+
         case AVDTP_CODEC_MPEG_1_2_AUDIO:
-            return avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                             media_codec->media_codec_information);
+            status = avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
+            break;
+
         case AVDTP_CODEC_MPEG_2_4_AAC:
-            return avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                           media_codec->media_codec_information);
+            status = avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
+            break;
+
         case AVDTP_CODEC_ATRAC_FAMILY:
-            return avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                        media_codec->media_codec_information);
+            status = avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
+            break;
+
         case AVDTP_CODEC_MPEG_D_USAC:
-            return avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                        media_codec->media_codec_information);
+            status = avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
+            break;
+
         default:
-            return avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                        media_codec);
+            status = avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec, out_size);
+            break;
     }
+
+    return status;
 }
 
 void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
@@ -1475,8 +1716,7 @@ void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint
         uint16_t pos = 0;
         // assume MEDIA_CONFIG_OTHER_EVENT_LEN is larger than all other events
         uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
-        pos = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure,
-                                                   &configuration->media_codec);
+        avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, &configuration->media_codec, &pos);
         btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
         (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     }

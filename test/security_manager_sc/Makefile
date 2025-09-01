@@ -122,6 +122,6 @@ coverage: build-coverage/sm_test
 	# run tests
 	make test
 	# collect traces
-	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-sm-sc.info
+	lcov --capture --rc branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-sm-sc.info
 	# demangle
 	python3 ../coverage_demangle.py coverage-sm-sc.info

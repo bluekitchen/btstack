@@ -53,6 +53,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #ifdef __APPLE__
 #include <sys/ioctl.h>
@@ -81,16 +82,22 @@ static uint8_t * btstack_uart_block_read_bytes_data;
 static void (*block_sent)(void);
 static void (*block_received)(void);
 
+static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
+
+static int fail_with_message(const char * msg){
+    log_error("%s", msg);
+    printf("DEVICE ERROR: %s\n", msg);
+    btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_WRITE|DATA_SOURCE_CALLBACK_READ);
+    return -1;
+}
 
 static int btstack_uart_posix_init(const btstack_uart_config_t * config){
     uart_config = config;
     return 0;
 }
 
-static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
-
 static void btstack_uart_block_posix_process_write(btstack_data_source_t *ds) {
-    
+
     if (btstack_uart_block_write_bytes_len == 0) return;
 
     uint32_t start = btstack_run_loop_get_time_ms();
@@ -102,13 +109,12 @@ static void btstack_uart_block_posix_process_write(btstack_data_source_t *ds) {
         log_info("write took %u ms", end - start);
     }
     if (bytes_written == 0){
-        log_error("wrote zero bytes\n");
-        exit(EXIT_FAILURE);
+        fail_with_message("wrote zero bytes\n");
+        return;
     }
     if (bytes_written < 0) {
-        log_error("write returned error\n");
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        exit(EXIT_FAILURE);
+        fail_with_message("write returned error\n");
+        return;
     }
 
     btstack_uart_block_write_bytes_data += bytes_written;
@@ -132,10 +138,11 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
     if (btstack_uart_block_read_bytes_len == 0) {
         log_info("called but no read pending");
         btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+        return;
     }
 
     uint32_t start = btstack_run_loop_get_time_ms();
-    
+
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(ds->source.fd, btstack_uart_block_read_bytes_data, btstack_uart_block_read_bytes_len);
     // log_info("read need %u bytes, got %d", btstack_uart_block_read_bytes_len, (int) bytes_read);
@@ -144,18 +151,18 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
         log_info("read took %u ms", end - start);
     }
     if (bytes_read == 0){
-        log_error("read zero bytes\n");
+        fail_with_message("read zero bytes\n");
         return;
     }
     if (bytes_read < 0) {
-        log_error("read returned error\n");
+        fail_with_message("read returned error\n");
         return;
     }
 
     btstack_uart_block_read_bytes_len   -= bytes_read;
     btstack_uart_block_read_bytes_data  += bytes_read;
     if (btstack_uart_block_read_bytes_len > 0) return;
-    
+
     btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
 
     if (block_received){
@@ -176,13 +183,13 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
         case    9600: brate=B9600;    break;
         case   19200: brate=B19200;   break;
         case   38400: brate=B38400;   break;
-        case 57600:  brate=B57600;  break;
-        case 115200: brate=B115200; break;
+        case   57600: brate=B57600;   break;
+        case  115200: brate=B115200;  break;
 #ifdef B230400
-        case 230400: brate=B230400; break;
+        case  230400: brate=B230400;  break;
 #endif
 #ifdef B460800
-        case 460800: brate=B460800; break;
+        case  460800: brate=B460800;  break;
 #endif
 #ifdef B500000
         case  500000: brate=B500000;  break;
@@ -191,7 +198,7 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
         case  576000: brate=B576000;  break;
 #endif
 #ifdef B921600
-        case 921600: brate=B921600; break;
+        case  921600: brate=B921600;  break;
 #endif
 #ifdef B1000000
         case 1000000: brate=B1000000; break;
@@ -214,7 +221,7 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
 #ifdef B3500000
         case 3500000: brate=B3500000; break;
 #endif
-#ifdef B400000
+#ifdef B4000000
         case 4000000: brate=B4000000; break;
 #endif
         default:
@@ -310,13 +317,11 @@ static int btstack_uart_posix_open(void){
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
-        log_error("Unable to open port %s", device_name);
-        return -1;
+        return fail_with_message("Unable to open port");
     }
-    
+
     if (tcgetattr(fd, &btstack_uart_block_termios) < 0) {
-        log_error("Couldn't get term attributes");
-        return -1;
+        return fail_with_message("Couldn't get term attributes");
     }
     cfmakeraw(&btstack_uart_block_termios);   // make raw
 
@@ -326,11 +331,11 @@ static int btstack_uart_posix_open(void){
 
     btstack_uart_block_termios.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
     btstack_uart_block_termios.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    
+
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
     btstack_uart_block_termios.c_cc[VMIN]  = 1;
     btstack_uart_block_termios.c_cc[VTIME] = 0;
-    
+
     // no parity
     btstack_uart_posix_set_parity_option(&btstack_uart_block_termios, parity);
 
@@ -338,16 +343,15 @@ static int btstack_uart_posix_open(void){
     btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
 
     if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
-        log_error("Couldn't set term attributes");
-        return -1;
+        return fail_with_message("Couldn't set term attributes");
     }
 
     // store fd in data source
     transport_data_source.source.fd = fd;
-    
+
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
-        return -1;
+        return fail_with_message("Couldnt set baudrate");
     }
 
     // set up data_source
@@ -360,13 +364,13 @@ static int btstack_uart_posix_open(void){
 
     log_info("Open tty %s", device_name);
     return 0;
-} 
+}
 
 static int btstack_uart_posix_close_new(void){
 
     // first remove run loop handler
     btstack_run_loop_remove_data_source(&transport_data_source);
-    
+
     // then close device 
     close(transport_data_source.source.fd);
     transport_data_source.source.fd = -1;
@@ -434,7 +438,7 @@ static void (*frame_received)(uint16_t frame_size);
 static void btstack_uart_slip_posix_block_sent(void);
 
 static void btstack_uart_slip_posix_process_write(btstack_data_source_t *ds) {
-    
+
     if (btstack_uart_slip_write_bytes_len == 0) return;
 
     uint32_t start = btstack_run_loop_get_time_ms();
@@ -507,7 +511,7 @@ static void btstack_uart_slip_posix_process_read(btstack_data_source_t *ds) {
         btstack_uart_slip_receive_track_start = 0;
         btstack_uart_slip_receive_start_time = start;
     }
-    
+
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(ds->source.fd, btstack_uart_slip_receive_buffer, SLIP_RECEIVE_BUFFER_SIZE);
 
@@ -517,7 +521,7 @@ static void btstack_uart_slip_posix_process_read(btstack_data_source_t *ds) {
         log_info("read took %u ms", end - start);
     }
     if (bytes_read < 0) return;
-    
+
     btstack_uart_slip_receive_pos = 0;
     btstack_uart_slip_receive_len = (uint16_t ) bytes_read;
 

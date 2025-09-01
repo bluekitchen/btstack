@@ -290,7 +290,7 @@ def add_timer(timeout_ms, callback, context):
     global timers_timeouts
     global timers_callbacks
 
-    timeout = get_time_millis() + timeout_ms;
+    timeout = get_time_millis() + timeout_ms
     pos = bisect.bisect(timers_timeouts, timeout)
     timers_timeouts.insert(pos, timeout)
     timers_callbacks.insert(pos, (callback, context))

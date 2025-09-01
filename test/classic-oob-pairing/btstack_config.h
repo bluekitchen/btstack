@@ -55,6 +55,8 @@
 #define ENABLE_SCO_OVER_HCI
 /// Ensure that BK doesn't start implicitly discoverable and connectable mode
 #define ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
+/// Emit dedicated bonding complete, don't disconnect
+#define ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
 /// Add support of BT classic OOB pairing
 #define ENABLE_CLASSIC_PAIRING_OOB
 /// Handle IOCAP by application
@@ -80,4 +82,3 @@
 // #define printf() no_printf_please()
 
 #endif
-

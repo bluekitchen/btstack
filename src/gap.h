@@ -213,13 +213,13 @@ typedef struct {
 
 typedef struct {
     uint8_t  big_handle;
-    uint8_t  sync_handle;
     uint8_t  encryption;
+    uint16_t sync_handle;
     uint8_t  broadcast_code[16];
     uint8_t  mse;
     uint16_t big_sync_timeout_10ms;
     uint8_t  num_bis;
-    uint8_t bis_indices[MAX_NR_BIS];
+    uint8_t  bis_indices[MAX_NR_BIS];
 } le_audio_big_sync_params_t;
 
 typedef enum {
@@ -248,12 +248,13 @@ typedef struct {
     const le_audio_big_params_t * params;
     // request to send
     bool can_send_now_requested;
+#ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
     // previous and current timestamp of number completed event to track ISO intervals
     bool     num_completed_timestamp_previous_valid;
     bool     num_completed_timestamp_current_valid;
     uint32_t num_completed_timestamp_previous_ms;
     uint32_t num_completed_timestamp_current_ms;
-
+#endif
 } le_audio_big_t;
 
 typedef struct {
@@ -320,9 +321,24 @@ typedef struct {
     hci_con_handle_t acl_con_handles[MAX_NR_CIS];
     bool cis_setup_active[MAX_NR_CIS];
     bool cis_established[MAX_NR_CIS];
+    uint8_t highest_outgoing_cis_index;
     // request to send
     bool can_send_now_requested;
 } le_audio_cig_t;
+
+typedef enum {
+    GAP_PRIVACY_CLIENT_STATE_IDLE,
+    GAP_PRIVACY_CLIENT_STATE_PENDING,
+    GAP_PRIVACY_CLIENT_STATE_READY
+} gap_privacy_client_state_t;
+
+struct gap_privacy_client {
+    btstack_linked_item_t * next;
+    void (*callback)(struct gap_privacy_client * client, bd_addr_t random_addr);
+    gap_privacy_client_state_t state;
+};
+
+typedef struct gap_privacy_client gap_privacy_client_t;
 
 /* API_START */
 
@@ -579,8 +595,10 @@ void gap_set_page_timeout(uint16_t page_timeout);
  * @param scan_interval range 0x0004..0x4000, unit 0.625 ms
  * @param scan_window range 0x0004..0x4000, unit 0.625 ms
  * @param scanning_filter_policy 0 = all devices, 1 = all from whitelist
+ * @return status
  */
-void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window, uint8_t scanning_filter_policy);
+uint8_t gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window,
+                            uint8_t scanning_filter_policy);
 
 /**
  * @brief Set parameters for LE Scan
@@ -803,8 +821,8 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
  * @param skip The number of periodic advertising packets that can be skipped after a successful receive
  * @param sync_timeout Range: 0x000A to 0x4000, Time = N*10 ms, Time Range: 100 ms to 163.84 s
  * @param cte_type  bit 0 = Do not sync to packets with an AoA Constant Tone Extension
- *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 μs slots
- *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 μs slots
+ *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 us slots
+ *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 us slots
  *                  bit 3 = Do not sync to packets without a Constant Tone Extension
  * @return status
  */
@@ -1462,19 +1480,6 @@ void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode );
  * @return EROOR_CODE_SUCCESS if supported by Controller
  */
 uint8_t gap_load_resolving_list_from_le_device_db(void);
-
-typedef enum {
-    GAP_PRIVACY_CLIENT_STATE_IDLE,
-    GAP_PRIVACY_CLIENT_STATE_PENDING,
-    GAP_PRIVACY_CLIENT_STATE_READY
-} gap_privacy_client_state_t;
-
-struct gap_privacy_client {
-    btstack_linked_item_t * next;
-    void (*callback)(struct gap_privacy_client * client, bd_addr_t random_addr);
-    gap_privacy_client_state_t state;
-};
-typedef struct gap_privacy_client gap_privacy_client_t;
 
 /**
  * @brief Register callback that gets executed during random address update

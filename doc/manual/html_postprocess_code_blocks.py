@@ -45,13 +45,13 @@ def main(argv):
             for line in fin:
                 if not codeblock:
                     fout.write(line)
-                    if re.match('.*<pre><code>.*',line):
+                    if re.match(r'.*<pre><code>.*',line):
                         codeblock = 1
                     continue
 
                 writeCodeBlock(fout,line, references)
                 # check if codeblock ended
-                if re.match('.*</code></pre>.*',line):
+                if re.match(r'.*</code></pre>.*',line):
                     codeblock = 0
                     
     

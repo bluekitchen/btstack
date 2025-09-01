@@ -54,7 +54,7 @@
 extern "C" {
 #endif
 
-// number of characteristics in Immediate Alert Service
+// number of characteristics in TX Power Service
 #define TX_POWER_SERVICE_CLIENT_NUM_CHARACTERISTICS 1
 
 /** 
@@ -91,12 +91,10 @@ typedef struct {
 void tx_power_service_client_init(void);
 
  /**
- * @brief Connect to a Immediate Alert Service instance of remote device. The client will automatically register for notifications.
- * The mute state is received via GATTSERVICE_SUBEVENT_LLS_CLIENT_MUTE event.
- * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATT status is equal to ATT_ERROR_SUCCESS,
- * see ATT errors (see bluetooth.h) for other values.
- *   
- * Event GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
+ * @brief Connect to a TX Power Service instance of remote device. The client will automatically register for notifications.
+ * The TX Power level state is received via GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL event.
+ *
+ * Event GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
@@ -114,6 +112,11 @@ uint8_t tx_power_service_client_connect(
          uint16_t * txps_cid
 );
 
+/**
+ * @note Trigger read of TX Power Level characteristic.
+ * @param txps_cid
+ * @return status
+ */
 uint8_t tx_power_service_client_read_tx_power_level(uint16_t txps_cid);
 
 /**

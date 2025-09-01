@@ -15,3 +15,5 @@ tags
 *.txt
 *.log
 core
+example/*/*
+!example/template/*

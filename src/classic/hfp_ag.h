@@ -52,10 +52,26 @@
 extern "C" {
 #endif
 
+typedef enum {
+    HFP_AG_VRA_EVENT_NONE,
+    HFP_AG_VRA_EVENT_CAN_SEND_NOW,
+    HFP_AG_VRA_EVENT_OK,
+    HFP_AG_VRA_EVENT_ERROR,
+    HFP_AG_VRA_EVENT_SCO_CONNECTED,
+    HFP_AG_VRA_EVENT_SCO_DISCONNECTED,
+    HFP_AG_VRA_EVENT_AG_ACTIVATE,
+    HFP_AG_VRA_EVENT_AG_DEACTIVATE,
+    HFP_AG_VRA_EVENT_AG_STATE,
+    HFP_AG_VRA_EVENT_HF_ACTIVATE,
+    HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED,
+    HFP_AG_VRA_EVENT_HF_DEACTIVATE,
+} hfp_ag_vra_event_type_t;
+
 /* API_START */
 typedef struct {
     uint8_t type;
     const char * number;
+    hfp_phone_service_t service;
 } hfp_phone_number_t;
 
 /**
@@ -439,11 +455,11 @@ uint8_t hfp_ag_set_signal_strength(int signal_strength);
 uint8_t hfp_ag_set_roaming_status(int roaming_status);
 
 /**
- * @brief Set subcriber number information, e.g. the phone number 
+ * @brief Set subscriber number information, e.g. the phone number
  * @param numbers
  * @param numbers_count
  */
-void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
+void hfp_ag_set_subscriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
 /**
  * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
@@ -523,7 +539,7 @@ void hfp_ag_deinit(void);
  * @param rfcomm_channel_nr
  * @param name
  * @param ability_to_reject_call
- * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
+ * @param supported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
  * @param wide_band_speech supported
  */
 void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech);
@@ -535,6 +551,10 @@ hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection)
 
 // @return true to process even as normal, false to cause HFP AG to ignore event
 void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event));
+
+#ifdef ENABLE_TESTING_SUPPORT
+bool test_hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
+#endif
 
 #if defined __cplusplus
 }

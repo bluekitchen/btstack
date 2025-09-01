@@ -45,15 +45,17 @@
 #include <stdint.h>
 #include "btstack_bool.h"
 #include "bluetooth.h"
+#include "btstack_base64_encoder.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-    uint8_t * buffer;
+    char * buffer;
     uint16_t  size;
     uint16_t len;
+    btstack_base64_state_t state;
 } broadcast_audio_uri_builder_t;
 
 /**
@@ -61,8 +63,18 @@ typedef struct {
  * @param builder
  * @param buffer to setup BASE
  * @param size of buffer
+ * @return true if there was sufficient space in the underlying buffer
  */
-void broadcast_audio_uri_builder_init(broadcast_audio_uri_builder_t * builder, uint8_t * buffer, uint16_t size);
+bool broadcast_audio_uri_builder_init(broadcast_audio_uri_builder_t * builder, char * buffer, uint16_t size);
+
+/**
+ * Finalize Broadcast Audio URI
+ * @param builder
+ * @param buffer to setup BASE
+ * @param size of buffer
+ * @return true if there was sufficient space in the underlying buffer
+ */
+bool broadcast_audio_uri_builder_finalize(broadcast_audio_uri_builder_t * builder);
 
 /**
  * @brief Query remaining space in buffer
@@ -128,12 +140,24 @@ bool broadcast_audio_uri_builder_append_advertiser_address(broadcast_audio_uri_b
 bool broadcast_audio_uri_builder_append_broadcast_id(broadcast_audio_uri_builder_t * builder, uint32_t broadcast_id);
 
 /**
- * Append Broadcast ID
+ * Append Broadcast Code
  * @param builder
- * @param Broadcast Code (128 bit)
+ * @param Broadcast Code (128 bit) as byte array
  * @return
  */
-bool broadcast_audio_uri_builder_append_broadcast_code(broadcast_audio_uri_builder_t * builder, const uint8_t * broadcast_code);
+bool broadcast_audio_uri_builder_append_broadcast_code_as_bytes(broadcast_audio_uri_builder_t * builder, const uint8_t * broadcast_code);
+
+/**
+ * Append Broadcast Code
+ * @param builder
+ * @param Broadcast Code (128 bit) as string
+ * @return
+ *
+ * The broadcast code will include the first 16 bytes of the given string.
+ * If the string is smaller only the bytes till the null termination are included.
+ * Bigger strings are truncated after 16 bytes.
+ */
+bool broadcast_audio_uri_builder_append_broadcast_code_as_string(broadcast_audio_uri_builder_t * builder, const char * broadcast_code);
 
 /**
  * Append Standard Quality
@@ -202,13 +226,28 @@ bool broadcast_audio_uri_builder_append_bis_sync(broadcast_audio_uri_builder_t *
 bool broadcast_audio_uri_builder_append_sg_number_of_bises(broadcast_audio_uri_builder_t * builder, uint32_t sg_number_of_bises);
 
 /**
- * Append SG_Metadata
+ * Start a SG_Metadata block
  * @param builder
- * @param metadata
- * @param metadata_len
  * @return
  */
-bool broadcast_audio_uri_builder_append_sg_metadata(broadcast_audio_uri_builder_t * builder, const uint8_t * metadata, uint16_t metadata_len);
+bool broadcast_audio_uri_builder_sg_metadata_begin(broadcast_audio_uri_builder_t * builder);
+
+/**
+ * Append ltv to SG_Metadata block
+ * @param builder
+ * @param metadata_len
+ * @param type
+ * @param metadata
+ * @return
+ */
+bool broadcast_audio_uri_builder_sg_metadata_append_ltv(broadcast_audio_uri_builder_t * builder, uint8_t metadata_len, uint8_t type, const uint8_t * metadata);
+
+/**
+ * Finalize SG_Metadata block
+ * @param builder
+ * @return
+ */
+bool broadcast_audio_uri_builder_sg_metadata_end(broadcast_audio_uri_builder_t * builder);
 
 /**
  * Append Public Broadcast Announcement Metadata

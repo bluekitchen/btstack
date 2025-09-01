@@ -122,7 +122,7 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
         if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
             const adtvp_media_codec_capabilities_t * media = &sep.configuration.media_codec;
             uint8_t error_code = avdtp_validate_media_configuration(stream_endpoint, connection->avdtp_cid, 0, media);
-            if (error_code != 0){
+            if (error_code != ERROR_CODE_SUCCESS){
                 log_info("media codec rejected by validator, error 0x%02x", error_code);
                 connection->reject_service_category = AVDTP_MEDIA_CODEC;
                 connection->error_code              = error_code;

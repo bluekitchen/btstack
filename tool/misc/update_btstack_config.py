@@ -78,7 +78,7 @@ def read_and_update_configuration(full_path, line_ending):
                     configuration += ("%s%s" % (lines_to_replace[line], line_ending))
                     continue
 
-                parts = re.match("#define\\s*(.*)", line)
+                parts = re.match(r"#define\s*(.*)", line)
                 if parts:
                     block.append(parts[1])
                 else:

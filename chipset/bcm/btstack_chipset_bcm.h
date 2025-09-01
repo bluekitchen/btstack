@@ -79,6 +79,17 @@ void btstack_chipset_bcm_set_device_name(const char * path);
  */
 void btstack_chipset_bcm_enable_init_script(int enabled);
 
+/**
+ * @Brief Identify Broadcom/Cypress/Infineon chipset by lmp_subversion
+ * If identified, device name is returned and can be used for HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION
+ *
+ * @note Required for newer Controllers that require AIROC Download Mode for PatchRAM Upload
+ *
+ * @param lmp_subversion
+ * @returns device name if identified, otherwise NULL
+ */
+const char * btstack_chipset_bcm_identify_controller(uint16_t lmp_subversion);
+
 #if defined __cplusplus
 }
 #endif

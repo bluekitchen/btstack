@@ -67,6 +67,7 @@ ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
 ${BTSTACK_ROOT}/src/ble/gatt_client.c \
+${BTSTACK_ROOT}/src/ble/gatt_service_client.c \
 ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
 ${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
 ${BTSTACK_ROOT}/src/ble/sm.c \
@@ -116,6 +117,8 @@ ${BTSTACK_ROOT}/src/classic/hid_host.c \
 ${BTSTACK_ROOT}/src/classic/hsp_ag.c \
 ${BTSTACK_ROOT}/src/classic/hsp_hs.c \
 ${BTSTACK_ROOT}/src/classic/obex_parser.c \
+${BTSTACK_ROOT}/src/classic/obex_srm_client.c \
+${BTSTACK_ROOT}/src/classic/obex_srm_server.c \
 ${BTSTACK_ROOT}/src/classic/obex_message_builder.c \
 ${BTSTACK_ROOT}/src/classic/pan.c \
 ${BTSTACK_ROOT}/src/classic/pbap_client.c \
@@ -228,7 +231,7 @@ SZ = $(PREFIX)size
 endif
 HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
- 
+
 #######################################
 # CFLAGS
 #######################################
@@ -246,7 +249,7 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 
 # macros for gcc
 # AS defines
-AS_DEFS = 
+AS_DEFS =
 
 # C defines
 C_DEFS =  \
@@ -255,7 +258,7 @@ C_DEFS =  \
 
 
 # AS includes
-AS_INCLUDES = 
+AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
@@ -313,10 +316,10 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # link script
 LDSCRIPT = STM32F407VGTx_FLASH.ld
 
-LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys 
+LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys
 LIBDIR = -Lpdm
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
-# this is required for libc based compiler if printf support for floating point is needed 
+# this is required for libc based compiler if printf support for floating point is needed
 #LDFLAGS += -u_printf_float
 
 # default action: build all
@@ -399,10 +402,10 @@ all: \
 
 
 $(BUILD_DIR)/%.h: %.gatt
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
@@ -413,22 +416,22 @@ $(BUILD_DIR)/%.elf: Makefile $(OBJECTS) $(BUILD_DIR)/%.o
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(HEX) $< $@
-	
+
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
-	
+	$(BIN) $< $@
+
 $(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
 	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
 
 $(BUILD_DIR):
-	mkdir $@		
+	mkdir $@
 
 #######################################
 # clean up
 #######################################
 clean:
 	-rm -fR $(BUILD_DIR)
-  
+
 #######################################
 # dependencies
 #######################################

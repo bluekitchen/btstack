@@ -51,6 +51,22 @@
 extern "C" {
 #endif
 
+typedef enum {
+    HFP_HF_VRA_EVENT_NONE,
+    HFP_HF_VRA_EVENT_CAN_SEND_NOW,
+    HFP_HF_VRA_EVENT_RECEIVED_OK,
+    HFP_HF_VRA_EVENT_RECEIVED_ERROR,
+    HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT,
+    HFP_HF_VRA_EVENT_SCO_CONNECTED,
+    HFP_HF_VRA_EVENT_SCO_DISCONNECTED,
+    HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_STATE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE_ENHANCED,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE,
+} hfp_hf_vra_event_type_t;
+
 /* API_START */
 
 /**
@@ -536,9 +552,11 @@ uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
  * @param acl_handle
  * @param assigned_number
  * @param value
- * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if indicator is either not found or not enabled
  */
-uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value);
+uint8_t hfp_hf_set_hf_indicator(int assigned_number, int value);
 
 /**
  * @brief Tests if in-band ringtone is active on AG (requires SLC)
@@ -605,6 +623,10 @@ void hfp_hf_deinit(void);
  * @param wide_band_speech supported
  */
 void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech);
+
+#ifdef ENABLE_TESTING_SUPPORT
+bool test_hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event);
+#endif
 
 /* API_END */
 

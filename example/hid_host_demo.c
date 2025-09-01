@@ -122,7 +122,7 @@ static enum {
 
 static uint16_t hid_host_cid = 0;
 static bool     hid_host_descriptor_available = false;
-static hid_protocol_mode_t hid_host_report_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
+static hid_protocol_mode_t hid_host_report_mode = HID_PROTOCOL_MODE_REPORT;
 
 /* @section Main application configuration
  *
@@ -194,7 +194,7 @@ static void hid_host_set_leds(void){
     if (hid_host_caps_lock){
         output_report[caps_lock_report_offset] = 1 << (hid_host_led_caps_lock_bit & 0x07);
     }
-    hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, hid_host_led_report_id, output_report, hid_host_led_report_len);
+    hid_host_send_report(hid_host_cid, hid_host_led_report_id, output_report, hid_host_led_report_len);
 }
 
 static void hid_host_demo_lookup_caps_lock_led(void){
@@ -343,11 +343,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     switch (hci_event_hid_meta_get_subevent_code(packet)){
 
                         case HID_SUBEVENT_INCOMING_CONNECTION:
-                            // There is an incoming connection: we can accept it or decline it.
-                            // The hid_host_report_mode in the hid_host_accept_connection function 
-                            // allows the application to request a protocol mode. 
-                            // For available protocol modes, see hid_protocol_mode_t in btstack_hid.h file. 
-                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_report_mode);
+                            // There is an incoming connection: we can accept it or decline it
+
+                            // If there are no resources to handle the connection,
+                            // the status will be ERROR_CODE_MEMORY_CAPACITY_EXCEEDED
+
+                            // The hid_host_report_mode in the hid_host_accept_connection function
+                            // allows the application to request a protocol mode.
+
+                            // For available protocol modes, see hid_protocol_mode_t in btstack_hid.h file.
+                            if (hid_subevent_incoming_connection_get_status(packet) == ERROR_CODE_SUCCESS) {
+                                hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_report_mode);
+                            }
                             break;
                         
                         case HID_SUBEVENT_CONNECTION_OPENED:

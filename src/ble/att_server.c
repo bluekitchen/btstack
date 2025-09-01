@@ -77,7 +77,8 @@
 #define NVN_NUM_GATT_SERVER_CCC 20
 #endif
 
-#define ATT_SERVICE_FLAGS_DELAYED_RESPONSE (1u<<0u)
+#define ATT_SERVER_FLAGS_DELAYED_RESPONSE       (1u<<0u)
+#define ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH (1u<<1u)
 
 static void att_run_for_context(att_server_t * att_server, att_connection_t * att_connection);
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
@@ -317,7 +318,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                             att_server->bearer_type = ATT_BEARER_UNENHANCED_LE;
                             att_connection->mtu = ATT_DEFAULT_MTU;
                             att_connection->max_mtu = l2cap_max_le_mtu();
-                            if (att_connection->max_mtu > ATT_REQUEST_BUFFER_SIZE){
+                            if (att_connection->max_mtu > (uint16_t) ATT_REQUEST_BUFFER_SIZE){
                                 att_connection->max_mtu = ATT_REQUEST_BUFFER_SIZE;
                             }
                             att_connection->encryption_key_size = 0u;
@@ -563,13 +564,13 @@ static void att_server_handle_response_pending(att_server_t *att_server, const a
         btstack_linked_list_iterator_init(&it, &service_handlers);
         while (btstack_linked_list_iterator_has_next(&it)) {
             att_service_handler_t *handler = (att_service_handler_t *) btstack_linked_list_iterator_next(&it);
-            if ((handler->flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0u){
-                handler->flags &= ~ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+            if ((handler->flags & ATT_SERVER_FLAGS_DELAYED_RESPONSE) != 0u){
+                handler->flags &= ~ATT_SERVER_FLAGS_DELAYED_RESPONSE;
                 handler->read_callback(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
             }
         }
         // notify main read callback if it returned response pending
-        if ((att_server_flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0u){
+        if ((att_server_flags & ATT_SERVER_FLAGS_DELAYED_RESPONSE) != 0u){
             // flag was set by read callback
             btstack_assert(att_server_client_read_callback != NULL);
             (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
@@ -1029,6 +1030,10 @@ static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
     return (((uint8_t)'B') << 24u) | (((uint8_t)'T') << 16u) | (((uint8_t)'C') << 8u) | index;
 }
 
+static uint32_t att_server_tag_for_hash(void){
+    return (((uint8_t)'B') << 24u) | (((uint8_t)'T') << 16u) | (((uint8_t)'D') << 8u) | ((uint8_t)'B');
+}
+
 static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t value){
     // lookup att_server instance
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
@@ -1148,16 +1153,67 @@ static void att_server_persistent_ccc_clear(att_server_t * att_server){
     }  
 }
 
+// @returns true if cccs are valid
+static bool att_server_persistent_ccc_validate_database(const btstack_tlv_t * tlv_impl, void * tlv_context) {
+    // we skip validation if there's no GATT Database Hash Characteristic
+    uint8_t hash_from_db[16];
+    bool have_db_hash = gatt_server_get_database_hash(hash_from_db);
+    if (!have_db_hash) return true;
+    log_info("Database Hash:");
+    log_info_hexdump(hash_from_db, 16);
+
+    // otherwise, compare to stored hash if available
+    uint8_t hash_from_tlv[16];
+    uint32_t hash_tag = att_server_tag_for_hash();
+    bool store_hash = false;
+    bool stored_cccs_valid = true;
+    int len = tlv_impl->get_tag(tlv_context, hash_tag, hash_from_tlv, sizeof(hash_from_tlv));
+    if (len == (int) sizeof(hash_from_tlv)) {
+        log_info("TLV Hash:");
+        log_info_hexdump(hash_from_db, 16);
+        if (memcmp(hash_from_db, hash_from_tlv, 16) != 0) {
+            log_info("Database Hash changed -> clear persistent CCCs");
+            stored_cccs_valid = false;
+            store_hash = true;
+        }
+    } else {
+        // optimistic update: store hash without clearing CCCs
+        store_hash = true;
+    }
+
+    // clear stored CCCs
+    if (stored_cccs_valid == false) {
+        for (int index=0;index<NVN_NUM_GATT_SERVER_CCC;index++) {
+            uint32_t ccc_tag = att_server_persistent_ccc_tag_for_index(index);
+            tlv_impl->delete_tag(tlv_context, ccc_tag);
+        }
+    }
+    // store updated database hash
+    if (store_hash) {
+        tlv_impl->store_tag(tlv_context, hash_tag, hash_from_db, sizeof(hash_from_db));
+    }
+    return stored_cccs_valid;
+}
+
 static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection){
-    int le_device_index = att_server->ir_le_device_db_index;
-    log_info("Restore CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
-    // check if bonded
-    if (le_device_index < 0) return;
     // get btstack_tlv
     const btstack_tlv_t * tlv_impl = NULL;
     void * tlv_context;
     btstack_tlv_get_instance(&tlv_impl, &tlv_context);
     if (!tlv_impl) return;
+
+    // validate database hash
+    if ((att_server_flags & ((uint8_t)ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH)) != 0u) {
+        att_server_flags &= ((uint8_t)~ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH);
+        if (att_server_persistent_ccc_validate_database(tlv_impl, tlv_context) == false) {
+            return;
+        }
+    }
+
+    // check if bonded
+    int le_device_index = att_server->ir_le_device_db_index;
+    if (le_device_index < 0) return;
+    log_info("Restore CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
     // get all ccc tag
     int index;
     persistent_ccc_entry_t entry;
@@ -1241,9 +1297,9 @@ static uint16_t att_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (result == ATT_READ_RESPONSE_PENDING){
             if (service == NULL){
-                att_server_flags |= ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+                att_server_flags |= ATT_SERVER_FLAGS_DELAYED_RESPONSE;
             } else {
-                service->flags   |= ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+                service->flags   |= ATT_SERVER_FLAGS_DELAYED_RESPONSE;
             }
         }
 #endif
@@ -1321,6 +1377,9 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
     att_set_db(db);
     att_set_read_callback(att_server_read_callback);
     att_set_write_callback(att_server_write_callback);
+
+    // validate database hash on first connect
+    att_server_flags = ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH;
 }
 
 void att_server_register_packet_handler(btstack_packet_handler_t handler){
@@ -1495,7 +1554,6 @@ void att_server_deinit(void){
     att_server_client_write_callback = NULL;
     att_client_packet_handler = NULL;
     service_handlers = NULL;
-    att_server_flags = 0;
 }
 
 #ifdef ENABLE_GATT_OVER_EATT

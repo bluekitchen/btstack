@@ -41,11 +41,14 @@
  * Implementation of the GATT Battery Service Server 
  * To use with your application, add `#import <battery_service.gatt>` to your .gatt file
  */
+
+#ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
+#endif
+
 #include "btstack_defines.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "btstack_util.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 
@@ -82,6 +85,7 @@ static const uint16_t bas_uuid16s[BAS_CHARACTERISTIC_INDEX_NUM] = {
     ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
 };
 
+#ifdef ENABLE_TESTING_SUPPORT
 static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
     "BATTERY_LEVEL",
     "BATTERY_LEVEL_STATUS",
@@ -96,6 +100,7 @@ static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
     "MODEL_NUMBER_STRING",
     "SERIAL_NUMBER_STRING",
 };
+#endif
 
 static uint16_t bas_service_id_counter = 0;
 static btstack_linked_list_t battery_services;
@@ -363,8 +368,6 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
 }
 
 static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    UNUSED(con_handle);
-
     battery_service_v1_t * service = battery_service_service_for_attribute_handle(attribute_handle);
     if (service == NULL){
         return 0;
@@ -586,9 +589,9 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &battery_services);
     while (btstack_linked_list_iterator_has_next(&it)){
-        battery_service_v1_t * service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
-        if (service->service_handler.end_handle > start_handle){
-            start_handle = service->service_handler.end_handle + 1;
+        battery_service_v1_t * registered_service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
+        if (registered_service->service_handler.end_handle > start_handle){
+            start_handle = registered_service->service_handler.end_handle + 1;
         }
     }
 
@@ -605,15 +608,28 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
 
     service->service_handler.start_handle = start_handle;
     service->service_handler.end_handle = end_handle;
-    printf("start handle 0x%04X, end0x%04X\n", service->service_handler.start_handle , service->service_handler.end_handle);
+
+
     uint8_t i;
     for (i = 0; i < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; i++){
         // get characteristic value handle and client configuration handle
         service->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, bas_uuid16s[i]);
         service->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, bas_uuid16s[i]);
-        printf("%30s: 0x%04X, CCC 0x%04X\n", bas_uuid16_name[i], service->characteristics[i].value_handle , service->characteristics[i].client_configuration_handle );
     }
-    
+
+    log_info("BAS 0x%04X-0x%04X", service->service_handler.start_handle , service->service_handler.end_handle);
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("BAS 0x%04X-0x%04X (%d-%d)\n", service->service_handler.start_handle , service->service_handler.end_handle, service->service_handler.start_handle , service->service_handler.end_handle);
+    for (i = 0; i < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; i++) {
+        if (service->characteristics[i].value_handle != 0) {
+            printf("    - (%d) 0x%04X  v-handle %s\n", service->characteristics[i].value_handle, service->characteristics[i].value_handle, bas_uuid16_name[i]);
+        }
+        if (service->characteristics[i].client_configuration_handle != 0) {
+            printf("    - (%d) 0x%04X cc-handle %s\n", service->characteristics[i].client_configuration_handle, service->characteristics[i].client_configuration_handle, bas_uuid16_name[i]);
+        }
+    }
+#endif
+
     service->battery_level_status_broadcast_configuration_handle = gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS);
 
     memset(connections, 0, sizeof(battery_service_v1_server_connection_t) * connection_max_num);
@@ -628,8 +644,6 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     service->service_handler.read_callback  = &battery_service_read_callback;
     service->service_handler.write_callback = &battery_service_write_callback;
     att_server_register_service_handler(&service->service_handler);
-
-    log_info("Found Battery Service 0x%02x-0x%02x", start_handle, end_handle);
 
     btstack_linked_list_add_tail(&battery_services, (btstack_linked_item_t *) service);
 }

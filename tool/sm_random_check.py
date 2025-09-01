@@ -44,7 +44,7 @@ def check_file(infile):
 				ts_sec  = read_net_32(fin)
 				ts_usec = read_net_32(fin)
 				type    = ord(fin.read(1))
-				packet_len = len - 9;
+				packet_len = len - 9
 				if (packet_len > 66000):
 					print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
 					break
