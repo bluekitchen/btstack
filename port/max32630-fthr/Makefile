@@ -1,8 +1,8 @@
 .phony: examples
-PYTHON ?= python
+PYTHON ?= python3
 all: examples
 
-examples: 
+examples:
 	$(PYTHON) scripts/create_examples.py
 
 clean:
