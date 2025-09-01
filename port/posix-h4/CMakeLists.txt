@@ -6,28 +6,28 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
-	# using Clang
+    # using Clang
     SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Wall -Wextra -Werror")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-	# using GCC
+    # using GCC
     SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Wall -Wextra -Werror")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
-	# using Intel C++
+    # using Intel C++
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
-	# using Visual Studio C++
+    # using Visual Studio C++
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-  add_compile_options(
+    add_compile_options(
       -fsanitize=undefined -fsanitize=address
   )
-  add_link_options(
+    add_link_options(
       -fsanitize=undefined -fsanitize=address
   )
 endif()
 
 # to generate .h from .gatt files
-find_package (Python REQUIRED COMPONENTS Interpreter)
+find_package(Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -85,44 +85,44 @@ file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
 set(LWIP_CORE_SRC
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c
-		)
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c
+  )
 set (LWIP_IPV4_SRC
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
-		)
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
+  )
 set (LWIP_NETIF_SRC
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c
-		)
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c
+  )
 set (LWIP_HTTPD
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
-		${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
-		)
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
+  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
+  )
 set (LWIP_DHCPD
-		${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
-		)
+  ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
+  )
 set (LWIP_PORT
-		${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
-		${BTSTACK_ROOT}//platform/lwip/bnep_lwip.c
-		)
+  ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
+  ${BTSTACK_ROOT}//platform/lwip/bnep_lwip.c
+  )
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
 file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/le_device_db_memory.c")
@@ -132,29 +132,29 @@ file(GLOB SOURCES_POSIX_OFF "${BTSTACK_ROOT}/platform/posix/le_device_db_fs.c")
 list(REMOVE_ITEM SOURCES_POSIX   ${SOURCES_POSIX_OFF})
 
 set(SOURCES
-		${SOURCES_BLE}
-		${SOURCES_BCM}
-		${SOURCES_BLUEDROID}
-		${SOURCES_CLASSIC}
-		${SOURCES_CSR}
-		${SOURCES_EM9301}
-		${SOURCES_GATT}
-		${SOURCES_HXCMOD}
-		${SOURCES_HXCMOD}
-		${SOURCES_LIBUSB}
-		${SOURCES_MD5}
-		${SOURCES_MESH}
-		${SOURCES_PORT}
-		${SOURCES_REALTEK}
-		${SOURCES_RIJNDAEL}
-		${SOURCES_SRC}
-		${SOURCES_CSR}
-		${SOURCES_STLC2500D}
-		${SOURCES_TC2566X}
-		${SOURCES_UECC}
-		${SOURCES_POSIX}
-		${SOURCES_YXML}
-		${SOURCES_ZEPHYR}
+  ${SOURCES_BLE}
+  ${SOURCES_BCM}
+  ${SOURCES_BLUEDROID}
+  ${SOURCES_CLASSIC}
+  ${SOURCES_CSR}
+  ${SOURCES_EM9301}
+  ${SOURCES_GATT}
+  ${SOURCES_HXCMOD}
+  ${SOURCES_HXCMOD}
+  ${SOURCES_LIBUSB}
+  ${SOURCES_MD5}
+  ${SOURCES_MESH}
+  ${SOURCES_PORT}
+  ${SOURCES_REALTEK}
+  ${SOURCES_RIJNDAEL}
+  ${SOURCES_SRC}
+  ${SOURCES_CSR}
+  ${SOURCES_STLC2500D}
+  ${SOURCES_TC2566X}
+  ${SOURCES_UECC}
+  ${SOURCES_POSIX}
+  ${SOURCES_YXML}
+  ${SOURCES_ZEPHYR}
         ${SOURCES_QRCODEGEN}
 )
 list(SORT SOURCES)
@@ -167,14 +167,14 @@ find_package(PkgConfig)
 
 # portaudio
 if (PkgConfig_FOUND)
-	pkg_check_modules(PORTAUDIO portaudio-2.0)
-	if(PORTAUDIO_FOUND)
-		message("HAVE_PORTAUDIO")
-		target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-		target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-		target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
-		add_compile_definitions(HAVE_PORTAUDIO)
-	endif()
+    pkg_check_modules(PORTAUDIO portaudio-2.0)
+    if(PORTAUDIO_FOUND)
+        message("HAVE_PORTAUDIO")
+        target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+        target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+        target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
+        add_compile_definitions(HAVE_PORTAUDIO)
+    endif()
 endif()
 
 # pthread
@@ -200,22 +200,22 @@ list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
-	# get c file
-	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+    # get c file
+    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
-	# add GATT DB creation
-	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
-		message("example ${EXAMPLE} -- with GATT DB")
-	    add_custom_command(
-		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-			COMMAND ${Python_EXECUTABLE}
-			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-		)
-		list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-	else()
-		message("example ${EXAMPLE}")
-	endif()
-	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-	target_link_libraries(${EXAMPLE} btstack pthread)
+    # add GATT DB creation
+    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+        message("example ${EXAMPLE} -- with GATT DB")
+        add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+   COMMAND ${Python_EXECUTABLE}
+   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+  )
+        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+    else()
+        message("example ${EXAMPLE}")
+    endif()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    target_link_libraries(${EXAMPLE} btstack pthread)
 endforeach(EXAMPLE)

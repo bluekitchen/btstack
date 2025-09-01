@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message("${Qt5_DIR}")
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Python REQUIRED COMPONENTS Interpreter)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 # BTstack Root
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
@@ -197,32 +197,32 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
-        get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-        set (SOURCES_EXAMPLE ${EXAMPLE_FILE})
+    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+    set (SOURCES_EXAMPLE ${EXAMPLE_FILE})
 
-        # add qt main.cpp and run loop
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp main.cpp)
+    # add qt main.cpp and run loop
+    list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp main.cpp)
 
-        # add lwip sources for lwip examples
-        if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-                list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-        endif()
+    # add lwip sources for lwip examples
+    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
+        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
+    endif()
 
-        # add GATT DB creation
-        if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
-                message("example ${EXAMPLE} -- with GATT DB")
-                add_custom_command(
+    # add GATT DB creation
+    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+        message("example ${EXAMPLE} -- with GATT DB")
+        add_custom_command(
                     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
                         COMMAND  ${PYTHON_EXECUTABLE}
                         ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
                 )
-                list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 
-                # generated file does not need AUTOMOC and AUOUIC processing
-                set_property(SOURCE {CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h PROPERTY SKIP_AUTOGEN ON)
-        else()
-                message("example ${EXAMPLE}")
-        endif()
-        add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
-        target_link_libraries(${EXAMPLE} btstack Qt5::Core)
+        # generated file does not need AUTOMOC and AUOUIC processing
+        set_property(SOURCE {CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h PROPERTY SKIP_AUTOGEN ON)
+    else()
+        message("example ${EXAMPLE}")
+    endif()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
+    target_link_libraries(${EXAMPLE} btstack Qt5::Core)
 endforeach(EXAMPLE_FILE)

@@ -9,19 +9,19 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
-	# using Clang
-	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror")
+    # using Clang
+    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-	# using GCC
-	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror")
+    # using GCC
+    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
-	# using Intel C++
+    # using Intel C++
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
-	# using Visual Studio C++
+    # using Visual Studio C++
 endif()
 
 # to generate .h from .gatt files
-find_package (Python REQUIRED COMPONENTS Interpreter)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -62,44 +62,44 @@ file(GLOB SOURCES_LIBUSB    "../../port/libusb-intel/*.c" "../../platform/libusb
 file(GLOB SOURCES_INTEL    "../../chipset/intel/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
-set(LWIP_CORE_SRC 
-	../../3rd-party/lwip/core/src/core/def.c
-	../../3rd-party/lwip/core/src/core/inet_chksum.c
-	../../3rd-party/lwip/core/src/core/init.c
-	../../3rd-party/lwip/core/src/core/ip.c
-	../../3rd-party/lwip/core/src/core/mem.c
-	../../3rd-party/lwip/core/src/core/memp.c
-	../../3rd-party/lwip/core/src/core/netif.c
-	../../3rd-party/lwip/core/src/core/pbuf.c
-	../../3rd-party/lwip/core/src/core/tcp.c
-	../../3rd-party/lwip/core/src/core/tcp_in.c
-	../../3rd-party/lwip/core/src/core/tcp_out.c
-	../../3rd-party/lwip/core/src/core/timeouts.c
-	../../3rd-party/lwip/core/src/core/udp.c
+set(LWIP_CORE_SRC
+ ../../3rd-party/lwip/core/src/core/def.c
+ ../../3rd-party/lwip/core/src/core/inet_chksum.c
+ ../../3rd-party/lwip/core/src/core/init.c
+ ../../3rd-party/lwip/core/src/core/ip.c
+ ../../3rd-party/lwip/core/src/core/mem.c
+ ../../3rd-party/lwip/core/src/core/memp.c
+ ../../3rd-party/lwip/core/src/core/netif.c
+ ../../3rd-party/lwip/core/src/core/pbuf.c
+ ../../3rd-party/lwip/core/src/core/tcp.c
+ ../../3rd-party/lwip/core/src/core/tcp_in.c
+ ../../3rd-party/lwip/core/src/core/tcp_out.c
+ ../../3rd-party/lwip/core/src/core/timeouts.c
+ ../../3rd-party/lwip/core/src/core/udp.c
 )
 set (LWIP_IPV4_SRC
-	../../3rd-party/lwip/core/src/core/ipv4/acd.c
-	../../3rd-party/lwip/core/src/core/ipv4/dhcp.c
-	../../3rd-party/lwip/core/src/core/ipv4/etharp.c
-	../../3rd-party/lwip/core/src/core/ipv4/icmp.c
-	../../3rd-party/lwip/core/src/core/ipv4/ip4.c
-	../../3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
-	../../3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
+ ../../3rd-party/lwip/core/src/core/ipv4/acd.c
+ ../../3rd-party/lwip/core/src/core/ipv4/dhcp.c
+ ../../3rd-party/lwip/core/src/core/ipv4/etharp.c
+ ../../3rd-party/lwip/core/src/core/ipv4/icmp.c
+ ../../3rd-party/lwip/core/src/core/ipv4/ip4.c
+ ../../3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
+ ../../3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
 )
 set (LWIP_NETIF_SRC
-	../../3rd-party/lwip/core/src/netif/ethernet.c
+ ../../3rd-party/lwip/core/src/netif/ethernet.c
 )
 set (LWIP_HTTPD
-	../../3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
-	../../3rd-party/lwip/core/src/apps/http/fs.c
-	../../3rd-party/lwip/core/src/apps/http/httpd.c
+ ../../3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
+ ../../3rd-party/lwip/core/src/apps/http/fs.c
+ ../../3rd-party/lwip/core/src/apps/http/httpd.c
 )
 set (LWIP_DHCPD
-	../../3rd-party/lwip/dhcp-server/dhserver.c
+ ../../3rd-party/lwip/dhcp-server/dhserver.c
 )
 set (LWIP_PORT
-	../../platform/lwip/port/sys_arch.c
-	../../platform/lwip/bnep_lwip.c
+ ../../platform/lwip/port/sys_arch.c
+ ../../platform/lwip/bnep_lwip.c
 )
 
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
@@ -113,22 +113,22 @@ list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
 file(GLOB SOURCES_POSIX_OFF "../../platform/posix/le_device_db_fs.c")
 list(REMOVE_ITEM SOURCES_POSIX ${SOURCES_POSIX_OFF})
 
-set(SOURCES 
-	${SOURCES_MD5}
-	${SOURCES_YXML}
-	${SOURCES_BLUEDROID}
-	${SOURCES_POSIX}
-	${SOURCES_RIJNDAEL}
-	${SOURCES_LIBUSB}
-	${SOURCES_LC3_GOOGLE}
-	${SOURCES_SRC}
-	${SOURCES_BLE}
-	${SOURCES_GATT}
-	${SOURCES_MESH}
-	${SOURCES_CLASSIC} 
-	${SOURCES_UECC}
-	${SOURCES_HXCMOD}
-	${SOURCES_INTEL}
+set(SOURCES
+ ${SOURCES_MD5}
+ ${SOURCES_YXML}
+ ${SOURCES_BLUEDROID}
+ ${SOURCES_POSIX}
+ ${SOURCES_RIJNDAEL}
+ ${SOURCES_LIBUSB}
+ ${SOURCES_LC3_GOOGLE}
+ ${SOURCES_SRC}
+ ${SOURCES_BLE}
+ ${SOURCES_GATT}
+ ${SOURCES_MESH}
+ ${SOURCES_CLASSIC}
+ ${SOURCES_UECC}
+ ${SOURCES_HXCMOD}
+ ${SOURCES_INTEL}
 )
 list(SORT SOURCES)
 
@@ -147,11 +147,11 @@ target_link_libraries(btstack ${LIBUSB_LIBRARIES})
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
-	message("HAVE_PORTAUDIO")
-	target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-	target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-	target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
-	add_compile_definitions(HAVE_PORTAUDIO)
+    message("HAVE_PORTAUDIO")
+    target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+    target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+    target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
+    add_compile_definitions(HAVE_PORTAUDIO)
 endif()
 
 # pthread
@@ -177,29 +177,29 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
-	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
 
-	# get c file
-	set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+    # get c file
+    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
-	# add lwip sources for lwip examples
-	if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-		list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-	endif()
+    # add lwip sources for lwip examples
+    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
+        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
+    endif()
 
-	# add GATT DB creation
-	if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
-		message("example ${EXAMPLE} -- with GATT DB")
-		add_custom_command(
-		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-			COMMAND ${Python_EXECUTABLE}
-			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-		)
-		list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-	else()
-		message("example ${EXAMPLE}")
-	endif()
-	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
-	target_link_libraries(${EXAMPLE} btstack)
+    # add GATT DB creation
+    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+        message("example ${EXAMPLE} -- with GATT DB")
+        add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+   COMMAND ${Python_EXECUTABLE}
+   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+  )
+        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+    else()
+        message("example ${EXAMPLE}")
+    endif()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
+    target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)

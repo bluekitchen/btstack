@@ -12,7 +12,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 
 # to generate .h from .gatt files
-find_package (Python REQUIRED COMPONENTS Interpreter)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -181,12 +181,12 @@ foreach(EXAMPLE ${EXAMPLES})
     # add GATT DB creation
     foreach ( GATT ${EXAMPLES_GATT} )
         if( GATT MATCHES ${EXAMPLE} )
-        message("example ${EXAMPLE} -- with GATT DB")
-        get_filename_component( out_f ${GATT} NAME )
-        set(out_f "${CMAKE_CURRENT_BINARY_DIR}/${out_f}")
-        string(REGEX REPLACE "\\.[^.]*$" ".h" out_f ${out_f})
-        message( ${out_f} )
-        add_custom_command(
+            message("example ${EXAMPLE} -- with GATT DB")
+            get_filename_component( out_f ${GATT} NAME )
+            set(out_f "${CMAKE_CURRENT_BINARY_DIR}/${out_f}")
+            string(REGEX REPLACE "\\.[^.]*$" ".h" out_f ${out_f})
+            message( ${out_f} )
+            add_custom_command(
             OUTPUT ${out_f}
             DEPENDS ${GATT}
             COMMAND ${Python_EXECUTABLE}
@@ -194,8 +194,8 @@ foreach(EXAMPLE ${EXAMPLES})
             COMMENT "Generate ${out_f}"
             VERBATIM
         )
-        list(APPEND SOURCES_EXAMPLE ${out_f})
-    endif()
+            list(APPEND SOURCES_EXAMPLE ${out_f})
+        endif()
     endforeach(GATT)
     #    target_sources( app PRIVATE ${SOURCES_EXAMPLE} )
     #    target_link_libraries( app PRIVATE btstack )
