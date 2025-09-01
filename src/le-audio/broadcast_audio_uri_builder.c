@@ -220,9 +220,10 @@ bool broadcast_audio_uri_builder_append_broadcast_code_as_string(broadcast_audio
 bool broadcast_audio_uri_builder_append_vendor_specific(broadcast_audio_uri_builder_t * builder, uint16_t vendor_id, const uint8_t * data, uint16_t data_len){
     UNUSED(data);
     UNUSED(data_len);
-    uint16_t len = builder->len;
+    const uint16_t len = builder->len;
     bool ok = broadcast_audio_uri_builder_append_string(builder, "VS:");
-    size_t remaining, olen;
+    size_t remaining = 0;
+    size_t out_len = 0;
     btstack_base64_state_t state;
     if(ok) {
         char buffer[9] = "ID:0000;";
@@ -231,29 +232,29 @@ bool broadcast_audio_uri_builder_append_vendor_specific(broadcast_audio_uri_buil
         broadcast_audio_uri_builder_string_hexdump((uint8_t*)&buffer[3], vendor_id_big_endian_id, 2);
         char *ptr = broadcast_audio_uri_builder_get_ptr(builder);
         remaining = broadcast_audio_uri_builder_get_remaining_space(builder);
-        olen = remaining;
+        out_len = remaining;
         btstack_base64_encoder_stream_init( &state );
-        ssize_t ret = btstack_base64_encoder_stream( &state, buffer, strlen(buffer), ptr, &olen );
-        ok = ((ret>0) && !(olen>remaining));
+        ssize_t ret = btstack_base64_encoder_stream( &state, buffer, strlen(buffer), ptr, &out_len );
+        ok = (ret > 0) && (out_len <= remaining);
     }
     if(ok) {
-        builder->len += olen;
-        remaining -= olen;
-        olen = remaining;
+        builder->len += out_len;
+        remaining -= out_len;
+        out_len = remaining;
         char *ptr = broadcast_audio_uri_builder_get_ptr(builder);
-        ssize_t ret = btstack_base64_encoder_stream( &state, data, data_len, ptr, &olen );
-        ok = ((ret>0) && !(olen>remaining));
+        ssize_t ret = btstack_base64_encoder_stream( &state, data, data_len, ptr, &out_len );
+        ok = (ret > 0) && (out_len <= remaining);
     }
     if(ok) {
-        builder->len += olen;
-        remaining -= olen;
-        olen = remaining;
+        builder->len += out_len;
+        remaining -= out_len;
+        out_len = remaining;
         char *ptr = broadcast_audio_uri_builder_get_ptr(builder);
-        ssize_t ret = btstack_base64_encoder_stream_final(&state, ptr, &olen);
-        ok = ((ret>=0) && (olen<remaining));
+        ssize_t ret = btstack_base64_encoder_stream_final(&state, ptr, &out_len);
+        ok = (ret > 0) && (out_len <= remaining);
     }
     if (ok){
-        builder->len += olen;
+        builder->len += out_len;
         ok = broadcast_audio_uri_builder_append_string(builder, ";");
     }
     if (!ok){
