@@ -515,6 +515,24 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
+static void hci_dedicated_bonding_handle_complete(hci_connection_t* hci_connection, uint8_t status) {
+    // handle dedicated bonding done
+    if ((hci_connection->bonding_flags & BONDING_DEDICATED) != 0){
+        hci_connection->bonding_flags &= ~BONDING_DEDICATED;
+        hci_connection->bonding_status = status;
+#ifdef ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
+        if (status == ERROR_CODE_SUCCESS) {
+            // emit dedicated bonding complete, don't disconnect
+            hci_emit_dedicated_bonding_result(hci_connection->address, hci_connection->bonding_status);
+        } else
+#endif
+        {
+            // request disconnect, event is emitted after disconnect
+            hci_connection->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+        }
+    }
+}
+
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
     hci_connection->requested_security_level = LEVEL_0;
     if (!hci_pairing_active(hci_connection)) return;
@@ -535,21 +553,7 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     event[10] = status;
     hci_emit_btstack_event(event, sizeof(event), 1);
 
-    // handle dedicated bonding done
-    if ((hci_connection->bonding_flags & BONDING_DEDICATED) != 0){
-        hci_connection->bonding_flags &= ~BONDING_DEDICATED;
-        hci_connection->bonding_status = status;
-#ifdef ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
-        if (status == ERROR_CODE_SUCCESS) {
-            // emit dedicated bonding complete, don't disconnect
-            hci_emit_dedicated_bonding_result(hci_connection->address, hci_connection->bonding_status);
-        } else
-#endif
-        {
-            // request disconnect, event is emitted after disconnect
-            hci_connection->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
-        }
-    }
+    hci_dedicated_bonding_handle_complete(hci_connection, status);
 }
 
 bool hci_authentication_active_for_handle(hci_con_handle_t handle){
