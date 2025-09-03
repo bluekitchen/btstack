@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+
 ### Added
+
 ### Fixed
+- GAP: emit Dedicated Bonding Complete after link key was received
+
 ### Changed
 
 

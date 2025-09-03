@@ -552,8 +552,6 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     reverse_bd_addr(hci_connection->address, &event[4]);
     event[10] = status;
     hci_emit_btstack_event(event, sizeof(event), 1);
-
-    hci_dedicated_bonding_handle_complete(hci_connection, status);
 }
 
 bool hci_authentication_active_for_handle(hci_con_handle_t handle){
@@ -4069,6 +4067,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // - if security level sufficient
             if (gap_security_level_for_link_key_type(link_key_type) < conn->requested_security_level) break;
             gap_store_link_key_for_bd_addr(addr, &packet[8], conn->link_key_type);
+
+            // handle dedicated bonding complete
+            hci_dedicated_bonding_handle_complete(conn, ERROR_CODE_SUCCESS);
             break;
         }
 
