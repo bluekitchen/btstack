@@ -896,7 +896,7 @@ struct rtb_baud baudrates[] = {
 
 static uint32_t vendor_speed_to_std(uint32_t rtb_speed){
     unsigned int i;
-    for (i = 0; i < (sizeof(baudrates)/sizeof(&baudrates[0])); i++) {
+    for (i = 0; i < (sizeof(baudrates)/sizeof(baudrates[0])); i++) {
         if (baudrates[i].rtb_speed == rtb_speed) {
             return baudrates[i].uart_speed;
         }
@@ -931,7 +931,7 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     FILE *   conf = NULL;
     uint8_t *conf_buf = NULL;
 
-    uint32_t fw_version;
+    uint32_t fw_version = 0;
 
     struct patch_node *tmp;
     unsigned max_patch_size = 0;
