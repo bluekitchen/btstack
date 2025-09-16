@@ -54,6 +54,7 @@
 #include "bluetooth_gatt.h"
 #include "bluetooth_sdp.h"
 #include "btstack_audio.h"
+#include "btstack_audio_generator.h"
 #include "btstack_control.h"
 #include "btstack_crypto.h"
 #include "btstack_debug.h"
