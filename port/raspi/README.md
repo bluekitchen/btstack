@@ -4,6 +4,26 @@ Tested with Raspberry Pi 3 Model B V1.2, Raspberry Pi 3 Model B+, and Raspberry 
 
 With minor fixes, the port should also work with older Raspberry Pi models that use the [RedBear pHAT](https://redbear.cc/product/rpi/iot-phat.html). See TODO at the end.
 
+## Raspberry Pi 4B
+
+Tested with Debian Release 12 (Bookworm), first check if you have `/dev/serial0` and `/dev/serial1` available:
+
+```bash
+$ ls -lah /dev/ser*
+lrwxrwxrwx 1 root root 7 Mar 24 14:40 /dev/serial0 -> ttyAMA0
+lrwxrwxrwx 1 root root 5 Mar 24 14:40 /dev/serial1 -> ttyS0
+```
+
+If those are not made, you have to modify your `/boot/firmware/config.txt` by adding:
+
+```
+[all]
+dtoverlay=miniuart-bt
+dtparam=krnbt=off
+```
+
+Then after restart the device symlinks should be there. To compile for 64 bit arm use `CC = aarch64-linux-gnu-gcc` in Makefile.
+
 ## Raspberry Pi 3 / Zero W Setup
 
 There are various options for setting up the Raspberry Pi, have a look at the Internet. Here's what we did:
@@ -102,6 +122,7 @@ Model                    | Bluetooth Controller                                 
 Older                    | None                                                    |           |                  |             |               |
 Pi 3 Model A, Model B    | [CYW43438](http://www.cypress.com/file/298076/download) | Hardware  | No               | 128         | H5            | 921600
 Pi 3 Model A+, Model B + | [CYW43455](http://www.cypress.com/file/358916/download) | Hardware  | Yes              | 129 (See 1) | H4            | 921600 (See 2)
+Pi 4 Model B             |                                                         | Hardware  | Yes              | 129         | H4 		    | 921600
 Pi Zero W                | [CYW43438](http://www.cypress.com/file/298076/download) | Hardware  | Yes              | 45          | H4            | 921600
 
 1. Model A+/B+ have BT_REG_EN AND WL_REG_EN on the same (virtual) GPIO 129. A Bluetooth Controller power cycle also shuts down Wifi (temporarily). BTstack avoids a power cycle on A+/B+.

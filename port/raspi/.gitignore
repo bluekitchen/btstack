@@ -26,6 +26,9 @@ gatt_browser
 gatt_browser.h
 gatt_counter
 gatt_counter.h
+gatt_device_information_query
+gatt_device_information_query.h
+gatt_heart_rate_client
 gatt_streamer_server
 gatt_streamer_server.h
 hfp_ag_demo
@@ -33,6 +36,9 @@ hfp_hf_demo
 hid_host_demo
 hid_keyboard_demo
 hid_mouse_demo
+hog_boot_host_demo
+hog_host_demo
+hog_host_demo.h
 hog_keyboard_demo
 hog_keyboard_demo.h
 hog_mouse_demo
@@ -47,6 +53,7 @@ le_counter.h
 le_credit_based_flow_control_mode_client
 le_credit_based_flow_control_mode_server
 le_credit_based_flow_control_mode_server.h
+le_mitm
 le_streamer
 le_streamer.h
 le_streamer_client

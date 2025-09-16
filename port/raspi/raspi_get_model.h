@@ -6,6 +6,7 @@
 #define MODEL_3B        2
 #define MODEL_3BPLUS    3
 #define MODEL_3APLUS    4
+#define MODEL_4B        5
 
 int raspi_get_model();
 
