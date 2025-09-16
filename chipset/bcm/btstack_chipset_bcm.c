@@ -218,6 +218,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
             btstack_strcat(matched_file, sizeof(matched_file), "/");
             btstack_strcat(matched_file, sizeof(matched_file), file.name);
             hcd_file_path = matched_file;
+            log_info("PatchRAM: %s", hcd_file_path);
             break;
         }
     }
