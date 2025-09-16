@@ -74,7 +74,7 @@ struct btstack_audio_generator {
     // fields
     uint16_t samplerate_hz;
     uint8_t  channels;
-} btstack_audio_generator;
+};
 
 /*
  * Silence Generator
@@ -136,6 +136,7 @@ void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self
 typedef struct {
     btstack_audio_generator_t base;
     stb_vorbis * context;
+    uint8_t file_channels;
 } btstack_audio_generator_vorbis_t;
 
 /**

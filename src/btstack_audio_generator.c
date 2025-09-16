@@ -39,29 +39,22 @@
 
 #include "btstack_audio_generator.h"
 
-#include "btstack_bool.h"
 #include "btstack_config.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
 
 #include <stdint.h>
+#include <string.h>
+#include <math.h>
+#include <stdio.h>
 
 #undef STB_VORBIS_HEADER_ONLY
 #include "stb_vorbis.c"
-
-#include "btstack_bool.h"
-#include "btstack_debug.h"
-#include "btstack_ring_buffer.h"
 
 // Implementation of simple audio generators: silence, sine, mod player, vorbis, and recording
 // Minimal implementation focused on producing interleaved 16-bit PCM at requested sample rate/channels.
 
 #define PI 3.14159265358979323846f
-
-#include <string.h>
-#include <math.h>
-#include <stdio.h>
-
-#include "btstack_util.h"
 
 // ---- Helpers ----
 static void generator_base_init(btstack_audio_generator_t * base, uint16_t samplerate_hz, uint8_t channels,
@@ -71,6 +64,16 @@ static void generator_base_init(btstack_audio_generator_t * base, uint16_t sampl
     base->channels = channels;
     base->generate = generate;
     base->finalize = finalize;
+}
+
+// duplicate audio channels in a round-robin fashion
+static void duplicate_audio_channels(int16_t* pcm_buffer, uint16_t num_samples, uint8_t channels_have, uint8_t channels_need) {
+    for (int16_t i = num_samples - 1; i >= 0; i--) {
+        for (uint16_t channel_dst=0; channel_dst < channels_need; channel_dst++){
+            uint16_t channel_src = channel_dst % channels_have;
+            pcm_buffer[i * channels_need + channel_dst] = pcm_buffer[i * channels_have + channel_src];
+        }
+    }
 }
 
 // ---- Silence ----
@@ -110,7 +113,7 @@ static void sine_finalize(btstack_audio_generator_t * base){
 
 void btstack_audio_generator_sine_init(btstack_audio_generator_sine_t * self, uint16_t samplerate_hz, uint8_t channels,
                                        uint16_t frequency_hz){
-    btstack_assert(samplerate_hz <= 48000);
+    btstack_assert(samplerate_hz <= MAX_SAMPLETRATE_HZ);
     // calc number of samples per period
     uint16_t num_samples = samplerate_hz / frequency_hz;
     if (num_samples > SINE_MAX_SAMPLES_AT_48KHZ) {
@@ -127,7 +130,6 @@ void btstack_audio_generator_sine_init(btstack_audio_generator_sine_t * self, ui
     self->phase = 0;
     generator_base_init(&self->base, samplerate_hz, channels, sine_generate, sine_finalize);
 }
-
 
 // ---- MOD Player ----
 static void mod_generate(btstack_audio_generator_t * base, int16_t * pcm_buffer, uint16_t num_samples){
@@ -154,12 +156,7 @@ static void mod_generate(btstack_audio_generator_t * base, int16_t * pcm_buffer,
         hxcmod_fillbuffer(&self->context, (msample*)pcm_buffer, num_samples, NULL);
         // duplicate stereo channels
         if (channels > 2) {
-            for (int16_t i = num_samples - 1; i >= 0; i--) {
-                for (uint16_t channel_dst=0; channel_dst < channels; channel_dst++){
-                    uint16_t channel_src = channel_dst & 1;
-                    pcm_buffer[i * channels + channel_dst] = pcm_buffer[i * 2 + channel_src];
-                }
-            }
+            duplicate_audio_channels(pcm_buffer, num_samples, 2, channels);
         }
     }
 }
@@ -179,18 +176,25 @@ void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self
 }
 
 // ---- OGG Vorbis ----
+// @TODO: support different sample rates and stereo -> mono conversion
 static void vorbis_generate(btstack_audio_generator_t * base, int16_t * pcm_buffer, uint16_t num_samples){
     btstack_audio_generator_vorbis_t * self = (btstack_audio_generator_vorbis_t *) base;
-    while (num_samples > 0){
-        int n = stb_vorbis_get_samples_short_interleaved(self->context, base->channels, pcm_buffer, num_samples * self->base.channels);
+    uint16_t need_samples = num_samples;
+    uint8_t channels_needed = self->base.channels;
+    uint8_t channels_have = self->file_channels;
+    while (need_samples > 0){
+        int n = stb_vorbis_get_samples_short_interleaved(self->context, base->channels, pcm_buffer, need_samples * channels_needed);
         if (n <= 0){
             // loop: rewind to start
             stb_vorbis_seek_start(self->context);
             continue;
         }
         // stb returns frames per channel
-        pcm_buffer  += n * base->channels;
-        num_samples -= n;
+        pcm_buffer  += n * channels_needed;
+        need_samples -= n;
+    }
+    if (channels_needed > channels_have) {
+        duplicate_audio_channels(pcm_buffer, num_samples, channels_have, channels_needed);
     }
 }
 
@@ -210,8 +214,9 @@ void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self
         log_error("vorbis open failed %d for %s", error, filename);
     } else {
         stb_vorbis_info info = stb_vorbis_get_info(v);
+        self->file_channels = info.channels;
         btstack_assert( info.sample_rate == samplerate_hz );
-        btstack_assert( info.channels ==channels );
+        btstack_assert( info.channels <= channels );
     }
     self->context = v;
     generator_base_init(&self->base, samplerate_hz, channels, vorbis_generate, vorbis_finalize);
