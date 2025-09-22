@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- Port for Ezurio Vela IF820 dev kit
 
 ### Fixed
 - GAP: emit Dedicated Bonding Complete after link key was received
