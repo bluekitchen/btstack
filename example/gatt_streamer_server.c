@@ -68,7 +68,7 @@
 // it needs to be regenerated when the GATT Database declared in le_streamer.gatt file is modified
 #include "gatt_streamer_server.h"
 
-#define REPORT_INTERVAL_MS 3000
+#define REPORT_INTERVAL_MS 1000
 #define MAX_NR_CONNECTIONS 3 
 
 
@@ -102,7 +102,6 @@ typedef struct {
     int le_notification_enabled;
     uint16_t value_handle;
     hci_con_handle_t connection_handle;
-    int  counter;
     char test_data[200];
     int  test_data_len;
     uint32_t test_data_sent;
@@ -201,8 +200,7 @@ static void le_streamer_setup(void){
 /*
  * @section Track throughput
  * @text We calculate the throughput by setting a start time and measuring the amount of 
- * data sent. After a configurable REPORT_INTERVAL_MS, we print the throughput in kB/s
- * and reset the counter and start time.
+ * data sent and received. After a configurable REPORT_INTERVAL_MS, we print the throughput in kB/s.
  */
 
 /* LISTING_START(tracking): Tracking throughput */
@@ -217,17 +215,28 @@ static void test_track_evaluate(le_streamer_connection_t * context) {
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - context->test_data_start;
+
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
-    int bytes_per_second = context->test_data_sent * 1000 / time_passed;
-    printf("%c: %"PRIu32" bytes sent-> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+    int bytes_per_second_sent = context->test_data_sent * 1000 / time_passed;
+    int bytes_per_second_received = context->test_data_received * 1000 / time_passed;
+    int bytes_per_second_total = bytes_per_second_sent + bytes_per_second_received;
+    printf("%c: Sent %u.%03u kB/s, Received %u.%03u kB/s => Total %u.%03u kB/s\n", context->name,
+        bytes_per_second_sent     / 1000, bytes_per_second_sent     % 1000,
+        bytes_per_second_received / 1000, bytes_per_second_received % 1000,
+        bytes_per_second_total    / 1000, bytes_per_second_total    % 1000);
+    // store into test data buffer for use with GATT Browser
+    btstack_snprintf_best_effort(context->test_data, sizeof(context->test_data),
+        "Notification Throughput %u.%03u kB/s",
+        bytes_per_second_total    / 1000, bytes_per_second_total    % 1000);
 
     // restart
     test_reset(context);
 }
 
-static void test_track_sent(le_streamer_connection_t * context, int bytes_sent){
-    context->test_data_sent += bytes_sent;
+static void test_track_data(le_streamer_connection_t * context, uint32_t bytes_sent, uint32_t bytes_received){
+    context->test_data_sent     += bytes_sent;
+    context->test_data_received += bytes_received;
     test_track_evaluate(context);
 }
 
@@ -333,7 +342,6 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // setup new 
                     context = connection_for_conn_handle(HCI_CON_HANDLE_INVALID);
                     if (!context) break;
-                    context->counter = 'A';
                     context->connection_handle = att_event_connected_get_handle(packet);
                     context->test_data_len = btstack_min(att_server_get_mtu(context->connection_handle) - 3, sizeof(context->test_data));
                     printf("%c: ATT connected, handle 0x%04x, test data len %u\n", context->name, context->connection_handle, context->test_data_len);
@@ -391,17 +399,12 @@ static void streamer(void){
     }
 
     le_streamer_connection_t * context = &le_streamer_connections[connection_index];
-
-    // create test data
-    context->counter++;
-    if (context->counter > 'Z') context->counter = 'A';
-    memset(context->test_data, context->counter, context->test_data_len);
-
+    
     // send
     att_server_notify(context->connection_handle, context->value_handle, (uint8_t*) context->test_data, context->test_data_len);
 
     // track
-    test_track_sent(context, context->test_data_len);
+    test_track_data(context, context->test_data_len, 0);
 
     // request next send event
     att_server_request_can_send_now_event(context->connection_handle);
@@ -423,8 +426,8 @@ static void streamer(void){
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(offset);
 
-    // printf("att_write_callback att_handle 0x%04x, transaction mode %u\n", att_handle, transaction_mode);
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
+
     le_streamer_connection_t * context = connection_for_conn_handle(con_handle);
     switch(att_handle){
         case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE:
@@ -443,7 +446,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
             test_reset(context);
             break;
         case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
-            test_track_sent(context, buffer_size);
+            test_track_data(context, 0, buffer_size);
             break;
         default:
             printf("Write to 0x%04x, len %u\n", att_handle, buffer_size);
