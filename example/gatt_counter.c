@@ -75,7 +75,6 @@ static int  le_notification_enabled;
 static btstack_timer_source_t heartbeat;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static hci_con_handle_t con_handle;
-static uint8_t battery = 100;
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
 static uint8_t gatt_service_buffer[70];
@@ -128,9 +127,6 @@ static void le_counter_setup(void){
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
 
-    // setup battery service
-    battery_service_server_init(battery);
-
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
@@ -181,13 +177,6 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
         beat();
         att_server_request_can_send_now_event(con_handle);
     }
-
-    // simulate battery drain
-    battery--;
-    if (battery < 50) {
-        battery = 100;
-    }
-    battery_service_server_set_battery_value(battery);
 
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
