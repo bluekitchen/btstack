@@ -106,6 +106,7 @@ typedef struct {
     char test_data[200];
     int  test_data_len;
     uint32_t test_data_sent;
+    uint32_t test_data_received;
     uint32_t test_data_start;
 } le_streamer_connection_t;
 static le_streamer_connection_t le_streamer_connections[MAX_NR_CONNECTIONS];
@@ -209,10 +210,10 @@ static void le_streamer_setup(void){
 static void test_reset(le_streamer_connection_t * context){
     context->test_data_start = btstack_run_loop_get_time_ms();
     context->test_data_sent = 0;
+    context->test_data_received = 0;
 }
 
-static void test_track_sent(le_streamer_connection_t * context, int bytes_sent){
-    context->test_data_sent += bytes_sent;
+static void test_track_evaluate(le_streamer_connection_t * context) {
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - context->test_data_start;
@@ -222,9 +223,14 @@ static void test_track_sent(le_streamer_connection_t * context, int bytes_sent){
     printf("%c: %"PRIu32" bytes sent-> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
 
     // restart
-    context->test_data_start = now;
-    context->test_data_sent  = 0;
+    test_reset(context);
 }
+
+static void test_track_sent(le_streamer_connection_t * context, int bytes_sent){
+    context->test_data_sent += bytes_sent;
+    test_track_evaluate(context);
+}
+
 /* LISTING_END(tracking): Tracking throughput */
 
 /* 
