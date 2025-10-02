@@ -2061,17 +2061,13 @@ static void gatt_client_handle_att_mtu_response(gatt_client_t* gatt_client, uint
 }
 
 static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {
-    // handle MTU Exchange Response
-    if (gatt_client->mtu_state == SENT_MTU_EXCHANGE){
-        if (packet[0] == ATT_EXCHANGE_MTU_RESPONSE) {
-            gatt_client_handle_att_mtu_response(gatt_client, packet, size);
-            return;
-        }
-    }
-
     uint8_t att_status;
     switch (packet[0]) {
-
+        case ATT_EXCHANGE_MTU_RESPONSE:
+            if (gatt_client->mtu_state == SENT_MTU_EXCHANGE) {
+                gatt_client_handle_att_mtu_response(gatt_client, packet, size);
+            }
+            break;
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
             switch (gatt_client->state) {
                 case P_W4_SERVICE_QUERY_RESULT:
