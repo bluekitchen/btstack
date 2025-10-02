@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - GAP: emit Dedicated Bonding Complete after link key was received
+- GATT Client: handle notifications and indications during MTU exchange
 
 ### Changed
 
