@@ -63,7 +63,7 @@ int btstack_main(int argc, const char * argv[]){
     if (!hxcmod_initialized) return 10;
 
     hxcmod_setcfg(&mod_context, 44100, 1, 1);
-    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
+    hxcmod_load(&mod_context, (void*)mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
 
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
