@@ -11121,6 +11121,43 @@ static inline uint32_t avrcp_subevent_notification_event_playback_pos_changed_ge
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_event_player_application_setting_changed_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_event_player_application_setting_changed_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_event_player_application_setting_changed_get_attribute_id(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value_id from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return value_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_event_player_application_setting_changed_get_value_id(const uint8_t * event){
+    return event[7];
+}
+
+/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED
  * @param event packet
  * @return avrcp_cid
