@@ -346,7 +346,27 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
 
-        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
+        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:{
+            if (size < 1) break;
+            uint16_t pos = 0;
+            uint16_t num_attributes = payload[pos++];
+            if (size < 2 * num_attributes + 1) break;
+            uint16_t offset = 0;
+            uint8_t event[8];
+            event[offset++] = HCI_EVENT_AVRCP_META;
+            event[offset++] = sizeof(event) - 2;
+            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED;
+            little_endian_store_16(event, offset, avrcp_cid);
+            offset += 2;
+            event[offset++] = ctype;
+            for (int i = 0; i < num_attributes; i++) {
+                event[offset] = payload[pos++];
+                event[offset + 1] = payload[pos++];
+                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset + 1);
+            }
+            break;
+        }
+
         default:
             log_info("avrcp: not implemented");
             break;

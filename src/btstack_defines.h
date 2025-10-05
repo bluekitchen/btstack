@@ -3330,8 +3330,14 @@ typedef SSIZE_T ssize_t;
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED                     0x07u
 
-
-// Recquires 1 byte for num_attributes, followed by num_attributes tuples [attribute_id(1), value_id(1)], see avrcp_player_application_setting_attribute_id_t
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param attribute_id  see avrcp_player_application_setting_attribute_id_t
+ * @param value_id  see avrcp_shuffle_mode_t, avrcp_repeat_mode_t
+ */
 #define AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED        0x08u
 
 /**
