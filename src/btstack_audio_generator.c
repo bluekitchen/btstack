@@ -225,3 +225,11 @@ void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self
     generator_base_init(&self->base, samplerate_hz, channels, vorbis_generate, vorbis_finalize);
 }
 #endif
+
+void btstack_audio_generator_generate(btstack_audio_generator_t * self, int16_t * pcm_buffer, uint16_t num_samples) {
+    self->generate(self, pcm_buffer, num_samples);
+}
+
+void btstack_audio_generator_finalize(btstack_audio_generator_t * self) {
+    self->finalize(self);
+};

@@ -152,6 +152,20 @@ void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self
                                          const char * filename);
 #endif
 
+/**
+ * @brief Generate audio samples with the initialized audio generator
+ * @param self
+ * @param pcm_buffer
+ * @param num_samples
+ */
+void btstack_audio_generator_generate(btstack_audio_generator_t * self, int16_t * pcm_buffer, uint16_t num_samples);
+
+/**
+ * @brief Finalize initialized audio generator
+ * @param self
+ */
+void btstack_audio_generator_finalize(btstack_audio_generator_t * self);
+
 /** API_END **/
 
 #if defined __cplusplus
