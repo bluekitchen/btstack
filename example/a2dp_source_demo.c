@@ -332,7 +332,7 @@ static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate){
     media_tracker.samples_ready = 0;
     hxcmod_unload(&mod_context);
     hxcmod_setcfg(&mod_context, current_sample_rate, 1, 1);
-    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
+    hxcmod_load(&mod_context, (void *)mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
 }
 
 static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
@@ -898,7 +898,7 @@ static void show_usage(void){
 
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
-        printf("z      - start streaming '%s'\n", mod_name);
+        printf("z      - start streaming '%s'\n", mod_titles[MOD_TITLE_DEFAULT].name);
     }
     printf("p      - pause streaming\n");
     printf("w      - reconfigure stream for 44100 Hz\n");
