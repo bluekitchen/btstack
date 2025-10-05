@@ -119,37 +119,14 @@ static  uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
-// input signal: pre-computed int16 sine wave, 44100 Hz at 441 Hz
-static const int16_t sine_int16_44100[] = {
-     0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
- 19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
- 31163,   31738,   32187,   32509,   32702,   32767,   32702,   32509,   32187,   31738,
- 31163,   30466,   29648,   28714,   27666,   26509,   25247,   23886,   22431,   20886,
- 19260,   17557,   15786,   13952,   12062,   10126,    8149,    6140,    4107,    2057,
-     0,   -2057,   -4107,   -6140,   -8149,  -10126,  -12062,  -13952,  -15786,  -17557,
--19260,  -20886,  -22431,  -23886,  -25247,  -26509,  -27666,  -28714,  -29648,  -30466,
--31163,  -31738,  -32187,  -32509,  -32702,  -32767,  -32702,  -32509,  -32187,  -31738,
--31163,  -30466,  -29648,  -28714,  -27666,  -26509,  -25247,  -23886,  -22431,  -20886,
--19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
-};
-
-static const int num_samples_sine_int16_44100 = sizeof(sine_int16_44100) / 2;
-
-// input signal: pre-computed int16 sine wave, 48000 Hz at 441 Hz
-static const int16_t sine_int16_48000[] = {
-     0,    1905,    3804,    5690,    7557,    9398,   11207,   12978,   14706,   16383,
- 18006,   19567,   21062,   22486,   23834,   25101,   26283,   27376,   28377,   29282,
- 30087,   30791,   31390,   31884,   32269,   32545,   32712,   32767,   32712,   32545,
- 32269,   31884,   31390,   30791,   30087,   29282,   28377,   27376,   26283,   25101,
- 23834,   22486,   21062,   19567,   18006,   16383,   14706,   12978,   11207,    9398,
-  7557,    5690,    3804,    1905,       0,   -1905,   -3804,   -5690,   -7557,   -9398,
--11207,  -12978,  -14706,  -16384,  -18006,  -19567,  -21062,  -22486,  -23834,  -25101,
--26283,  -27376,  -28377,  -29282,  -30087,  -30791,  -31390,  -31884,  -32269,  -32545,
--32712,  -32767,  -32712,  -32545,  -32269,  -31884,  -31390,  -30791,  -30087,  -29282,
--28377,  -27376,  -26283,  -25101,  -23834,  -22486,  -21062,  -19567,  -18006,  -16384,
--14706,  -12978,  -11207,   -9398,   -7557,   -5690,   -3804,   -1905,  };
-
-static const int num_samples_sine_int16_48000 = sizeof(sine_int16_48000) / 2;
+// Audio Generator
+static struct {
+    union {
+        btstack_audio_generator_t      base;
+        btstack_audio_generator_sine_t sine;
+    } generator;
+    bool initialized;
+} audio_generator_state;
 
 static const int A2DP_SOURCE_DEMO_INQUIRY_DURATION_1280MS = 12;
 
@@ -189,7 +166,6 @@ static a2dp_media_sending_context_t media_tracker;
 
 static stream_data_source_t data_source;
 
-static int sine_phase;
 static int current_sample_rate = 44100;
 static int new_sample_rate = 44100;
 
@@ -360,29 +336,8 @@ static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate){
 }
 
 static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
-    int count;
-    for (count = 0; count < num_samples_to_write ; count++){
-        switch (current_sample_rate){
-            case 44100:
-                pcm_buffer[count * 2]     = sine_int16_44100[sine_phase];
-                pcm_buffer[count * 2 + 1] = sine_int16_44100[sine_phase];
-                sine_phase++;
-                if (sine_phase >= num_samples_sine_int16_44100){
-                    sine_phase -= num_samples_sine_int16_44100;
-                }
-                break;
-            case 48000:
-                pcm_buffer[count * 2]     = sine_int16_48000[sine_phase];
-                pcm_buffer[count * 2 + 1] = sine_int16_48000[sine_phase];
-                sine_phase++;
-                if (sine_phase >= num_samples_sine_int16_48000){
-                    sine_phase -= num_samples_sine_int16_48000;
-                }
-                break;
-            default:
-                break;
-        }   
-    }
+    audio_generator_state.generator.sine.base.generate(&audio_generator_state.generator.base, pcm_buffer, num_samples_to_write);
+    btstack_audio_generator_generate(&audio_generator_state.generator.base, pcm_buffer, num_samples_to_write);
 }
 
 static void produce_mod_audio(int16_t * pcm_buffer, int num_samples_to_write){
@@ -414,8 +369,24 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
 
 static void a2dp_source_configure_audio_source(stream_data_source_t type, int sample_rate){
     printf("A2DP Source: Configure audio generator: type %s, frequency %u hz\n", type == STREAM_SINE ? "Sine" : "Mod", sample_rate);
-    data_source = type;
-    a2dp_demo_hexcmod_configure_sample_rate(sample_rate);
+    // finalize audio generator if active
+    if (audio_generator_state.initialized) {
+        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
+        audio_generator_state.initialized = false;
+    }
+    // initialize
+    switch (type) {
+        case STREAM_SINE:
+            btstack_audio_generator_sine_init(&audio_generator_state.generator.sine, sample_rate, NUM_CHANNELS, 441);
+            audio_generator_state.initialized = true;
+            break;
+        case STREAM_MOD:
+            a2dp_demo_hexcmod_configure_sample_rate(sample_rate);
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
 }
 
 static void a2dp_demo_send_media_packet(void){
