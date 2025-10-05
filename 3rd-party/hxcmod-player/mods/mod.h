@@ -1,17 +1,32 @@
-#ifndef _MOD_H_
-#define _MOD_H_
+#ifndef MOD_H
+#define MOD_H
 
 #include <stdint.h>
 #include <stddef.h>
 
+/**
+ * Info on mod title
+ */
 typedef struct {
     size_t len;
     char *name;
     const uint8_t *data;
 } mod_title_t;
 
-extern const mod_title_t titles[];
-extern const mod_title_t *default_mod_title;
+/**
+ * Examples use title with this index as default mod song
+ */
+#define MOD_TITLE_DEFAULT 0
 
-#endif // _MOD_H_
+/**
+ * Array of available mod titles
+ */
+extern const mod_title_t   mod_titles[];
+
+/**
+ * Number of titles in mod_titles
+ */
+extern const uint16_t      mod_titles_count;
+
+#endif // MOD_H
 

@@ -1,11 +1,13 @@
 #include "mod.h"
 
+// include data arrays of each mod song
 #include "AXELF.MOD.h"
 #include "cartoon_dreams_n_fantasies.mod.h"
 #include "IRONMAN.MOD.h"
 #include "nao_deceased_by_disease.mod.h"
 
-const mod_title_t titles[] = {
+// provide title info
+const mod_title_t mod_titles[] = {
     {
         .len = 113192,
         .name = "axel f",
@@ -28,5 +30,4 @@ const mod_title_t titles[] = {
     }
 };
 
-const mod_title_t *default_mod_title = &titles[0];
-
+const uint16_t mod_titles_count = sizeof(mod_titles) / sizeof(mod_title_t);
