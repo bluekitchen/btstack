@@ -67,7 +67,6 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "hxcmod.h"
 #include "mods/mod.h"
 
 // logarithmic volume reduction, samples are divided by 2^x
@@ -124,6 +123,7 @@ static struct {
     union {
         btstack_audio_generator_t      base;
         btstack_audio_generator_sine_t sine;
+        btstack_audio_generator_mod_t  mod;
     } generator;
     bool initialized;
 } audio_generator_state;
@@ -170,8 +170,6 @@ static int current_sample_rate = 44100;
 static int new_sample_rate = 44100;
 
 static int hxcmod_initialized;
-static modcontext mod_context;
-static tracker_buffer_state trkbuf;
 
 /* AVRCP Target context START */
 
@@ -219,8 +217,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd);
 #endif
-
-static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate);
 
 static int a2dp_source_and_avrcp_services_init(void){
 
@@ -319,42 +315,8 @@ static int a2dp_source_and_avrcp_services_init(void){
 }
 /* LISTING_END */
 
-static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate){
-    if (!hxcmod_initialized){
-        hxcmod_initialized = hxcmod_init(&mod_context);
-        if (!hxcmod_initialized) {
-            printf("could not initialize hxcmod\n");
-            return;
-        }
-    }
-    current_sample_rate = sample_rate;
-    media_tracker.sbc_storage_count = 0;
-    media_tracker.samples_ready = 0;
-    hxcmod_unload(&mod_context);
-    hxcmod_setcfg(&mod_context, current_sample_rate, 1, 1);
-    hxcmod_load(&mod_context, (void *)mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
-}
-
-static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
-    audio_generator_state.generator.sine.base.generate(&audio_generator_state.generator.base, pcm_buffer, num_samples_to_write);
-    btstack_audio_generator_generate(&audio_generator_state.generator.base, pcm_buffer, num_samples_to_write);
-}
-
-static void produce_mod_audio(int16_t * pcm_buffer, int num_samples_to_write){
-    hxcmod_fillbuffer(&mod_context, &pcm_buffer[0], num_samples_to_write, &trkbuf);
-}
-
 static void produce_audio(int16_t * pcm_buffer, int num_samples){
-    switch (data_source){
-        case STREAM_SINE:
-            produce_sine_audio(pcm_buffer, num_samples);
-            break;
-        case STREAM_MOD:
-            produce_mod_audio(pcm_buffer, num_samples);
-            break;
-        default:
-            break;
-    }    
+    btstack_audio_generator_generate(&audio_generator_state.generator.base, pcm_buffer, num_samples);
 #ifdef VOLUME_REDUCTION
     int i;
     for (i=0;i<num_samples*2;i++){
@@ -378,15 +340,18 @@ static void a2dp_source_configure_audio_source(stream_data_source_t type, int sa
     switch (type) {
         case STREAM_SINE:
             btstack_audio_generator_sine_init(&audio_generator_state.generator.sine, sample_rate, NUM_CHANNELS, 441);
-            audio_generator_state.initialized = true;
             break;
         case STREAM_MOD:
-            a2dp_demo_hexcmod_configure_sample_rate(sample_rate);
+            btstack_audio_generator_modplayer_init(&audio_generator_state.generator.mod, sample_rate, NUM_CHANNELS,
+                mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
             break;
         default:
             btstack_unreachable();
             break;
     }
+    audio_generator_state.initialized = true;
+    media_tracker.sbc_storage_count = 0;
+    media_tracker.samples_ready = 0;
 }
 
 static void a2dp_demo_send_media_packet(void){
@@ -675,7 +640,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             
             printf("A2DP Source: Stream established a2dp_cid 0x%02x, local_seid 0x%02x, remote_seid 0x%02x\n", cid, local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
             
-            a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
             media_tracker.stream_opened = 1;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
