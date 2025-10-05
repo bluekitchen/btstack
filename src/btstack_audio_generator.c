@@ -48,8 +48,10 @@
 #include <math.h>
 #include <stdio.h>
 
+#ifdef ENABLE_VORBIS
 #undef STB_VORBIS_HEADER_ONLY
 #include "stb_vorbis.c"
+#endif
 
 // Implementation of simple audio generators: silence, sine, mod player, vorbis, and recording
 // Minimal implementation focused on producing interleaved 16-bit PCM at requested sample rate/channels.
@@ -175,6 +177,7 @@ void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self
     generator_base_init(&self->base, samplerate_hz, channels, mod_generate, mod_finalize);
 }
 
+#ifdef ENABLE_VORBIS
 // ---- OGG Vorbis ----
 // @TODO: support different sample rates and stereo -> mono conversion
 static void vorbis_generate(btstack_audio_generator_t * base, int16_t * pcm_buffer, uint16_t num_samples){
@@ -221,4 +224,4 @@ void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self
     self->context = v;
     generator_base_init(&self->base, samplerate_hz, channels, vorbis_generate, vorbis_finalize);
 }
-
+#endif

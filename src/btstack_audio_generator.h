@@ -45,9 +45,11 @@
 
 #include "hxcmod.h"
 
+#ifdef ENABLE_VORBIS
 #define STB_VORBIS_HEADER_ONLY
 #include "btstack_audio.h"
 #include "stb_vorbis.c"
+#endif
 
 #if defined __cplusplus
 extern "C" {
@@ -128,7 +130,7 @@ typedef struct {
  */
 void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self, uint16_t samplerate_hz, uint8_t channels,
                                        const uint8_t * mod_data, uint32_t mod_len);
-
+#ifdef ENABLE_VORBIS
 /*
  * OGG Vorbis Generator
  * note: requires sample rate and channels to match file
@@ -148,6 +150,7 @@ typedef struct {
  */
 void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self, uint16_t samplerate_hz, uint8_t channels,
                                          const char * filename);
+#endif
 
 /** API_END **/
 
