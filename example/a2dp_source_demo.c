@@ -359,24 +359,6 @@ static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate){
     hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
 }
 
-static void a2dp_demo_send_media_packet(void){
-    int num_bytes_in_frame = sbc_encoder_instance->sbc_buffer_length(&sbc_encoder_state);
-    int bytes_in_storage = media_tracker.sbc_storage_count;
-    uint8_t num_sbc_frames = bytes_in_storage / num_bytes_in_frame;
-    // Prepend SBC Header
-    media_tracker.sbc_storage[0] = num_sbc_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    a2dp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0,
-                                               media_tracker.rtp_timestamp,
-                                               media_tracker.sbc_storage, bytes_in_storage + 1);
-
-    // update rtp_timestamp
-    unsigned int num_audio_samples_per_sbc_buffer = sbc_encoder_instance->num_audio_frames(&sbc_encoder_state);
-    media_tracker.rtp_timestamp += num_sbc_frames * num_audio_samples_per_sbc_buffer;
-
-    media_tracker.sbc_storage_count = 0;
-    media_tracker.sbc_ready_to_send = 0;
-}
-
 static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
     int count;
     for (count = 0; count < num_samples_to_write ; count++){
@@ -428,6 +410,30 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
         }
     }
 #endif
+}
+
+static void a2dp_source_configure_audio_source(stream_data_source_t type, int sample_rate){
+    printf("A2DP Source: Configure audio generator: type %s, frequency %u hz\n", type == STREAM_SINE ? "Sine" : "Mod", sample_rate);
+    data_source = type;
+    a2dp_demo_hexcmod_configure_sample_rate(sample_rate);
+}
+
+static void a2dp_demo_send_media_packet(void){
+    int num_bytes_in_frame = sbc_encoder_instance->sbc_buffer_length(&sbc_encoder_state);
+    int bytes_in_storage = media_tracker.sbc_storage_count;
+    uint8_t num_sbc_frames = bytes_in_storage / num_bytes_in_frame;
+    // Prepend SBC Header
+    media_tracker.sbc_storage[0] = num_sbc_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0,
+                                               media_tracker.rtp_timestamp,
+                                               media_tracker.sbc_storage, bytes_in_storage + 1);
+
+    // update rtp_timestamp
+    unsigned int num_audio_samples_per_sbc_buffer = sbc_encoder_instance->num_audio_frames(&sbc_encoder_state);
+    media_tracker.rtp_timestamp += num_sbc_frames * num_audio_samples_per_sbc_buffer;
+
+    media_tracker.sbc_storage_count = 0;
+    media_tracker.sbc_ready_to_send = 0;
 }
 
 static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
@@ -661,7 +667,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             dump_sbc_configuration(&sbc_configuration);
 
             current_sample_rate = sbc_configuration.sampling_frequency;
-            a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
 
             sbc_encoder_instance = btstack_sbc_encoder_bluedroid_init_instance(&sbc_encoder_state);
             sbc_encoder_instance->configure(&sbc_encoder_state, SBC_MODE_STANDARD,
@@ -715,7 +720,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             }
 
             printf("A2DP Source: Stream reconfigured a2dp_cid 0x%02x, local_seid 0x%02x\n", cid, local_seid);
-            a2dp_demo_hexcmod_configure_sample_rate(new_sample_rate);
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
@@ -728,6 +732,9 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
                 avrcp_target_set_playback_status(media_tracker.avrcp_cid, AVRCP_PLAYBACK_STATUS_PLAYING);
             }
+
+            a2dp_source_configure_audio_source(data_source, current_sample_rate);
+
             a2dp_demo_timer_start(&media_tracker);
             printf("A2DP Source: Stream started, a2dp_cid 0x%02x, local_seid 0x%02x\n", cid, local_seid);
             break;
@@ -997,6 +1004,7 @@ static void stdin_process(char cmd){
             }
             printf("%c - Play sine.\n", cmd);
             data_source = STREAM_SINE;
+            a2dp_source_configure_audio_source(data_source, current_sample_rate);
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
@@ -1006,6 +1014,7 @@ static void stdin_process(char cmd){
             }
             printf("%c - Play mod.\n", cmd);
             data_source = STREAM_MOD;
+            a2dp_source_configure_audio_source(data_source, current_sample_rate);
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
