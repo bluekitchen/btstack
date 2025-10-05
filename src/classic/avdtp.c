@@ -348,6 +348,9 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid)
         // allow to call avdtp_connect after signaling connection was triggered remotely
         // @note this also allows to call avdtp_connect again before SLC is complete
         if (connection->state < AVDTP_SIGNALING_CONNECTION_OPENED){
+            if (avdtp_cid != NULL) {
+                *avdtp_cid = connection->avdtp_cid;
+            }
             return ERROR_CODE_SUCCESS;
         } else {
             return ERROR_CODE_COMMAND_DISALLOWED;
