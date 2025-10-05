@@ -76,7 +76,7 @@
 #define SCO_DEMO_MODE_MODPLAYER  2
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_MODPLAYER
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -133,9 +133,7 @@ static btstack_ring_buffer_t audio_input_ring_buffer;
 
 // mod player
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
-#include "hxcmod.h"
 #include "mods/mod.h"
-static modcontext mod_context;
 #endif
 
 static int count_sent = 0;
@@ -183,35 +181,16 @@ static struct {
     union {
         btstack_audio_generator_t      base;
         btstack_audio_generator_sine_t sine;
+        btstack_audio_generator_mod_t  mod;
     } generator;
     bool initialized;
 } audio_generator_state;
 
-// Sine Wave
+// Sine Wave / Mod Player
 
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER)
 static void sco_demo_audio_generate(uint16_t num_samples, int16_t * pcm_buffer) {
     btstack_audio_generator_generate(&audio_generator_state.generator.base, pcm_buffer, num_samples);
-}
-#endif
-
-// Mod Player
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
-#define NUM_SAMPLES_GENERATOR_BUFFER 30
-static void sco_demo_modplayer(uint16_t num_samples, int16_t * data){
-    // mix down stereo
-    signed short samples[NUM_SAMPLES_GENERATOR_BUFFER * 2];
-    while (num_samples > 0){
-        uint16_t next_samples = btstack_min(num_samples, NUM_SAMPLES_GENERATOR_BUFFER);
-    	hxcmod_fillbuffer(&mod_context, (unsigned short *) samples, next_samples, NULL);
-        num_samples -= next_samples;
-        uint16_t i;
-        for (i=0;i<next_samples;i++){
-            int32_t left  = samples[2*i + 0];
-            int32_t right = samples[2*i + 1];
-            data[i] = (int16_t)((left + right) / 2);
-        }
-    }
 }
 #endif
 
@@ -556,9 +535,6 @@ void sco_demo_init(void){
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
     printf("SCO Demo: Sending modplayer wave, audio output via btstack_audio.\n");
-    // init mod
-    int hxcmod_initialized = hxcmod_init(&mod_context);
-    btstack_assert(hxcmod_initialized != 0);
 #endif
 }
 
@@ -604,9 +580,13 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
     // load mod
-    hxcmod_setcfg(&mod_context, codec_current->sample_rate, 16, 1, 1, 1);
-    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
-    sco_demo_audio_generator = &sco_demo_modplayer;
+    if (audio_generator_state.initialized) {
+        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
+    }
+    btstack_audio_generator_modplayer_init(&audio_generator_state.generator.mod, codec_current->sample_rate, NUM_CHANNELS,
+        mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
+    sco_demo_audio_generator = &sco_demo_audio_generate;
+    audio_generator_state.initialized = true;
 #endif
 }
 
