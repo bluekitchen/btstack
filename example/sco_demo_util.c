@@ -46,6 +46,7 @@
 #include "sco_demo_util.h"
 
 #include "btstack_audio.h"
+#include "btstack_audio_generator.h"
 #include "btstack_debug.h"
 #include "btstack_ring_buffer.h"
 #include "classic/btstack_cvsd_plc.h"
@@ -75,7 +76,7 @@
 #define SCO_DEMO_MODE_MODPLAYER  2
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_MICROPHONE
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -177,38 +178,20 @@ static const codec_support_t * codec_current = NULL;
 static hfp_codec_t hfp_codec;
 #endif
 
+// Audio Generator
+static struct {
+    union {
+        btstack_audio_generator_t      base;
+        btstack_audio_generator_sine_t sine;
+    } generator;
+    bool initialized;
+} audio_generator_state;
+
 // Sine Wave
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-static uint16_t sine_wave_phase;
-static uint16_t sine_wave_steps_per_sample;
-#define SINE_WAVE_SAMPLE_RATE SAMPLE_RATE_32KHZ
-
-// input signal: pre-computed int16 sine wave, 32000 Hz at 266 Hz
-static const int16_t sine_int16[] = {
-     0,   1715,   3425,   5126,   6813,   8481,  10126,  11743,  13328,  14876,
- 16383,  17846,  19260,  20621,  21925,  23170,  24351,  25465,  26509,  27481,
- 28377,  29196,  29934,  30591,  31163,  31650,  32051,  32364,  32587,  32722,
- 32767,  32722,  32587,  32364,  32051,  31650,  31163,  30591,  29934,  29196,
- 28377,  27481,  26509,  25465,  24351,  23170,  21925,  20621,  19260,  17846,
- 16383,  14876,  13328,  11743,  10126,   8481,   6813,   5126,   3425,   1715,
-     0,  -1715,  -3425,  -5126,  -6813,  -8481, -10126, -11743, -13328, -14876,
--16384, -17846, -19260, -20621, -21925, -23170, -24351, -25465, -26509, -27481,
--28377, -29196, -29934, -30591, -31163, -31650, -32051, -32364, -32587, -32722,
--32767, -32722, -32587, -32364, -32051, -31650, -31163, -30591, -29934, -29196,
--28377, -27481, -26509, -25465, -24351, -23170, -21925, -20621, -19260, -17846,
--16384, -14876, -13328, -11743, -10126,  -8481,  -6813,  -5126,  -3425,  -1715,
-};
-
-static void sco_demo_sine_wave_host_endian(uint16_t num_samples, int16_t * data){
-    unsigned int i;
-    for (i=0; i < num_samples; i++){
-        data[i] = sine_int16[sine_wave_phase];
-        sine_wave_phase += sine_wave_steps_per_sample;
-        if (sine_wave_phase >= (sizeof(sine_int16) / sizeof(int16_t))){
-            sine_wave_phase = 0;
-        }
-    }
+static void sco_demo_audio_generate(uint16_t num_samples, int16_t * pcm_buffer) {
+    btstack_audio_generator_generate(&audio_generator_state.generator.base, pcm_buffer, num_samples);
 }
 #endif
 
@@ -611,8 +594,12 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
 #endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    sine_wave_steps_per_sample = SINE_WAVE_SAMPLE_RATE / codec_current->sample_rate;
-    sco_demo_audio_generator = &sco_demo_sine_wave_host_endian;
+    if (audio_generator_state.initialized) {
+        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
+    }
+    btstack_audio_generator_sine_init(&audio_generator_state.generator.sine, codec_current->sample_rate, 1, 266);
+    sco_demo_audio_generator = &sco_demo_audio_generate;
+    audio_generator_state.initialized = true;
 #endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
