@@ -150,8 +150,8 @@ AVRCP += \
 	avrcp_media_item_iterator.c		\
 
 HXCMOD_PLAYER = \
-	hxcmod.c                    \
-	nao-deceased_by_disease.c 	\
+	hxcmod.c    \
+	mod.c
 
 MESH = \
 	adv_bearer.c \
