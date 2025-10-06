@@ -26,6 +26,7 @@ uint32_t hal_audio_sink_get_frequency(void);
 #ifdef ENABLE_CLASSIC
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 #define ENABLE_GOEP_L2CAP
+#define ENABLE_MODPLAYER
 #endif
 
 #if defined (ENABLE_CLASSIC) && defined(ENABLE_BLE)

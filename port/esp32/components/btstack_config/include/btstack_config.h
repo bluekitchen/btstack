@@ -39,6 +39,8 @@
 // Classic configuration
 #ifdef ENABLE_CLASSIC
 
+#define ENABLE_MODPLAYER
+
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 
 #define ENABLE_SCO_OVER_HCI
