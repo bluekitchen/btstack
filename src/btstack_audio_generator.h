@@ -43,7 +43,11 @@
 #define BTSTACK_AUDIO_GENERATOR_H
 #include <stdint.h>
 
+#include "btstack_config.h"
+
+#ifdef ENABLE_MODPLAYER
 #include "hxcmod.h"
+#endif
 
 #ifdef ENABLE_VORBIS
 #define STB_VORBIS_HEADER_ONLY
@@ -112,6 +116,7 @@ typedef struct {
 void btstack_audio_generator_sine_init(btstack_audio_generator_sine_t * self, uint16_t samplerate_hz, uint8_t channels,
                                        uint16_t frequency_hz);
 
+#ifdef ENABLE_MODPLAYER
 /*
  * Mod Player Generator
  */
@@ -130,6 +135,8 @@ typedef struct {
  */
 void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self, uint16_t samplerate_hz, uint8_t channels,
                                        const uint8_t * mod_data, uint32_t mod_len);
+#endif
+
 #ifdef ENABLE_VORBIS
 /*
  * OGG Vorbis Generator

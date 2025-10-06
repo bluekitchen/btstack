@@ -133,6 +133,7 @@ void btstack_audio_generator_sine_init(btstack_audio_generator_sine_t * self, ui
     generator_base_init(&self->base, samplerate_hz, channels, sine_generate, sine_finalize);
 }
 
+#ifdef ENABLE_MODPLAYER
 // ---- MOD Player ----
 static void mod_generate(btstack_audio_generator_t * base, int16_t * pcm_buffer, uint16_t num_samples){
     btstack_audio_generator_mod_t * self = (btstack_audio_generator_mod_t *) base;
@@ -176,6 +177,7 @@ void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self
     hxcmod_load(&self->context, (void*)mod_data, (int)mod_len);
     generator_base_init(&self->base, samplerate_hz, channels, mod_generate, mod_finalize);
 }
+#endif
 
 #ifdef ENABLE_VORBIS
 // ---- OGG Vorbis ----
