@@ -469,16 +469,16 @@ led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ}  gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
+hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} ${HXCMOD_PLAYER_OBJ} wav_util.o sco_demo_util.o btstack_audio_generator.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_ag.o hsp_ag_demo.c
+hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} ${HXCMOD_PLAYER_OBJ} wav_util.o sco_demo_util.o btstack_audio_generator.o btstack_ring_buffer.o hsp_ag.o hsp_ag_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
+hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} ${HXCMOD_PLAYER_OBJ} wav_util.o sco_demo_util.o btstack_audio_generator.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
+hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} ${HXCMOD_PLAYER_OBJ} wav_util.o sco_demo_util.o btstack_audio_generator.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hid_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o hid_host.o hid_host_demo.o
@@ -490,7 +490,7 @@ hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstac
 hid_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_mouse_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_controller.o avrcp_target.o a2dp_source_demo.c
+a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio_generator.o avrcp.o avrcp_controller.o avrcp_target.o a2dp_source_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o avrcp_target.o avrcp_cover_art_client.o  obex_srm_client.o goep_client.o obex_parser.o obex_message_builder.o btstack_resample.o btstack_sample_rate_compensation.o a2dp_sink_demo.c
