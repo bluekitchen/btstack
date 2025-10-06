@@ -232,4 +232,4 @@ void btstack_audio_generator_generate(btstack_audio_generator_t * self, int16_t 
 
 void btstack_audio_generator_finalize(btstack_audio_generator_t * self) {
     self->finalize(self);
-};
+}
