@@ -4823,8 +4823,10 @@ static void sco_handler(uint8_t * packet, uint16_t size){
                 multiplier = 1;
             }
 
-            // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets
-            uint8_t max_sco_packets = (uint8_t) btstack_min(2 * multiplier * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
+            // in partially initialized connections, sco_payload_length may be 0, to avoid div/0, set it to a minimum
+            uint16_t sco_payload_length_non_zero = conn->sco_payload_length == 0 ? 10 : conn->sco_payload_length;
+            // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets 
+            uint8_t max_sco_packets = (uint8_t) btstack_min(2 * multiplier * HCI_SCO_2EV3_SIZE / sco_payload_length_non_zero, hci_stack->sco_packets_total_num);
             if (conn->sco_tx_active == 0){
                 if (btstack_time_delta(btstack_run_loop_get_time_ms(), conn->sco_established_ms) > 10){
                     conn->sco_tx_active = 1;
@@ -4838,7 +4840,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
                 // - divide by acutal payload length
                 // - avoid overrun
                 int received_payload_len = (size - 3) / multiplier;
-                int new_credits = received_payload_len / conn->sco_payload_length;
+                int new_credits = received_payload_len / sco_payload_length_non_zero;
                 if ((conn->sco_tx_ready + new_credits)< max_sco_packets){
                     conn->sco_tx_ready += new_credits;
                 } else {
@@ -11082,6 +11084,7 @@ void hci_free_connections_fuzz(void){
     btstack_linked_list_iterator_init(&it, &hci_stack->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
+        hci_connection_stop_timer(con);
         btstack_linked_list_iterator_remove(&it);
         btstack_memory_hci_connection_free(con);
     }
