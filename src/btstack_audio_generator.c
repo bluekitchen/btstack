@@ -228,6 +228,76 @@ void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self
 }
 #endif
 
+// ---- Audio Bridge (push-producer / pull-consumer) ----
+
+static void bridge_generate(btstack_audio_generator_t * base, int16_t * pcm_buffer, uint16_t num_samples){
+    btstack_audio_generator_bridge_t * self = (btstack_audio_generator_bridge_t *) base;
+    const uint32_t frame_size_bytes = (uint32_t) base->channels * sizeof(int16_t);
+    const uint32_t bytes_needed     = (uint32_t) num_samples * frame_size_bytes;
+
+    // while paused, output silence until enough data buffered
+    if (self->paused){
+        const uint32_t threshold_bytes = (uint32_t) self->start_threshold * frame_size_bytes;
+        uint32_t available = btstack_ring_buffer_bytes_available(&self->ring_buffer);
+        if (available < threshold_bytes){
+            memset(pcm_buffer, 0, bytes_needed);
+            return;
+        }
+        // resume playback
+        self->paused = false;
+    }
+
+    uint32_t bytes_read = 0;
+    btstack_ring_buffer_read(&self->ring_buffer, (uint8_t *) pcm_buffer, bytes_needed, &bytes_read);
+
+    // pad with silence if not enough data available and pause again
+    if (bytes_read < bytes_needed){
+        memset(((uint8_t *) pcm_buffer) + bytes_read, 0, bytes_needed - bytes_read);
+        self->paused = true;
+    }
+}
+
+static void bridge_finalize(btstack_audio_generator_t * base){
+    UNUSED(base);
+}
+
+void btstack_audio_generator_bridge_init(btstack_audio_generator_bridge_t * self, uint16_t samplerate_hz, uint8_t channels,
+                                         uint8_t * buffer_data, uint32_t buffer_size, uint16_t start_threshold){
+    // init ring buffer with provided storage
+    btstack_ring_buffer_init(&self->ring_buffer, (uint8_t *) buffer_data, buffer_size);
+    self->start_threshold = start_threshold;
+    self->paused = true;
+    // set generator callbacks
+    generator_base_init(&self->base, samplerate_hz, channels, bridge_generate, bridge_finalize);
+}
+
+bool btstack_audio_generator_bridge_push(btstack_audio_generator_bridge_t * self, const int16_t * samples, uint16_t num_samples){
+    const uint32_t frame_size_bytes = (uint32_t) self->base.channels * sizeof(int16_t);
+    const uint32_t bytes_total      = (uint32_t) num_samples * frame_size_bytes;
+
+    uint32_t bytes_free = btstack_ring_buffer_bytes_free(&self->ring_buffer);
+    uint32_t frames_can_write = bytes_free / frame_size_bytes;
+    if (frames_can_write > num_samples){
+        frames_can_write = num_samples;
+    }
+    uint32_t bytes_now = frames_can_write * frame_size_bytes;
+    if (bytes_now){
+        // write interleaved PCM as-is
+        (void) btstack_ring_buffer_write(&self->ring_buffer, (uint8_t *) samples, bytes_now);
+    }
+
+    // unpause if enough buffered
+    const uint32_t threshold_bytes = (uint32_t) self->start_threshold * frame_size_bytes;
+    if (self->paused){
+        uint32_t available = btstack_ring_buffer_bytes_available(&self->ring_buffer);
+        if (available >= threshold_bytes){
+            self->paused = false;
+        }
+    }
+
+    return bytes_now == bytes_total;
+}
+
 void btstack_audio_generator_generate(btstack_audio_generator_t * self, int16_t * pcm_buffer, uint16_t num_samples) {
     self->generate(self, pcm_buffer, num_samples);
 }

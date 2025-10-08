@@ -44,6 +44,8 @@
 #include <stdint.h>
 
 #include "btstack_config.h"
+#include "btstack_bool.h"
+#include "btstack_ring_buffer.h"
 
 #ifdef ENABLE_MODPLAYER
 #include "hxcmod.h"
@@ -68,7 +70,7 @@ extern "C" {
 
 /** API_START **/
 
-/*
+/**
  * Abstract audio generator
  * Note: Initialize function must set function pointers
  */
@@ -82,7 +84,7 @@ struct btstack_audio_generator {
     uint8_t  channels;
 };
 
-/*
+/**
  * Silence Generator
  */
 typedef btstack_audio_generator_t btstack_audio_generator_silence_t;
@@ -95,7 +97,7 @@ typedef btstack_audio_generator_t btstack_audio_generator_silence_t;
  */
 void btstack_audio_generator_silence_init(btstack_audio_generator_silence_t * self, uint16_t samplerate_hz, uint8_t channels);
 
-/*
+/**
  * Sine Wave Generator
  */
 typedef struct {
@@ -138,7 +140,7 @@ void btstack_audio_generator_modplayer_init(btstack_audio_generator_mod_t * self
 #endif
 
 #ifdef ENABLE_VORBIS
-/*
+/**
  * OGG Vorbis Generator
  * note: requires sample rate and channels to match file
  */
@@ -158,6 +160,41 @@ typedef struct {
 void btstack_audio_generator_vorbis_init(btstack_audio_generator_vorbis_t * self, uint16_t samplerate_hz, uint8_t channels,
                                          const char * filename);
 #endif
+
+/**
+ * Audio Bridge that supports push by producer and pull by consumer with a buffer in-between
+ */
+
+typedef struct {
+    btstack_audio_generator_t base;
+    btstack_ring_buffer_t     ring_buffer;
+    uint16_t                  start_threshold;
+    bool                      paused;
+} btstack_audio_generator_bridge_t;
+
+/**
+ * Initialize audio bridge
+ * @param self
+ * @param samplerate_hz
+ * @param channels
+ * @param buffer_data
+ * @param buffer_size
+ * @param start_threshold in samples to exit paused mode
+ */
+void btstack_audio_generator_bridge_init(btstack_audio_generator_bridge_t * self, uint16_t samplerate_hz, uint8_t channels,
+                                         uint8_t * buffer_data, uint32_t buffer_size, uint16_t start_threshold);
+
+/**
+ * Push audio samples into audio bridge
+ * @param self
+ * @param samples data
+ * @param num_samples
+ * @return true if all samples have been stored
+ */
+bool btstack_audio_generator_bridge_push(btstack_audio_generator_bridge_t * self, const int16_t * samples, uint16_t num_samples);
+
+
+// Convenience wrapper functions that call corresponding callback from audio generator struct
 
 /**
  * @brief Generate audio samples with the initialized audio generator
