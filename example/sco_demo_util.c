@@ -117,9 +117,9 @@
 static uint16_t              audio_prebuffer_bytes;
 
 // output
-static int                   audio_output_paused  = 0;
 static uint8_t               audio_output_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
-static btstack_ring_buffer_t audio_output_ring_buffer;
+static btstack_audio_generator_bridge_t audio_output_bridge;
+static bool audio_output_initialized;
 
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
@@ -189,29 +189,7 @@ static struct {
 
 static void audio_playback_callback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
     UNUSED(context);
-
-    // fill with silence while paused
-    if (audio_output_paused){
-        if (btstack_ring_buffer_bytes_available(&audio_output_ring_buffer) < audio_prebuffer_bytes){
-            memset(buffer, 0, num_samples * BYTES_PER_FRAME);
-           return;
-        } else {
-            // resume playback
-            audio_output_paused = 0;
-        }
-    }
-
-    // get data from ringbuffer
-    uint32_t bytes_read = 0;
-    btstack_ring_buffer_read(&audio_output_ring_buffer, (uint8_t *) buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
-    num_samples -= bytes_read / BYTES_PER_FRAME;
-    buffer      += bytes_read / BYTES_PER_FRAME;
-
-    // fill with 0 if not enough
-    if (num_samples){
-        memset(buffer, 0, num_samples * BYTES_PER_FRAME);
-        audio_output_paused = 1;
-    }
+    btstack_audio_generator_generate(&audio_output_bridge.base, buffer, num_samples);
 }
 
 #ifdef USE_AUDIO_INPUT
@@ -226,17 +204,18 @@ static int audio_initialize(int sample_rate){
 
     // -- output -- //
 
-    // init buffers
-    memset(audio_output_ring_buffer_storage, 0, sizeof(audio_output_ring_buffer_storage));
-    btstack_ring_buffer_init(&audio_output_ring_buffer, audio_output_ring_buffer_storage, sizeof(audio_output_ring_buffer_storage));
 
     // config and setup audio playback
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
     if (audio_sink != NULL){
+        // init buffers
+        uint32_t start_threshold = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000);
+        btstack_audio_generator_bridge_init(&audio_output_bridge, sample_rate, NUM_CHANNELS,
+            audio_output_ring_buffer_storage, sizeof(audio_output_ring_buffer_storage), start_threshold);
+        audio_output_initialized = true;
+
         audio_sink->init(1, sample_rate, &audio_playback_callback);
         audio_sink->start_stream();
-
-        audio_output_paused  = 1;
     }
 
     // -- input -- //
@@ -257,6 +236,11 @@ static void audio_terminate(void){
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
     if (!audio_sink) return;
     audio_sink->close();
+
+    if (audio_output_initialized) {
+        btstack_audio_generator_finalize(&audio_output_bridge.base);
+        audio_output_initialized = false;
+    }
 
 #ifdef USE_AUDIO_INPUT
     const btstack_audio_source_t * audio_source= btstack_audio_source_get_instance();
@@ -306,8 +290,9 @@ static void sco_demo_cvsd_receive(const uint8_t * packet, uint16_t size){
         wav_writer_close();
     }
 #endif
-
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
+    if (audio_output_initialized) {
+        btstack_audio_generator_bridge_push(&audio_output_bridge, audio_frame_out, num_samples);
+    }
 }
 
 static void sco_demo_cvsd_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
@@ -368,7 +353,9 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     UNUSED(num_channels);
 
     // samples in callback in host endianess, ready for playback
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
+    if (audio_output_initialized) {
+        btstack_audio_generator_bridge_push(&audio_output_bridge, data, num_samples);
+    }
 
 #ifdef SCO_WAV_FILENAME
     if (!num_samples_to_write) return;
@@ -428,7 +415,9 @@ static bool sco_demo_lc3swb_frame_callback(bool bad_frame, const uint8_t * frame
                                          samples, 1, &tmp_BEC_detect);
 
     // samples in callback in host endianess, ready for playback
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)samples, LC3_SWB_SAMPLES_PER_FRAME*2);
+    if (audio_output_initialized) {
+        btstack_audio_generator_bridge_push(&audio_output_bridge, samples, LC3_SWB_SAMPLES_PER_FRAME);
+    }
 
 #ifdef SCO_WAV_FILENAME
     if (num_samples_to_write > 0){
