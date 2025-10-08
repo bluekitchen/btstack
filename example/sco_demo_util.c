@@ -176,6 +176,10 @@ static const codec_support_t * codec_current = NULL;
 static hfp_codec_t hfp_codec;
 #endif
 
+// Sine Wave / Mod Player
+
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER)
+
 // Audio Generator
 static struct {
     union {
@@ -186,9 +190,6 @@ static struct {
     bool initialized;
 } audio_generator_state;
 
-// Sine Wave / Mod Player
-
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER)
 static void sco_demo_audio_generate(uint16_t num_samples, int16_t * pcm_buffer) {
     btstack_audio_generator_generate(&audio_generator_state.generator.base, pcm_buffer, num_samples);
 }
