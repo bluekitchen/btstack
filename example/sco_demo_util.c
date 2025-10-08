@@ -521,7 +521,6 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
             btstack_assert(false);
             break;
     }
-
     codec_current->init();
 
     audio_prebuffer_bytes = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000) * BYTES_PER_FRAME;
@@ -531,34 +530,25 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
     wav_writer_open(SCO_WAV_FILENAME, 1, codec_current->sample_rate);
 #endif
 
+    // configure audio generator
+    if (audio_generator_state.initialized) {
+        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
+    }
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    if (audio_generator_state.initialized) {
-        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
-    }
     btstack_audio_generator_sine_init(&audio_generator_state.generator.sine, codec_current->sample_rate, 1, 266);
-    audio_generator_state.initialized = true;
 #endif
-
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
-    // load mod
-    if (audio_generator_state.initialized) {
-        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
-    }
     btstack_audio_generator_modplayer_init(&audio_generator_state.generator.mod, codec_current->sample_rate, NUM_CHANNELS,
         mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
-    audio_generator_state.initialized = true;
 #endif
-
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
-    if (audio_generator_state.initialized) {
-        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
-    }
     uint32_t start_threshold = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000);
     btstack_audio_generator_bridge_init(&audio_generator_state.generator.bridge, codec_current->sample_rate,
         NUM_CHANNELS, audio_input_ring_buffer_storage, sizeof(audio_input_ring_buffer_storage), start_threshold);
-    audio_generator_state.initialized = true;
 #endif
+    audio_generator_state.initialized = true;
 
+    // initialize audio driver
     audio_initialize(codec_current->sample_rate);
 }
 
