@@ -317,7 +317,7 @@ static void sco_demo_cvsd_fill_payload(uint8_t * payload_buffer, uint16_t sco_pa
     uint16_t num_samples = sco_payload_length / 2;
     btstack_audio_generator_generate(&audio_generator_state.generator.base, sample_buffer, num_samples);
     for (int i = 0; i < num_samples; i++) {
-        little_endian_store_16(payload_buffer, 1 + i * 2, sample_buffer[i]);
+        little_endian_store_16(payload_buffer, i * 2, sample_buffer[i]);
     }
 }
 
