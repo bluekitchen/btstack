@@ -3356,7 +3356,15 @@ typedef SSIZE_T ssize_t;
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED                       0x0Au
 
-// AVRCP_SUBEVENT_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0bu,           -- The Addressed Player has been changed, see 6.9.2.
+/**
+ * @format 12122
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param player_id
+ * @param uid_counter
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED                        0x0Bu
 
 /**
  * @format 1212
