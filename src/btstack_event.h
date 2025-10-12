@@ -11252,6 +11252,43 @@ static inline uint8_t avrcp_subevent_notification_available_players_changed_get_
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_addressed_player_changed_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_addressed_player_changed_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field player_id from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return player_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_addressed_player_changed_get_player_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field uid_counter from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return uid_counter
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_addressed_player_changed_get_uid_counter(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+
+/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED
  * @param event packet
  * @return avrcp_cid

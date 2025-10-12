@@ -261,6 +261,25 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
+        case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:{
+            if (size < 4) break;
+            uint16_t player_id = big_endian_read_16(payload, 0);
+            uint16_t uid_counter = big_endian_read_16(payload, 2);
+            uint16_t offset = 0;
+            uint8_t event[10];
+            event[offset++] = HCI_EVENT_AVRCP_META;
+            event[offset++] = sizeof(event) - 2;
+            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED;
+            little_endian_store_16(event, offset, avrcp_cid);
+            offset += 2;
+            event[offset++] = ctype;
+            little_endian_store_16(event, offset, player_id);
+            offset += 2;
+            little_endian_store_16(event, offset, uid_counter);
+            offset += 2;
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+            break;
+        }
         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:{
             if (size < 1) break;
             uint16_t offset = 0;
