@@ -227,13 +227,19 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
         }
         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:{
             uint16_t offset = 0;
-            uint8_t event[6];
+            uint8_t event[14];
             event[offset++] = HCI_EVENT_AVRCP_META;
             event[offset++] = sizeof(event) - 2;
             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED;
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
+            if (size >= 8){
+                memcpy(&event[offset], &payload[0], 8);
+            } else {
+                memset(&event[offset], 0, 8);
+            }
+            offset += 8;
             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
