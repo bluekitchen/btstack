@@ -3280,10 +3280,11 @@ typedef SSIZE_T ssize_t;
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED                         0x01u
 
 /**
- * @format 121
+ * @format 121D
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
+ * @param identifier
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                                   0x02u
 

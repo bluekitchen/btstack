@@ -11053,6 +11053,15 @@ static inline uint16_t avrcp_subevent_notification_track_changed_get_avrcp_cid(c
 static inline uint8_t avrcp_subevent_notification_track_changed_get_command_type(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field identifier from event AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED
+ * @param event packet
+ * @return identifier
+ * @note: btstack_type D
+ */
+static inline const uint8_t * avrcp_subevent_notification_track_changed_get_identifier(const uint8_t * event){
+    return (const uint8_t *) &event[6];
+}
 
 /**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END
