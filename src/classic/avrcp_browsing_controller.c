@@ -162,6 +162,7 @@ static int avrcp_browsing_controller_send_change_path_cmd(uint16_t cid, avrcp_br
 
     big_endian_store_16(command, pos, 11);
     pos += 2;
+    big_endian_store_16(command, pos, connection->uid_counter);
     pos += 2;
     command[pos++] = connection->direction;
     (void)memcpy(command + pos, connection->item_uid, 8);
