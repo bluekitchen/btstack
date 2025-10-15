@@ -60,25 +60,28 @@ static void hci_transport_zephyr_handler(btstack_data_source_t * ds, btstack_dat
     UNUSED(callback_type);
     struct net_buf *buf = k_fifo_get( &rx_queue, K_FOREVER );
 
-    uint16_t    size = buf->len;
-    uint8_t * packet = buf->data;
-    switch (bt_buf_get_type(buf)) {
-        case BT_BUF_ISO_IN:
+    uint16_t    size = buf->len-1;
+    uint8_t * packet = buf->data+1;
+    uint8_t     type = buf->data[0];
+    switch (type) {
+        case BT_HCI_H4_ISO:
             transport_packet_handler(HCI_ISO_DATA_PACKET, packet, size);
             break;
-        case BT_BUF_ACL_IN:
+        case BT_HCI_H4_ACL:
             transport_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
             break;
-        case BT_BUF_EVT:
+        case BT_HCI_H4_EVT:
             transport_packet_handler(HCI_EVENT_PACKET, packet, size);
             break;
         default:
-            log_error("Unknown type %u\n", bt_buf_get_type(buf));
+            log_error("Unknown type %u\n", type);
             break;
     }
     net_buf_unref(buf);
 }
 
+static const struct device *const h4_dev = DEVICE_DT_GET(DT_PARENT(DT_CHOSEN(zephyr_bt_hci)));
+int bt_h4_vnd_setup(const struct device *dev);
 
 /**
  * init transport
@@ -92,9 +95,12 @@ static void transport_init(const void *transport_config){
     btstack_run_loop_add_data_source(ds);
     btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
 
+    int ret;
     /* startup Controller */
-    bt_enable_raw(&rx_queue);
-    bt_hci_raw_set_mode( BT_HCI_RAW_MODE_PASSTHROUGH );
+    ret = bt_enable_raw(&rx_queue);
+    btstack_assert(ret == 0);
+    ret = bt_h4_vnd_setup(h4_dev);
+    btstack_assert(ret == 0)
 }
 
 /**
@@ -161,6 +167,107 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
     }
 
     return 0;
+}
+
+// provide HCI functions used by vendor setup, normally provided by hci_core.c
+
+#include <zephyr/sys/byteorder.h>
+
+/** Allocate an HCI command buffer.
+ *
+ * This function allocates a new buffer for an HCI command. Upon successful
+ * return the buffer is ready to have the command parameters encoded into it.
+ * Sufficient headroom gets automatically reserved in the buffer, allowing
+ * the actual command and H:4 headers to be encoded later, as part of
+ * calling bt_hci_cmd_send() or bt_hci_cmd_send_sync().
+ *
+ * @param timeout Timeout for the allocation.
+ *
+ * @return Newly allocated buffer or NULL if allocation failed.
+ */
+struct net_buf *bt_hci_cmd_alloc(k_timeout_t timeout) {
+    struct net_buf *buf;
+    buf = bt_buf_get_tx(BT_BUF_CMD, timeout, NULL, 0);
+    if (!buf) {
+        log_error("No available command buffers!\n");
+        btstack_assert(false);
+        return NULL;
+    }
+    return buf;
+}
+
+/** Send a HCI command synchronously.
+  *
+  * This function is used for sending a HCI command synchronously. It can
+  * either be called for a buffer created using bt_hci_cmd_create(), or
+  * if the command has no parameters a NULL can be passed instead.
+  *
+  * The function will block until a Command Status or a Command Complete
+  * event is returned. If either of these have a non-zero status the function
+  * will return a negative error code and the response reference will not
+  * be set. If the command completed successfully and a non-NULL rsp parameter
+  * was given, this parameter will be set to point to a buffer containing
+  * the response parameters.
+  *
+  * @param opcode Command OpCode.
+  * @param buf    Command buffer or NULL (if no parameters).
+  * @param rsp    Place to store a reference to the command response. May
+  *               be NULL if the caller is not interested in the response
+  *               parameters. If non-NULL is passed the caller is responsible
+  *               for calling net_buf_unref() on the buffer when done parsing
+  *               it.
+  *
+  * @return 0 on success or negative error value on failure.
+  */
+#define xSYNC_SEND_PACKETLOG
+int bt_hci_cmd_send_sync(uint16_t opcode, struct net_buf *buf, struct net_buf **rsp){
+    // create packet if needed from opcode
+    if (!buf) {
+        buf = bt_hci_cmd_alloc( K_NO_WAIT );
+        if (!buf) {
+            return -ENOBUFS;
+        }
+    }
+
+    struct bt_hci_cmd_hdr *hdr;
+
+    // thanks to bt_buf_get_tx buf is now sizeof(*hdr) + 1 byte big, with the following layout
+    // [BT_HCI_H4_CMD][payload]
+    uint8_t *bytes = net_buf_push(buf, sizeof(*hdr));
+    // [HDR][BT_HCI_H4_CMD][payload]
+    bytes[0] = BT_HCI_H4_CMD;
+    hdr = (struct bt_hci_cmd_hdr*)&bytes[1];
+    hdr->opcode = sys_cpu_to_le16(opcode);
+    hdr->param_len = buf->len - sizeof(*hdr) - 1;
+
+    // hci dump packet
+#ifdef SYNC_SEND_PACKETLOG
+    uint8_t packet_type = buf->data[0];
+    uint16_t  command_size = buf->len-1;
+    uint8_t * command_data = buf->data+1;
+    hci_dump_packet(packet_type, 0, command_data, command_size);
+#endif
+    // send packet
+    bt_send(buf);
+
+    // wait for HCI Event, timeout is considered an error
+    struct net_buf * event_buffer = k_fifo_get(&rx_queue, K_MSEC(1000));
+    int err;
+    if (event_buffer){
+#ifdef SYNC_SEND_PACKETLOG
+        uint8_t packet_type = event_buffer->data[0];
+        uint16_t  event_size = event_buffer->len-1;
+        uint8_t * event_data = event_buffer->data+1;
+        hci_dump_packet(packet_type, 1, event_data, event_size);
+#endif
+        net_buf_unref(event_buffer);
+        err = 0;
+    } else {
+        log_info("No response for HCI CMD, abort");
+        err = -EIO;
+
+    }
+    return err;
 }
 
 static const hci_transport_t transport = {

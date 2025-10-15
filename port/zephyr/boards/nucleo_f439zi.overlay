@@ -1,0 +1,60 @@
+/ {
+    chosen {
+        zephyr,code-partition = &image_partition;
+        zephyr,bt-hci = &bt_hci;
+    };
+};
+
+&usart2 {
+    status = "okay";
+    /* The UART bus speed (current_speed) for zephyr_bt_uart should be the same
+     * as the default baudrate defined in CYW43xx firmware (default 115200).
+     */
+
+    current-speed = <115200>;
+    hw-flow-control;
+
+    /* HCI-UART pins*/
+    pinctrl-0 = <&usart2_rx_pd6 &usart2_tx_pd5 &usart2_rts_pd4 &usart2_cts_pd3>;
+    pinctrl-names = "default";
+
+    bt_hci: bt_hci {
+        status = "okay";
+        compatible = "zephyr,bt-hci-uart";
+
+        cyw555xx {
+        compatible = "infineon,cyw43xxx-bt-hci";
+        bt-reg-on-gpios = <&gpiog 3 GPIO_ACTIVE_HIGH>;
+
+        /* Configuration UART speeds for firmware download (fw-download-speed) and
+         * HCI operation (hci-operation-speed).
+         * If hci-operation-speed or fw-download-speed are not defined in bt-hci{...}
+         * node, cyw43xx driver will use bus/current-speed as default speed.
+         */
+        fw-download-speed   = <921600>;
+        hci-operation-speed = <921600>;
+        };
+    };
+};
+
+&flash0 {
+//    /delete-propety/ partitions;
+    partitions {
+        compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+        /* application image slot: 2016KB */
+        image_partition: partition@0 {
+			label = "image";
+			reg = <0x00000000 DT_SIZE_K(2016)>;
+			read-only;
+		};
+
+	    /* storage slot: 32KB */
+	    storage_partition: partition@1F8000 {
+            label = "storage";
+		    reg = <0x001F8000 DT_SIZE_K(32)>;
+	    };
+	};
+};
