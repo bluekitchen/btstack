@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 3.5)
 SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+list(APPEND BOARD_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})

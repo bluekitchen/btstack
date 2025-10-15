@@ -101,4 +101,17 @@ west flash
 
 - Allow/document use of Zephyr HCI Drivers
 
+## Build and Running on Nucleo + Ezurio M.2 Adapter
+
+working
+nucleo_f439zi [x]
+nucleo_h753zi [x]
+nucleo_h563zi [x]
+nucleo_h755zi [ ]
+
+### 1. Build Example
+```sh
+west build -b nucleo_f439zi --shield ezurio_m2_nucleo_144_adapter
+west build -b nucleo_h755zi_q/stm32h755xx/m7 --shield ezurio_m2_nucleo_144_adapter
+```
 
