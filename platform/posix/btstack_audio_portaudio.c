@@ -65,7 +65,7 @@ static int                    num_bytes_per_sample_sink;
 static int                    num_bytes_per_sample_source;
 
 static const char * sink_device_name;
-static const char * source_device_name = "4-chan";
+static const char * source_device_name = NULL;
 
 // portaudio
 static int portaudio_initialized;
@@ -207,14 +207,10 @@ static int btstack_audio_portaudio_sink_init(
     PaError err;
 
     btstack_assert(channels <= MAX_NR_AUDIO_CHANNELS);
+    btstack_assert(playback != NULL);
 
     num_channels_sink = channels;
     num_bytes_per_sample_sink = 2 * channels;
-
-    if (!playback){
-        log_error("No playback callback");
-        return 1;
-    }
 
     for (int i=0;i<NUM_OUTPUT_BUFFERS;i++){
         output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
@@ -298,14 +294,11 @@ static int btstack_audio_portaudio_source_init(
     PaError err;
 
     btstack_assert(channels <= MAX_NR_AUDIO_CHANNELS);
+    btstack_assert(recording != NULL);
 
     num_channels_source = channels;
     num_bytes_per_sample_source = 2 * channels;
 
-    if (!recording){
-        log_error("No recording callback");
-        return 1;
-    }
 
     for (int i=0;i<NUM_INPUT_BUFFERS;i++){
         input_buffers[i] = &input_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
