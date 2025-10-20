@@ -364,7 +364,7 @@ static int alsa_init(uint8_t channels, uint32_t samplerate, void (*playback)(int
     snd_pcm_writei( pcm_handle, samples, period_size );
 
     alsa_mixer_init();
-    return 1;
+    return 0;
 }
 
 static uint32_t alsa_get_samplerate(void) {
