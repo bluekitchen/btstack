@@ -67,7 +67,7 @@ typedef struct {
      * @param Channels (1=mono, 2=stereo)
      * @param Sample rate
      * @param Playback callback with sample buffer, number of samples, and, if available playback time of first sample
-     * @return 1 on success
+     * @return 0 on success
      */
     int (*init)(uint8_t channels,
                 uint32_t samplerate, 
@@ -112,7 +112,7 @@ typedef struct {
      * @param Channels (1=mono, 2=stereo)
      * @param Sample rate
      * @param Recording callback with sample buffer, number of samples, and, if available recording time of first sample
-     * @return 1 on success
+     * @return 0 on success
      */
     int (*init)(uint8_t channels,
                 uint32_t samplerate, 

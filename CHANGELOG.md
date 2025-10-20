@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: handle notifications and indications during MTU exchange
 
 ### Changed
+- btstack_audio: return 0 on success for source and sink init 
 
 
 ## Release v1.7
