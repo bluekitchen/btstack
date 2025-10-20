@@ -80,8 +80,10 @@ static void hci_transport_zephyr_handler(btstack_data_source_t * ds, btstack_dat
     net_buf_unref(buf);
 }
 
+#if DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
 static const struct device *const h4_dev = DEVICE_DT_GET(DT_PARENT(DT_CHOSEN(zephyr_bt_hci)));
-int bt_h4_vnd_setup(const struct device *dev);
+extern int bt_h4_vnd_setup(const struct device *dev);
+#endif
 
 /**
  * init transport
@@ -99,8 +101,10 @@ static void transport_init(const void *transport_config){
     /* startup Controller */
     ret = bt_enable_raw(&rx_queue);
     btstack_assert(ret == 0);
+#if DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
     ret = bt_h4_vnd_setup(h4_dev);
     btstack_assert(ret == 0)
+#endif
 }
 
 /**

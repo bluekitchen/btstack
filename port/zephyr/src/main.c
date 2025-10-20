@@ -152,6 +152,7 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 
 static hal_flash_bank_zephyr_t  hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
+
 int main(void)
 {
 #if defined(CONFIG_SOC_SERIES_NRF53X)
@@ -175,7 +176,10 @@ int main(void)
 #endif
 #endif
 
-#if FIXED_PARTITION_EXISTS(storage_partition)
+#if defined(CONFIG_FLASH) && \
+    DT_HAS_CHOSEN(zephyr_code_partition) && \
+    FIXED_PARTITION_EXISTS(storage_partition)
+
     uint32_t bank_size = FIXED_PARTITION_SIZE(storage_partition)/2;
     uint32_t bank_0_addr = FIXED_PARTITION_OFFSET(storage_partition);
     uint32_t bank_1_addr = bank_0_addr+bank_size;
