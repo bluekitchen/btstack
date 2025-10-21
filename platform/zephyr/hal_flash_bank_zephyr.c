@@ -42,9 +42,10 @@
 #include "btstack_defines.h" // UNUSED
 #include "hal_flash_bank_zephyr.h"
 
-#include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/flash.h>
+#include <zephyr/kernel.h>
+#include <zephyr/storage/flash_map.h>
 
 #if defined(CONFIG_FLASH) && \
     DT_HAS_CHOSEN(zephyr_code_partition) && \
