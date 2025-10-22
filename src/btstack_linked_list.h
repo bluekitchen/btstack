@@ -110,6 +110,14 @@ bool btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_ite
 btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t * list);
 
 /**
+ * @breif Get previous element
+ * @param list
+ * @param item
+ * @return previous element or NULL if not found or element was first in liest
+ */
+btstack_linked_item_t * btstack_linked_list_get_previous_item(btstack_linked_list_t * list, btstack_linked_item_t * item);
+
+/**
  * @brief Get last element.
  * @param list
  * @return first element or NULL if list is empty

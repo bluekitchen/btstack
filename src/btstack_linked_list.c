@@ -124,6 +124,15 @@ bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_it
     return counter; 
 }
 
+btstack_linked_item_t * btstack_linked_list_get_previous_item(btstack_linked_list_t * list, btstack_linked_item_t * item) {
+    for (btstack_linked_item_t * it = *list; it != NULL; it = it->next) {
+        if (it->next == item) {
+            return it;
+        }
+    }
+    return NULL;
+}
+
 // get first element
 btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t * list){
     return * list;

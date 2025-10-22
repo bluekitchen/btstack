@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- Linked List: add get previous item
 - Port for Ezurio Vela IF820 dev kit
 
 ### Fixed
