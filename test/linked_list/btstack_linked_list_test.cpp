@@ -71,6 +71,16 @@ TEST(LinkedList, AddTailExisting){
     CHECK_EQUAL( false, btstack_linked_list_add_tail(&testList, &itemD));
 }
 
+TEST(LinkedList, GetPrevious){
+    CHECK_EQUAL( &itemC, btstack_linked_list_get_previous_item(&testList, &itemD));
+    CHECK_EQUAL( &itemB, btstack_linked_list_get_previous_item(&testList, &itemC));
+    CHECK_EQUAL( &itemA, btstack_linked_list_get_previous_item(&testList, &itemB));
+    CHECK_EQUAL( NULL, btstack_linked_list_get_previous_item(&testList, &itemA));
+    btstack_linked_item_t itemE;
+    CHECK_EQUAL( NULL, btstack_linked_list_get_previous_item(&testList, &itemE));
+}
+
+
 TEST(LinkedList, Iterator){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &testList);
