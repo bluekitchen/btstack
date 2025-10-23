@@ -69,9 +69,10 @@ static bd_addr_t    remote_addr;
 // PTS "001BDC080AA5"
 static  char * remote_addr_string = "DC:52:85:B4:AD:2B ";
 
+
+#ifdef HAVE_BTSTACK_STDIN
 static char * phone_number = "911";
 
-static const char * pb_name   = "pb";
 static const char * fav_name  = "fav";
 static const char * ich_name  = "ich";
 static const char * och_name  = "och";
@@ -79,14 +80,19 @@ static const char * mch_name  = "mch";
 static const char * cch_name  = "cch";
 static const char * spd_name  = "spd";
 
-static const char * phonebook_name;
-static char phonebook_folder[30];
-static char phonebook_path[30];
 static enum {
     PBAP_PATH_ROOT,
     PBAP_PATH_FOLDER,
     PBAP_PATH_PHONEBOOK
 } pbap_client_demo_path_type;
+#endif
+
+static const char * pb_name   = "pb";
+
+static const char * phonebook_name;
+static char phonebook_folder[30];
+static char phonebook_path[30];
+
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;

@@ -167,9 +167,10 @@ static a2dp_media_sending_context_t media_tracker;
 static stream_data_source_t data_source;
 
 static int current_sample_rate = 44100;
-static int new_sample_rate = 44100;
 
+#ifdef HAVE_BTSTACK_STDIN
 static int hxcmod_initialized;
+#endif
 
 /* AVRCP Target context START */
 
@@ -877,6 +878,7 @@ static void show_usage(void){
 
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
+    int new_sample_rate;
     switch (cmd){
         case 'a':
             a2dp_source_demo_start_scanning();

@@ -112,9 +112,11 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
+#ifdef HAVE_BTSTACK_STDIN
 static hfp_voice_recognition_message_t msg = {
     0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich is 30 degrees.", 41
 };
+#endif
 
 #define INQUIRY_INTERVAL 5
 
