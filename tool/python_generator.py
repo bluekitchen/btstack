@@ -61,6 +61,10 @@ event_class_for_type = {{
 le_event_class_for_type = {{
 {2}}}
 
+# dictionary to map gap subevent types to event classes
+gap_subevent_class_for_type = {{
+{3}}}
+
 # list of all event types - not actually used
 {0}
 
@@ -71,6 +75,9 @@ def event_for_payload(payload):
     if event_type == 0x3e:
         subevent_type = payload[2]
         event_class = le_event_class_for_type.get(subevent_type, event_class)
+    elif event_type == 0xe7:
+        subevent_type = payload[2]
+        event_class = gap_subevent_class_for_type.get(subevent_type, event_class)
     else:
         event_class = event_class_for_type.get(event_type, event_class)
     return event_class(payload)
@@ -108,6 +115,12 @@ event_getter = \
         {1}
 '''
 
+event_getter_with_index = \
+'''
+    def get_{0}(self, index):
+        {1}
+'''
+
 event_getter_data = '''return self.payload[{offset}:{offset}+self.get_{length_name}()]
 '''
 
@@ -132,7 +145,7 @@ defines = dict()
 defines_used = set()
 
 def size_for_type(type):
-    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16,
+    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'C' : 2,
                     'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'Q' : 32, 'K' : 16, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
     return param_sizes[type]
 
@@ -246,11 +259,11 @@ def create_event(fout, event_name, format, args):
     param_read = {
      '1' : 'return self.payload[{offset}]',
      'J' : 'return self.payload[{offset}]',
-     '2' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
-     'H' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
-     'L' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
+     '2' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])[0]',
+     'H' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])[0]',
+     'L' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])[0]',
      '3' : 'return btstack.btstack_types.unpack24(self.payload[{offset}:3])',
-     '4' : 'return struct.unpack("<I", self.payload[{offset} : {offset}+4])',
+     '4' : 'return struct.unpack("<I", self.payload[{offset} : {offset}+4])[0]',
      'B' : 'data = bytearray(self.payload[{offset}:{offset}+6]); data.reverse(); return btstack.btstack_types.BD_ADDR(data)',
      'X' : 'return btstack.btstack_types.GATTService(self.payload[{offset}:20])',
      'Y' : 'return btstack.btstack_types.GATTCharacteristic(self.payload[{offset}:24])',
@@ -264,11 +277,13 @@ def create_event(fout, event_name, format, args):
      # 'A' : 'Util.storeBytes(data, %u, 31);',
      # 'S' : 'Util.storeBytes(data, %u);'
      'R' : 'return self.payload[{offset}:]', 
+     'C' : 'return struct.unpack("<H", self.payload[{offset} + 2 * index : {offset} + 2 * index + 2])[0]',
      }
 
     offset = 2
     getters = ''
     length_name = ''
+    c_offset = 0
     for f, arg in zip(format, args):
         # just remember name
         if f in ['L','J']:
@@ -283,10 +298,14 @@ def create_event(fout, event_name, format, args):
         elif f in ['D', 'Q', 'K']:
             size = size_for_type(f)
             access = event_getter_data_fixed.format(size=size, offset=offset)
-        else: 
+        else:
             access = param_read[f].format(offset=offset)
             size = size_for_type(f)
-        getters += event_getter.format(arg.lower(), access)
+        if f in ['C']:
+            c_offset = offset
+            getters += event_getter_with_index.format(arg.lower(), access)
+        else:
+            getters += event_getter.format(arg.lower(), access)
         offset += size
     to_string_args = ''
     for f, arg in zip(format, args):
@@ -295,6 +314,9 @@ def create_event(fout, event_name, format, args):
             to_string_args += '        repr += hex(self.get_%s())\n' % arg.lower()
         elif f in ['R', 'V', 'D', 'Q']:
             to_string_args += '        repr += hex_string(self.get_%s())\n' % arg.lower()
+        elif f in ['C']:
+            to_string_args += '        count = (len(self.payload) - %u) // 2\n' % c_offset
+            to_string_args += '        repr += "[" + ", ".join([str(self.get_%s(i)) for i in range(count)]) + "]"\n' % arg.lower()
         else:
             to_string_args += '        repr += str(self.get_%s())\n' % arg.lower()
     to_string_method = event_to_string.format(event_name, to_string_args)
@@ -327,17 +349,20 @@ def create_event_factory(events, subevents, defines):
 
     outfile = '%s/event_factory.py' % gen_path
 
-
-    cases = ''
+    hci_event_classes = ''
     for event_type, event_name, format, args in events:
         event_name = parser.camel_case(event_name)
-        cases += event_factory_event.format(event_type, event_name)
-    subcases = ''
+        hci_event_classes += event_factory_event.format(event_type, event_name)
+    le_subevent_classes = ''
+    gap_subevent_classes = ''
     for event_type, event_name, format, args in subevents:
         if not event_supported(event_name):
             continue
         class_name = class_name_for_event(event_name)
-        subcases += event_factory_subevent.format(event_type, class_name)
+        if event_name.startswith("GAP_SUBEVENT"):
+            gap_subevent_classes += event_factory_subevent.format(event_type, class_name)
+        else:
+            le_subevent_classes += event_factory_subevent.format(event_type, class_name)
 
     with open(outfile, 'wt') as fout:
         # header
@@ -348,7 +373,7 @@ def create_event_factory(events, subevents, defines):
         # 
         defines_text = ''
         # python_defines_string(,defines)
-        fout.write(event_factory_template.format(defines_text, cases, subcases))
+        fout.write(event_factory_template.format(defines_text, hci_event_classes, le_subevent_classes, gap_subevent_classes))
 
 # find root
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
@@ -365,7 +390,7 @@ commands = parser.parse_daemon_commands(camel_case=False)
 (events, le_events, event_types) = parser.parse_events()
 
 # create events, le meta events, event factory, and 
-create_event_factory(events, le_events, event_types)
+create_event_factory(events, le_events, defines)
 create_command_builder(commands)
 
 # done
