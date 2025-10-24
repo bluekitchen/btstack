@@ -42,7 +42,7 @@
 #ifndef BTSTACK_AUDIO_SONG_H
 #define BTSTACK_AUDIO_SONG_H
 
-
+#include "btstack_config.h"
 #include "btstack_linked_list.h"
 
 #ifdef ENABLE_MODPLAYER
