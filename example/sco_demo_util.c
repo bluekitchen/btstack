@@ -76,7 +76,7 @@
 #define SCO_DEMO_MODE_MODPLAYER  2
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_MODPLAYER
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -179,7 +179,9 @@ static struct {
     union {
         btstack_audio_generator_t        base;
         btstack_audio_generator_sine_t   sine;
+#ifdef ENABLE_MODPLAYER
         btstack_audio_generator_mod_t    mod;
+#endif
         btstack_audio_generator_bridge_t bridge;
     } generator;
     bool initialized;
