@@ -44,6 +44,7 @@
 #include "btstack_debug.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 static void btstack_audio_player_generator_finalize(btstack_audio_generator_t * base){
     UNUSED(base);
@@ -91,7 +92,9 @@ void btstack_audio_player_play(btstack_audio_player_t * audio_player) {
     if (audio_player->active_generator_initialized == false) {
         btstack_audio_song_t * song = audio_player->current_song;
         btstack_audio_song_sine_t   * sine_song;
+#ifdef ENABLE_MODPLAYER
         btstack_audio_song_mod_t    * mod_song;
+#endif
 #ifdef ENABLE_VORBIS
         btstack_audio_song_vorbis_t * vorbis_song;
 #endif
