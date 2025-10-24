@@ -3870,11 +3870,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     // expected states
                     case SENT_CREATE_CONNECTION:
                         break;
-                    // Page Timeout after incoming connection indicates connection collision => ignore event
+                    // Page Timeout or Connection Exists after an incoming connection indicates connection collision => ignore event
                     case RECEIVED_CONNECTION_REQUEST:
                     case ACCEPTED_CONNECTION_REQUEST:
-                        if (hci_event_connection_complete_get_status(packet) == ERROR_CODE_PAGE_TIMEOUT) {
-                            return;
+                        switch (hci_event_connection_complete_get_status(packet)) {
+                            case ERROR_CODE_PAGE_TIMEOUT:
+                            case ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS:
+                                return;
+                            default:
+                                break;
                         }
                         break;
                     // unexpected state -> ignore and don't forward event to app
