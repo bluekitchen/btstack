@@ -48,7 +48,7 @@ include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
 
-file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
+file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/*_demo_util.c")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
