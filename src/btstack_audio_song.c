@@ -58,12 +58,16 @@ void btstack_audio_song_sine_init(btstack_audio_song_sine_t * song, uint16_t fre
     btstack_audio_song_init(&song->base, BTSTACK_AUDIO_SONG_SINE, song->title_buffer, NULL, NULL);
 }
 
+#ifdef ENABLE_MODPLAYER
 void btstack_audio_song_mod_init(btstack_audio_song_mod_t * song, const mod_title_t * mod_title) {
     song->mod_title = mod_title;
     btstack_audio_song_init(&song->base, BTSTACK_AUDIO_SONG_MOD, mod_title->name, NULL, NULL);
 }
+#endif
 
+#ifdef ENABLE_VORBIS
 void btstack_audio_song_vorbis_init(btstack_audio_song_vorbis_t * song, const char * path){
     song->path = path;
     btstack_audio_song_init(&song->base, BTSTACK_AUDIO_SONG_VORBIS, NULL, NULL, NULL);
 }
+#endif
