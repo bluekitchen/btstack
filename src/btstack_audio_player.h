@@ -42,6 +42,7 @@
 #ifndef BTSTACK_AUDIO_PLAYER_H
 #define BTSTACK_AUDIO_PLAYER_H
 
+#include "btstack_config.h"
 #include "btstack_audio_song.h"
 #include "btstack_audio_generator.h"
 
