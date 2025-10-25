@@ -124,6 +124,9 @@ list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 # Export functions for JavaScript interop
 set(EXPORTED_FUNCTIONS
     "_main"
+    "_main_set_initial_baudrate"
+    "_main_set_log_level"
+    "_main_set_hci_log"
     "_btstack_main"
     # Run Loop
     "_btstack_run_loop_js_execute_once"

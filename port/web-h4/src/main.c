@@ -55,7 +55,7 @@
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_tlv.h"
 
-static const hci_transport_config_uart_t config = {
+static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
     0,
@@ -68,6 +68,26 @@ static int led_state = 0;
 void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void main_set_initial_baudrate(uint32_t baudrate) {
+    printf("Set Baudrate %u\n", baudrate);
+    config.baudrate_init = baudrate;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void main_set_log_level(int level) {
+    printf("Set log level %u\n", level);
+    for (int i = HCI_DUMP_LOG_LEVEL_DEBUG; i <= HCI_DUMP_LOG_LEVEL_ERROR; i++) {
+        hci_dump_enable_log_level(i, i >= level);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void main_set_hci_log(bool enabled) {
+    printf("Set HCI Log %u\n", enabled);
+    hci_dump_enable_packet_log(enabled);
 }
 
 EMSCRIPTEN_KEEPALIVE
