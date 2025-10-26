@@ -5,7 +5,7 @@ project(BTstack-Web-H4 C)
 set(CMAKE_C_STANDARD 99)
 
 # Path to custom HTML shell
-set(SHELL_FILE ${CMAKE_SOURCE_DIR}/html/shell_minimal.html)
+set(SHELL_FILE_TEMPLATE ${CMAKE_SOURCE_DIR}/html/shell_template.html)
 
 # Path to interop js code
 set(PRE_JS ${CMAKE_SOURCE_DIR}/js/interop.js)
@@ -161,13 +161,17 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     )
 
     # Ensure CMake re-links when shell_minimal.html or interop.js changes
-    set_property(TARGET ${EXAMPLE} APPEND PROPERTY LINK_DEPENDS ${SHELL_FILE} ${PRE_JS})
+    set_property(TARGET ${EXAMPLE} APPEND PROPERTY LINK_DEPENDS ${SHELL_FILE_TEMPLATE} ${PRE_JS})
 
     # Optional: optimize
     target_compile_options(${EXAMPLE} PRIVATE "-O3")
     target_link_options(${EXAMPLE} PRIVATE "-O3")
 
-    # Optional: add a custom HTML shell (instead of default)
+    # Configured Shell HTML
+    set (SHELL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.in.html)
+    configure_file(${SHELL_FILE_TEMPLATE} ${SHELL_FILE})
+
+    # Provide custom HTML shell (instead of default)
     set_target_properties(${EXAMPLE} PROPERTIES LINK_FLAGS "--shell-file ${SHELL_FILE}")
 
     # Add our JS files
