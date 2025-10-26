@@ -108,8 +108,6 @@ void main_set_hci_log(bool enabled) {
 
 EMSCRIPTEN_KEEPALIVE
 int main() {
-    printf("Hello from WebAssembly!\n");
-
     // init memory
     btstack_memory_init();
 
