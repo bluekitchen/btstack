@@ -3,61 +3,323 @@
     <head>
         <meta charset="utf-8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Emscripten-Generated Code</title>
+        <title>Bluetooth Terminal</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+        />
         <style>
-            .emscripten {
-                padding-right: 0;
-                margin-left: auto;
-                margin-right: auto;
-                display: block;
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
             }
-            textarea.emscripten {
-                font-family: monospace;
-                width: 80%;
+            body {
+                font-family: system-ui, sans-serif;
+                background-color: #f9fafb;
+                color: #333;
+                min-height: 100vh;
             }
-            div.emscripten {
-                text-align: center;
+
+            header {
+                background-color: #fff;
+                border-bottom: 1px solid #ddd;
+                padding: 0.6rem 1rem;
             }
-            div.emscripten_border {
-                border: 1px solid black;
+
+            header h1 {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 600;
             }
-            /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-            canvas.emscripten {
-                border: 0px none;
-                background-color: black;
+
+            #configSummary {
+                background-color: #f1f3f5;
+                padding: 0.5rem 1rem;
+                border-bottom: 1px solid #ddd;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                font-size: 0.9rem;
+                gap: 0.6rem;
+            }
+
+            #leftConfig {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.6rem;
+            }
+
+            label {
+                font-weight: 500;
+            }
+
+            input,
+            select {
+                border-radius: 6px;
+                border: 1px solid #ccc;
+                font-size: 0.9rem;
+                padding: 0.3rem 0.6rem;
+            }
+
+            input.hidden,
+            select.hidden,
+            label.hidden {
+                display: none;
+            }
+
+            #debugToggle {
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            }
+
+            #terminal-container {
+                flex: 1;
+                display: flex;
+                background: black;
+                overflow: hidden;
+            }
+
+            #terminal {
+                height: 100%;
+                width: 100%;
+            }
+
+            button {
+                border-radius: 6px;
+                border: none;
+                font-size: 0.9rem;
+                padding: 0.3rem 0.6rem;
+                background-color: #007bff;
+                color: white;
+                cursor: pointer;
+                transition: background 0.2s ease;
+            }
+
+            button:hover:enabled {
+                background-color: #0056b3;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
             }
         </style>
         <script src="buffered_reader.js"></script>
     </head>
-    <body>
-        <hr />
-        <div class="emscripten">
-            <input
-                type="button"
-                value="Start BTstack..."
-                onclick="Module.onStartBTstack()"
-            />
-        </div>
-        <hr />
-        <textarea class="emscripten" id="output" rows="8"></textarea>
-        <hr />
-        <script type="text/javascript">
-            var outputElement = document.getElementById("output");
-            if (outputElement) outputElement.value = ""; // clear browser cache
 
+    <body>
+        <header>
+            <h1 id="appTitle">Bluetooth Terminal</h1>
+        </header>
+
+        <div id="configSummary">
+            <div id="leftConfig">
+                <label for="moduleSelect">Module:</label>
+                <select id="moduleSelect"></select>
+
+                <label for="baudrate">Baud:</label>
+                <select id="baudrate">
+                    <option>9600</option>
+                    <option>19200</option>
+                    <option>38400</option>
+                    <option>57600</option>
+                    <option selected>115200</option>
+                </select>
+
+                <label for="patchUrl" id="patchLabel">Patch:</label>
+                <input
+                    type="text"
+                    id="patchUrl"
+                    placeholder="https://example.com/patchram.hcd"
+                    style="min-width: 220px"
+                />
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.5rem">
+                <label id="debugToggle">
+                    <input type="checkbox" id="debugLog" />
+                    Debug Log
+                </label>
+                <label id="hciToggle">
+                    <input type="checkbox" id="hciLog" />
+                    HCI Log
+                </label>
+                <!--<button id="downloadLogBtn">Download HCI Packet Log</button>-->
+                <button id="connectBtn">Connect</button>
+            </div>
+        </div>
+
+        <div id="terminal-container">
+            <div id="terminal"></div>
+        </div>
+
+        <!-- handle terminal-->
+        <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.min.js"></script>
+        <script>
+            const term = new window.Terminal({
+                cursorBlink: true,
+                theme: { background: "#000000", foreground: "#ffffff" },
+            });
+            term.open(document.getElementById("terminal"));
+            term.writeln("Welcome to Bluetooth Terminal");
+            term.writeln(">");
+
+            // Load and apply FitAddon
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            fitAddon.fit();
+
+            // Re-fit on window resize
+            window.addEventListener("resize", () => fitAddon.fit());
+            const moduleSelect = document.getElementById("moduleSelect");
+            const baudrateSelect = document.getElementById("baudrate");
+            const patchUrlInput = document.getElementById("patchUrl");
+            const patchLabel = document.getElementById("patchLabel");
+            const debugToggle = document.getElementById("debugLog");
+            const connectBtn = document.getElementById("connectBtn");
+            const downloadBtn = document.getElementById("downloadLogBtn");
+
+            let config = {
+                module: "",
+                baud: 115200,
+                patchUrl: "",
+                debug: false,
+            };
+
+            const moduleList = [
+                {
+                    key: "Generic_115200",
+                    label: "Generic HCI H4 Controller at 115200",
+                },
+            ];
+
+            const moduleDefaults = {
+                Generic_115200: { baud: 115200 },
+                BCM20710: { baud: 115200, patchUrl: "" },
+                "ESP32-BT": { baud: 921600, patchUrl: "" },
+                AIROC: {
+                    baud: 115200,
+                    patchUrl: "https://example.com/airoc_patchram.hcd",
+                },
+            };
+
+            function populateModuleSelect() {
+                moduleSelect.innerHTML = "";
+
+                // Populate in manual order using label for display
+                moduleList.forEach((mod) => {
+                    const opt = document.createElement("option");
+                    opt.value = mod.key;
+                    opt.textContent = mod.label;
+                    moduleSelect.appendChild(opt);
+                });
+
+                // Add Custom option at the end
+                const customOpt = document.createElement("option");
+                customOpt.value = "Custom";
+                customOpt.textContent = "Custom (Manual Config)";
+                moduleSelect.appendChild(customOpt);
+
+                // Default to first defined module
+                moduleSelect.value = moduleList[0].key;
+            }
+
+            function updateConfigFromUI() {
+                config.module = moduleSelect.value;
+                const isCustom = config.module === "Custom";
+                const isAiroc = config.module === "AIROC";
+
+                // Patch field visible only for AIROC or Custom
+                const showPatch = isCustom || isAiroc;
+                patchUrlInput.classList.toggle("hidden", !showPatch);
+                patchLabel.classList.toggle("hidden", !showPatch);
+
+                // Baud editable only for Custom
+                baudrateSelect.disabled = !isCustom;
+
+                if (isCustom) {
+                    config.baud = parseInt(baudrateSelect.value, 10);
+                    config.patchUrl = patchUrlInput.value.trim();
+                } else {
+                    const defaults = moduleDefaults[config.module] || {};
+                    config.baud = defaults.baud || 115200;
+                    config.patchUrl = defaults.patchUrl || "";
+                    baudrateSelect.value = config.baud;
+                    patchUrlInput.value = config.patchUrl;
+                }
+            }
+
+            // Event listeners
+            moduleSelect.addEventListener("change", () => {
+                updateConfigFromUI();
+                term.writeln(`Module selected: ${config.module}`);
+            });
+
+            baudrateSelect.addEventListener("change", () => {
+                if (config.module === "Custom")
+                    config.baud = parseInt(baudrateSelect.value, 10);
+            });
+
+            patchUrlInput.addEventListener("input", () => {
+                if (config.module === "AIROC" || config.module === "Custom")
+                    config.patchUrl = patchUrlInput.value.trim();
+            });
+
+            debugToggle.addEventListener("change", () => {
+                config.debug = debugToggle.checked;
+                term.writeln(
+                    `Debug log ${config.debug ? "enabled" : "disabled"}`,
+                );
+            });
+
+            hciToggle.addEventListener("change", () => {
+                config.hci = hciToggle.checked;
+                term.writeln(
+                    `HCI log ${config.debug ? "enabled" : "disabled"}`,
+                );
+            });
+
+            populateModuleSelect();
+            updateConfigFromUI();
+
+            // Connect logic
+            connectBtn.addEventListener("click", async () => {
+                if (!("serial" in navigator)) {
+                    term.writeln(
+                        "\x1b[31mError:\x1b[0m Web Serial API not supported.",
+                    );
+                    return;
+                }
+                Module.onStartBTstack();
+            });
+            if (downloadBtn) {
+                let logBuffer = "";
+                downloadBtn.addEventListener("click", () => {
+                    const blob = new Blob([logBuffer], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "hci_log.txt";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            }
+        </script>
+
+        <!-- handle Emscripten startup, errors and stdio -->
+        <script type="text/javascript">
             var Module = {
                 print(...args) {
-                    // These replacements are necessary if you render to raw HTML
-                    //text = text.replace(/&/g, "&amp;");
-                    //text = text.replace(/</g, "&lt;");
-                    //text = text.replace(/>/g, "&gt;");
-                    //text = text.replace('\n', '<br>', 'g');
                     console.log(...args);
-                    if (outputElement) {
-                        var text = args.join(" ");
-                        outputElement.value += text + "\n";
-                        outputElement.scrollTop = outputElement.scrollHeight; // focus on bottom
-                    }
+                    var text = args.join(" ");
+                    term.writeln(text);
                 },
                 setStatus(text) {
                     console.log("Set Status: " + text);
@@ -88,6 +350,7 @@
                 };
             };
         </script>
+
         {{{ SCRIPT }}}
     </body>
 </html>
