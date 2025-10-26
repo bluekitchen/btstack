@@ -123,7 +123,9 @@ static struct {
     union {
         btstack_audio_generator_t      base;
         btstack_audio_generator_sine_t sine;
+#ifdef ENABLE_MODPLAYER
         btstack_audio_generator_mod_t  mod;
+#endif
     } generator;
     bool initialized;
 } audio_generator_state;
@@ -167,10 +169,6 @@ static a2dp_media_sending_context_t media_tracker;
 static stream_data_source_t data_source;
 
 static int current_sample_rate = 44100;
-
-#ifdef HAVE_BTSTACK_STDIN
-static int hxcmod_initialized;
-#endif
 
 /* AVRCP Target context START */
 
@@ -304,7 +302,11 @@ static int a2dp_source_and_avrcp_services_init(void){
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#ifdef ENABLE_MODPLAYER
     data_source = STREAM_MOD;
+#else
+    data_source = STREAM_SINE;
+#endif
 
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);
@@ -342,10 +344,12 @@ static void a2dp_source_configure_audio_source(stream_data_source_t type, int sa
         case STREAM_SINE:
             btstack_audio_generator_sine_init(&audio_generator_state.generator.sine, sample_rate, NUM_CHANNELS, 441);
             break;
-        case STREAM_MOD:
+#ifdef ENABLE_MODPLAYER
+            case STREAM_MOD:
             btstack_audio_generator_modplayer_init(&audio_generator_state.generator.mod, sample_rate, NUM_CHANNELS,
                 mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
             break;
+#endif
         default:
             btstack_unreachable();
             break;
@@ -862,9 +866,9 @@ static void show_usage(void){
     printf("D      - delete all link keys\n");
 
     printf("x      - start streaming sine\n");
-    if (hxcmod_initialized){
-        printf("z      - start streaming '%s'\n", mod_titles[MOD_TITLE_DEFAULT].name);
-    }
+#ifdef ENABLE_MODPLAYER
+    printf("z      - start streaming '%s'\n", mod_titles[MOD_TITLE_DEFAULT].name);
+#endif
     printf("p      - pause streaming\n");
     printf("w      - reconfigure stream for 44100 Hz\n");
     printf("e      - reconfigure stream for 48000 Hz\n");
@@ -945,7 +949,8 @@ static void stdin_process(char cmd){
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
-        case 'z':
+#ifdef ENABLE_MODPLAYER
+            case 'z':
             if (media_tracker.avrcp_cid){
                 avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
             }
@@ -955,7 +960,7 @@ static void stdin_process(char cmd){
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
-        
+#endif
         case 'p':
             if (!media_tracker.stream_opened) break;
             printf("%c - Pause stream.\n", cmd);
