@@ -197,16 +197,19 @@
                     key: "Generic_115200",
                     label: "Generic HCI H4 Controller at 115200",
                 },
+                {
+                    key: "Generic_1000000",
+                    label: "Generic HCI H4 Controller at 1000000",
+                },
+                {
+                    key: "Generic_1000000",
+                    label: "nRF5x with HCI UART Bridge at 1000000",
+                },
             ];
 
             const moduleDefaults = {
                 Generic_115200: { baud: 115200 },
-                BCM20710: { baud: 115200, patchUrl: "" },
-                "ESP32-BT": { baud: 921600, patchUrl: "" },
-                AIROC: {
-                    baud: 115200,
-                    patchUrl: "https://example.com/airoc_patchram.hcd",
-                },
+                Generic_1000000: { baud: 1000000 },
             };
 
             function populateModuleSelect() {
@@ -234,9 +237,10 @@
                 config.module = moduleSelect.value;
                 const isCustom = config.module === "Custom";
                 const isAiroc = config.module === "AIROC";
+                console.log("Module selected " +  config.module);
 
-                // Patch field visible only for AIROC or Custom
-                const showPatch = isCustom || isAiroc;
+                // Patch field visible only for AIROC
+                const showPatch = isAiroc;
                 patchUrlInput.classList.toggle("hidden", !showPatch);
                 patchLabel.classList.toggle("hidden", !showPatch);
 
@@ -268,7 +272,7 @@
             // Event listeners
             moduleSelect.addEventListener("change", () => {
                 updateConfigFromUI();
-                term.writeln(`Module selected: ${config.module}`);
+                term.writeln("Module selected: " + config.module);
             });
 
             baudrateSelect.addEventListener("change", () => {
