@@ -49,7 +49,9 @@
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
 #include "btstack_uart.h"
+#include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
+#include "hci_transport.h"
 #include "hci_transport_h4.h"
 #include "hci_transport_h4_js.h"
 #include "ble/le_device_db_tlv.h"
@@ -64,6 +66,9 @@ static hci_transport_config_uart_t config = {
     BTSTACK_UART_PARITY_OFF
 };
 
+static bool hci_log_enabled;
+static int log_level;
+
 static int led_state = 0;
 void hal_led_toggle(void){
     led_state = 1 - led_state;
@@ -76,18 +81,29 @@ void main_set_initial_baudrate(uint32_t baudrate) {
     config.baudrate_init = baudrate;
 }
 
-EMSCRIPTEN_KEEPALIVE
-void main_set_log_level(int level) {
-    printf("Set log level %u\n", level);
+static void main_set_log_level_private(int level){
     for (int i = HCI_DUMP_LOG_LEVEL_DEBUG; i <= HCI_DUMP_LOG_LEVEL_ERROR; i++) {
         hci_dump_enable_log_level(i, i >= level);
     }
+    log_level = level;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void main_set_log_level(int level) {
+    const char * log_levels[] = { "DEBUG", "INFO", "ERROR" };
+    if (log_level != level){
+        printf("Set log level %u = %s\n", level, log_levels[level]);
+    }
+    main_set_log_level_private(level);
 }
 
 EMSCRIPTEN_KEEPALIVE
 void main_set_hci_log(bool enabled) {
-    printf("Set HCI Log %u\n", enabled);
+    if (hci_log_enabled != enabled){
+        printf("%s HCI Log\n", enabled ? "Enable" : "Disable");
+    }
     hci_dump_enable_packet_log(enabled);
+    hci_log_enabled = enabled;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -100,8 +116,10 @@ int main() {
     // init run loop
     btstack_run_loop_init(btstack_run_loop_js_get_instance());
 
-    // init HCI dump to stdout
+    // init HCI dump to stdout, but disable by default
     hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    hci_dump_enable_packet_log(false);
+    main_set_log_level_private(HCI_DUMP_LOG_LEVEL_ERROR);
 
     // init HCI with H4 HCI Transport over JavaScript
     hci_init(hci_transport_h4_js_instance(), (void*) &config);

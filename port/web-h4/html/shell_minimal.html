@@ -183,6 +183,7 @@
             const patchUrlInput = document.getElementById("patchUrl");
             const patchLabel = document.getElementById("patchLabel");
             const debugToggle = document.getElementById("debugLog");
+            const hciToggle = document.getElementById("hciLog");
             const connectBtn = document.getElementById("connectBtn");
             const downloadBtn = document.getElementById("downloadLogBtn");
 
@@ -254,6 +255,16 @@
                     baudrateSelect.value = config.baud;
                     patchUrlInput.value = config.patchUrl;
                 }
+
+                // get logging options
+                config.debug = debugToggle.checked;
+                config.hci = hciToggle.checked;
+                console.log("HCI Toggle checked " + hciToggle.checked);
+            }
+
+            function updateBTstackLoggingFromConfig() {
+                _main_set_log_level(config.debug ? 1 : 2);
+                _main_set_hci_log(config.hci);
             }
 
             // Event listeners
@@ -273,17 +284,13 @@
             });
 
             debugToggle.addEventListener("change", () => {
-                config.debug = debugToggle.checked;
-                term.writeln(
-                    `Debug log ${config.debug ? "enabled" : "disabled"}`,
-                );
+                updateConfigFromUI();
+                updateBTstackLoggingFromConfig();
             });
 
             hciToggle.addEventListener("change", () => {
-                config.hci = hciToggle.checked;
-                term.writeln(
-                    `HCI log ${config.debug ? "enabled" : "disabled"}`,
-                );
+                updateConfigFromUI();
+                updateBTstackLoggingFromConfig();
             });
 
             populateModuleSelect();
@@ -291,6 +298,7 @@
 
             // Connect logic
             connectBtn.addEventListener("click", async () => {
+                updateConfigFromUI();
                 if (!("serial" in navigator)) {
                     term.writeln(
                         "\x1b[31mError:\x1b[0m Web Serial API not supported.",
