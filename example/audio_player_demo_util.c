@@ -59,7 +59,9 @@
 // songs
 static btstack_audio_song_silence_t silence_song;
 static btstack_audio_song_sine_t sine_songs[AUDIO_PLAYER_MAX_SINE_SONGS];
+#ifdef ENABLE_MODPLAYER
 static btstack_audio_song_mod_t mod_songs[AUDIO_PLAYER_MAX_MOD_SONGS];
+#endif
 
 // sine songs
 static uint16_t sine_song_frequencies_hz[] = {
@@ -84,12 +86,14 @@ btstack_linked_list_t audio_player_demo_util_get_playlist_instance(void) {
             btstack_audio_song_sine_init(&sine_songs[i], sine_song_frequencies_hz[i]);
             btstack_linked_list_add(&audio_player_demo_util_playlist, (btstack_linked_item_t *) &sine_songs[i]);
         }
+#ifdef ENABLE_MODPLAYER
         // - mods
         int usable_mods = btstack_min(mod_titles_count, AUDIO_PLAYER_MAX_MOD_SONGS);
         for (int i=0; i < usable_mods; i++) {
             btstack_audio_song_mod_init(&mod_songs[i], &mod_titles[i]);
             btstack_linked_list_add(&audio_player_demo_util_playlist, (btstack_linked_item_t *) &mod_songs[i]);
         }
+#endif
     }
     return audio_player_demo_util_playlist;
 }
