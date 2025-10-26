@@ -43,6 +43,10 @@
 
 #include <emscripten/emscripten.h>
 
+#include "bluetooth_company_id.h"
+#include "btstack_chipset_zephyr.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_js.h"
@@ -69,10 +73,102 @@ static hci_transport_config_uart_t config = {
 static bool hci_log_enabled;
 static int log_level;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+/** Zephyr Static Address - used on nRF5x SoCs */
+static bd_addr_t zephyr_static_address;
+static bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+
+/** HAL LED */
 static int led_state = 0;
 void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
+}
+
+static void use_fast_uart(void){
+    // only increase baudrate if started with default baudrate
+    // to avoid issues with custom default baudrates
+    if (config.baudrate_init == 115200) {
+        config.baudrate_main = 921600;
+        printf("Update to %u baud.\n", config.baudrate_main);
+    } else {
+        printf("Keep %u baud.\n", config.baudrate_init);
+    }
+}
+
+static void local_version_information_handler(uint8_t * packet){
+    printf("Local version information:\n");
+    uint16_t hci_version    = packet[6];
+    uint16_t hci_revision   = little_endian_read_16(packet, 7);
+    uint16_t lmp_version    = packet[9];
+    uint16_t manufacturer   = little_endian_read_16(packet, 10);
+    uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+    printf("- HCI Version    0x%04x\n", hci_version);
+    printf("- HCI Revision   0x%04x\n", hci_revision);
+    printf("- LMP Version    0x%04x\n", lmp_version);
+    printf("- LMP Subversion 0x%04x\n", lmp_subversion);
+    printf("- Manufacturer 0x%04x\n", manufacturer);
+    switch (manufacturer){
+        case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
+            printf("Nordic Semiconductor nRF5 chipset.\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
+            use_fast_uart();
+            break;
+        default:
+            printf("Unknown manufacturer / manufacturer not supported yet.\n");
+            break;
+    }
+}
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    const uint8_t *params;
+    static bd_addr_t local_addr;
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_POWERON_FAILED:
+            printf("Terminating.\n");
+            exit(EXIT_FAILURE);
+            break;
+        case BTSTACK_EVENT_STATE:
+            switch(btstack_event_state_get_state(packet)){
+                case HCI_STATE_WORKING:
+                    gap_local_bd_addr(local_addr);
+                    if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(zephyr_static_address) ) {
+                        memcpy(local_addr, zephyr_static_address, sizeof(bd_addr_t));
+                    } else if( btstack_is_null_bd_addr(local_addr) && btstack_is_null_bd_addr(zephyr_static_address) ) {
+                        memcpy(local_addr, random_address, sizeof(bd_addr_t));
+                        gap_random_address_set(local_addr);
+                    }
+                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            switch (hci_event_command_complete_get_command_opcode(packet)){
+            case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+                local_version_information_handler(packet);
+                break;
+            case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+                log_info("Zephyr read static address available");
+                params = hci_event_command_complete_get_return_parameters(packet);
+                if(params[0] != 0)
+                    break;
+                if(size < 13)
+                    break;
+                reverse_48(&params[2], zephyr_static_address);
+                gap_random_address_set(zephyr_static_address);
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -100,7 +196,7 @@ void main_set_log_level(int level) {
 EMSCRIPTEN_KEEPALIVE
 void main_set_hci_log(bool enabled) {
     if (hci_log_enabled != enabled){
-        printf("%s HCI Log\n", enabled ? "Enable" : "Disable");
+        printf("HCI Log %s\n", enabled ? "enabled" : "disabled");
     }
     hci_dump_enable_packet_log(enabled);
     hci_log_enabled = enabled;
@@ -133,6 +229,10 @@ int main() {
 
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, btstack_tlv_context);
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     printf("Running...\n\r");
 
