@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 # Collect all examples in a single folder
 USAGE="Usage: package.sh <build folder> <output folder>"
 
