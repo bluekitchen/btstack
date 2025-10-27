@@ -90,11 +90,11 @@ static void stdin_process(char cmd) {
     switch (cmd) {
         case '[':
             btstack_audio_player_previous_song(&audio_player);
-            show_command_and_song("Next song");
+            show_command_and_song("Previous song");
             break;
         case ']':
             btstack_audio_player_next_song(&audio_player);
-            show_command_and_song("Previous song");
+            show_command_and_song("Next song");
             break;
         case 'p':
             btstack_audio_player_play(&audio_player);
