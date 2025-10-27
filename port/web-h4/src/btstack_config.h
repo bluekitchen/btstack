@@ -9,7 +9,7 @@
 
 // Port related features
 #define HAVE_ASSERT
-// #define HAVE_BTSTACK_STDIN
+#define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 
 // BTstack features that can be enabled

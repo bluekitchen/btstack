@@ -163,11 +163,20 @@
         <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.min.js"></script>
         <script>
+            // forward STDIN char by char
+            function handleStdin(data) {
+                term.writeln(data);
+                for (let i = 0; i < data.length; i++) {
+                    _btstack_stdin_js_process( data.charCodeAt(i) );
+                }
+            }
+
             const term = new window.Terminal({
                 cursorBlink: true,
                 theme: { background: "#000000", foreground: "#ffffff" },
             });
             term.open(document.getElementById("terminal"));
+            term.onData((data) => handleStdin(data));
 
             // Load and apply FitAddon
             const fitAddon = new FitAddon.FitAddon();
@@ -176,6 +185,7 @@
 
             // Re-fit on window resize
             window.addEventListener("resize", () => fitAddon.fit());
+
             const moduleSelect = document.getElementById("moduleSelect");
             const baudrateSelect = document.getElementById("baudrate");
             const patchUrlInput = document.getElementById("patchUrl");

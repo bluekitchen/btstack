@@ -132,6 +132,8 @@ set(EXPORTED_FUNCTIONS
     "_main_set_log_level"
     "_main_set_hci_log"
     "_btstack_main"
+    # STDIN
+    "_btstack_stdin_js_process"
     # Run Loop
     "_btstack_run_loop_js_execute_once"
     "_btstack_run_loop_js_process_timer"
