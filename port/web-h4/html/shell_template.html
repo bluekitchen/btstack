@@ -309,6 +309,8 @@
                 }
                 Module.onStartBTstack();
             });
+
+            // download HCI log
             if (downloadBtn) {
                 let logBuffer = "";
                 downloadBtn.addEventListener("click", () => {
@@ -320,6 +322,23 @@
                     a.click();
                     URL.revokeObjectURL(url);
                 });
+            }
+
+            // Check WebSerial API
+            if (!("serial" in navigator)) {
+                term.writeln(
+                    "\x1b[31mError:\x1b[0m Web Serial API not supported!",
+                );
+                term.writeln(
+                    "Please use a Chrome-based Browswer: e.g. Google Chrome, Chromium or Microsoft Edge",
+                );
+                term.writeln(
+                    "\n\rAlternatively, you can try the WebSerial for Firefox Add-on:",
+                );
+                term.writeln(
+                    "\033]8;;https://addons.mozilla.org/en-US/firefox/addon/webserial-for-firefox\033\\https://addons.mozilla.org/en-US/firefox/addon/webserial-for-firefox\033]8;;\033\\",
+                );
+                connectBtn.disabled = true;
             }
         </script>
 

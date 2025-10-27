@@ -233,8 +233,6 @@ int main() {
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    printf("Running...\n\r");
-
+    
     return 0;
 }
