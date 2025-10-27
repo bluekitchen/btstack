@@ -134,7 +134,7 @@ void btstack_audio_player_play(btstack_audio_player_t * audio_player) {
 
 void btstack_audio_player_stop(btstack_audio_player_t * audio_player) {
     audio_player->playing = false;
-};
+}
 
 static void btstack_audio_player_song_changed(btstack_audio_player_t * audio_player) {
     if (audio_player->playing) {
