@@ -7385,6 +7385,7 @@ static bool hci_run_general_pending_commands(void){
                 if (connection->address_type == BD_ADDR_TYPE_ACL){
                     log_info("sending hci_accept_connection_request");
                     connection->state = ACCEPTED_CONNECTION_REQUEST;
+                    connection->role = HCI_ROLE_SLAVE;
                     hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
                     return true;
                 }
