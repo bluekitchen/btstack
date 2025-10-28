@@ -274,6 +274,9 @@
                 config.debug = debugToggle.checked;
                 config.hci = hciToggle.checked;
                 console.log("HCI Toggle checked " + hciToggle.checked);
+
+                // store config
+                localStorage.setItem("UIConfig", JSON.stringify(config));
             }
 
             function updateBTstackLoggingFromConfig() {
@@ -307,7 +310,16 @@
                 updateBTstackLoggingFromConfig();
             });
 
+            // load stored config and update UI
+            storedConfig = localStorage.getItem("UIConfig");
+            if (storedConfig){
+                config = JSON.parse(storedConfig);
+                debugToggle.checked = config.debug;
+                hciToggle.checked = config.hci;
+            }
+
             populateModuleSelect();
+
             updateConfigFromUI();
 
             // Connect logic
