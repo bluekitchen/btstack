@@ -151,6 +151,7 @@
                     HCI Log
                 </label>
                 <!--<button id="downloadLogBtn">Download HCI Packet Log</button>-->
+                <button id="clearTLVButton">Clear TLV</button>
                 <button id="connectBtn">Connect</button>
             </div>
         </div>
@@ -194,6 +195,7 @@
             const hciToggle = document.getElementById("hciLog");
             const connectBtn = document.getElementById("connectBtn");
             const downloadBtn = document.getElementById("downloadLogBtn");
+            const clearTLVBtn = document.getElementById("clearTLVButton");
 
             let config = {
                 module: "",
@@ -332,6 +334,16 @@
                     a.click();
                     URL.revokeObjectURL(url);
                 });
+            }
+
+            // clear TLV
+            if (clearTLVBtn){
+                clearTLVBtn.addEventListener("click", () => {
+                    localStorage.clear();
+                    clearTLVBtn.hidden = true;
+                    term.writeln("TLV cleared");
+                });
+                clearTLVBtn.hidden = localStorage.length == 0;
             }
 
             // Check WebSerial API

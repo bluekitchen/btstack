@@ -85,6 +85,13 @@ async function hci_transport_h4_js_send_data(data) {
   _hci_transport_h4_packet_sent();
 }
 
+// UI Helper
+function btstack_tlv_js_updated(){
+  console.log("[BTstack TLV] updated");
+  const clearTLVBtn = document.getElementById("clearTLVButton");
+  clearTLVBtn.hidden = false;
+}
+
 // Main Application
 
 // open serial port triggered by user interaction, e.g. pressing an HTML button

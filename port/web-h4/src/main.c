@@ -51,7 +51,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_js.h"
 #include "btstack_tlv.h"
-#include "btstack_tlv_none.h"
+#include "btstack_tlv_js.h"
 #include "btstack_uart.h"
 #include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
@@ -219,7 +219,7 @@ int main() {
     hci_init(hci_transport_h4_js_instance(), (void*) &config);
 
     // use in-memory TLV for testing
-    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_js_init_instance();
     void                * btstack_tlv_context = NULL;
     btstack_tlv_set_instance(btstack_tlv_impl, btstack_tlv_context);
 
