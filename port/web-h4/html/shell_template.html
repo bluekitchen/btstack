@@ -125,11 +125,11 @@
 
                 <label for="baudrate">Baud:</label>
                 <select id="baudrate">
-                    <option>9600</option>
-                    <option>19200</option>
-                    <option>38400</option>
-                    <option>57600</option>
                     <option selected>115200</option>
+                    <option selected>230400</option>
+                    <option selected>921600</option>
+                    <option selected>1000000</option>
+                    <option selected>3000000</option>
                 </select>
 
                 <label for="patchUrl" id="patchLabel">Patch:</label>
@@ -151,7 +151,6 @@
                     HCI Log
                 </label>
                 <!--<button id="downloadLogBtn">Download HCI Packet Log</button>-->
-                <button id="clearTLVButton">Clear TLV</button>
                 <button id="connectBtn">Connect</button>
             </div>
         </div>
@@ -195,7 +194,6 @@
             const hciToggle = document.getElementById("hciLog");
             const connectBtn = document.getElementById("connectBtn");
             const downloadBtn = document.getElementById("downloadLogBtn");
-            const clearTLVBtn = document.getElementById("clearTLVButton");
 
             let config = {
                 module: "",
@@ -210,6 +208,10 @@
                     label: "Generic HCI H4 Controller at 115200",
                 },
                 {
+                    key: "Generic_921600",
+                    label: "Generic HCI H4 Controller at 921600",
+                },
+                {
                     key: "Generic_1000000",
                     label: "Generic HCI H4 Controller at 1000000",
                 },
@@ -221,6 +223,7 @@
 
             const moduleDefaults = {
                 Generic_115200: { baud: 115200 },
+                Generic_921600: { baud: 921600 },
                 Generic_1000000: { baud: 1000000 },
             };
 
@@ -274,9 +277,6 @@
                 config.debug = debugToggle.checked;
                 config.hci = hciToggle.checked;
                 console.log("HCI Toggle checked " + hciToggle.checked);
-
-                // store config
-                localStorage.setItem("UIConfig", JSON.stringify(config));
             }
 
             function updateBTstackLoggingFromConfig() {
@@ -310,16 +310,7 @@
                 updateBTstackLoggingFromConfig();
             });
 
-            // load stored config and update UI
-            storedConfig = localStorage.getItem("UIConfig");
-            if (storedConfig){
-                config = JSON.parse(storedConfig);
-                debugToggle.checked = config.debug;
-                hciToggle.checked = config.hci;
-            }
-
             populateModuleSelect();
-
             updateConfigFromUI();
 
             // Connect logic
@@ -346,16 +337,6 @@
                     a.click();
                     URL.revokeObjectURL(url);
                 });
-            }
-
-            // clear TLV
-            if (clearTLVBtn){
-                clearTLVBtn.addEventListener("click", () => {
-                    localStorage.clear();
-                    clearTLVBtn.hidden = true;
-                    term.writeln("TLV cleared");
-                });
-                clearTLVBtn.hidden = localStorage.length == 0;
             }
 
             // Check WebSerial API
