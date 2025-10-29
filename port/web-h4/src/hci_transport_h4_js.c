@@ -39,22 +39,23 @@
 
 #include "hci_transport_h4_js.h"
 
+#include "bluetooth.h"
 #include "btstack_bool.h"
 #include "btstack_config.h"
 #include "btstack_debug.h"
+#include "btstack_uart.h"
 
 #include <stdint.h>
 #include <string.h>
 
 #include <emscripten/emscripten.h>
 
-#include "bluetooth.h"
-
 // globals
 static uint8_t hci_transport_h4_js_send_buffer[1024];
 static uint8_t hci_transport_h4_js_receive_buffer[1024];
 static void (*hci_transport_h4_js_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static bool hci_transport_h4_js_tx_state_busy = false;
+static btstack_uart_config_t hci_transport_h4_uart_config;
 
 // callbacks from JavaScript for HCI Transport
 EMSCRIPTEN_KEEPALIVE
@@ -99,6 +100,18 @@ static void hci_send_packet(uint8_t packet_type, const uint8_t * buffer, uint16_
 
 static void hci_transport_h4_js_init(const void *transport_config){
     log_info("hci_transport_h4_js_init");
+
+    // check for hci_transport_config_uart_t
+    btstack_assert (transport_config != NULL);
+    btstack_assert (((hci_transport_config_t*)transport_config)->type == HCI_TRANSPORT_CONFIG_UART);
+
+    // extract UART config from transport config
+    hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
+    hci_transport_h4_uart_config.baudrate    = hci_transport_config_uart->baudrate_init;
+    hci_transport_h4_uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
+    hci_transport_h4_uart_config.parity      = hci_transport_config_uart->parity;
+    hci_transport_h4_uart_config.device_name = hci_transport_config_uart->device_name;
+
     hci_transport_h4_js_tx_state_busy = false;
 }
 
