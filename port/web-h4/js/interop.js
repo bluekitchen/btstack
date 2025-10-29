@@ -95,7 +95,7 @@ function btstack_tlv_js_updated(){
 // Main Application
 
 // open serial port triggered by user interaction, e.g. pressing an HTML button
-Module.onStartBTstack = async () => {
+Module.onStartBTstack = async (config) => {
   log("Start BTstack clicked");
 
   if ("serial" in navigator) {
@@ -107,9 +107,8 @@ Module.onStartBTstack = async () => {
     log("Port selected");
 
     // Wait for the serial port to open.
-    baudrate = 115200;
     flowControl = "hardware";
-    await port.open({ baudRate: baudrate, flowControl: flowControl });
+    await port.open({ baudRate: config.baud, flowControl: flowControl });
     log(
       "Port opened" + ` (baudrate: ${baudrate}, flowControl: ${flowControl})`,
     );

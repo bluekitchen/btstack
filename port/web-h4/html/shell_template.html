@@ -323,7 +323,7 @@
                     return;
                 }
                 _main_set_initial_baudrate(config.baud);
-                Module.onStartBTstack();
+                Module.onStartBTstack(config);
             });
 
             // download HCI log
