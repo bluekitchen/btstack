@@ -48,6 +48,10 @@
 #include "btstack_bool.h"
 #include "btstack_util.h"
 
+#ifdef ENABLE_PRINTF_TO_LOG
+#include <stdio.h>
+#endif
+
 static const hci_dump_t * hci_dump_implementation;
 static int  max_nr_packets;
 static int  nr_packets;
@@ -97,12 +101,24 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 }
 
 void hci_dump_log(int log_level, const char * format, ...){
-    if (!hci_dump_log_level_active(log_level)) return;
+    va_list args_log;
+    va_start(args_log, format);
 
-    va_list argptr;
-    va_start(argptr, format);
-    (*hci_dump_implementation->log_message)(log_level, format, argptr);
-    va_end(argptr);
+#ifdef ENABLE_PRINTF_TO_LOG
+    if (log_level == HCI_DUMP_LOG_LEVEL_PRINT) {
+        // copy args list and use for vprintf
+        va_list args_printf;
+        va_copy(args_printf, args_log);
+        vprintf(format, args_printf);
+        va_end(args_printf);
+    }
+#endif
+
+    if (hci_dump_log_level_active(log_level)) {
+        (*hci_dump_implementation->log_message)(log_level, format, args_log);
+
+    }
+    va_end(args_log);
 }
 
 #ifdef __AVR__

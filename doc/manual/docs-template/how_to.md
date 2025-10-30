@@ -137,6 +137,7 @@ BTstack properties:
 | ENABLE_MICRO_ECC_FOR_<br>LE_SECURE_CONNECTIONS                                | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations                                            |
 | ENABLE_MODPLAYER                                                              | Enable HXCMOD player in btstack_audio_generator and examples                                                                |
 | ENABLE_MUTUAL_<br>AUTHENTICATION_FOR_<br>LEGACY_SECURE_CONNECTIONS            | Re-authentication after connection was encrypted to avoid BIAS Attack. Not needed for min encryption key size of 16         |
+| ENABLE_PRINTF_TO_LOG                                                          | Log printf into packet log                                                                                                  |
 | ENABLE_RTK_PCM_WBS                                                            | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM                               |
 | ENABLE_SCO_OVER_HCI                                                           | Enable SCO over HCI for chipsets (if supported)                                                                             |
 | ENABLE_SCO_OVER_PCM                                                           | Enable SCO ofer PCM/I2S for chipsets (if supported)                                                                         |

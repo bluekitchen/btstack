@@ -168,6 +168,16 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 
 #endif /* _MSC_VER */
 
+/**
+ * @Brief If ENABLE_PRINTF_TO_LOG is defined, printf is replaced by log_print,
+ *        which causes the message to get logged into the packet log.
+ *        In addition, it will also printed to the console via vprintf
+ */
+#ifdef ENABLE_PRINTF_TO_LOG
+// stdio.h needs to be included before it gets redefined
+#include <stdio.h>
+#define printf(...) hci_dump_log(HCI_DUMP_LOG_LEVEL_PRINT, ## __VA_ARGS__)
+#endif
 
 /* API_START */
 

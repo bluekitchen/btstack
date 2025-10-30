@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Linked List: add get previous item
 - Port for Ezurio Vela IF820 dev kit
+- HCI Dump: Log printf into packet log with ENABLE_PRINTF_TO_LOG
 
 ### Fixed
 - GAP: emit Dedicated Bonding Complete after link key was received
