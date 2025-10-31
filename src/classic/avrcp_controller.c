@@ -735,6 +735,8 @@ static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer)
     btstack_run_loop_set_timer(&connection->controller_press_and_hold_cmd_timer, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&connection->controller_press_and_hold_cmd_timer);
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
+    // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+    connection->data_offset = 0;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -754,6 +756,8 @@ static void avrcp_press_and_hold_timer_stop(avrcp_connection_t * connection){
 
 static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+    // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+    connection->data_offset = 0;
     if (connection->controller_press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_stop(connection);
     }
@@ -1428,12 +1432,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     // trigger release for simple command:
                     if (!connection->controller_press_and_hold_cmd_active){
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                        // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+                        connection->data_offset = 0;
                         break;
                     }
                     // for press and hold, send release if it just has been requested, otherwise, wait for next repeat
                     if (connection->controller_press_and_hold_cmd_release){
                         connection->controller_press_and_hold_cmd_release = false;
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                        // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+                        connection->data_offset = 0;
                     } else {
                         connection->state = AVCTP_W4_STOP;
                     }
