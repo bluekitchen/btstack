@@ -7,21 +7,22 @@
 
 // Port related features
 #define HAVE_BTSTACK_STDIN
+#define HAVE_EMBEDDED_TIME_MS
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-#define HAVE_EMBEDDED_TIME_MS
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_PERIPHERAL
+#define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_SIGNED_WRITE
+#define ENABLE_LOG_DEBUG
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
-#define ENABLE_LOG_DEBUG
 #define ENABLE_PRINTF_HEXDUMP
+#define ENABLE_PRINTF_TO_LOG
 #define ENABLE_SOFTWARE_AES128
-#define ENABLE_LE_SECURE_CONNECTIONS
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1024

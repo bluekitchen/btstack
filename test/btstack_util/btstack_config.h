@@ -16,5 +16,6 @@ extern void test_assert(bool condition);
 #endif
 
 #define ENABLE_PRINTF_HEXDUMP
+#define ENABLE_PRINTF_TO_LOG
 
 #endif
