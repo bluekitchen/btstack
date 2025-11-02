@@ -232,7 +232,6 @@ int main() {
     le_device_db_tlv_configure(btstack_tlv_impl, btstack_tlv_context);
 
 #ifdef HAVE_SDL2
-    printf("HAVE_SDL2!\n");
     btstack_audio_sink_set_instance(btstack_audio_sdl2_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_sdl2_source_get_instance());
 #endif

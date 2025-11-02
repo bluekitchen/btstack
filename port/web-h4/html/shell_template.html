@@ -340,22 +340,35 @@
                 });
             }
 
-            // Check WebSerial API
-            if (!("serial" in navigator)) {
-                term.writeln(
-                    "\x1b[31mError:\x1b[0m Web Serial API not supported!",
-                );
-                term.writeln(
-                    "Please use a Chrome-based Browswer: e.g. Google Chrome, Chromium or Microsoft Edge",
-                );
-                term.writeln(
-                    "\n\rAlternatively, you can try the WebSerial for Firefox Add-on:",
-                );
-                term.writeln(
-                    "\033]8;;https://addons.mozilla.org/en-US/firefox/addon/webserial-for-firefox\033\\https://addons.mozilla.org/en-US/firefox/addon/webserial-for-firefox\033]8;;\033\\",
-                );
-                connectBtn.disabled = true;
+            // general example, i.e. it doesn't use Bluetooth, so no WebSerial API is needed either
+            is_general_example = ${IS_GENERAL_EXAMPLE};
+            if (is_general_example){
+                // hide configuration
+                document.getElementById("configSummary").style.display = "none";
+
+                // use timer to start demo in 1 second
+                setTimeout(() => {
+                    _btstack_main();
+                }, 1000);
+            } else {
+                // Check WebSerial API
+                if (!("serial" in navigator)) {
+                    term.writeln(
+                        "\x1b[31mError:\x1b[0m Web Serial API not supported!",
+                    );
+                    term.writeln(
+                        "Please use a Chrome-based Browswer: e.g. Google Chrome, Chromium or Microsoft Edge",
+                    );
+                    term.writeln(
+                        "\n\rAlternatively, you can try the WebSerial for Firefox Add-on:",
+                    );
+                    term.writeln(
+                        "\033]8;;https://addons.mozilla.org/en-US/firefox/addon/webserial-for-firefox\033\\https://addons.mozilla.org/en-US/firefox/addon/webserial-for-firefox\033]8;;\033\\",
+                    );
+                    connectBtn.disabled = true;
+                }
             }
+
         </script>
 
         <!-- handle Emscripten startup, errors and stdio -->
@@ -395,7 +408,6 @@
                 };
             };
         </script>
-
         {{{ SCRIPT }}}
     </body>
 </html>

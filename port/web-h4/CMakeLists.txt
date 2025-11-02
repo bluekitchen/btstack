@@ -158,6 +158,10 @@ foreach(EXAMPLE ${EXAMPLES})
     if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
         target_gatt(${EXAMPLE} ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt)
     endif()
+    set(IS_GENERAL_EXAMPLE "false")
+    if ( "${EXAMPLES_GENERAL}" MATCHES ${EXAMPLE} )
+        set(IS_GENERAL_EXAMPLE "true")
+    endif()
 
     # --- Emscripten specific settings ---
     # Tell CMake/Emscripten to output .html instead of just .wasm/.js
