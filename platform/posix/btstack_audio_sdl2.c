@@ -37,6 +37,8 @@
 
 #define BTSTACK_FILE__ "btstack_audio_sdl2.c"
 
+#ifdef HAVE_SDL2
+
 #include <stdint.h>
 #include <string.h>
 
@@ -50,7 +52,6 @@
 #include "btstack_audio.h"
 #include "btstack_run_loop.h"
 
-#ifdef HAVE_SDL2
 #define NUM_FRAMES_PER_AUDIO_BUFFER    512
 #define NUM_OUTPUT_BUFFERS               5
 #define NUM_INPUT_BUFFERS                5
