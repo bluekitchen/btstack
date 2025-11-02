@@ -110,9 +110,10 @@ target_compile_options(btstack PRIVATE
 )
 
 # create targets for all examples
-file(GLOB EXAMPLES_C    "${BTSTACK_ROOT}/example/*.c")
-list(SORT EXAMPLES_C)
-file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
+include(${BTSTACK_ROOT}/example/CMakeLists.txt)
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
+list(REMOVE_DUPLICATES EXAMPLES)
+list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
 # remove some
 file(GLOB EXAMPLES_OFF
@@ -147,12 +148,13 @@ set(EXPORTED_FUNCTIONS
 string(JOIN "," EXPORTED_FUNCTIONS_STR ${EXPORTED_FUNCTIONS})
 
 # create targets
-foreach(EXAMPLE_FILE ${EXAMPLES_C})
-    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+foreach(EXAMPLE ${EXAMPLES})
+    # get c file
+    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
     # Your sources
     message("Building example: ${EXAMPLE}")
-    add_executable(${EXAMPLE} ${EXAMPLE_FILE})
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
     if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
         target_gatt(${EXAMPLE} ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt)
     endif()
@@ -192,4 +194,4 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     # Link example against static library
     target_link_libraries(${EXAMPLE} PRIVATE btstack)
 
-endforeach(EXAMPLE_FILE)
+endforeach(EXAMPLE)
