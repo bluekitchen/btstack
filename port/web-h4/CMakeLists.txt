@@ -75,9 +75,6 @@ file(GLOB SOURCES_PORT       "${CMAKE_SOURCE_DIR}/src/*.c")
 file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
 
-file(GLOB SOURCES_POSIX_OFF "${BTSTACK_ROOT}/platform/posix/le_device_db_fs.c")
-list(REMOVE_ITEM SOURCES_POSIX   ${SOURCES_POSIX_OFF})
-
 set(SOURCES
         ${SOURCES_BLE}
         ${SOURCES_BCM}
@@ -101,12 +98,16 @@ set(SOURCES
         ${SOURCES_ZEPHYR}
         ${SOURCES_QRCODEGEN}
         ${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c
+        ${BTSTACK_ROOT}/platform/posix/btstack_audio_sdl2.c
 )
 list(SORT SOURCES)
 
 # create static lib from sources
 add_library(btstack STATIC ${SOURCES})
-
+target_compile_options(btstack PRIVATE
+    "-DHAVE_SDL2"
+    "-sUSE_SDL=2"
+)
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "${BTSTACK_ROOT}/example/*.c")
@@ -163,6 +164,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     target_link_options(${EXAMPLE} PRIVATE
         "-sEXPORTED_FUNCTIONS=[${EXPORTED_FUNCTIONS_STR}]"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
+        "-sUSE_SDL=2"
         "--pre-js" "${PRE_JS}"
     )
 

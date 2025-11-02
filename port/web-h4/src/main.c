@@ -45,6 +45,7 @@
 
 #include "bluetooth_company_id.h"
 #include "btstack_chipset_zephyr.h"
+#include "btstack_audio_sdl2.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -229,6 +230,12 @@ int main() {
 
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, btstack_tlv_context);
+
+#ifdef HAVE_SDL2
+    printf("HAVE_SDL2!\n");
+    btstack_audio_sink_set_instance(btstack_audio_sdl2_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_sdl2_source_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
