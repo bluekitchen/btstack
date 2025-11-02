@@ -219,12 +219,17 @@
                     key: "Generic_1000000",
                     label: "nRF5x with HCI UART Bridge at 1000000",
                 },
+                {
+                    key: "Generic_3000000",
+                    label: "Generic HCI H4 Controller at 3000000",
+                },
             ];
 
             const moduleDefaults = {
                 Generic_115200: { baud: 115200 },
                 Generic_921600: { baud: 921600 },
                 Generic_1000000: { baud: 1000000 },
+                Generic_3000000: { baud: 3000000 },
             };
 
             function populateModuleSelect() {
