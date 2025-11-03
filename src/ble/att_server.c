@@ -85,7 +85,7 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_handle_can_send_now(void);
 static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection);
-static void att_server_persistent_ccc_clear(att_server_t * att_server);
+static void att_server_persistent_ccc_clear(int le_device_db_index);
 static void att_server_handle_att_pdu(att_server_t * att_server, att_connection_t * att_connection, uint8_t * packet, uint16_t size);
 
 typedef enum {
@@ -442,7 +442,9 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     log_info("SM Pairing started");
                     att_server->pairing_active = true;
                     if (att_server->ir_le_device_db_index < 0) break;
-                    att_server_persistent_ccc_clear(att_server);
+                    log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address),
+                        att_server->ir_le_device_db_index);
+                    att_server_persistent_ccc_clear(att_server->ir_le_device_db_index);
                     // index not valid anymore
                     att_server->ir_le_device_db_index = -1;
                     break;
@@ -1129,11 +1131,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     }
 }
 
-static void att_server_persistent_ccc_clear(att_server_t * att_server){
-    int le_device_index = att_server->ir_le_device_db_index;
-    log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
-    // check if bonded
-    if (le_device_index < 0) return;
+static void att_server_persistent_ccc_clear(int le_device_index){
     // get btstack_tlv
     const btstack_tlv_t * tlv_impl = NULL;
     void * tlv_context;
