@@ -1885,6 +1885,9 @@ void hci_deinit(void);
 // defer disconnect on dedicated bonding complete, used internally for CTKD
 uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool defer);
 
+// internal, called by security manager and other gap services
+void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump);
+
 // Only for PTS testing
 
 // Disable automatic L2CAP disconnect if no L2CAP connection is established

@@ -215,7 +215,6 @@ static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
 static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
-static void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_run(void);
 static bool hci_is_le_connection(hci_connection_t * connection);
@@ -8122,7 +8121,7 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     }
 }
 
-static void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump){
+void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump){
 #ifndef ENABLE_LOG_BTSTACK_EVENTS
     dump = 0;
 #endif
