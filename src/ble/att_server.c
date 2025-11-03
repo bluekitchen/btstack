@@ -437,10 +437,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     break;
 
                 // Track pairing active
-                case SM_EVENT_JUST_WORKS_REQUEST:
-                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                case SM_EVENT_PASSKEY_INPUT_NUMBER:
-                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                case SM_EVENT_PAIRING_STARTED:
                     con_handle = sm_event_just_works_request_get_handle(packet);
                     hci_connection = hci_connection_for_handle(con_handle);
                     if (!hci_connection) break;
