@@ -90,7 +90,9 @@ extern const hci_event_t hci_event_transport_packet_sent;
 /* LE Subevents */
 extern const hci_event_t hci_subevent_le_connection_complete;
 
-    
+/* GAP Subevents */
+extern const hci_event_t gap_subevent_bonding_deleted;
+
 #if defined __cplusplus
 }
 #endif
