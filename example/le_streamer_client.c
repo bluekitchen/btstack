@@ -343,7 +343,7 @@ static void le_streamer_client_connection_and_notification_handler(uint8_t packe
 
                 uint8_t status = gattservice_subevent_client_connected_get_status(packet);
                 if (status != ERROR_CODE_SUCCESS) {
-                    printf("Finalize connection");
+                    printf("Finalize connection\n");
                     state = TC_OFF;
                     gap_disconnect(connection->basic_connection.con_handle);
                     return;
