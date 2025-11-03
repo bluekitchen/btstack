@@ -2083,6 +2083,18 @@ typedef SSIZE_T ssize_t;
  */
 #define GAP_SUBEVENT_LE_CONNECTION_COMPLETE                     0x08u
 
+/**
+ * @brief Inform higher layer that bonding for remote device has been deleted
+ *
+ * @format 11B1H
+ * @param subevent_code
+ * @param addr_type
+ * @param address
+ * @param index used by le_device_db and att_server
+ * @param handle or HCI_CON_HANDLE_INVALID
+ */
+#define GAP_SUBEVENT_BONDING_DELETED                            0x09u
+
 /** HSP Subevent */
 
 /**

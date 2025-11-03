@@ -6579,6 +6579,43 @@ static inline hci_con_handle_t gap_subevent_le_connection_complete_get_sync_hand
 }
 
 /**
+ * @brief Get field addr_type from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_bonding_deleted_get_addr_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field address from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void gap_subevent_bonding_deleted_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[4], address, 6);
+}
+/**
+ * @brief Get field index from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_bonding_deleted_get_index(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field handle from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gap_subevent_bonding_deleted_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+
+/**
  * @brief Get field acl_handle from event HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
  * @param event packet
  * @return acl_handle
