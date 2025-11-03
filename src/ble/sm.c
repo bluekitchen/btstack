@@ -1503,6 +1503,16 @@ static void sm_store_bonding_information(sm_connection_t * sm_conn){
         }
     }
 
+    // emit GAP_SUBEVENT_BONDING_DELETED if it was bonded before
+    if (le_db_index >= 0) {
+        log_info("Re-bonding, emit GAP_SUBEVENT_BONDING_DELETED");
+        // emit event via hci
+        uint8_t buffer[20];
+        uint16_t size = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer),
+            &gap_subevent_bonding_deleted, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index, sm_conn->sm_handle);
+        hci_emit_btstack_event(buffer, size, 1);
+    }
+
     // if not found, add to db
     bool new_to_le_device_db = false;
     if (le_db_index < 0) {
