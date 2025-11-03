@@ -54,6 +54,7 @@
 #include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_event.h"
 #include "l2cap.h"
 
 #if !defined(ENABLE_LE_PERIPHERAL) && !defined(ENABLE_LE_CENTRAL)
@@ -5681,5 +5682,16 @@ void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
     int index = sm_le_device_db_index_lookup(address_type, address);
     if (index >= 0){
         sm_remove_le_device_db_entry(index);
+        // get conn handle
+        hci_con_handle_t handle = HCI_CON_HANDLE_INVALID;
+        hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type(address, address_type);
+        if (hci_con != NULL){
+            handle = hci_con->con_handle;
+        }
+        // emit event via hci
+        uint8_t buffer[20];
+        uint16_t size = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer),
+            &gap_subevent_bonding_deleted, address_type, address, index, handle);
+        hci_emit_btstack_event(buffer, size, 1);
     }
 }
