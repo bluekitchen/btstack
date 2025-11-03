@@ -296,6 +296,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
     att_connection_t * att_connection;
     hci_con_handle_t con_handle;
     hci_connection_t * hci_connection;
+    bd_addr_t address;
 
     switch (packet_type) {
             
@@ -330,6 +331,13 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                             att_server->pairing_active = false;
                             // notify all - new
                             att_emit_connected_event(att_server, att_connection);
+                            break;
+                        case GAP_SUBEVENT_BONDING_DELETED:
+                            // clear CCCD
+                            gap_subevent_bonding_deleted_get_address(packet, address);
+                            log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(address),
+                                gap_subevent_bonding_deleted_get_index(packet));
+                            att_server_persistent_ccc_clear(gap_subevent_bonding_deleted_get_index(packet));
                             break;
                         default:
                             break;
