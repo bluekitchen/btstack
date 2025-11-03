@@ -103,6 +103,7 @@ typedef struct {
     gatt_service_client_characteristic_t * characteristics;
 
     gatt_client_service_notification_t notification_listener;
+    btstack_context_callback_registration_t can_send_query_registration;
 } gatt_service_client_connection_t;
 
 typedef struct gatt_service_client {
