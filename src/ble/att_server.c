@@ -436,9 +436,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_run_for_context(att_server, att_connection);
                     break;
 
-                // Pairing started - delete stored CCC values
-                // - assumes pairing indicates either new device or re-pairing, in both cases there should be no stored CCC values
-                // - assumes that all events have the con handle as the first field
+                // Track pairing active
                 case SM_EVENT_JUST_WORKS_REQUEST:
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                 case SM_EVENT_PASSKEY_INPUT_NUMBER:
@@ -449,12 +447,6 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_server = &hci_connection->att_server;
                     log_info("SM Pairing started");
                     att_server->pairing_active = true;
-                    if (att_server->ir_le_device_db_index < 0) break;
-                    log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address),
-                        att_server->ir_le_device_db_index);
-                    att_server_persistent_ccc_clear(att_server->ir_le_device_db_index);
-                    // index not valid anymore
-                    att_server->ir_le_device_db_index = -1;
                     break;
 
                 // Bonding completed
