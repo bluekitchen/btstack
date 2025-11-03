@@ -372,7 +372,8 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_connection->secure_connection = gap_secure_connection(con_handle) ? 1 : 0;
                     log_info("encrypted key size %u, authenticated %u, secure connection %u",
                         att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
-                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
+                    if ((hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE) &&
+                        (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE_V2) ){
                         // restore CCC values when encrypted for LE Connections
                         if (hci_event_encryption_change_get_encryption_enabled(packet) != 0u){
                             att_server_persistent_ccc_restore(att_server, att_connection);
