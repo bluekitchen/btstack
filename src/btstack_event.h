@@ -14835,6 +14835,15 @@ static inline hci_con_handle_t gattservice_subevent_gatt_database_hash_get_con_h
 static inline void gattservice_subevent_gatt_database_hash_get_database_hash(const uint8_t * event, uint8_t * database_hash){
     reverse_bytes(&event[5], database_hash, 16);
 }
+/**
+ * @brief Get field database_version from event GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH
+ * @param event packet
+ * @return database_version
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_gatt_database_hash_get_database_version(const uint8_t * event){
+    return little_endian_read_16(event, 21);
+}
 
 /**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED

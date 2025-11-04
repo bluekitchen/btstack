@@ -4465,10 +4465,11 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED                          0x1Fu
 
 /**
- * @format 1HK
+ * @format 1HK2
  * @param subevent_code
  * @param con_handle
  * @param database_hash
+ * @param database_version valid if != 0
  */
 #define GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH                            0x20u
 
