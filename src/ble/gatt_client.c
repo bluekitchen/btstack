@@ -794,9 +794,6 @@ static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t cha
                             gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND;
                             break;
                         case GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE:
-                            gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W2_SEND;
-                            break;
-                        case GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W4_DONE:
                             gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DONE;
                             break;
                         default:
@@ -858,21 +855,6 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
                 gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE;
                 gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client, &gatt_client_service_packet_handler,
                     0x0001, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH);
-                query_sent = true;
-                break;
-            }
-
-            /* fall through */
-
-        case GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W2_SEND:
-            if (gatt_client->gatt_service_database_hash_value_handle != 0) {
-                gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W4_DONE;
-                characteristic.value_handle = gatt_client->gatt_service_database_hash_value_handle;
-                characteristic.end_handle = gatt_client->gatt_service_database_hash_end_handle;
-                // we assume good case. We cannot do much otherwise
-                characteristic.properties = ATT_PROPERTY_INDICATE;
-                status = gatt_client_write_client_characteristic_configuration_internal(gatt_client, &gatt_client_service_packet_handler,
-                    &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION, 0, 0);
                 query_sent = true;
                 break;
             }
