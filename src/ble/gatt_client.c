@@ -3856,44 +3856,49 @@ static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t
 static bool gatt_client_le_enhanced_handle_can_send_query(gatt_client_t * gatt_client){
     uint8_t status = ERROR_CODE_SUCCESS;
     uint8_t gatt_client_supported_features = 0x06; // eatt + multiple value notifications
+    bool query_sent = true;
     switch (gatt_client->eatt_state){
         case GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W2_SEND:
             gatt_client->gatt_service_start_group_handle = 0;
             gatt_client->eatt_state = GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W4_DONE;
-            status = gatt_client_discover_primary_services_by_uuid16(&gatt_client_le_enhanced_packet_handler,
-                                                                     gatt_client->con_handle,
-                                                                     ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE);
+            gatt_client_discover_primary_service_by_uuid16_internal(gatt_client, &gatt_client_le_enhanced_packet_handler,
+                                                ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE, 0, 0);
             break;
         case GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W2_SEND:
             gatt_client->gatt_server_supported_features = 0;
             gatt_client->eatt_state = GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_DONE;
-            status = gatt_client_read_value_of_characteristics_by_uuid16(&gatt_client_le_enhanced_packet_handler,
-                                                                         gatt_client->con_handle,
+            gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client, &gatt_client_le_enhanced_packet_handler,
                                                                          gatt_client->gatt_service_start_group_handle,
                                                                          gatt_client->gatt_service_end_group_handle,
                                                                          ORG_BLUETOOTH_CHARACTERISTIC_SERVER_SUPPORTED_FEATURES);
-            return true;
+            break;
         case GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W2_SEND:
             gatt_client->gatt_client_supported_features_handle = 0;
             gatt_client->eatt_state = GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W4_DONE;
-            status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(&gatt_client_le_enhanced_packet_handler,
-                                                                                     gatt_client->con_handle,
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16_internal(gatt_client, &gatt_client_le_enhanced_packet_handler,
                                                                                      gatt_client->gatt_service_start_group_handle,
                                                                                      gatt_client->gatt_service_end_group_handle,
                                                                                      ORG_BLUETOOTH_CHARACTERISTIC_CLIENT_SUPPORTED_FEATURES);
-            return true;
+            break;
         case GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W2_SEND:
             gatt_client->eatt_state = GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W4_DONE;
-            status = gatt_client_write_value_of_characteristic(&gatt_client_le_enhanced_packet_handler, gatt_client->con_handle,
+            gatt_client_write_value_of_characteristic_internal(gatt_client, &gatt_client_le_enhanced_packet_handler,
                                                                gatt_client->gatt_client_supported_features_handle, 1,
-                                                               &gatt_client_supported_features);
-            return true;
+                                                               &gatt_client_supported_features, 0, 0);
+            break;
         default:
+            query_sent = false;
             break;
     }
     btstack_assert(status == ERROR_CODE_SUCCESS);
     UNUSED(status);
-    return false;
+
+    // start timeout if query sent
+    if (query_sent) {
+        gatt_client_timeout_start(gatt_client);
+    }
+
+    return query_sent;
 }
 
 uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint8_t num_channels, uint8_t * storage_buffer, uint16_t storage_size) {
