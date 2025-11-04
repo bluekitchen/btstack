@@ -720,17 +720,18 @@ gatt_client_service_emit_service_changed(gatt_client_t *gatt_client, const uint8
 }
 
 static void
-gatt_client_service_emit_database_hash(gatt_client_t *gatt_client, const uint8_t * database_hash) {
+gatt_client_service_emit_database_hash(gatt_client_t *gatt_client, const uint8_t * database_hash, uint16_t database_version) {
     uint8_t event[21];
     hci_event_builder_context_t context;
     hci_event_builder_init(&context, event, sizeof(event), HCI_EVENT_GATTSERVICE_META, GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH);
     hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
     hci_event_builder_add_bytes(&context, database_hash, 16);
+    hci_event_builder_add_16(&context, database_version);
     gatt_client_service_emit_event(gatt_client, event, hci_event_builder_get_length(&context));
 }
 
 static void gatt_client_service_handle_database_hash(gatt_client_t * gatt_client, const uint8_t * database_hash) {
-    gatt_client_service_emit_database_hash(gatt_client, database_hash);
+    gatt_client_service_emit_database_hash(gatt_client, database_hash, 0);
 }
 
 static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
