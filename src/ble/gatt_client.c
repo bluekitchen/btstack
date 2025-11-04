@@ -775,9 +775,9 @@ static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t cha
                     gatt_client = gatt_client_get_context_for_handle(con_handle);
                     btstack_assert(gatt_client != NULL);
                     btstack_assert(gatt_client->gatt_service_state == GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE);
-                        gatt_client_service_emit_database_hash(gatt_client,
-                                                               gatt_event_characteristic_value_query_result_get_value(packet),
-                                                               gatt_event_characteristic_value_query_result_get_value_length(packet));
+                    gatt_client_service_emit_database_hash(gatt_client,
+                                                           gatt_event_characteristic_value_query_result_get_value(packet),
+                                                           gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
                     con_handle = gatt_event_query_complete_get_handle(packet);
@@ -2161,7 +2161,8 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                     }
                 }
                 if (is_query_done(gatt_client, last_descriptor_handle)){
-
+                    // we didn't find a GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, report an error
+                    gatt_client_report_error_if_pending(gatt_client, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
                 } else {
                     // next
                     gatt_client->start_group_handle = last_descriptor_handle + 1;
