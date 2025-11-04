@@ -32,6 +32,7 @@ COMMON = \
 	hci_cmd.c					\
 	hci_dump.c					\
 	hci_dump_posix_fs.c  		\
+	hci_event.c					\
 	le_device_db_memory.c       \
 	mock.c 				        \
 	rijndael.c 					\
