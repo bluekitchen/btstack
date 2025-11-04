@@ -286,8 +286,6 @@ typedef struct gatt_client{
     uint16_t                    gatt_service_changed_end_handle;
     // - Database Hash
     uint16_t                    gatt_service_database_hash_value_handle;
-    uint16_t                    gatt_service_database_hash_cccd_handle;
-    uint16_t                    gatt_service_database_hash_end_handle;
 
 } gatt_client_t;
 

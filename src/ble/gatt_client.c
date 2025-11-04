@@ -764,7 +764,6 @@ static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t cha
                             break;
                         case ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH:
                             gatt_client->gatt_service_database_hash_value_handle = characteristic.value_handle;
-                            gatt_client->gatt_service_database_hash_end_handle = characteristic.end_handle;
                             break;
                         default:
                             break;
