@@ -86,7 +86,18 @@ static gap_security_level_t gatt_client_required_security_level;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void gatt_client_discover_characteristics_for_service_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+    gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id);
+static void gatt_client_discover_primary_service_by_uuid16_internal(gatt_client_t * gatt_client,
+    btstack_packet_handler_t callback, uint16_t uuid16, uint16_t service_id, uint16_t connection_id);
+static void gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client_t * gatt_client,
+    btstack_packet_handler_t callback, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code);
+static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+    uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
+static uint8_t gatt_client_write_client_characteristic_configuration_internal(gatt_client_t * gatt_client,
+    btstack_packet_handler_t callback, gatt_client_characteristic_t * characteristic, uint16_t configuration,
+    uint16_t service_id, uint16_t connection_id);
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
@@ -804,9 +815,8 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
     switch (gatt_client->gatt_service_state){
         case GATT_CLIENT_SERVICE_DISCOVER_W2_SEND:
             gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DISCOVER_W4_DONE;
-            status = gatt_client_discover_primary_services_by_uuid16(&gatt_client_service_packet_handler,
-                                                                                     gatt_client->con_handle,
-                                                                                     ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE);
+            gatt_client_discover_primary_service_by_uuid16_internal(gatt_client, &gatt_client_service_packet_handler,
+            ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE, 0, 0);
             query_sent = true;
             break;
         case GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W2_SEND:
@@ -814,7 +824,8 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
                 gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W4_DONE;
                 gatt_service.start_group_handle = gatt_client->gatt_service_start_group_handle;
                 gatt_service.end_group_handle   = gatt_client->gatt_service_end_group_handle;
-                status = gatt_client_discover_characteristics_for_service(&gatt_client_service_packet_handler, gatt_client->con_handle, &gatt_service);
+                gatt_client_discover_characteristics_for_service_internal(gatt_client,
+                    &gatt_client_service_packet_handler, &gatt_service, 0, 0);
                 query_sent = true;
                 break;
             }
@@ -828,9 +839,8 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
                 characteristic.end_handle   = gatt_client->gatt_service_changed_end_handle;
                 // we assume good case. We cannot do much otherwise
                 characteristic.properties = ATT_PROPERTY_INDICATE;
-                status = gatt_client_write_client_characteristic_configuration(&gatt_client_service_packet_handler,
-                                                                               gatt_client->con_handle, &characteristic,
-                                                                               GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+                status = gatt_client_write_client_characteristic_configuration_internal(gatt_client, &gatt_client_service_packet_handler,
+                    &characteristic,GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION, 0, 0);
                 query_sent = true;
                 break;
             }
@@ -840,9 +850,8 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
         case GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND:
             if (gatt_client->gatt_service_database_hash_value_handle != 0){
                 gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE;
-                status = gatt_client_read_value_of_characteristics_by_uuid16(&gatt_client_service_packet_handler,
-                                                                                     gatt_client->con_handle,
-                                                                                     0x0001, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH);
+                gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client, &gatt_client_service_packet_handler,
+                    0x0001, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH);
                 query_sent = true;
                 break;
             }
@@ -856,10 +865,8 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
                 characteristic.end_handle = gatt_client->gatt_service_database_hash_end_handle;
                 // we assume good case. We cannot do much otherwise
                 characteristic.properties = ATT_PROPERTY_INDICATE;
-                status = gatt_client_write_client_characteristic_configuration(&gatt_client_service_packet_handler,
-                                                                               gatt_client->con_handle,
-                                                                               &characteristic,
-                                                                               GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+                status = gatt_client_write_client_characteristic_configuration_internal(gatt_client, &gatt_client_service_packet_handler,
+                    &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION, 0, 0);
                 query_sent = true;
                 break;
             }
@@ -870,8 +877,15 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
         default:
             break;
     }
+
     btstack_assert(status == ERROR_CODE_SUCCESS);
     UNUSED(status);
+
+    // start timeout if query sent
+    if (query_sent) {
+        gatt_client_timeout_start(gatt_client);
+    }
+
     return query_sent;
 }
 
@@ -2924,7 +2938,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     return att_write_request(gatt_client, ATT_WRITE_COMMAND, value_handle, value_length, value);
 }
 
-uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
     uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id) {
 
     gatt_client->callback = callback;
