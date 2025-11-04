@@ -1866,14 +1866,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
                 }
             }
             break;
-
-#ifdef ENABLE_LE_SIGNED_WRITE
-        // Identity Resolving completed (no code, gatt_client_run will continue)
-        case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
-        case SM_EVENT_IDENTITY_RESOLVING_FAILED:
-            break;
-#endif
-
+            
         // re-encryption started
         case SM_EVENT_REENCRYPTION_STARTED:
             con_handle = sm_event_reencryption_complete_get_handle(packet);
