@@ -708,18 +708,6 @@ static void gatt_client_service_emit_event(gatt_client_t * gatt_client, uint8_t 
 }
 
 static void
-gatt_client_service_emit_database_hash(gatt_client_t *gatt_client, const uint8_t *value, uint16_t value_len) {
-    if (value_len == 16){
-        uint8_t event[21];
-        hci_event_builder_context_t context;
-        hci_event_builder_init(&context, event, sizeof(event), HCI_EVENT_GATTSERVICE_META, GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH);
-        hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
-        hci_event_builder_add_bytes(&context, value, 16);
-        gatt_client_service_emit_event(gatt_client, event, hci_event_builder_get_length(&context));
-    }
-}
-
-static void
 gatt_client_service_emit_service_changed(gatt_client_t *gatt_client, const uint8_t *value, uint16_t value_len) {
     if (value_len == 4){
         uint8_t event[9];
@@ -729,6 +717,20 @@ gatt_client_service_emit_service_changed(gatt_client_t *gatt_client, const uint8
         hci_event_builder_add_bytes(&context, value, 4);
         gatt_client_service_emit_event(gatt_client, event, hci_event_builder_get_length(&context));
     }
+}
+
+static void
+gatt_client_service_emit_database_hash(gatt_client_t *gatt_client, const uint8_t * database_hash) {
+    uint8_t event[21];
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, event, sizeof(event), HCI_EVENT_GATTSERVICE_META, GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_bytes(&context, database_hash, 16);
+    gatt_client_service_emit_event(gatt_client, event, hci_event_builder_get_length(&context));
+}
+
+static void gatt_client_service_handle_database_hash(gatt_client_t * gatt_client, const uint8_t * database_hash) {
+    gatt_client_service_emit_database_hash(gatt_client, database_hash);
 }
 
 static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -774,9 +776,9 @@ static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t cha
                     gatt_client = gatt_client_get_context_for_handle(con_handle);
                     btstack_assert(gatt_client != NULL);
                     btstack_assert(gatt_client->gatt_service_state == GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE);
-                    gatt_client_service_emit_database_hash(gatt_client,
-                                                           gatt_event_characteristic_value_query_result_get_value(packet),
-                                                           gatt_event_characteristic_value_query_result_get_value_length(packet));
+                    if (gatt_event_characteristic_value_query_result_get_value_length(packet) == 16) {
+                        gatt_client_service_handle_database_hash(gatt_client, gatt_event_characteristic_value_query_result_get_value(packet));
+                    }
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
                     con_handle = gatt_event_query_complete_get_handle(packet);
