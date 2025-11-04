@@ -251,6 +251,12 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
 }
 
 static bool is_ready(gatt_client_t * gatt_client){
+#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+    if (gatt_client->gatt_service_state != GATT_CLIENT_SERVICE_DONE) return false;
+#endif
+#ifdef ENABLE_GATT_OVER_EATT
+    if (gatt_client->eatt_state != GATT_CLIENT_EATT_READY) return false;
+#endif
     return gatt_client->state == P_READY;
 }
 
