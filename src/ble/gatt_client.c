@@ -61,6 +61,7 @@
 #include "classic/sdp_client.h"
 #include "bluetooth_gatt.h"
 #include "bluetooth_sdp.h"
+#include "btstack_tlv.h"
 #include "classic/sdp_util.h"
 
 #if defined(ENABLE_GATT_OVER_EATT) && !defined(ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE)
@@ -698,6 +699,15 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
 }
 
 #ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+typedef struct {
+    uint8_t  database_hash[16];
+    uint16_t database_version;
+} gatt_client_database_hash_entry_t;
+
+static uint32_t gatt_client_service_database_hash_tag_for_index(uint8_t index){
+    return (((uint8_t)'G') << 24u) | (((uint8_t)'D') << 16u) | (((uint8_t)'B') << 8u) | index;
+}
+
 static void gatt_client_service_emit_event(gatt_client_t * gatt_client, uint8_t * event, uint16_t size){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &gatt_client_service_changed_handler);
@@ -731,7 +741,45 @@ gatt_client_service_emit_database_hash(gatt_client_t *gatt_client, const uint8_t
 }
 
 static void gatt_client_service_handle_database_hash(gatt_client_t * gatt_client, const uint8_t * database_hash) {
-    gatt_client_service_emit_database_hash(gatt_client, database_hash, 0);
+    // Get stored database hash
+    uint16_t database_version = 0;
+    int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
+    if (le_device_db_index >= 0) {
+        // get btstack_tlv
+        const btstack_tlv_t * tlv_impl = NULL;
+        void * tlv_context;
+        btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+        if (tlv_impl != NULL) {
+            bool update_entry = false;
+            gatt_client_database_hash_entry_t entry = { 0 };
+            uint32_t tag = gatt_client_service_database_hash_tag_for_index((uint8_t) le_device_db_index);
+            int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(gatt_client_database_hash_entry_t));
+            if (len == sizeof(gatt_client_database_hash_entry_t)) {
+                database_version = entry.database_version;
+                if (memcmp(&entry.database_hash, &database_hash, sizeof(gatt_client_database_hash_entry_t)) != 0) {
+                    update_entry = true;
+                }
+            }
+            if (update_entry) {
+                // database hash changed, update entry in tlv
+                database_version++;
+                entry.database_version = database_version;
+                memcpy(&entry.database_hash, &database_hash, 16);
+                (void) tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(gatt_client_database_hash_entry_t));
+            }
+        }
+    }
+    gatt_client_service_emit_database_hash(gatt_client, database_hash, database_version);
+}
+static void gatt_client_service_delete_database_hash(int le_device_db_index) {
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (tlv_impl != NULL) {
+        uint32_t tag = gatt_client_service_database_hash_tag_for_index((uint8_t) le_device_db_index);
+        tlv_impl->delete_tag(tlv_context, tag);
+    }
 }
 
 static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1866,7 +1914,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
                 }
             }
             break;
-            
+
         // re-encryption started
         case SM_EVENT_REENCRYPTION_STARTED:
             con_handle = sm_event_reencryption_complete_get_handle(packet);
@@ -1881,10 +1929,22 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
         case SM_EVENT_REENCRYPTION_COMPLETE:
             gatt_client_handle_reencryption_complete(packet);
             break;
+
+#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_BONDING_DELETED:
+                    gatt_client_service_delete_database_hash(gap_subevent_bonding_deleted_get_index(packet));
+                    break;
+                default:
+                    break;
+            }
+            break;
+#endif
+
         default:
             break;
     }
-
     gatt_client_run();
 }
 
