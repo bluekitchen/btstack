@@ -695,6 +695,20 @@ void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *cl
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
+static void gatt_service_client_start_connect(gatt_service_client_t *client, gatt_service_client_connection_t *connection, hci_con_handle_t con_handle, gatt_service_client_characteristic_t
+                                              * characteristics) {
+
+    connection->con_handle          = con_handle;
+    connection->cid                 = gatt_service_client_get_next_cid(client);
+    connection->client              = client;
+    connection->characteristics     = characteristics;
+    connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
+    connection->can_send_query_registration.context = connection;
+    btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
+
+    gatt_service_client_request_send_gatt_query(client, connection);
+}
+
 uint8_t
 gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                         gatt_service_client_connection_t *connection,
@@ -716,20 +730,14 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     }
 
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
-    connection->client              = client;
-    connection->cid                 = gatt_service_client_get_next_cid(client);
-    connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
     connection->service_uuid128     = NULL;
     connection->service_index       = 0;
     connection->start_handle        = 0;
     connection->end_handle          = 0xffff;
-    connection->characteristics     = characteristics;
-    connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
-    connection->can_send_query_registration.context = connection;
-    btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
-    gatt_service_client_request_send_gatt_query(client, connection);
+    gatt_service_client_start_connect(client, connection, con_handle, characteristics);
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -753,20 +761,14 @@ uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_
     }
 
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
-    connection->client              = client;
-    connection->cid                 = gatt_service_client_get_next_cid(client);
-    connection->con_handle          = con_handle;
     connection->service_uuid16      = 0;
     connection->service_uuid128     = (uuid128_t *) service_uuid128;
     connection->service_index       = 0;
     connection->start_handle        = 0;
     connection->end_handle          = 0xffff;
-    connection->characteristics     = characteristics;
-    connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
-    connection->can_send_query_registration.context = connection;
-    btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
-    gatt_service_client_request_send_gatt_query(client, connection);
+    gatt_service_client_start_connect(client, connection, con_handle, characteristics);
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -790,23 +792,15 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    uint16_t cid = gatt_service_client_get_next_cid(client);
-
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
-    connection->client              = client;
-    connection->cid                 = cid;
-    connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
     connection->service_uuid128     = NULL;
     connection->service_index       = service_index;
     connection->start_handle        = service_start_handle;
     connection->end_handle          = service_end_handle;
-    connection->characteristics     = characteristics;
-    connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
-    connection->can_send_query_registration.context = connection;
-    btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
-    gatt_service_client_request_send_gatt_query(client, connection);
+    gatt_service_client_start_connect(client, connection, con_handle, characteristics);
+
     return ERROR_CODE_SUCCESS;
 }
 
