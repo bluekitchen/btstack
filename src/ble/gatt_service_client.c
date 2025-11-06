@@ -36,6 +36,7 @@
  */
 
 #define BTSTACK_FILE__ "gatt_service_client_helper.c"
+#include "btstack_tlv.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -601,20 +602,54 @@ gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, u
     }
 }
 
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index){
+    return (((uint8_t)'G') << 24u) | (((uint8_t)'C') << 16u) | (device_index << 8u) | cache_index;
+}
+
+static void gatt_service_client_handle_deleted_bonding(int device_index) {
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+    for (uint16_t cache_index = 0 ; cache_index <= 255 ; cache_index++) {
+        uint32_t tag = gatt_service_client_tag_for_cache(device_index, cache_index);
+        int len = tlv_impl->get_tag(tlv_context, tag, NULL, 0);
+        if (len == 0) break;
+        tlv_impl->delete_tag(tlv_context, tag);
+    }
+}
+#endif
+
 static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
-    UNUSED(packet);
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
     hci_con_handle_t con_handle;
+    bd_addr_t address;
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             gatt_service_client_handle_disconnect(con_handle);
             break;
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_BONDING_DELETED:
+                    // clear cached data
+                    gap_subevent_bonding_deleted_get_address(packet, address);
+                    log_info("Clear stored data of remote %s, le device id %d", bd_addr_to_str(address),
+                        gap_subevent_bonding_deleted_get_index(packet));
+                    gatt_service_client_handle_deleted_bonding(gap_subevent_bonding_deleted_get_index(packet));
+                    break;
+            default:
+                    break;
+            }
+            break;
+#endif
         default:
             break;
     }
