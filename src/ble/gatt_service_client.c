@@ -218,6 +218,24 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_t * client)
 }
 
 static void gatt_service_client_handle_connected(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+    // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
+    uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (tlv_impl != NULL) {
+        uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
+        // store characteristics
+        little_endian_store_32(cached_characteristics_data, 0, connection->request_hash);
+        little_endian_store_32(cached_characteristics_data, 0, 0);
+        cached_characteristics_data[4] = client->characteristics_desc_num;
+        for (int i=0;i<client->characteristics_desc_num;i++) {
+            little_endian_store_16(cached_characteristics_data, 8 + 2 * i, connection->characteristics[i].value_handle);
+        }
+        tlv_impl->store_tag(tlv_context, tag, cached_characteristics_data, 8 + 2 * client->characteristics_desc_num);
+    }
+#endif
     connection->characteristic_index = 0;
     connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
     gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
