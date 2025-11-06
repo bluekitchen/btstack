@@ -54,6 +54,11 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 
+// MCS uses 22 Characteristics
+#ifndef MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS
+#define MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS 32
+#endif
+
 static void gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static bool gatt_service_client_intitialized = false;
@@ -732,6 +737,34 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
         crc = btstack_crc32_update(crc, (const uint8_t*) &connection->end_handle, 2);
         connection->request_hash = crc;
         log_info("Cache ID %u, request hash %08" PRIX32, connection->cache_id, connection->request_hash);
+
+        // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
+        uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
+        const btstack_tlv_t * tlv_impl = NULL;
+        void * tlv_context;
+        btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+        if (tlv_impl != NULL) {
+            uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
+            int len = tlv_impl->get_tag(tlv_context, tag, cached_characteristics_data, sizeof(cached_characteristics_data));
+            if (len > 8) {
+                // verify hash
+                uint32_t stored_request_hash = little_endian_read_32(cached_characteristics_data, 0);
+                if (stored_request_hash == connection->request_hash) {
+                    log_info("Request hash matches")
+                    // load cached characteristics
+                    uint8_t num_cached_characteristics = cached_characteristics_data[4];
+                    btstack_assert(num_cached_characteristics <= MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS);
+                    for (int i=0;i<num_cached_characteristics;i++) {
+                        connection->characteristics[i].value_handle = little_endian_read_32(cached_characteristics_data, 8 + 2 * i);
+                    }
+                    // TODO: remove gatt client write request
+                    // TODO: emit connected
+                } else {
+                    // TODO:
+                    log_info("Request hash does not match")
+                }
+            }
+        }
     }
 #endif
 
