@@ -3370,6 +3370,27 @@ void gatt_client_remove_service_changed_handler(btstack_packet_callback_registra
 }
 #endif
 
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+const uint8_t * gatt_client_get_database_hash(hci_con_handle_t con_handle) {
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return NULL;
+    }
+    return gatt_client->database_hash;
+}
+
+uint16_t gatt_client_get_next_cache_id(hci_con_handle_t con_handle) {
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return 0;
+    }
+    gatt_client->cache_id = btstack_next_cid_ignoring_zero(gatt_client->cache_id);
+    return gatt_client->cache_id;
+}
+#endif
+
 #if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
 
 #include "hci_event.h"

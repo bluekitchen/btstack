@@ -286,7 +286,10 @@ typedef struct gatt_client{
     uint16_t                    gatt_service_changed_end_handle;
     // - Database Hash
     uint16_t                    gatt_service_database_hash_value_handle;
-
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+    uint8_t                     database_hash[16];
+    uint16_t                    cache_id;
+#endif
 } gatt_client_t;
 
 // Single characteristic, with wildcards for con_handle and attribute_handle
@@ -1284,6 +1287,22 @@ uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_r
  * @return status
  */
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+/**
+ * @brief Get GATT Database Hash for remote device
+ * @param con_handle
+ * @return database hash or NULL if not available
+ */
+const uint8_t * gatt_client_get_database_hash(hci_con_handle_t con_handle);
+
+/**
+ * @brief Get next cache id for remote device. This allows to enumerate all GATT Service Client requets
+ * @param con_handle
+ * @return
+ */
+uint16_t gatt_client_get_next_cache_id(hci_con_handle_t con_handle);
+#endif
 
 /**
  * @brief Map ATT Error Code to (extended) Error Codes
