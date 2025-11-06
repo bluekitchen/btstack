@@ -70,6 +70,7 @@ COMMON = \
     hci_cmd.c \
     hci_dump.c \
     hci_dump_embedded_stdout.c \
+    hci_event.c \
     hci_event_builder.c \
     hci_transport_h4.c \
     l2cap.c \
