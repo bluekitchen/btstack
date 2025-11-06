@@ -60,6 +60,7 @@ $(NAME)_SOURCES += \
 	../../src/btstack_util.c              \
 	../../src/hci.c                       \
 	../../src/hci_cmd.c                   \
+	../../src/hci_event.c                 \
 	../../src/hci_dump.c                  \
 	../../src/hci_transport_h4.c          \
 	../../src/l2cap.c                     \
