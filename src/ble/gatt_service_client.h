@@ -104,6 +104,11 @@ typedef struct {
 
     gatt_client_service_notification_t notification_listener;
     btstack_context_callback_registration_t can_send_query_registration;
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+    uint16_t cache_id;
+    int16_t  device_index;
+    uint32_t request_hash;
+#endif
 } gatt_service_client_connection_t;
 
 typedef struct gatt_service_client {

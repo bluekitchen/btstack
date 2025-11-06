@@ -36,7 +36,10 @@
  */
 
 #define BTSTACK_FILE__ "gatt_service_client_helper.c"
+#include <inttypes.h>
+
 #include "btstack_tlv.h"
+#include "sm.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -705,6 +708,32 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
     connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
     connection->can_send_query_registration.context = connection;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
+
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+    // requirements:
+    // - bonded
+    // - database hash
+    const uint8_t * database_hash = gatt_client_get_database_hash(con_handle);
+    if (database_hash == NULL) {
+        connection->device_index = -1;
+    } else {
+        connection->device_index = sm_le_device_index(con_handle);
+        connection->cache_id = gatt_client_get_next_cache_id(con_handle);
+        // calc hash
+        uint32_t crc = btstack_crc32_init();
+        crc = btstack_crc32_update(crc, database_hash, 16);
+        crc = btstack_crc32_update(crc, &client->characteristics_desc_num, 1);
+        crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid16, 16);
+        if (connection->service_uuid128 != NULL) {
+            // TODO: hash uuid128
+        }
+        crc = btstack_crc32_update(crc, &connection->service_index, 1);
+        crc = btstack_crc32_update(crc, (const uint8_t*) &connection->start_handle, 2);
+        crc = btstack_crc32_update(crc, (const uint8_t*) &connection->end_handle, 2);
+        connection->request_hash = crc;
+        log_info("Cache ID %u, request hash %08" PRIX32, connection->cache_id, connection->request_hash);
+    }
+#endif
 
     gatt_service_client_request_send_gatt_query(client, connection);
 }
