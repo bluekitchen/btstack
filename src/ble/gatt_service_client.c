@@ -722,6 +722,8 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     connection->service_uuid16      = service_uuid16;
     connection->service_uuid128     = NULL;
     connection->service_index       = 0;
+    connection->start_handle        = 0;
+    connection->end_handle          = 0xffff;
     connection->characteristics     = characteristics;
     connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
     connection->can_send_query_registration.context = connection;
@@ -757,6 +759,8 @@ uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_
     connection->service_uuid16      = 0;
     connection->service_uuid128     = (uuid128_t *) service_uuid128;
     connection->service_index       = 0;
+    connection->start_handle        = 0;
+    connection->end_handle          = 0xffff;
     connection->characteristics     = characteristics;
     connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
     connection->can_send_query_registration.context = connection;
@@ -793,6 +797,7 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
     connection->cid                 = cid;
     connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
+    connection->service_uuid128     = NULL;
     connection->service_index       = service_index;
     connection->start_handle        = service_start_handle;
     connection->end_handle          = service_end_handle;
