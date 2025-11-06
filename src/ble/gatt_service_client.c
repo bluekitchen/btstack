@@ -236,6 +236,7 @@ static void gatt_service_client_handle_connected(const gatt_service_client_t * c
         tlv_impl->store_tag(tlv_context, tag, cached_characteristics_data, 8 + 2 * client->characteristics_desc_num);
     }
 #endif
+
     connection->characteristic_index = 0;
     connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
     gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
@@ -735,6 +736,8 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
     connection->can_send_query_registration.context = connection;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
+    bool request_query = true;
+
 #ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
     // requirements:
     // - bonded
@@ -778,10 +781,13 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
                     for (int i=0;i<num_cached_characteristics;i++) {
                         connection->characteristics[i].value_handle = little_endian_read_32(cached_characteristics_data, 8 + 2 * i);
                     }
-                    // TODO: remove gatt client write request
-                    // TODO: emit connected
+                    // Skip query
+                    request_query = false;
+                    // enter connected state
+                    connection->characteristic_index = 0;
+                    connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+                    gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
                 } else {
-                    // TODO:
                     log_info("Request hash does not match")
                 }
             }
@@ -789,7 +795,9 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
     }
 #endif
 
-    gatt_service_client_request_send_gatt_query(client, connection);
+    if (request_query) {
+        gatt_service_client_request_send_gatt_query(client, connection);
+    }
 }
 
 uint8_t
