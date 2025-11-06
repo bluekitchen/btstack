@@ -48,6 +48,7 @@
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static bd_addr_t static_addr = { 0 };
 static bd_addr_t local_addr = { 0 };
 
 void nrf_get_static_random_addr( bd_addr_t addr ) {
@@ -99,6 +100,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
+                    if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_addr) ) {
+                        memcpy(local_addr, static_addr, sizeof(bd_addr_t));
+                    }
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     break;
                 case HCI_STATE_OFF:
@@ -127,8 +131,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         break;
                     if(size < 13)
                         break;
-                    reverse_48(&params[2], local_addr);
-                    gap_random_address_set(local_addr);
+                    printf("Use static random address stored in nRF5 SoC.\n");
+                    reverse_48(&params[2], static_addr);
+                    gap_random_address_set(static_addr);
                     break;
                 default:
                     break;
