@@ -756,7 +756,7 @@ static void gatt_client_service_handle_database_hash(gatt_client_t * gatt_client
             int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(gatt_client_database_hash_entry_t));
             if (len == sizeof(gatt_client_database_hash_entry_t)) {
                 database_version = entry.database_version;
-                if (memcmp(&entry.database_hash, &database_hash, sizeof(gatt_client_database_hash_entry_t)) != 0) {
+                if (memcmp(&entry.database_hash, database_hash, 16) != 0) {
                     update_entry = true;
                 }
             }
