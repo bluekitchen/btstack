@@ -211,6 +211,12 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_t * client)
     return client->cid_counter;
 }
 
+static void gatt_service_client_handle_connected(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
+    connection->characteristic_index = 0;
+    connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+    gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+}
+
 static bool gatt_service_client_more_descriptor_queries(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < client->characteristics_desc_num)) {
@@ -430,9 +436,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
             if (gatt_service_client_have_more_notifications_to_enable(client, connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
-                connection->characteristic_index = 0;
-                connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+                gatt_service_client_handle_connected(client, connection);
             }
             break;
 
@@ -447,10 +451,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
 
                 gatt_client_listen_for_service_characteristic_value_updates(&connection->notification_listener, client->packet_handler,
                                                                             connection->con_handle, &service, client->service_id, connection->cid);
-
-                connection->characteristic_index = 0;
-                connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+                gatt_service_client_handle_connected(client, connection);
             }
 
             break;
