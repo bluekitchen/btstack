@@ -66,6 +66,12 @@ static uint16_t gatt_service_client_service_cid;
 static btstack_linked_list_t gatt_service_clients;
 static btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
 
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index){
+    return (((uint8_t)'G') << 24u) | (((uint8_t)'C') << 16u) | (device_index << 8u) | cache_index;
+}
+#endif
+
 // LE Audio Service Client helper functions
 static void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection){
     btstack_assert(client != NULL);
@@ -612,10 +618,6 @@ gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, u
 }
 
 #ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
-static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index){
-    return (((uint8_t)'G') << 24u) | (((uint8_t)'C') << 16u) | (device_index << 8u) | cache_index;
-}
-
 static void gatt_service_client_handle_deleted_bonding(int device_index) {
     const btstack_tlv_t * tlv_impl = NULL;
     void * tlv_context;
