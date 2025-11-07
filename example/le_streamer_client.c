@@ -56,10 +56,9 @@
 
 #include "btstack.h"
 
-#define LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS 2
+#define LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS 1
 
 typedef struct {
-    btstack_linked_item_t item;
     gatt_service_client_connection_t basic_connection;
     gatt_service_client_characteristic_t characteristics_storage[LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS];
     btstack_context_callback_registration_t write_without_response_request;
@@ -70,6 +69,7 @@ typedef struct {
     char test_data[200];
     uint16_t test_data_len;
     uint32_t test_data_sent;
+    uint32_t test_data_received;
     uint32_t test_data_start;
 } le_streamer_client_connection_t;
 
@@ -85,13 +85,12 @@ typedef enum {
 // On the GATT Server, RX Characteristic is used for receive data via Write, and TX Characteristic is used to send data via Notifications
 static uuid128_t LE_STREAMER_SERVICE_UUID           = { 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 static const uuid128_t le_streamer_uuid128s[LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS] = {
-        { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}, // rx
-        { 0x00, 0x00, 0xFF, 0x12, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}  // tx
+        { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB}, // rx + tx
 };
 
 static char *const le_streamer_server_name = "LE Streamer";
 static gatt_service_client_t le_streamer_client;
-static le_streamer_client_connection_t le_streamer_connection_storage;
+static le_streamer_client_connection_t le_streamer_client_connection;
 
 static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
@@ -123,26 +122,34 @@ static void le_streamer_client_connection_and_notification_handler(uint8_t packe
 // configure test mode: send only, receive only, full duplex
 #define TEST_MODE TEST_MODE_DUPLEX
 
-#define REPORT_INTERVAL_MS 3000
+#define REPORT_INTERVAL_MS 1000
 
 static void test_reset(le_streamer_client_connection_t * context){
     context->test_data_start = btstack_run_loop_get_time_ms();
     context->test_data_sent = 0;
+    context->test_data_received = 0;
 }
 
-static void test_track_data(le_streamer_client_connection_t * context, int bytes_sent){
-    context->test_data_sent += bytes_sent;
-    // evaluate
+static void test_track_data(le_streamer_client_connection_t * context, uint32_t bytes_sent, uint32_t bytes_received){
+    context->test_data_sent     += bytes_sent;
+    context->test_data_received += bytes_received;
+
+    // report
     uint32_t now = btstack_run_loop_get_time_ms();
     uint32_t time_passed = now - context->test_data_start;
     if (time_passed < REPORT_INTERVAL_MS) return;
-    // print speed
-    uint32_t bytes_per_second = context->test_data_sent * 1000 / time_passed;
-    printf("%c: %"PRIu32" bytes -> %u.%03u kB/s\n", context->name, context->test_data_sent, (int) (bytes_per_second / 1000), (int)(bytes_per_second % 1000));
+
+    // print throughput
+    int bytes_per_second_sent     = context->test_data_sent     * 1000 / time_passed;
+    int bytes_per_second_received = context->test_data_received * 1000 / time_passed;
+    int bytes_per_second_total = bytes_per_second_sent + bytes_per_second_received;
+    printf("%c: Sent %u.%03u kB/s, Received %u.%03u kB/s => Total %u.%03u kB/s\n", context->name,
+        bytes_per_second_sent     / 1000, bytes_per_second_sent     % 1000,
+        bytes_per_second_received / 1000, bytes_per_second_received % 1000,
+        bytes_per_second_total    / 1000, bytes_per_second_total    % 1000);
 
     // restart
-    context->test_data_start = now;
-    context->test_data_sent  = 0;
+    test_reset(context);
 }
 /* LISTING_END(tracking): Tracking throughput */
 
@@ -213,7 +220,7 @@ static void le_streamer_handle_can_write_without_response(void * context){
         printf("Write without response failed, status 0x%02x.\n", status);
         return;
     } else {
-        test_track_data(connection, connection->test_data_len);
+        test_track_data(connection, connection->test_data_len, 0);
     }
     // request again
     le_streamer_client_request_to_send(connection);
@@ -291,8 +298,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     // query primary services
                     printf("Search for LE Streamer service .\n");
                     state = TC_W4_SERVICE_CONNECTED;
-                    status = gatt_service_client_connect_primary_service_with_uuid128(connection_handle, &le_streamer_client, &le_streamer_connection_storage.basic_connection,
-                                                                                              &LE_STREAMER_SERVICE_UUID, &le_streamer_connection_storage.characteristics_storage[0],
+                    status = gatt_service_client_connect_primary_service_with_uuid128(connection_handle, &le_streamer_client, &le_streamer_client_connection.basic_connection,
+                                                                                              &LE_STREAMER_SERVICE_UUID, &le_streamer_client_connection.characteristics_storage[0],
                                                                                               LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
                     if (status != ERROR_CODE_SUCCESS){
                         state = TC_OFF;
@@ -378,7 +385,7 @@ static void le_streamer_client_connection_and_notification_handler(uint8_t packe
         uint16_t cid = gatt_event_notification_get_connection_id(packet);
         le_streamer_client_connection_t * connection = (le_streamer_client_connection_t *) gatt_service_client_get_connection_for_cid(&le_streamer_client, cid);
         btstack_assert(connection != NULL);
-        test_track_data(connection, gatt_event_notification_get_value_length(packet));
+        test_track_data(connection, 0, gatt_event_notification_get_value_length(packet));
     }
 }
 
