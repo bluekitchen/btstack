@@ -91,6 +91,7 @@ static void gatt_client_discover_characteristics_for_service_internal(gatt_clien
     gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id);
 static void gatt_client_discover_primary_service_by_uuid16_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, uint16_t uuid16, uint16_t service_id, uint16_t connection_id);
+static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client);
 static void gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code);
@@ -844,7 +845,11 @@ static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t cha
                             gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND;
                             break;
                         case GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE:
+                            // DONE
                             gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DONE;
+
+                            // Trigger first/next query if queued
+                            gatt_client_notify_can_send_query(gatt_client);
                             break;
                         default:
                             btstack_unreachable();
@@ -911,6 +916,9 @@ static bool gatt_client_service_changed_handle_can_send_query(gatt_client_t * ga
 
             // DONE
             gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DONE;
+
+            // Trigger first/next query if queued
+            gatt_client_notify_can_send_query(gatt_client);
             break;
         default:
             break;
@@ -2119,6 +2127,9 @@ static void gatt_client_handle_att_mtu_response(gatt_client_t* gatt_client, uint
 
         // Notify clients
         emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
+
+        // Trigger first/next query if queued
+        gatt_client_notify_can_send_query(gatt_client);
     }
 }
 
