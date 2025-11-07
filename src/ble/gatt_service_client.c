@@ -67,8 +67,83 @@ static btstack_linked_list_t gatt_service_clients;
 static btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
 
 #ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
-static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index){
+static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index) {
     return (((uint8_t)'G') << 24u) | (((uint8_t)'C') << 16u) | (device_index << 8u) | cache_index;
+}
+
+static void gatt_service_client_handle_deleted_bonding(int device_index) {
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+    for (uint16_t cache_index = 0 ; cache_index <= 255 ; cache_index++) {
+        uint32_t tag = gatt_service_client_tag_for_cache(device_index, cache_index);
+        int len = tlv_impl->get_tag(tlv_context, tag, NULL, 0);
+        if (len == 0) break;
+        tlv_impl->delete_tag(tlv_context, tag);
+    }
+}
+
+// @returns true if characteristic info was restored
+static bool gatt_service_client_caching_restore(gatt_service_client_t *client, gatt_service_client_connection_t *connection) {
+    // requirements:
+    // - device index <-> bonded
+    // - cache id
+    // - database hash
+    // - TLV
+    connection->device_index = sm_le_device_index(connection->con_handle);
+    connection->cache_id = gatt_client_get_next_cache_id(connection->con_handle);
+    const uint8_t * database_hash = gatt_client_get_database_hash(connection->con_handle);
+    if (database_hash == NULL) {
+        connection->device_index = -1;
+    }
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (tlv_impl == NULL) {
+        connection->device_index = -1;
+    }
+    if (connection->device_index == -1) {
+        return false;
+    }
+
+        // calc hash
+    uint32_t crc = btstack_crc32_init();
+    crc = btstack_crc32_update(crc, database_hash, 16);
+    crc = btstack_crc32_update(crc, &client->characteristics_desc_num, 1);
+    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid16, 2);
+    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid128, 16);
+    crc = btstack_crc32_update(crc, &connection->service_index, 1);
+    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->start_handle, 2);
+    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->end_handle, 2);
+    connection->request_hash = crc;
+
+    log_info("Cache ID %u, request hash %08" PRIX32, connection->cache_id, connection->request_hash);
+    // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
+    uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
+    uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
+    int len = tlv_impl->get_tag(tlv_context, tag, cached_characteristics_data, sizeof(cached_characteristics_data));
+    if (len <= 8) {
+        return false;
+    }
+
+    // verify hash
+    uint32_t stored_request_hash = little_endian_read_32(cached_characteristics_data, 0);
+    if (stored_request_hash != connection->request_hash) {
+        log_info("Request hash does not match")
+        return false;
+    }
+
+    log_info("Request hash matches")
+
+    // load cached characteristics
+    uint8_t num_cached_characteristics = cached_characteristics_data[4];
+    btstack_assert(num_cached_characteristics <= MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS);
+    for (int i=0;i<num_cached_characteristics;i++) {
+        connection->characteristics[i].value_handle = little_endian_read_32(cached_characteristics_data, 8 + 2 * i);
+    }
+
+    return true;
 }
 #endif
 
@@ -315,9 +390,24 @@ static void gatt_service_client_send_next_query(void * context) {
     uint8_t status = ATT_ERROR_SUCCESS;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+    bool restore_ok;
+#endif
 
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE:
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+            restore_ok = gatt_service_client_caching_restore(client, connection);
+            log_info("Caching: restore %u", restore_ok);
+            if (restore_ok) {
+                // enter connected state
+                connection->characteristic_index = 0;
+                connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+                break;
+            }
+#endif
+
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             if (connection->service_uuid16 == 0){
                 status = gatt_client_discover_primary_services_by_uuid128_with_context(&gatt_service_client_gatt_packet_handler,
@@ -637,82 +727,6 @@ gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, u
     }
 }
 
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
-static void gatt_service_client_handle_deleted_bonding(int device_index) {
-    const btstack_tlv_t * tlv_impl = NULL;
-    void * tlv_context;
-    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
-    if (!tlv_impl) return;
-    for (uint16_t cache_index = 0 ; cache_index <= 255 ; cache_index++) {
-        uint32_t tag = gatt_service_client_tag_for_cache(device_index, cache_index);
-        int len = tlv_impl->get_tag(tlv_context, tag, NULL, 0);
-        if (len == 0) break;
-        tlv_impl->delete_tag(tlv_context, tag);
-    }
-}
-
-// @returns true if characteristic info was restored
-static bool gatt_service_client_caching_restore(gatt_service_client_t *client, gatt_service_client_connection_t *connection) {
-    // requirements:
-    // - device index <-> bonded
-    // - cache id
-    // - database hash
-    // - TLV
-    connection->device_index = sm_le_device_index(connection->con_handle);
-    connection->cache_id = gatt_client_get_next_cache_id(connection->con_handle);
-    const uint8_t * database_hash = gatt_client_get_database_hash(connection->con_handle);
-    if (database_hash == NULL) {
-        connection->device_index = -1;
-    }
-    const btstack_tlv_t * tlv_impl = NULL;
-    void * tlv_context;
-    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
-    if (tlv_impl == NULL) {
-        connection->device_index = -1;
-    }
-    if (connection->device_index == -1) {
-        return false;
-    }
-
-    // calc hash
-    uint32_t crc = btstack_crc32_init();
-    crc = btstack_crc32_update(crc, database_hash, 16);
-    crc = btstack_crc32_update(crc, &client->characteristics_desc_num, 1);
-    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid16, 2);
-    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid128, 16);
-    crc = btstack_crc32_update(crc, &connection->service_index, 1);
-    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->start_handle, 2);
-    crc = btstack_crc32_update(crc, (const uint8_t*) &connection->end_handle, 2);
-    connection->request_hash = crc;
-    log_info("Cache ID %u, request hash %08" PRIX32, connection->cache_id, connection->request_hash);
-
-    // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
-    uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
-    uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
-    int len = tlv_impl->get_tag(tlv_context, tag, cached_characteristics_data, sizeof(cached_characteristics_data));
-    if (len <= 8) {
-        return false;
-    }
-
-    // verify hash
-    uint32_t stored_request_hash = little_endian_read_32(cached_characteristics_data, 0);
-    if (stored_request_hash != connection->request_hash) {
-        log_info("Request hash does not match")
-        return false;
-    }
-
-    log_info("Request hash matches")
-    // load cached characteristics
-    uint8_t num_cached_characteristics = cached_characteristics_data[4];
-    btstack_assert(num_cached_characteristics <= MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS);
-    for (int i=0;i<num_cached_characteristics;i++) {
-        connection->characteristics[i].value_handle = little_endian_read_32(cached_characteristics_data, 8 + 2 * i);
-    }
-
-    return true;
-}
-#endif
-
 static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
@@ -758,24 +772,8 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
     connection->can_send_query_registration.context = connection;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
-    bool start_query = true;
-
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
-    bool restore_ok = gatt_service_client_caching_restore(client, connection);
-    log_info("Caching: restore %u", restore_ok);
-    if (restore_ok) {
-        start_query = false;
-
-        // enter connected state
-        connection->characteristic_index = 0;
-        connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
-    }
-#endif
-
-    if (start_query) {
-        gatt_service_client_request_send_gatt_query(client, connection);
-    }
+    // trigger query. Security / MTU / GATT Database Hash is complete when we get called
+    gatt_service_client_request_send_gatt_query(client, connection);
 }
 
 /* API */
