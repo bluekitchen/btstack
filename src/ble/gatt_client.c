@@ -731,7 +731,7 @@ gatt_client_service_emit_service_changed(gatt_client_t *gatt_client, const uint8
 
 static void
 gatt_client_service_emit_database_hash(gatt_client_t *gatt_client, const uint8_t * database_hash, uint16_t database_version) {
-    uint8_t event[21];
+    uint8_t event[23];
     hci_event_builder_context_t context;
     hci_event_builder_init(&context, event, sizeof(event), HCI_EVENT_GATTSERVICE_META, GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH);
     hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
