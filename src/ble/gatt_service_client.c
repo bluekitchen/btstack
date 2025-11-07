@@ -685,45 +685,6 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
     }
 }
 
-/* API */
-
-void gatt_service_client_init(void){
-    if (false == gatt_service_client_intitialized){
-        gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
-        hci_add_event_handler(&gatt_service_client_hci_callback_registration);
-        gatt_service_client_intitialized = true;
-    }
-}
-
-void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
-                                         const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num) {
-
-    btstack_assert(gatt_service_client_intitialized);
-
-    gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
-    client->service_id =gatt_service_client_service_cid;
-    client->cid_counter = 0;
-    client->packet_handler = packet_handler;
-    client->characteristics_desc16 = characteristic_uuid16s;
-    client->characteristics_desc_num = characteristic_uuid16s_num;
-    client->characteristics_desc128 = NULL;
-    btstack_linked_list_add(&gatt_service_clients, &client->item);
-}
-
-void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
-                                                 const uuid128_t *characteristic_uuid128s, uint16_t characteristic_uuid128s_num){
-
-    btstack_assert(gatt_service_client_intitialized);
-
-    gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
-    client->service_id = gatt_service_client_service_cid;
-    client->cid_counter = 0;
-    client->packet_handler = packet_handler;
-    client->characteristics_desc16 = NULL;
-    client->characteristics_desc128 = characteristic_uuid128s;
-    client->characteristics_desc_num = characteristic_uuid128s_num;
-    btstack_linked_list_add(&gatt_service_clients, &client->item);
-}
 
 static void gatt_service_client_start_connect(gatt_service_client_t *client, gatt_service_client_connection_t *connection, hci_con_handle_t con_handle, gatt_service_client_characteristic_t
                                               * characteristics) {
@@ -796,6 +757,46 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
     if (request_query) {
         gatt_service_client_request_send_gatt_query(client, connection);
     }
+}
+
+/* API */
+
+void gatt_service_client_init(void){
+    if (false == gatt_service_client_intitialized){
+        gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
+        hci_add_event_handler(&gatt_service_client_hci_callback_registration);
+        gatt_service_client_intitialized = true;
+    }
+}
+
+void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+                                         const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num) {
+
+    btstack_assert(gatt_service_client_intitialized);
+
+    gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
+    client->service_id =gatt_service_client_service_cid;
+    client->cid_counter = 0;
+    client->packet_handler = packet_handler;
+    client->characteristics_desc16 = characteristic_uuid16s;
+    client->characteristics_desc_num = characteristic_uuid16s_num;
+    client->characteristics_desc128 = NULL;
+    btstack_linked_list_add(&gatt_service_clients, &client->item);
+}
+
+void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+                                                 const uuid128_t *characteristic_uuid128s, uint16_t characteristic_uuid128s_num){
+
+    btstack_assert(gatt_service_client_intitialized);
+
+    gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
+    client->service_id = gatt_service_client_service_cid;
+    client->cid_counter = 0;
+    client->packet_handler = packet_handler;
+    client->characteristics_desc16 = NULL;
+    client->characteristics_desc128 = characteristic_uuid128s;
+    client->characteristics_desc_num = characteristic_uuid128s_num;
+    btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
 uint8_t
