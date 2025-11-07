@@ -318,7 +318,7 @@ static void gatt_service_client_send_next_query(void * context) {
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE:
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
-            if (connection->service_uuid128 != NULL){
+            if (connection->service_uuid16 == 0){
                 status = gatt_client_discover_primary_services_by_uuid128_with_context(&gatt_service_client_gatt_packet_handler,
                                                                           connection->con_handle,
                                                                           (const uint8_t *)connection->service_uuid128,
@@ -752,10 +752,8 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
         uint32_t crc = btstack_crc32_init();
         crc = btstack_crc32_update(crc, database_hash, 16);
         crc = btstack_crc32_update(crc, &client->characteristics_desc_num, 1);
-        crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid16, 16);
-        if (connection->service_uuid128 != NULL) {
-            // TODO: hash uuid128
-        }
+        crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid16, 2);
+        crc = btstack_crc32_update(crc, (const uint8_t*) &connection->service_uuid128, 16);
         crc = btstack_crc32_update(crc, &connection->service_index, 1);
         crc = btstack_crc32_update(crc, (const uint8_t*) &connection->start_handle, 2);
         crc = btstack_crc32_update(crc, (const uint8_t*) &connection->end_handle, 2);
@@ -821,8 +819,8 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     }
 
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
+    memset(connection->service_uuid128, 0, 16);
     connection->service_uuid16      = service_uuid16;
-    connection->service_uuid128     = NULL;
     connection->service_index       = 0;
     connection->start_handle        = 0;
     connection->end_handle          = 0xffff;
@@ -852,8 +850,8 @@ uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_
     }
 
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
+    memcpy(connection->service_uuid128, service_uuid128, 16);
     connection->service_uuid16      = 0;
-    connection->service_uuid128     = (uuid128_t *) service_uuid128;
     connection->service_index       = 0;
     connection->start_handle        = 0;
     connection->end_handle          = 0xffff;
@@ -884,8 +882,8 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
     }
 
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
+    memset(connection->service_uuid128, 0, 16);
     connection->service_uuid16      = service_uuid16;
-    connection->service_uuid128     = NULL;
     connection->service_index       = service_index;
     connection->start_handle        = service_start_handle;
     connection->end_handle          = service_end_handle;

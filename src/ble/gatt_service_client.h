@@ -91,8 +91,8 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-    uint16_t service_uuid16;
-    uuid128_t * service_uuid128;
+    uint16_t  service_uuid16;
+    uuid128_t service_uuid128;
 
     uint8_t  service_index;
     uint16_t service_instances_num;
