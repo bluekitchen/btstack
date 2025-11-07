@@ -344,6 +344,8 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (!context) break;
                     context->connection_handle = att_event_connected_get_handle(packet);
                     context->test_data_len = btstack_min(att_server_get_mtu(context->connection_handle) - 3, sizeof(context->test_data));
+                    // store into test data buffer for use with GATT Browser
+                    btstack_snprintf_best_effort(context->test_data, context    ->test_data_len, "GATT Streamer starting up...");
                     printf("%c: ATT connected, handle 0x%04x, test data len %u\n", context->name, context->connection_handle, context->test_data_len);
                     break;
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
