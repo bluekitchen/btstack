@@ -31,7 +31,10 @@ class BufferedReader {
 
         while (filled < length) {
             const { value, done } = await this.reader.read();
-            if (done) throw new Error("Serial port closed");
+            if (done) {
+                // port closed exit
+                break;
+            }
 
             if (value) {
                 const needed = length - filled;
@@ -50,6 +53,8 @@ class BufferedReader {
                 }
             }
         }
+
+        return filled;
     }
 
     async close() {
