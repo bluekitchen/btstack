@@ -130,7 +130,7 @@ static bool gatt_service_client_caching_restore(gatt_service_client_t *client, g
     // verify hash
     uint32_t stored_request_hash = little_endian_read_32(cached_characteristics_data, 0);
     if (stored_request_hash != connection->request_hash) {
-        log_info("Request hash does not match")
+        log_info("Request hash does not match stored %08x", stored_request_hash);
         return false;
     }
 
@@ -303,12 +303,14 @@ static void gatt_service_client_handle_connected(const gatt_service_client_t * c
         btstack_assert(tlv_impl != NULL);
         uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
         // store characteristics
+        memset(cached_characteristics_data, 0, 8);
         little_endian_store_32(cached_characteristics_data, 0, connection->request_hash);
-        little_endian_store_32(cached_characteristics_data, 0, 0);
         cached_characteristics_data[4] = client->characteristics_desc_num;
         for (int i=0;i<client->characteristics_desc_num;i++) {
             little_endian_store_16(cached_characteristics_data, 8 + 2 * i, connection->characteristics[i].value_handle);
         }
+        log_info("Store Characteristics: device %u, cache id %u, hash %08x, handles %u", connection->device_index, connection->cache_id,
+            connection->request_hash, client->characteristics_desc_num);
         tlv_impl->store_tag(tlv_context, tag, cached_characteristics_data, 8 + 2 * client->characteristics_desc_num);
     }
 #endif
