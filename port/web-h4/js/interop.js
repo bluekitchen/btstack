@@ -40,6 +40,20 @@ const HCI_H4 = Object.freeze({
 let serialPort = null;
 let writer = null;
 let bufferedReader = null;
+let serialConfig = null;
+
+async function hci_transport_h4_js_open() {
+    // Wait for the serial port to open.
+    flowControl = "hardware";
+    await serialPort.open({ baudRate: serialConfig.baud, flowControl: flowControl });
+    log(
+        "Port opened" + ` (baudrate: ${serialConfig.baud}, flowControl: ${flowControl})`,
+    );
+
+    // setup reader and writer
+    bufferedReader = new BufferedReader(serialPort);
+    writer = serialPort.writable.getWriter();
+}
 
 async function hci_transport_h4_js_receiver() {
     // get shared h4 receive buffer
@@ -104,20 +118,15 @@ Module.onStartBTstack = async (config) => {
         // The Web Serial API is supported.
         log("Web Serial API supported");
 
-        // Prompt user to select any serial port.
-        const port = await navigator.serial.requestPort();
+        // Prompt user to select serial port.
+        serialPort = await navigator.serial.requestPort();
         log("Port selected");
 
-        // Wait for the serial port to open.
-        flowControl = "hardware";
-        await port.open({ baudRate: config.baud, flowControl: flowControl });
-        log(
-            "Port opened" + ` (baudrate: ${baudrate}, flowControl: ${flowControl})`,
-        );
+        // store config
+        serialConfig = config;
 
-        // setup reader and writer
-        bufferedReader = new BufferedReader(port);
-        writer = port.writable.getWriter();
+        // open serial port
+        await hci_transport_h4_js_open();
 
         // start example
         _btstack_main();
