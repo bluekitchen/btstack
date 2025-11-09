@@ -150,7 +150,7 @@
                     <input type="checkbox" id="hciLog" />
                     HCI Log
                 </label>
-                <!--<button id="downloadLogBtn">Download HCI Packet Log</button>-->
+                <button id="downloadLogBtn">Download HCI Packet Log</button>
                 <button id="connectBtn">Connect</button>
             </div>
         </div>
@@ -333,13 +333,12 @@
 
             // download HCI log
             if (downloadBtn) {
-                let logBuffer = "";
                 downloadBtn.addEventListener("click", () => {
-                    const blob = new Blob([logBuffer], { type: "text/plain" });
+                    const blob = Module.hciDumpGetLog();
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
-                    a.download = "hci_log.txt";
+                    a.download = "hci_dump.pklg";
                     a.click();
                     URL.revokeObjectURL(url);
                 });

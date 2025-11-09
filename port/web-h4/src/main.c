@@ -56,7 +56,9 @@
 #include "btstack_tlv_js.h"
 #include "btstack_uart.h"
 #include "hci_dump.h"
+#include "hci_dump_dispatch.h"
 #include "hci_dump_embedded_stdout.h"
+#include "hci_dump_js.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 #include "hci_transport_h4_js.h"
@@ -76,6 +78,12 @@ static bool hci_log_enabled;
 static int log_level;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+/** HCI Dump Dispatch for run time configuration of logging */
+static const hci_dump_t * hci_dump_dispatch;
+static const hci_dump_t * hci_dump_stdout;
+static hci_dump_dispatch_item_t hci_dump_dispach_to_js;
+static hci_dump_dispatch_item_t hci_dump_dispach_to_stdio;
 
 /** Empty PatchRAM for BCM support */
 const uint8_t brcm_patchram_buf[] = {};
@@ -210,7 +218,11 @@ void main_set_hci_log(bool enabled) {
     if (hci_log_enabled != enabled){
         printf("HCI Log %s\n", enabled ? "enabled" : "disabled");
     }
-    hci_dump_enable_packet_log(enabled);
+    if (enabled) {
+        hci_dump_dispatch_register(&hci_dump_dispach_to_stdio, hci_dump_stdout);
+    } else {
+        hci_dump_dispatch_unregister(&hci_dump_dispach_to_stdio);
+    }
     hci_log_enabled = enabled;
 }
 
@@ -223,14 +235,19 @@ int main() {
     btstack_run_loop_init(btstack_run_loop_js_get_instance());
 
     // init HCI dump to stdout, but disable by default
-    hci_dump_init(hci_dump_embedded_stdout_get_instance());
-    hci_dump_enable_packet_log(false);
+    hci_dump_stdout =   hci_dump_embedded_stdout_get_instance();
+
+    hci_dump_dispatch_init();
+    hci_dump_dispatch = hci_dump_dispatch_instance();
+    hci_dump_dispatch_register(&hci_dump_dispach_to_js, hci_dump_js_get_instance());
+
+    hci_dump_init(hci_dump_dispatch);
     main_set_log_level_private(HCI_DUMP_LOG_LEVEL_ERROR);
 
     // init HCI with H4 HCI Transport over JavaScript
     hci_init(hci_transport_h4_js_instance(), (void*) &config);
 
-    // use in-memory TLV for testing
+    // use Web Storage based TLV
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_js_init_instance();
     void                * btstack_tlv_context = NULL;
     btstack_tlv_set_instance(btstack_tlv_impl, btstack_tlv_context);
