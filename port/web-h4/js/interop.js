@@ -114,6 +114,22 @@ async function hci_transport_h4_js_set_baudrate_js(baud) {
     hci_transport_h4_js_receiver();
 }
 
+// JS part of hci_dump_js
+
+// global state
+let hci_dump_packets = [];
+
+function hci_dump_js_write_blob(data){
+    // create new copy as passed array is just a memory view
+    hci_dump_packets.push(new Uint8Array(data));
+}
+
+Module.hciDumpGetLog = () => {
+    log = new Blob(hci_dump_packets, { type: "application/octet-stream" } );
+    hci_dump_packets = []
+    return log;
+}
+
 // UI Helper
 function btstack_tlv_js_updated(){
     console.log("[BTstack TLV] updated");
