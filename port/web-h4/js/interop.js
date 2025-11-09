@@ -125,9 +125,7 @@ function hci_dump_js_write_blob(data){
 }
 
 Module.hciDumpGetLog = () => {
-    log = new Blob(hci_dump_packets, { type: "application/octet-stream" } );
-    hci_dump_packets = []
-    return log;
+    return new Blob(hci_dump_packets, { type: "application/octet-stream" } );
 }
 
 // UI Helper
