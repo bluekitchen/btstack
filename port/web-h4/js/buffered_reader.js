@@ -54,7 +54,7 @@ class BufferedReader {
 
     async close() {
         await this.reader.cancel();
-        this.reader.releaseLock();
+        await this.reader.releaseLock();
     }
 }
 
