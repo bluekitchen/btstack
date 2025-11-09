@@ -89,7 +89,9 @@ async function hci_transport_h4_js_send_data(data) {
 function btstack_tlv_js_updated(){
     console.log("[BTstack TLV] updated");
     const clearTLVBtn = document.getElementById("clearTLVButton");
-    clearTLVBtn.hidden = false;
+    if (clearTLVBtn){
+        clearTLVBtn.hidden = false;
+    }
 }
 
 // Main Application
