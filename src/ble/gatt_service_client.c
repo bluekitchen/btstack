@@ -737,7 +737,10 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
     if (packet_type != HCI_EVENT_PACKET) return;
 
     hci_con_handle_t con_handle;
+#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
     bd_addr_t address;
+#endif
+
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
