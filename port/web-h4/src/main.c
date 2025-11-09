@@ -46,6 +46,7 @@
 #include "bluetooth_company_id.h"
 #include "btstack_chipset_zephyr.h"
 #include "btstack_audio_sdl2.h"
+#include "btstack_chipset_bcm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -75,6 +76,11 @@ static bool hci_log_enabled;
 static int log_level;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+/** Empty PatchRAM for BCM support */
+const uint8_t brcm_patchram_buf[] = {};
+const int     brcm_patch_ram_length = sizeof(brcm_patchram_buf);
+const char    brcm_patch_version[] = "";
 
 /** Zephyr Static Address - used on nRF5x SoCs */
 static bd_addr_t zephyr_static_address;
@@ -111,6 +117,11 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- LMP Subversion 0x%04x\n", lmp_subversion);
     printf("- Manufacturer 0x%04x\n", manufacturer);
     switch (manufacturer){
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
+            printf("Broadcom/Cypress - using BCM driver.\n");
+            hci_set_chipset(btstack_chipset_bcm_instance());
+            use_fast_uart();
+            break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
             hci_set_chipset(btstack_chipset_zephyr_instance());
