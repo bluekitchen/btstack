@@ -61,7 +61,10 @@ async function hci_transport_h4_js_receiver() {
     bufferSize = _hci_transport_h4_get_receive_buffer_size();
     receiveBuffer = new Uint8Array(HEAPU8.buffer, bufferPtr, bufferSize);
     while (1) {
-        await bufferedReader.readInto(receiveBuffer, 0, 1);
+        read_bytes = await bufferedReader.readInto(receiveBuffer, 0, 1);
+        if (read_bytes == 0){
+            break;
+        }
         packetType = receiveBuffer[0];
         offset = 1;
         switch (packetType) {
@@ -77,7 +80,6 @@ async function hci_transport_h4_js_receiver() {
                 break;
             case HCI_H4.ACL:
             case HCI_H4.ISO:
-                log("ACL/ISO packet");
                 await bufferedReader.readInto(receiveBuffer, offset, 4);
                 offset += 4;
                 payloadLen = receiveBuffer[3] + (receiveBuffer[4] << 8);
@@ -97,6 +99,19 @@ async function hci_transport_h4_js_receiver() {
 async function hci_transport_h4_js_send_data(data) {
     await writer.write(data);
     _hci_transport_h4_packet_sent();
+}
+
+async function hci_transport_h4_js_close(){
+    await bufferedReader.close();
+    await writer.close();
+    await serialPort.close();
+}
+async function hci_transport_h4_js_set_baudrate_js(baud) {
+    console.log("[BTstack] change baudrate to " + baud);
+    config.baud = baud;
+    await hci_transport_h4_js_close();
+    await hci_transport_h4_js_open();
+    hci_transport_h4_js_receiver();
 }
 
 // UI Helper

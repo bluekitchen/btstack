@@ -124,10 +124,9 @@ static int hci_transport_h4_js_open(void) {
     return 0;
 }
 
-static int hci_transport_h4_js_set_baudrate(uint32_t baudrate){
-    log_info("hci_transport_h4_js_set_baudrate %u", baudrate);
-    return 0;
-}
+EM_ASYNC_JS(int, hci_transport_h4_js_set_baudrate, (uint32_t baudrate), {
+    await hci_transport_h4_js_set_baudrate_js(baudrate);
+});
 
 static int hci_transport_h4_js_close(void) {
     log_info("hci_transport_h4_js_close");

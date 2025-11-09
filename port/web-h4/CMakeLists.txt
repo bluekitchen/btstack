@@ -170,6 +170,8 @@ foreach(EXAMPLE ${EXAMPLES})
     target_link_options(${EXAMPLE} PRIVATE
         "-sEXPORTED_FUNCTIONS=[${EXPORTED_FUNCTIONS_STR}]"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
+        "-sASYNCIFY"
+        "-sASYNCIFY_IMPORTS=['hci_transport_h4_js_set_baudrate']"
         "-sUSE_SDL=2"
         "--pre-js" "${PRE_JS}"
     )
