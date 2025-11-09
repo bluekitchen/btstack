@@ -85,8 +85,8 @@ void hci_dump_dispatch_register(hci_dump_dispatch_item_t *list_item, const hci_d
     btstack_linked_list_add(&hci_dump_list, (btstack_linked_item_t *)list_item);
 }
 
-void hci_dump_dispatch_unregister(hci_dump_t *dump) {
-    btstack_linked_list_remove(&hci_dump_list, (btstack_linked_item_t *)dump);
+void hci_dump_dispatch_unregister(hci_dump_dispatch_item_t *list_item) {
+    btstack_linked_list_remove(&hci_dump_list, (btstack_linked_item_t *)list_item);
 }
 
 void hci_dump_dispatch_deinit(void){

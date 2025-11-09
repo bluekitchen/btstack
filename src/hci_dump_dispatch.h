@@ -69,9 +69,9 @@ void hci_dump_dispatch_register(hci_dump_dispatch_item_t *list_item, const hci_d
 
 /**
  * @brief Unregister HCI Dump (hci_dump_t *) implementation from dispatcher
- * @param dump
+ * @param list_item
  */
-void hci_dump_dispatch_unregister(hci_dump_t *dump);
+void hci_dump_dispatch_unregister(hci_dump_dispatch_item_t *list_item);
 
 /**
  * @brief De-Init HCI Dump Dispatch
