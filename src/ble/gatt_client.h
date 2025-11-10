@@ -159,16 +159,16 @@ typedef enum{
 } gatt_client_mtu_t;
 
 typedef enum {
-    GATT_CLIENT_SERVICE_DISCOVER_W2_SEND,
-    GATT_CLIENT_SERVICE_DISCOVER_W4_DONE,
-    GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W2_SEND,
-    GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W4_DONE,
-    GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W2_SEND,
-    GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W4_DONE,
-    GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND,
-    GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE,
-    GATT_CLIENT_SERVICE_DONE,
-} gatt_client_service_state_t;
+    GATT_CLIENT_CACHING_DISCOVER_GATT_SERVICE_W2_SEND,
+    GATT_CLIENT_CACHING_DISCOVER_GATT_SERVICE_W4_DONE,
+    GATT_CLIENT_CACHING_DISCOVER_CHARACTERISTICS_W2_SEND,
+    GATT_CLIENT_CACHING_DISCOVER_CHARACTERISTICS_W4_DONE,
+    GATT_CLIENT_CACHING_SERVICE_CHANGED_WRITE_CCCD_W2_SEND,
+    GATT_CLIENT_CACHING_SERVICE_CHANGED_WRITE_CCCD_W4_DONE,
+    GATT_CLIENT_CACHING_DATABASE_HASH_READ_W2_SEND,
+    GATT_CLIENT_CACHING_DATABASE_HASH_READ_W4_DONE,
+    GATT_CLIENT_CACHING_DONE,
+} gatt_client_caching_state_t;
 
 #ifdef ENABLE_GATT_OVER_EATT
 typedef enum {
@@ -276,8 +276,9 @@ typedef struct gatt_client{
     uint16_t service_id;
     uint16_t connection_id;
 
-    // GATT Service Changes
-    gatt_client_service_state_t gatt_service_state;
+    // GATT Caching
+    gatt_client_caching_state_t caching_state;
+    // GATT Service Info
     uint16_t                    gatt_service_start_group_handle;
     uint16_t                    gatt_service_end_group_handle;
     // - Service Changed
