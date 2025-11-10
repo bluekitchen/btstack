@@ -74,7 +74,7 @@
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_linked_list_t gatt_client_service_value_listeners;
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
 static btstack_linked_list_t gatt_client_service_changed_handler;
 #endif
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -122,7 +122,7 @@ void gatt_client_init(void){
     gatt_client_connections = NULL;
     gatt_client_value_listeners = NULL;
     gatt_client_service_value_listeners = NULL;
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
     gatt_client_service_changed_handler = NULL;
 #endif
     // default configuration
@@ -253,7 +253,7 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
 }
 
 static bool is_ready(gatt_client_t * gatt_client){
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
     if (gatt_client->gatt_service_state != GATT_CLIENT_SERVICE_DONE) return false;
 #endif
 #ifdef ENABLE_GATT_OVER_EATT
@@ -699,7 +699,7 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
     return little_endian_read_16(packet, size - attr_length);
 }
 
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
 typedef struct {
     uint8_t  database_hash[16];
     uint16_t database_version;
@@ -962,7 +962,7 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
     while (gatt_client->state == P_READY){
         bool query_sent = false;
         UNUSED(query_sent);
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
         query_sent = gatt_client_service_changed_handle_can_send_query(gatt_client);
         if (query_sent){
             continue;
@@ -1276,7 +1276,7 @@ static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
 	if (!gatt_client_accept_server_message(gatt_client)) return;
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
     // Directly Handle GATT Service Changed and Database Hash indications
     if (value_handle == gatt_client->gatt_service_database_hash_value_handle){
         gatt_client_service_emit_database_hash(gatt_client, value, length);
@@ -1938,7 +1938,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             gatt_client_handle_reencryption_complete(packet);
             break;
 
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_BONDING_DELETED:
@@ -3371,7 +3371,7 @@ uint8_t gatt_client_att_status_to_error_code(uint8_t att_error_code){
     }
 }
 
-#ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
+#ifdef ENABLE_GATT_CLIENT_CACHING
 void gatt_client_add_service_changed_handler(btstack_packet_callback_registration_t * callback) {
     btstack_linked_list_add_tail(&gatt_client_service_changed_handler, (btstack_linked_item_t*) callback);
 }
@@ -3379,9 +3379,7 @@ void gatt_client_add_service_changed_handler(btstack_packet_callback_registratio
 void gatt_client_remove_service_changed_handler(btstack_packet_callback_registration_t * callback){
     btstack_linked_list_remove(&gatt_client_service_changed_handler, (btstack_linked_item_t*) callback);
 }
-#endif
 
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
 const uint8_t * gatt_client_get_database_hash(hci_con_handle_t con_handle) {
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);

@@ -286,7 +286,7 @@ typedef struct gatt_client{
     uint16_t                    gatt_service_changed_end_handle;
     // - Database Hash
     uint16_t                    gatt_service_database_hash_value_handle;
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
     uint8_t                     database_hash[16];
     uint16_t                    cache_id;
 #endif
@@ -1164,7 +1164,7 @@ uint8_t gatt_client_write_client_characteristic_configuration_with_context(btsta
  * When configured, GATT_EVENT_QUERY_COMPLETE event is emitted
  * If supported, the Database Hash is read as well
  *
- * Requires ENABLE_GATT_CLIENT_SERVICE_CHANGED
+ * Requires ENABLE_GATT_CLIENT_CACHING
  *
  * @param callback
  */
@@ -1173,7 +1173,7 @@ void gatt_client_add_service_changed_handler(btstack_packet_callback_registratio
 /**
  * @brief Remove callback for service changes
  *
- * Requires ENABLE_GATT_CLIENT_SERVICE_CHANGED
+ * Requires ENABLE_GATT_CLIENT_CACHING
  *
  * @param callback
  */
@@ -1288,7 +1288,7 @@ uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_r
  */
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
 /**
  * @brief Get GATT Database Hash for remote device
  * @param con_handle
