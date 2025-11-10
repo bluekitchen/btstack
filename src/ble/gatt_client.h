@@ -56,6 +56,11 @@ extern "C" {
 #define ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
 #endif
 
+// We need to query remote GATT Service for Caching or EATT support
+#if defined(ENABLE_GATT_CLIENT_CACHING) || defined (ENABLE_GATT_OVER_EATT)
+#define ENABLE_GATT_CLIENT_SERVICE_QUERY
+#endif
+
 typedef enum {
     P_READY,
     P_W2_EMIT_QUERY_COMPLETE_EVENT,
@@ -150,13 +155,20 @@ typedef enum {
     P_L2CAP_CLOSED,
 } gatt_client_state_t;
 
-    
 typedef enum{
     SEND_MTU_EXCHANGE,
     SENT_MTU_EXCHANGE,
     MTU_EXCHANGED,
     MTU_AUTO_EXCHANGE_DISABLED
 } gatt_client_mtu_t;
+
+typedef enum {
+    GATT_CLIENT_SERVICE_QUERY_DISCOVER_SERVICE_W2_SEND,
+    GATT_CLIENT_SERVICE_QUERY_DISCOVER_SERVICE_W4_DONE,
+    GATT_CLIENT_SERVICE_QUERY_DISCOVER_CHARACTERISTICS_W2_SEND,
+    GATT_CLIENT_SERVICE_QUERY_DISCOVER_CHARACTERISTICS_W4_DONE,
+    GATT_CLIENT_SERVICE_QUERY_DONE,
+} gatt_client_service_query_state_t;
 
 typedef enum {
     GATT_CLIENT_CACHING_DISCOVER_GATT_SERVICE_W2_SEND,
@@ -275,6 +287,11 @@ typedef struct gatt_client{
     // Context
     uint16_t service_id;
     uint16_t connection_id;
+
+    // GATT Service Query
+#ifdef ENABLE_GATT_CLIENT_SERVICE_QUERY
+    gatt_client_service_query_state_t service_query_state;
+#endif
 
     // GATT Caching
     gatt_client_caching_state_t caching_state;

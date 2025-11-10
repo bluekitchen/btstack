@@ -236,8 +236,12 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
     } else {
         gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
     }
+
     gatt_client->state = P_READY;
     gatt_client->caching_state = GATT_CLIENT_CACHING_DISCOVER_GATT_SERVICE_W2_SEND;
+#ifdef ENABLE_GATT_CLIENT_SERVICE_QUERY
+    gatt_client->service_query_state = GATT_CLIENT_SERVICE_QUERY_DISCOVER_SERVICE_W2_SEND;
+#endif
 #ifdef ENABLE_GATT_OVER_EATT
     gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
 #endif
@@ -253,6 +257,9 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
 }
 
 static bool is_ready(gatt_client_t * gatt_client){
+#ifdef ENABLE_GATT_CLIENT_CACHING
+    if (gatt_client->service_query_state != GATT_CLIENT_SERVICE_QUERY_DONE) return false;
+#endif
 #ifdef ENABLE_GATT_CLIENT_CACHING
     if (gatt_client->caching_state != GATT_CLIENT_CACHING_DONE) return false;
 #endif
@@ -699,6 +706,15 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
     return little_endian_read_16(packet, size - attr_length);
 }
 
+#ifdef ENABLE_GATT_CLIENT_SERVICE_QUERY
+static bool gatt_client_service_query_handle_can_send_query(gatt_client_t * gatt_client) {
+    UNUSED(gatt_client);
+    log_info("Service Query state %u", gatt_client->service_query_state);
+    gatt_client->service_query_state = GATT_CLIENT_SERVICE_QUERY_DONE;
+    return false;
+}
+#endif
+
 #ifdef ENABLE_GATT_CLIENT_CACHING
 typedef struct {
     uint8_t  database_hash[16];
@@ -962,6 +978,12 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
     while (gatt_client->state == P_READY){
         bool query_sent = false;
         UNUSED(query_sent);
+#ifdef ENABLE_GATT_CLIENT_SERVICE_QUERY
+        query_sent = gatt_client_service_query_handle_can_send_query(gatt_client);
+        if (query_sent) {
+            continue;
+        }
+#endif
 #ifdef ENABLE_GATT_CLIENT_CACHING
         query_sent = gatt_client_caching_handle_can_send_query(gatt_client);
         if (query_sent){
@@ -1334,7 +1356,6 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * gatt_clie
         }        
         emit_gatt_all_characteristic_descriptors_result_event(gatt_client, descriptor_handle, uuid128);
     }
-    
 }
 
 static bool is_query_done(gatt_client_t * gatt_client, uint16_t last_result_handle){
