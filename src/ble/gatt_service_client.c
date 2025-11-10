@@ -66,7 +66,7 @@ static uint16_t gatt_service_client_service_cid;
 static btstack_linked_list_t gatt_service_clients;
 static btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
 
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
 static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index) {
     return (((uint8_t)'G') << 24u) | (((uint8_t)'C') << 16u) | (device_index << 8u) | cache_index;
 }
@@ -293,7 +293,7 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_t * client)
 }
 
 static void gatt_service_client_handle_connected(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
     if (connection->device_index >= 0) {
         // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
         uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
@@ -392,13 +392,13 @@ static void gatt_service_client_send_next_query(void * context) {
     uint8_t status = ATT_ERROR_SUCCESS;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
     bool restore_ok;
 #endif
 
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE:
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
             restore_ok = gatt_service_client_caching_restore(client, connection);
             log_info("Caching: restore %u", restore_ok);
             if (restore_ok) {
@@ -737,7 +737,7 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
     if (packet_type != HCI_EVENT_PACKET) return;
 
     hci_con_handle_t con_handle;
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
     bd_addr_t address;
 #endif
 
@@ -746,7 +746,7 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             gatt_service_client_handle_disconnect(con_handle);
             break;
-#ifdef ENABLE_GATT_SERVICE_CLIENT_CACHING
+#ifdef ENABLE_GATT_CLIENT_CACHING
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_BONDING_DELETED:
