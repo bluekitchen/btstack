@@ -167,6 +167,9 @@ foreach(EXAMPLE ${EXAMPLES})
     # Tell CMake/Emscripten to output .html instead of just .wasm/.js
     set_target_properties(${EXAMPLE} PROPERTIES SUFFIX ".html")
 
+    # hci_transport_h4_js_set_baudrate needs to be synchronous
+    # we use Asyncify but limit it to this function to reduce overhead
+    # note: adding ASYNCIFY_IGNORE_INDIRECT saves a few hundred bytes, but causes a hang
     target_link_options(${EXAMPLE} PRIVATE
         "-sEXPORTED_FUNCTIONS=[${EXPORTED_FUNCTIONS_STR}]"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
