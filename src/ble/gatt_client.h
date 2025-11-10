@@ -171,8 +171,6 @@ typedef enum {
 } gatt_client_service_query_state_t;
 
 typedef enum {
-    GATT_CLIENT_CACHING_DISCOVER_GATT_SERVICE_W2_SEND,
-    GATT_CLIENT_CACHING_DISCOVER_GATT_SERVICE_W4_DONE,
     GATT_CLIENT_CACHING_DISCOVER_CHARACTERISTICS_W2_SEND,
     GATT_CLIENT_CACHING_DISCOVER_CHARACTERISTICS_W4_DONE,
     GATT_CLIENT_CACHING_SERVICE_CHANGED_WRITE_CCCD_W2_SEND,
@@ -185,8 +183,6 @@ typedef enum {
 #ifdef ENABLE_GATT_OVER_EATT
 typedef enum {
     GATT_CLIENT_EATT_IDLE,
-    GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W2_SEND,
-    GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W4_DONE,
     GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W2_SEND,
     GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_DONE,
     GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W2_SEND,
@@ -291,20 +287,23 @@ typedef struct gatt_client{
     // GATT Service Query
 #ifdef ENABLE_GATT_CLIENT_SERVICE_QUERY
     gatt_client_service_query_state_t service_query_state;
-#endif
 
-    // GATT Caching
-    gatt_client_caching_state_t caching_state;
     // GATT Service Info
     uint16_t                    gatt_service_start_group_handle;
     uint16_t                    gatt_service_end_group_handle;
+#endif
+
+#ifdef ENABLE_GATT_CLIENT_CACHING
+    // GATT Caching
+    gatt_client_caching_state_t caching_state;
+
     // - Service Changed
     uint16_t                    gatt_service_changed_value_handle;
     uint16_t                    gatt_service_changed_cccd_handle;
     uint16_t                    gatt_service_changed_end_handle;
     // - Database Hash
     uint16_t                    gatt_service_database_hash_value_handle;
-#ifdef ENABLE_GATT_CLIENT_CACHING
+
     uint8_t                     database_hash[16];
     uint16_t                    cache_id;
 #endif
