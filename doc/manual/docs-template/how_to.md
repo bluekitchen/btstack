@@ -106,7 +106,7 @@ BTstack properties:
 | ENABLE_EXPLICIT_IO_<br>CAPABILITIES_REPLY                                     | Let application trigger sending IO Capabilities (Negative) Reply                                                            |
 | ENABLE_EXPLICIT_LINK_<br>KEY_REPLY                                            | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup                       |
 | ENABLE_GATT_CLIENT_<br>PAIRING                                                | Enable GATT Client to start pairing and retry operation on security error                                                   |
-| ENABLE_GATT_CLIENT<br>_SERVICE_CHANGED                                        | Enable GATT Client to register for Service Changed and Database Hash indications                                            |
+| ENABLE_GATT_CLIENT_<br>CACHING                                                | Enable GATT Service Client to cache Characteristics in TLV                                                                  |
 | ENABLE_H5                                                                     | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                     |
 | ENABLE_HCI_COMMAND_STATUS_<br>DISCARDED_FOR_FAILED_<br>CONNECTIONS WORKAROUND | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received        |
 | ENABLE_HCI_CONTROLLER_<br>TO_HOST_FLOW_CONTROL                                | Enable HCI Controller to Host Flow Control, see below                                                                       |
