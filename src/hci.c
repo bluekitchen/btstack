@@ -8233,16 +8233,9 @@ static void hci_sco_emit_can_send_now_event(hci_con_handle_t con_handle) {
 }
 
 static void hci_notify_if_sco_can_send_now(void){
+    // check outgoing buffer and transport
     if (hci_stack->hci_packet_buffer_reserved) return;
     if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return;
-
-    // old API without specific con handle
-    if (hci_stack->sco_waiting_for_can_send_now) {
-        if (hci_can_send_prepared_sco_packet_now()){
-            hci_stack->sco_waiting_for_can_send_now = 0;
-            hci_sco_emit_can_send_now_event(HCI_CON_HANDLE_INVALID);
-        }
-    }
 
     // new API using request to send request stored in connection
     btstack_linked_list_iterator_t it;
@@ -8253,8 +8246,23 @@ static void hci_notify_if_sco_can_send_now(void){
             bool can_send = hci_controller_can_send_sco_for_connection(connection);
             if (can_send) {
                 connection->sco_request_to_send = false;
+
+                // re-insert connection to implement basic round robin scheme
+                btstack_linked_list_iterator_remove(&it);
+                btstack_linked_list_add_tail(&hci_stack->connections, (btstack_linked_item_t *) connection);
+
+                /// emit event and exit iterator as we've modified the underlying list
                 hci_sco_emit_can_send_now_event(connection->con_handle);
+                return;
             }
+        }
+    }
+
+    // old API without specific con handle
+    if (hci_stack->sco_waiting_for_can_send_now) {
+        if (hci_can_send_prepared_sco_packet_now()){
+            hci_stack->sco_waiting_for_can_send_now = 0;
+            hci_sco_emit_can_send_now_event(HCI_CON_HANDLE_INVALID);
         }
     }
 }
