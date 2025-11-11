@@ -789,6 +789,17 @@ bool hci_can_send_acl_classic_packet_now(void){
     return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_ACL);
 }
 
+static bool hci_controller_can_send_sco_for_connection(hci_connection_t * connection) {
+    if (hci_have_usb_transport()) {
+        return hci_stack->sco_can_send_now;
+    } else if (hci_stack->synchronous_flow_control_enabled) {
+        return hci_number_free_sco_slots() > 0;
+    } else {
+        return connection->sco_tx_ready;
+    }
+}
+
+// Old
 bool hci_can_send_prepared_sco_packet_now(void){
     if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
     if (hci_have_usb_transport()){
@@ -807,6 +818,25 @@ void hci_request_sco_can_send_now_event(void){
     hci_stack->sco_waiting_for_can_send_now = 1;
     hci_notify_if_sco_can_send_now();
 }
+
+// New
+bool hci_can_send_sco_packet_now_for_con_handle(hci_con_handle_t con_handle) {
+    if (hci_stack->hci_packet_buffer_reserved) return false;
+    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (connection == NULL)  return false;
+
+    return connection->sco_tx_ready > 0;
+}
+
+void hci_request_sco_can_send_now_event_for_con_handle(hci_con_handle_t con_handle) {
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (connection != NULL) {
+        connection->sco_request_to_send = 1;
+        hci_notify_if_sco_can_send_now();
+    }
+}
+
 #endif
 
 // used for internal checks in l2cap.c
@@ -1023,13 +1053,6 @@ uint8_t hci_send_sco_packet_buffer(int size){
     if (!hci_stack->loopback_mode){
         hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);   // same for ACL and SCO
 
-        // check for free places on Bluetooth module
-        if (!hci_can_send_prepared_sco_packet_now()) {
-            log_error("hci_send_sco_packet_buffer called but no free SCO buffers on controller");
-            hci_release_packet_buffer();
-            return BTSTACK_ACL_BUFFERS_FULL;
-        }
-
         // track send packet in connection struct
         hci_connection_t *connection = hci_connection_for_handle( con_handle);
         if (!connection) {
@@ -1038,6 +1061,20 @@ uint8_t hci_send_sco_packet_buffer(int size){
             return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
         }
 
+        // check transport
+        if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) {
+            hci_release_packet_buffer();
+            return BTSTACK_ACL_BUFFERS_FULL;
+        }
+
+        // check for free places on Bluetooth module
+        if (!hci_controller_can_send_sco_for_connection(connection)) {
+            log_error("hci_send_sco_packet_buffer called but no free SCO buffers on controller");
+            hci_release_packet_buffer();
+            return BTSTACK_ACL_BUFFERS_FULL;
+        }
+
+        // counterpart to hci_controller_can_send_sco_for_connection
         if (hci_have_usb_transport()){
             // token used
             hci_stack->sco_can_send_now = false;
@@ -8186,17 +8223,39 @@ static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
 }
 
 #ifdef ENABLE_CLASSIC
+static void hci_sco_emit_can_send_now_event(hci_con_handle_t con_handle) {
+    uint8_t event[4];
+    event[0] = HCI_EVENT_SCO_CAN_SEND_NOW;
+    event[1] = 2;
+    little_endian_store_16(event, 2,  (uint16_t) con_handle);
+    hci_dump_btstack_event(event, sizeof(event));
+    hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hci_notify_if_sco_can_send_now(void){
-    // notify SCO sender if waiting
-    if (!hci_stack->sco_waiting_for_can_send_now) return;
-    if (hci_can_send_sco_packet_now()){
-        hci_stack->sco_waiting_for_can_send_now = 0;
-        uint8_t event[4];
-        event[0] = HCI_EVENT_SCO_CAN_SEND_NOW;
-        event[1] = 2;
-        little_endian_store_16(event, 2,  (uint16_t) HCI_CON_HANDLE_INVALID);
-        hci_dump_btstack_event(event, sizeof(event));
-        hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    if (hci_stack->hci_packet_buffer_reserved) return;
+    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return;
+
+    // old API without specific con handle
+    if (hci_stack->sco_waiting_for_can_send_now) {
+        if (hci_can_send_prepared_sco_packet_now()){
+            hci_stack->sco_waiting_for_can_send_now = 0;
+            hci_sco_emit_can_send_now_event(HCI_CON_HANDLE_INVALID);
+        }
+    }
+
+    // new API using request to send request stored in connection
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        hci_connection_t* connection = (hci_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->sco_request_to_send) {
+            bool can_send = hci_controller_can_send_sco_for_connection(connection);
+            if (can_send) {
+                connection->sco_request_to_send = false;
+                hci_sco_emit_can_send_now_event(connection->con_handle);
+            }
+        }
     }
 }
 

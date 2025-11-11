@@ -1516,12 +1516,30 @@ uint16_t hci_get_sco_packet_length(void);
 /**
  * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
  * @note HCI_EVENT_SCO_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
+ *       so packet handler should be ready to handle it.
+ * @param con_handle
+ */
+void hci_request_sco_can_send_now_event_for_con_handle(hci_con_handle_t con_handle);
+
+/**
+ * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
+ * @deprecated Please use hci_request_sco_can_send_now_event_for_con_handle instead
+ * @note HCI_EVENT_SCO_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it. con_handle will
+ *       be set to HCI_CON_HANDLE_INVALID in the event
  */
 void hci_request_sco_can_send_now_event(void);
 
 /**
  * @brief Check HCI packet buffer and if SCO packet can be sent to controller
+ * @param con_handle
+ * @return true if sco packet can be sent
+ */
+bool hci_can_send_sco_packet_now_for_con_handle(hci_con_handle_t con_handle);
+
+/**
+ * @brief Check HCI packet buffer and if SCO packet can be sent to controller
+ * @deprecated Please use hci_can_send_sco_packet_now_for_con_handle instead
  * @return true if sco packet can be sent
  */
 bool hci_can_send_sco_packet_now(void);
