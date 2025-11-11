@@ -192,7 +192,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     show_usage();
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    sco_demo_send(sco_handle);
+                    sco_demo_send(hci_event_sco_can_send_now_get_handle(event));
                     break;
                 case HCI_EVENT_HSP_META:
                     switch (hci_event_hsp_meta_get_subevent_code(event)) {
@@ -214,8 +214,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             } else {
                                 sco_handle = hsp_subevent_audio_connection_complete_get_sco_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                                hci_request_sco_can_send_now_event();
-                            } 
+                                hci_request_sco_can_send_now_event_for_con_handle(sco_handle);
+                            }
                             break;
                         case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
                             printf("Audio connection released.\n\n");

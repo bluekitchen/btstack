@@ -585,7 +585,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     hci_send_sco_packet_buffer(sco_packet_length);
 
     // request another send event
-    hci_request_sco_can_send_now_event();
+    hci_request_sco_can_send_now_event_for_con_handle(sco_handle);
 
     count_sent++;
     if ((count_sent % SCO_REPORT_PERIOD) == 0) {

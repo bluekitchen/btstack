@@ -472,7 +472,7 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * 
                     break;
 
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    sco_demo_send(sco_handle);
+                    sco_demo_send(hci_event_sco_can_send_now_get_handle(event));
                     break;
 
                 default:
@@ -514,7 +514,7 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                     break;
 
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    sco_demo_send(sco_handle);
+                    sco_demo_send(hci_event_sco_can_send_now_get_handle(event));
                     break;
                     
                 case HCI_EVENT_HFP_META:
@@ -557,7 +557,7 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                                     break;
                             }
                             sco_demo_set_codec(negotiated_codec);
-                            hci_request_sco_can_send_now_event();
+                            hci_request_sco_can_send_now_event_for_con_handle(sco_handle);
                             break;
 
                         case HFP_SUBEVENT_CALL_ANSWERED:
