@@ -620,11 +620,15 @@ typedef struct {
     uint32_t sco_established_ms;
     uint8_t  sco_tx_active;
 #endif
-    // generate sco can send now based on received packets
-    uint8_t  sco_tx_ready;
 
     // SCO payload length
     uint16_t sco_payload_length;
+
+    // SCO Voice Setting
+    uint16_t sco_voice_setting;
+
+    // generate sco can send now based on received packets
+    uint8_t  sco_tx_ready;
 
     // request role switch
     hci_role_t request_role;

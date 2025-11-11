@@ -7927,6 +7927,10 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
 
+            // store sco voice setting
+            conn->sco_voice_setting = little_endian_read_16(packet, 15);
+            log_info("Setup SCO, voice setting 0x%04x", conn->sco_voice_setting);
+
             // derive sco payload length from packet types
             hci_set_sco_payload_length_for_flipped_packet_types(conn, little_endian_read_16(packet, 18));
             break;
@@ -7945,9 +7949,13 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
             (void) memcpy(hci_stack->outgoing_addr, addr, 6);
 
-            // accept_synchronous_connection? Voice setting at offset 18
+            // accept_synchronous_connection? Voice setting at offset 19
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
+
+            // store sco voice setting
+            conn->sco_voice_setting = little_endian_read_16(packet, 19);
+            log_info("Accept SCO, voice setting 0x%04x", conn->sco_voice_setting);
 
             // derive sco payload length from packet types
             hci_set_sco_payload_length_for_flipped_packet_types(conn, little_endian_read_16(packet, 22));
