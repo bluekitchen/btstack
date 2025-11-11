@@ -64,6 +64,7 @@
 #define HID_REPORT_MODE_HID_CONTROL_POINT_ID    6
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static void hids_client_request_to_send_next_query(hids_client_t * client);
 
 static btstack_linked_list_t clients;
 static uint16_t hids_cid_counter = 0;
@@ -672,7 +673,9 @@ static void handle_report_event(uint8_t packet_type, uint16_t channel, uint8_t *
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size - offset);
 }
 
-static void hids_run_for_client(hids_client_t * client){
+static void hids_client_send_next_query(void * context){
+    hids_client_t *client = (hids_client_t *) context;
+
     uint8_t att_status;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
@@ -817,7 +820,7 @@ static void hids_run_for_client(hids_client_t * client){
                 }
             } else {
                 if (hids_client_report_next_notifications_configuration_report_index(client)){
-                    hids_run_for_client(client);
+                    hids_client_request_to_send_next_query(client);
                     break;
                 }
                 client->state = HIDS_CLIENT_STATE_CONNECTED;
@@ -845,7 +848,7 @@ static void hids_run_for_client(hids_client_t * client){
                     &handle_notification_event, client->con_handle, &characteristic);
             } else {
                 if (hids_client_report_next_notification_report_index(client)){
-                    hids_run_for_client(client);
+                    hids_client_request_to_send_next_query(client);
                     break;
                 }
                 client->state = HIDS_CLIENT_STATE_CONNECTED;
@@ -922,6 +925,14 @@ static void hids_run_for_client(hids_client_t * client){
     }
 }
 
+
+static void hids_client_request_to_send_next_query(hids_client_t * client){
+    client->write_request.callback = &hids_client_send_next_query;
+    client->write_request.context = client;
+    gatt_client_request_to_write_without_response(&client->write_request, client->con_handle);
+}
+
+
 static void hids_client_handle_can_write_without_reponse(void * context) {
     hids_client_t *client = (hids_client_t *) context;
     uint8_t att_status;
@@ -939,21 +950,21 @@ static void hids_client_handle_can_write_without_reponse(void * context) {
                 client->services[client->service_index].protocol_mode = client->required_protocol_mode;
                 if ((client->service_index + 1) < client->num_instances){
                     client->service_index++;
-                    hids_run_for_client(client);
+                    hids_client_request_to_send_next_query(client);
                     break;
                 }
             }
 
             // read UUIDS for external characteristics
             if (hids_client_report_map_uuid_query_init(client)){
-                hids_run_for_client(client);
+                hids_client_request_to_send_next_query(client);
                 break;
             }
 
             // discover characteristic descriptor for all Report characteristics,
             // then read value of characteristic descriptor to get Report ID
             if (hids_client_report_query_init(client)){
-                hids_run_for_client(client);
+                hids_client_request_to_send_next_query(client);
                 break;
             }
 
@@ -1414,7 +1425,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     }
 
     if (client != NULL){
-        hids_run_for_client(client);
+        hids_client_request_to_send_next_query(client);
     }
 }
 
@@ -1466,7 +1477,7 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
     client->client_handler = packet_handler; 
     client->state = HIDS_CLIENT_STATE_W2_QUERY_SERVICE;
 
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1512,7 +1523,7 @@ uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_
     client->report = report;
     client->report_len = report_len;
 
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1538,7 +1549,7 @@ uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_re
 #else
     client->state = HIDS_CLIENT_W2_SEND_GET_REPORT;
 #endif
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1561,7 +1572,7 @@ uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index
     client->handle = client->services[client->service_index].hid_information_value_handle;
 
     client->state = HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC;
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1583,7 +1594,7 @@ uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index){
     client->handle = client->services[client->service_index].protocol_mode_value_handle;
 
     client->state = HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC;
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1606,7 +1617,7 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_in
     client->value = (uint8_t)protocol_mode;
     
     client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1630,7 +1641,7 @@ static uint8_t hids_client_send_control_point_cmd(uint16_t hids_cid, uint8_t ser
     client->value = value;
     
     client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
-    hids_run_for_client(client);
+    hids_client_request_to_send_next_query(client);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1653,7 +1664,7 @@ uint8_t hids_client_enable_notifications(uint16_t hids_cid){
     }
     client->value = GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
     if (hids_client_notifications_configuration_init(client)){
-        hids_run_for_client(client);
+        hids_client_request_to_send_next_query(client);
         return ERROR_CODE_SUCCESS;
     }
     hids_emit_notifications_configuration(client);
@@ -1672,7 +1683,7 @@ uint8_t hids_client_disable_notifications(uint16_t hids_cid){
 
     client->value = GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE;
     if (hids_client_notifications_configuration_init(client)){
-        hids_run_for_client(client);
+        hids_client_request_to_send_next_query(client);
         return ERROR_CODE_SUCCESS;
     }
     hids_emit_notifications_configuration(client);

@@ -183,6 +183,7 @@ typedef struct {
     
     hid_service_client_state_t state;
     btstack_packet_handler_t   client_handler;
+    btstack_context_callback_registration_t write_request;
 
     uint8_t num_instances;
     hid_service_t services[MAX_NUM_HID_SERVICES];
