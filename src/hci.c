@@ -1294,22 +1294,22 @@ static void hci_connection_stop_timer(hci_connection_t * conn){
     btstack_run_loop_remove_timer(&conn->timeout);
 }
 
-static void hci_shutdown_connection(hci_connection_t *conn){
-    log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
+static void hci_shutdown_connection(hci_connection_t *connection){
+    log_info("Connection closed: handle 0x%x, %s", connection->con_handle, bd_addr_to_str(connection->address));
 
 #ifdef ENABLE_CLASSIC
 #if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
-    bd_addr_type_t addr_type = conn->address_type;
+    bd_addr_type_t addr_type = connection->address_type;
 #endif
 #ifdef HAVE_SCO_TRANSPORT
-    hci_con_handle_t con_handle = conn->con_handle;
+    hci_con_handle_t con_handle = connection->con_handle;
 #endif
 #endif
 
-    hci_connection_stop_timer(conn);
+    hci_connection_stop_timer(connection);
 
-    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
-    btstack_memory_hci_connection_free( conn );
+    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) connection);
+    btstack_memory_hci_connection_free( connection );
     
     // now it's gone
     hci_emit_nr_connections_changed();
@@ -1318,7 +1318,22 @@ static void hci_shutdown_connection(hci_connection_t *conn){
 #ifdef ENABLE_SCO_OVER_HCI
     // update SCO
     if ((addr_type == BD_ADDR_TYPE_SCO) && (hci_stack->hci_transport != NULL) && (hci_stack->hci_transport->set_sco_config != NULL)){
-        hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+        // get voice setting for remaining connection with maximal multiplier
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+        uint16_t voice_setting = 0;
+        int max_multiplier = 0;
+        while (btstack_linked_list_iterator_has_next(&it)) {
+            hci_connection_t * other_conn = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
+            if (other_conn == connection) continue;
+            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+            int multiplier = hci_sco_get_multiplier_for_voice_setting(connection->sco_voice_setting);
+            if (multiplier <= max_multiplier) continue;
+
+            max_multiplier = multiplier;
+            voice_setting = other_conn->sco_voice_setting;
+        }
+        hci_stack->hci_transport->set_sco_config(voice_setting, hci_number_sco_connections());
     }
 #endif
 #ifdef HAVE_SCO_TRANSPORT
@@ -3953,7 +3968,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_SCO_OVER_HCI
             // update SCO
             if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
-                hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+                hci_stack->hci_transport->set_sco_config(conn->sco_voice_setting, hci_number_sco_connections());
             }
             // trigger can send now
             if (hci_have_usb_transport()){
@@ -3969,7 +3984,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef HAVE_SCO_TRANSPORT
             // configure sco transport
             if (hci_stack->sco_transport != NULL){
-                sco_format_t sco_format = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? SCO_FORMAT_8_BIT : SCO_FORMAT_16_BIT;
+                sco_format_t sco_format = ((conn->sco_voice_setting & 0x03) == 0x03) ? SCO_FORMAT_8_BIT : SCO_FORMAT_16_BIT;
                 hci_stack->sco_transport->open(conn->con_handle, sco_format);
             }
 #endif
@@ -4815,7 +4830,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_SCO_OVER_HCI
     // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
     if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
-        if ((size == 83) && ((hci_stack->sco_voice_setting_active & 0x03) == 0x03)){
+        if ((size == 83) && ((conn->sco_voice_setting & 0x03) == 0x03)){
             packet[2] = 0x3c;
             memmove(&packet[3], &packet[23], 63);
             size = 63;
@@ -4829,8 +4844,8 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         if ((hci_stack->synchronous_flow_control_enabled == 0) && (conn->sco_payload_length != 0)) {
             // get multiplier 2 for CVSD (16-bit samples) and 1 for mSBC (8-bit datq)
             int multiplier;
-            if (((hci_stack->sco_voice_setting_active & 0x03) != 0x03) &&
-                ((hci_stack->sco_voice_setting_active & 0x20) == 0x20)) {
+            if (((conn->sco_voice_setting & 0x03) != 0x03) &&
+                ((conn->sco_voice_setting & 0x20) == 0x20)) {
                 multiplier = 2;
             } else {
                 multiplier = 1;
@@ -7936,10 +7951,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
             (void) memcpy(hci_stack->outgoing_addr, conn->address, 6);
 
-            // setup_synchronous_connection? Voice setting at offset 22
-            // TODO: compare to current setting if sco connection already active
-            hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
-
             // store sco voice setting
             conn->sco_voice_setting = little_endian_read_16(packet, 15);
             log_info("Setup SCO, voice setting 0x%04x", conn->sco_voice_setting);
@@ -7961,10 +7972,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // track outgoing connection to handle command status with error
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
             (void) memcpy(hci_stack->outgoing_addr, addr, 6);
-
-            // accept_synchronous_connection? Voice setting at offset 19
-            // TODO: compare to current setting if sco connection already active
-            hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
 
             // store sco voice setting
             conn->sco_voice_setting = little_endian_read_16(packet, 19);
@@ -9779,14 +9786,14 @@ static int hci_have_usb_transport(void){
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
 }
 
-static uint16_t hci_sco_packet_length_for_payload_length(uint16_t payload_size){
+static uint16_t hci_sco_packet_length_for_payload_length_and_voice_setting(uint16_t payload_size, uint16_t voice_setting){
     uint16_t sco_packet_length = 0;
 
 #if defined(ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as many bytes
     int multiplier;
-    if (((hci_stack->sco_voice_setting_active & 0x03) != 0x03) &&
-        ((hci_stack->sco_voice_setting_active & 0x20) == 0x20)) {
+    if (((voice_setting & 0x03) != 0x03) &&
+        ((voice_setting & 0x20) == 0x20)) {
         multiplier = 2;
     } else {
         multiplier = 1;
@@ -9822,7 +9829,7 @@ static uint16_t hci_sco_packet_length_for_payload_length(uint16_t payload_size){
 uint16_t hci_get_sco_packet_length_for_connection(hci_con_handle_t sco_con_handle){
     hci_connection_t * connection = hci_connection_for_handle(sco_con_handle);
     if (connection != NULL){
-        return hci_sco_packet_length_for_payload_length(connection->sco_payload_length);
+        return hci_sco_packet_length_for_payload_length_and_voice_setting(connection->sco_payload_length, connection->sco_voice_setting);
     }
     return 0;
 }
@@ -9833,7 +9840,7 @@ uint16_t hci_get_sco_packet_length(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         if ( connection->address_type == BD_ADDR_TYPE_SCO ) {
-            return hci_sco_packet_length_for_payload_length(connection->sco_payload_length);;
+            return hci_sco_packet_length_for_payload_length_and_voice_setting(connection->sco_payload_length, connection->sco_voice_setting);;
         }
     }
     return 0;

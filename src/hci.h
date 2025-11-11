@@ -1207,7 +1207,6 @@ typedef struct {
     } gap_pairing_input;
     
     uint16_t  sco_voice_setting;
-    uint16_t  sco_voice_setting_active;
 
     uint8_t   loopback_mode;
 
