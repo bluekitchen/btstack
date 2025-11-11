@@ -4821,6 +4821,40 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
 
+static uint16_t hci_sco_packet_length_for_payload_length_and_voice_setting(uint16_t payload_length, uint16_t voice_setting){
+#if !defined(ENABLE_SCO_OVER_HCI) && !defined (HAVE_SCO_TRANSPORT)
+    return 0;
+#endif
+
+    // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as many bytes
+    int multiplier = hci_sco_get_multiplier_for_voice_setting(voice_setting);
+
+#ifdef ENABLE_SCO_OVER_HCI
+    if (hci_have_usb_transport()){
+        // see Core Spec for H2 USB Transfer.
+        // 24 bytes/samples per connection
+        // @note multiple sco connections not supported currently
+        payload_length = 24;
+        btstack_assert(payload_length * multiplier <= hci_stack->sco_data_packet_length);
+    }
+#endif
+
+    // apply multiplier
+    uint16_t ideal_payload_length = payload_length * multiplier;
+
+    // assert that our SCO packets fit into the Controller buffers
+    uint16_t sco_payload_length = 0;
+    int divisor = 1;
+    do {
+        sco_payload_length = ideal_payload_length / divisor;
+        divisor++;
+    } while (sco_payload_length > hci_stack->sco_data_packet_length);
+
+    // Add 3 bytes SCO header
+    uint16_t sco_packet_length = sco_payload_length + 3;
+    return sco_packet_length;
+}
+
 static void sco_handler(uint8_t * packet, uint16_t size){
     // lookup connection struct
     hci_con_handle_t con_handle = READ_SCO_CONNECTION_HANDLE(packet);
@@ -9778,40 +9812,6 @@ static int hci_have_usb_transport(void){
     const char * transport_name = hci_stack->hci_transport->name;
     if (!transport_name) return 0;
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
-}
-
-static uint16_t hci_sco_packet_length_for_payload_length_and_voice_setting(uint16_t payload_size, uint16_t voice_setting){
-    uint16_t sco_packet_length = 0;
-
-#if defined(ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
-    // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as many bytes
-    int multiplier = hci_sco_get_multiplier_for_voice_setting(voice_setting);
-#endif
-
-#ifdef ENABLE_SCO_OVER_HCI
-    if (hci_have_usb_transport()){
-        // see Core Spec for H2 USB Transfer.
-        // 3 byte SCO header + 24 bytes per connection
-        // @note multiple sco connections not supported currently
-        sco_packet_length = 3 + 24 * multiplier;
-    } else {
-        // 3 byte SCO header + SCO packet length over the air
-        sco_packet_length = 3 + payload_size * multiplier;
-        // assert that it still fits inside an SCO buffer
-        if (sco_packet_length > (hci_stack->sco_data_packet_length + 3)){
-            sco_packet_length = 3 + hci_stack->sco_data_packet_length;
-        }
-    }
-#endif
-#ifdef HAVE_SCO_TRANSPORT
-    // 3 byte SCO header + SCO packet length over the air
-    sco_packet_length = 3 + payload_size * multiplier;
-    // assert that it still fits inside an SCO buffer
-    if (sco_packet_length > (hci_stack->sco_data_packet_length + 3)){
-        sco_packet_length = 3 + hci_stack->sco_data_packet_length;
-    }
-#endif
-    return sco_packet_length;
 }
 
 uint16_t hci_get_sco_packet_length_for_connection(hci_con_handle_t sco_con_handle){
