@@ -8191,7 +8191,10 @@ static void hci_notify_if_sco_can_send_now(void){
     if (!hci_stack->sco_waiting_for_can_send_now) return;
     if (hci_can_send_sco_packet_now()){
         hci_stack->sco_waiting_for_can_send_now = 0;
-        uint8_t event[2] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
+        uint8_t event[4];
+        event[0] = HCI_EVENT_SCO_CAN_SEND_NOW;
+        event[1] = 2;
+        little_endian_store_16(event, 2,  (uint16_t) HCI_CON_HANDLE_INVALID);
         hci_dump_btstack_event(event, sizeof(event));
         hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
     }
