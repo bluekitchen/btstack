@@ -4843,13 +4843,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
         if ((hci_stack->synchronous_flow_control_enabled == 0) && (conn->sco_payload_length != 0)) {
             // get multiplier 2 for CVSD (16-bit samples) and 1 for mSBC (8-bit datq)
-            int multiplier;
-            if (((conn->sco_voice_setting & 0x03) != 0x03) &&
-                ((conn->sco_voice_setting & 0x20) == 0x20)) {
-                multiplier = 2;
-            } else {
-                multiplier = 1;
-            }
+            int multiplier = hci_sco_get_multiplier_for_voice_setting(conn->sco_voice_setting);
 
             // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets
             uint8_t max_sco_packets = (uint8_t) btstack_min(2 * multiplier * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
@@ -9791,13 +9785,7 @@ static uint16_t hci_sco_packet_length_for_payload_length_and_voice_setting(uint1
 
 #if defined(ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as many bytes
-    int multiplier;
-    if (((voice_setting & 0x03) != 0x03) &&
-        ((voice_setting & 0x20) == 0x20)) {
-        multiplier = 2;
-    } else {
-        multiplier = 1;
-    }
+    int multiplier = hci_sco_get_multiplier_for_voice_setting(voice_setting);
 #endif
 
 #ifdef ENABLE_SCO_OVER_HCI
