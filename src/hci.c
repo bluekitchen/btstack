@@ -1279,9 +1279,6 @@ static void acl_handler(uint8_t *packet, uint16_t size){
 
 static void hci_connection_stop_timer(hci_connection_t * conn){
     btstack_run_loop_remove_timer(&conn->timeout);
-#ifdef ENABLE_CLASSIC
-    btstack_run_loop_remove_timer(&conn->timeout_sco);
-#endif
 }
 
 static void hci_shutdown_connection(hci_connection_t *conn){

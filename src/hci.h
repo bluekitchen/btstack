@@ -620,7 +620,7 @@ typedef struct {
     uint32_t sco_established_ms;
     uint8_t  sco_tx_active;
 #endif
-    // generate sco can send now based on received packets, using timeout below
+    // generate sco can send now based on received packets
     uint8_t  sco_tx_ready;
 
     // SCO payload length
@@ -629,7 +629,6 @@ typedef struct {
     // request role switch
     hci_role_t request_role;
 
-    btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
     // authentication and other errands
