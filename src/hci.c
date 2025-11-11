@@ -4890,11 +4890,12 @@ static void sco_handler(uint8_t * packet, uint16_t size){
                 }
             } else {
                 // calculate how many packets can be sent for one received one
-                // - remove sco header and multiplier
-                // - divide by acutal payload length
+                // - remove sco header
+                // - divide by size of outgoing sco packets
                 // - avoid overrun
-                int received_payload_len = (size - 3) / multiplier;
-                int new_credits = received_payload_len / conn->sco_payload_length;
+                int received_payload_len = size - 3;
+                int outgoing_payload_len = hci_sco_packet_length_for_payload_length_and_voice_setting(conn->sco_payload_length, conn->sco_voice_setting) - 3;
+                int new_credits = received_payload_len / outgoing_payload_len;
                 if ((conn->sco_tx_ready + new_credits)< max_sco_packets){
                     conn->sco_tx_ready += new_credits;
                 } else {
