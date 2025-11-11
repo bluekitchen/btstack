@@ -627,6 +627,9 @@ typedef struct {
     // SCO Voice Setting
     uint16_t sco_voice_setting;
 
+    // SCO Request to Send
+    bool sco_request_to_send;
+
     // generate sco can send now based on received packets
     uint8_t  sco_tx_ready;
 
