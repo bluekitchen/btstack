@@ -1000,6 +1000,19 @@ uint8_t hci_send_acl_packet_buffer(int size){
 }
 
 #ifdef ENABLE_CLASSIC
+
+static int hci_sco_get_multiplier_for_voice_setting(uint16_t voice_setting) {
+    // get multiplier 2 for CVSD (16-bit samples) and 1 for mSBC (8-bit datq)
+    int multiplier;
+    if (((voice_setting & 0x03) != 0x03) &&
+        ((voice_setting & 0x20) == 0x20)) {
+        multiplier = 2;
+        } else {
+            multiplier = 1;
+        }
+    return multiplier;
+}
+
 // pre: caller has reserved the packet buffer
 uint8_t hci_send_sco_packet_buffer(int size){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
