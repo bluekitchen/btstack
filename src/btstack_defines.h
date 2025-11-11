@@ -1180,7 +1180,8 @@ typedef SSIZE_T ssize_t;
 #define HCI_EVENT_CIS_CAN_SEND_NOW                         0x6Cu
 
 /**
- * @format
+ * @format H
+ * @param handle
  */
 #define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6Fu
 

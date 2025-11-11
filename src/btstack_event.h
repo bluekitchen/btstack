@@ -1758,6 +1758,15 @@ static inline uint8_t hci_event_cis_can_send_now_get_group_complete(const uint8_
     return event[7];
 }
 
+/**
+ * @brief Get field handle from event HCI_EVENT_SCO_CAN_SEND_NOW
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_sco_can_send_now_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
 
 /**
  * @brief Get field status from event L2CAP_EVENT_CHANNEL_OPENED
