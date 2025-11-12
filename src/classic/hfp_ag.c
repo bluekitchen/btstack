@@ -903,6 +903,34 @@ static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t co
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
+void hfp_ag_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
+    btstack_assert(hfp_connection != NULL);
+
+    uint8_t event[7];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED;
+
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = status; // 0:success
+    event[6] = evra_supported;
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void hfp_ag_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
+    btstack_assert(hfp_connection != NULL);
+
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED;
+
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = status; // 0:success
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hfp_ag_emit_vra_enhanced_state_activated(hfp_connection_t * hfp_connection, uint8_t status){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     
@@ -1073,7 +1101,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_SCO_CONNECTED:
                     if (hfp_connection->emit_vra_on_after_audio_established){
                         hfp_connection->emit_vra_on_after_audio_established = false;
-                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
+                        hfp_ag_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
                     }
                     break;
                 case HFP_AG_VRA_EVENT_AG_DEACTIVATE:
@@ -1150,7 +1178,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                         hfp_connection->emit_vra_on_after_audio_established = false;
                         hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_voice_recognition_cmd(hfp_connection, 1);
-                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
+                        hfp_ag_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
                         return true;
                     }
                     if (hfp_ag_setup_audio_connection(hfp_connection) == ERROR_CODE_SUCCESS) {
@@ -1162,7 +1190,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     }
 
                     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
-                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
+                    hfp_ag_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
                     return false;
 
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
@@ -1182,7 +1210,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                         hfp_connection->emit_vra_on_after_audio_established = false;
                         hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
+                        hfp_ag_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
                         return true;
                     }
                     if (hfp_ag_setup_audio_connection(hfp_connection) == ERROR_CODE_SUCCESS) {
@@ -1195,7 +1223,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
 
                     hfp_ag_send_error(hfp_connection->rfcomm_cid);
                     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
-                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
+                    hfp_ag_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, hfp_ag_enhanced_vra_flag_supported(hfp_connection));
                     return true;
 
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
@@ -1217,7 +1245,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                         // release audio connection only if it was opened after audio VR activated
                         hfp_connection->release_audio_connection = 1;
                     }
-                    hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    hfp_ag_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     return true;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
@@ -1238,7 +1266,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                         // release audio connection only if it was opened after audio VR activated
                         hfp_connection->release_audio_connection = 1;
                     }
-                    hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    hfp_ag_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     return true;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
