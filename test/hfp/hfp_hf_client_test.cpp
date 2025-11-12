@@ -79,7 +79,7 @@ static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
 static uint8_t call_termiated = 0;
 
-
+#ifdef DUMPVRA_STATE
 static void dump_vra_state(hfp_connection_t * connection, const char * desc){
     const char * vra_state[] = {
             "VOICE_RECOGNITION_OFF",
@@ -100,6 +100,7 @@ static void dump_vra_state(hfp_connection_t * connection, const char * desc){
            vra_state[connection->vra_engine_requested_state],
            connection->emit_vra_on_after_audio_established, connection->ok_pending);
 }
+#endif
 
 // static int supported_features_with_codec_negotiation = 438;
 static int supported_features_with_codec_negotiation =
