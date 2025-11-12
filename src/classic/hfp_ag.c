@@ -851,6 +851,17 @@ static bool hfp_ag_voice_recognition_enhanced_session_active(hfp_connection_t * 
     return hfp_connection->vra_engine_current_state == HFP_VRA_ENHANCED_ACTIVE;
 }
 
+static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = value;
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
@@ -2297,7 +2308,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         const char * message = hfp_connection->send_custom_message;
         hfp_connection->send_custom_message = NULL;
         send_str_over_rfcomm(hfp_connection->rfcomm_cid, message);
-        hfp_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, ERROR_CODE_SUCCESS);
+        hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, ERROR_CODE_SUCCESS);
         return 1;
     }
 
@@ -2690,7 +2701,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                     hfp_ag_queue_error(hfp_connection);
                     status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 }
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
+                hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
                 break;
             case HFP_CMD_CALL_ANSWERED:
                 hfp_connection->command = HFP_CMD_NONE;
@@ -2759,13 +2770,13 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_ag_queue_ok(hfp_connection);
                 log_info("HF speaker gain = %u", hfp_connection->speaker_gain);
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_connection->speaker_gain);
+                hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_connection->speaker_gain);
                 break;
             case HFP_CMD_SET_MICROPHONE_GAIN:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_ag_queue_ok(hfp_connection);
                 log_info("HF microphone gain = %u", hfp_connection->microphone_gain);
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_connection->microphone_gain);
+                hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_connection->microphone_gain);
                 break;
             case HFP_CMD_CUSTOM_MESSAGE:
                 hfp_connection->command = HFP_CMD_NONE;
