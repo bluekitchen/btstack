@@ -426,7 +426,7 @@ static int hfp_ag_send_cmd_via_generator(uint16_t cid,
     }
     rfcomm_send_prepared(cid, offset);
 #ifdef ENABLE_HFP_AT_MESSAGES
-    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, (char *) data);
+    hfp_ag_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, (char *) data);
 #endif
     return *inout_segment;
 }
@@ -870,6 +870,23 @@ void hfp_ag_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_s
     event[2] = event_subtype;
     little_endian_store_16(event, 3, acl_handle);
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+    btstack_assert(hfp_connection != NULL);
+#ifdef ENABLE_HFP_AT_MESSAGES
+    uint8_t event[256];
+#else
+    uint8_t event[40];
+#endif
+    uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 4 + string_len;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    memcpy((char*)&event[5], value, string_len);
+    event[5 + string_len] = 0;
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 6 + string_len);
 }
 
 static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
@@ -2047,7 +2064,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
 
             hfp_connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
-            hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &hfp_connection->line_buffer[3]);
+            hfp_ag_emit_string_event(hfp_connection, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &hfp_connection->line_buffer[3]);
             break;
 
         case HFP_AG_OUTGOING_CALL_INITIATED_BY_AG:
@@ -2096,7 +2113,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             
             if (strlen(last_dialed_number) > 0){
                 log_info("Last number exists: accept call");
-                hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, last_dialed_number);
+                hfp_ag_emit_string_event(hfp_connection, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, last_dialed_number);
             } else {
                 log_info("log_infoLast number missing: reject call");
                 hfp_ag_handle_reject_outgoing_call();
@@ -2573,7 +2590,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
 
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
-    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
+    hfp_ag_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
 #endif
 
     // process messages byte-wise
@@ -2694,7 +2711,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 char buffer[2];
                 buffer[0] = (char) hfp_connection->ag_dtmf_code;
                 buffer[1] = 0;
-                hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, buffer);
+                hfp_ag_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, buffer);
                 break;
             }
             case HFP_CMD_HF_REQUEST_PHONE_NUMBER:
