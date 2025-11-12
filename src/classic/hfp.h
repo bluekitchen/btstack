@@ -842,11 +842,6 @@ void hfp_set_hf_callback(btstack_packet_handler_t callback);
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
 void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators);
 
-void hfp_set_hf_sco_established(void (*callback)(hfp_connection_t * hfp_connection));
-void hfp_set_hf_sco_released(void (*callback)(hfp_connection_t * hfp_connection));
-void hfp_set_ag_sco_established(void (*callback)(hfp_connection_t * hfp_connection));
-void hfp_set_ag_sco_released(void (*callback)(hfp_connection_t * hfp_connection));
-
 void hfp_init(void);
 void hfp_deinit(void);
 

@@ -84,11 +84,6 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
-static void (*hfp_hf_sco_established)(hfp_connection_t * hfp_connection);
-static void (*hfp_hf_sco_released)(hfp_connection_t * hfp_connection);
-static void (*hfp_ag_sco_established)(hfp_connection_t * hfp_connection);
-static void (*hfp_ag_sco_released)(hfp_connection_t * hfp_connection);
-
 static uint8_t          hfp_hf_indicators_nr;
 static const uint16_t * hfp_hf_indicators;
 
@@ -1010,18 +1005,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
 
-            switch (hfp_connection->local_role){
-                case HFP_ROLE_AG:
-                    hfp_ag_sco_established(hfp_connection);
-                    break;
-                case HFP_ROLE_HF:
-                    hfp_hf_sco_established(hfp_connection);
-                    break;
-                default:
-                    btstack_unreachable();
-                    break;
-            }
-
             hfp_sco_establishment_active = NULL;
 
             hfp_emit_sco_connection_established(hfp_connection, status,
@@ -1054,19 +1037,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->release_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_audio_connection_released(hfp_connection, handle);
-
-                switch (hfp_connection->local_role) {
-                    case HFP_ROLE_HF:
-                        hfp_hf_sco_released(hfp_connection);
-                        break;
-                    case HFP_ROLE_AG:
-                        hfp_ag_sco_released(hfp_connection);
-                        break;
-                    default:
-                        btstack_unreachable();
-                        break;
-                }
-
 
                 if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
                     hfp_vra_handle_disconnect(hfp_connection);
@@ -2572,22 +2542,6 @@ void hfp_h2_sync_process(hfp_h2_sync_t *hfp_h2_sync, bool bad_frame, const uint8
             }
         }
     }
-}
-
-void hfp_set_hf_sco_established(void (*callback)(hfp_connection_t * hfp_connection)){
-    hfp_hf_sco_established = callback;
-}
-
-void hfp_set_hf_sco_released(void (*callback)(hfp_connection_t * hfp_connection)){
-    hfp_hf_sco_released = callback;
-}
-
-void hfp_set_ag_sco_established(void (*callback)(hfp_connection_t * hfp_connection)){
-    hfp_ag_sco_established = callback;
-}
-
-void hfp_set_ag_sco_released(void (*callback)(hfp_connection_t * hfp_connection)){
-    hfp_ag_sco_released = callback;
 }
 
 #ifdef ENABLE_TESTING_SUPPORT

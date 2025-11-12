@@ -943,23 +943,34 @@ static void hfp_ag_emit_custom_command_event(hfp_connection_t * hfp_connection){
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 7 + line_len);
 }
 
-static void hfp_ag_sco_established(hfp_connection_t * hfp_connection){
-    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_CONNECTED);
-}
-static void hfp_ag_sco_released(hfp_connection_t * hfp_connection){
-    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_DISCONNECTED);
-}
-
 static void hfp_ag_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
-    UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
-    UNUSED(packet);
-
-    // forward HFP Meta events to user
+    hci_con_handle_t acl_handle;
+    hfp_connection_t * hfp_connection;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             if (hci_event_packet_get_type(packet) == HCI_EVENT_HFP_META) {
+                // track SCO established / closed
+                switch (hci_event_hfp_meta_get_subevent_code(packet)) {
+                    case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
+                        if (hfp_subevent_audio_connection_established_get_status(packet) == ERROR_CODE_SUCCESS) {
+                            acl_handle = hfp_subevent_audio_connection_established_get_acl_handle(packet);
+                            hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle, HFP_ROLE_AG);
+                            btstack_assert(hfp_connection != NULL);
+                            hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_CONNECTED);
+                        }
+                        break;
+                    case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
+                        acl_handle = hfp_subevent_audio_connection_released_get_acl_handle(packet);
+                        hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle, HFP_ROLE_AG);
+                        btstack_assert(hfp_connection != NULL);
+                        hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_DISCONNECTED);
+                        break;
+                    default:
+                        break;
+                }
+                // forward HFP Meta events to user
                 (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, packet, size);
             }
             break;
@@ -2878,8 +2889,6 @@ void hfp_ag_init(uint8_t rfcomm_channel_nr){
 
     hfp_gsm_init();
     hfp_set_ag_callback(hfp_ag_hci_event_handler);
-    hfp_set_ag_sco_established(hfp_ag_sco_established);
-    hfp_set_ag_sco_released(hfp_ag_sco_released);
 }
 
 void hfp_ag_deinit(void){
