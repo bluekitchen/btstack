@@ -862,7 +862,7 @@ static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_s
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_ag_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
+static void hfp_ag_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     uint8_t event[5];
     event[0] = HCI_EVENT_HFP_META;
@@ -872,7 +872,7 @@ void hfp_ag_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_s
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
     btstack_assert(hfp_connection != NULL);
 #ifdef ENABLE_HFP_AT_MESSAGES
     uint8_t event[256];
@@ -904,7 +904,7 @@ static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t co
 }
 
 
-void hfp_ag_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
+static void hfp_ag_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
     btstack_assert(hfp_connection != NULL);
 
     uint8_t event[7];
@@ -918,7 +918,7 @@ void hfp_ag_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, ui
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_ag_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
+static void hfp_ag_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
     btstack_assert(hfp_connection != NULL);
 
     uint8_t event[6];
