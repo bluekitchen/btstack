@@ -163,6 +163,16 @@ static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_s
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void hfp_hf_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    uint8_t event[5];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, acl_handle);
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hfp_hf_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
@@ -1567,9 +1577,9 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
             bool ringing_new = hfp_is_ringing(new_hf_callsetup_status);
             if (ringing_old != ringing_new){
                 if (ringing_new){
-                    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
+                    hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
                 } else {
-                    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
+                    hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
                 }
             }
             hfp_connection->hf_callsetup_status = new_hf_callsetup_status;
@@ -1581,9 +1591,9 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
             hfp_call_status_t new_hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
             if (hfp_connection->hf_call_status != new_hf_call_status){
                 if (new_hf_call_status == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
-                    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
+                    hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
                 } else {
-                    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
+                    hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
                 }
             }
             hfp_connection->hf_call_status = new_hf_call_status;
@@ -1671,7 +1681,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
             hfp_hf_switch_on_ag_response(hfp_connection, ERROR_CODE_SUCCESS);
             break;
         case HFP_CMD_RING:
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
+            hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
             hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
