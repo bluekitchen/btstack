@@ -685,7 +685,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 
 static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
 
     // in-band ring tone is active if supported
     hfp_connection->ag_in_band_ring_tone_active = has_in_band_ring_tone();
@@ -713,6 +712,9 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
                 break;
         }
     }    
+
+    // notify user
+    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){

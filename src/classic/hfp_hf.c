@@ -1327,8 +1327,6 @@ static void hfp_hf_apple_trigger_send(void){
 static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
-    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
-
     uint8_t i;
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         hfp_emit_ag_indicator_mapping_event(hfp_connection, &hfp_connection->ag_indicators[i]);
@@ -1347,14 +1345,17 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
 
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
-    hfp_connection->send_speaker_gain = 1;
-    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
     hfp_connection->microphone_gain = hfp_hf_microphone_gain;
+    hfp_connection->send_speaker_gain = 1;
     hfp_connection->send_microphone_gain = 1;
-    hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
 
     // restore call status
     hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
+
+    // notify user
+    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
+    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
 }
 
 static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
