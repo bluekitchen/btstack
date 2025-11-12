@@ -152,6 +152,20 @@ static hfp_connection_t * get_hfp_hf_connection_context_for_acl_handle(uint16_t 
 
 /* emit functions */
 
+static void hfp_hf_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = status; // status 0 == OK
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_connection, uint8_t status){
     if (hfp_hf_callback == NULL) return;
     uint16_t bnip_number_len = btstack_min((uint16_t) strlen(hfp_connection->bnip_number), sizeof(hfp_connection->bnip_number)-1);
@@ -1351,7 +1365,8 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
     hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
 
     // notify user
-    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_hf_emit_slc_connection_event(ERROR_CODE_SUCCESS, hfp_connection->acl_handle, hfp_connection->remote_addr);
+
     hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
     hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
 }
