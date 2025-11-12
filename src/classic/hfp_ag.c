@@ -67,11 +67,11 @@
 #include "classic/sdp_util.h"
 
 // private prototypes
+static void hfp_ag_run(void);
 static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection);
 static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection);
 static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
-
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
 
 // public prototypes
@@ -93,8 +93,6 @@ static const char hfp_ag_default_service_name[] = "Voice gateway";
 static btstack_packet_handler_t hfp_ag_callback;
 
 static bool (*hfp_ag_custom_call_sm_handler)(hfp_ag_call_event_t event);
-
-static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
 static uint16_t hfp_ag_supported_features;
 
@@ -950,6 +948,26 @@ static void hfp_ag_sco_established(hfp_connection_t * hfp_connection){
 }
 static void hfp_ag_sco_released(hfp_connection_t * hfp_connection){
     hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_DISCONNECTED);
+}
+
+static void hfp_ag_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+    UNUSED(packet);
+
+    // forward HFP Meta events to user
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            if (hci_event_packet_get_type(packet) == HCI_EVENT_HFP_META) {
+                (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, packet, size);
+            }
+            break;
+        default:
+            break;
+    }
+
+    hfp_ag_run();
 }
 
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event){
@@ -2796,11 +2814,6 @@ static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
     hfp_ag_run();
 }
 
-static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_handle_hci_event(packet_type, channel, packet, size);
-    hfp_ag_run();
-}
-
 void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
     if (codecs_nr > HFP_MAX_NUM_CODECS) return;
@@ -2858,16 +2871,13 @@ void hfp_ag_init(uint8_t rfcomm_channel_nr){
     hfp_ag_subscriber_numbers = NULL;
     hfp_ag_subscriber_numbers_count = 0;
 
-    hfp_ag_hci_event_callback_registration.callback = &hfp_ag_hci_event_packet_handler;
-    hci_add_event_handler(&hfp_ag_hci_event_callback_registration);
-
     rfcomm_register_service(&hfp_ag_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
 
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_ag_rfcomm_packet_handler(&hfp_ag_rfcomm_packet_handler);
 
     hfp_gsm_init();
-
+    hfp_set_ag_callback(hfp_ag_hci_event_handler);
     hfp_set_ag_sco_established(hfp_ag_sco_established);
     hfp_set_ag_sco_released(hfp_ag_sco_released);
 }
@@ -2886,7 +2896,6 @@ void hfp_ag_deinit(void){
     hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
     (void) memset(&hfp_ag_response_and_hold_state, 0, sizeof(hfp_response_and_hold_state_t));
     hfp_ag_subscriber_numbers = NULL;
-    (void) memset(&hfp_ag_hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
     hfp_ag_custom_call_sm_handler = NULL;
 }
 

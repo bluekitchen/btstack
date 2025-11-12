@@ -70,8 +70,6 @@ static const char hfp_hf_default_service_name[] = "Hands-Free unit";
 // higher layer callbacks
 static btstack_packet_handler_t hfp_hf_callback;
 
-static btstack_packet_callback_registration_t hfp_hf_hci_event_callback_registration;
-
 static uint16_t hfp_hf_supported_features;
 static uint8_t  hfp_hf_codecs_nr;
 static uint8_t  hfp_hf_codecs[HFP_MAX_NUM_CODECS];
@@ -1733,11 +1731,6 @@ static void hfp_hf_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
     hfp_hf_run();
 }
 
-static void hfp_hf_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_handle_hci_event(packet_type, channel, packet, size);
-    hfp_hf_run();
-}
-
 static void hfp_hf_set_defaults(void){
     hfp_hf_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_hf_codecs_nr = 0;
@@ -1772,6 +1765,26 @@ static void hfp_hf_sco_released(hfp_connection_t * hfp_connection){
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_SCO_DISCONNECTED);
 }
 
+static void hfp_hf_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+    UNUSED(packet);
+
+    // forward HFP Meta events to user
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            if (hci_event_packet_get_type(packet) == HCI_EVENT_HFP_META) {
+                (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, packet, size);
+            }
+            break;
+        default:
+            break;
+    }
+
+    hfp_hf_run();
+}
+
 uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
     uint8_t status = rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
     if (status != ERROR_CODE_SUCCESS){
@@ -1781,9 +1794,7 @@ uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
     hfp_init();
     hfp_hf_set_defaults();
 
-    hfp_hf_hci_event_callback_registration.callback = &hfp_hf_hci_event_packet_handler;
-    hci_add_event_handler(&hfp_hf_hci_event_callback_registration);
-
+    hfp_set_hf_callback(hfp_hf_hci_event_handler);
     hfp_set_hf_sco_established(hfp_hf_sco_established);
     hfp_set_hf_sco_released(hfp_hf_sco_released);
 
@@ -1798,7 +1809,6 @@ void hfp_hf_deinit(void){
 
     hfp_hf_callback = NULL;
     hfp_hf_apple_vendor_id = 0;
-    (void) memset(&hfp_hf_hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
     (void) memset(hfp_hf_phone_number, 0, sizeof(hfp_hf_phone_number));
 }
 
@@ -2586,9 +2596,7 @@ void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_comma
 
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
 	btstack_assert(callback != NULL);
-    
 	hfp_hf_callback = callback;
-	hfp_set_hf_callback(callback);
 }
 
 #ifdef ENABLE_TESTING_SUPPORT

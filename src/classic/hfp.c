@@ -2365,8 +2365,12 @@ void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators) {
     hfp_hf_indicators_nr = indicators_nr;
     hfp_hf_indicators = indicators;
 }
+static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
 void hfp_init(void){
+    hfp_ag_hci_event_callback_registration.callback = &hfp_handle_hci_event;
+    hci_add_event_handler(&hfp_ag_hci_event_callback_registration);
+
     hfp_allowed_sco_packet_types = SCO_PACKET_TYPES_ALL;
 }
 
