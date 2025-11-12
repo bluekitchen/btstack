@@ -2369,8 +2369,8 @@ static int hfp_ag_run_ring_and_clip(hfp_connection_t *hfp_connection){
         if (hfp_connection->ag_ring){
             hfp_connection->ag_ring = 0;
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             hfp_ag_send_ring(hfp_connection->rfcomm_cid);
+            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             return 1;
         }
 
