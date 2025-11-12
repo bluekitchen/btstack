@@ -862,6 +862,16 @@ static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_s
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void hfp_ag_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    uint8_t event[5];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, acl_handle);
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
@@ -1628,7 +1638,7 @@ static void hfp_ag_trigger_reject_call(void){
         if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
             connection->release_audio_connection = 1;
         }
-        hfp_emit_simple_event(connection, HFP_SUBEVENT_CALL_TERMINATED);
+        hfp_ag_emit_simple_event(connection, HFP_SUBEVENT_CALL_TERMINATED);
         hfp_ag_run_for_context(connection);
         rfcomm_request_can_send_now_event(connection->rfcomm_cid);
     }    
@@ -1653,7 +1663,7 @@ static void hfp_ag_trigger_terminate_call(void){
             hfp_connection->release_audio_connection = 1;
         }
         
-        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
+        hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
         hfp_ag_run_for_context(hfp_connection);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
     }
@@ -1826,7 +1836,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             hfp_gsm_handler(HFP_AG_HELD_CALL_JOINED_BY_AG, 0, 0, NULL);
                             hfp_ag_set_callheld_indicator();
                             hfp_ag_transfer_callheld_state();
-                            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CONFERENCE_CALL);
+                            hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_CONFERENCE_CALL);
                             break;
                         default:
                             break;
@@ -1848,7 +1858,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             hfp_ag_hf_accept_call(hfp_connection);
                             hfp_ag_queue_ok(hfp_connection);
                             log_info("HF answers call, accept call by GSM");
-                            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
+                            hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
                             break;
                         default:
                             break;
@@ -2145,7 +2155,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 hfp_ag_transfer_callheld_state();
             }
             hfp_ag_hf_stop_ringing(hfp_connection);
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
+            hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
             break;
         }
 
@@ -2213,7 +2223,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 hfp_gsm_handler(HFP_AG_CALL_HOLD_ADD_HELD_CALL, 0, 0, NULL);
                 hfp_ag_set_callheld_indicator();
                 hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, callheld_indicator_index, 1);
-                hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CONFERENCE_CALL);
+                hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_CONFERENCE_CALL);
             }
             hfp_connection->call_state = HFP_CALL_ACTIVE;
             break;
@@ -2396,7 +2406,7 @@ static int hfp_ag_run_ring_and_clip(hfp_connection_t *hfp_connection){
             hfp_connection->ag_ring = 0;
             hfp_connection->command = HFP_CMD_NONE;
             hfp_ag_send_ring(hfp_connection->rfcomm_cid);
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
+            hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             return 1;
         }
 
@@ -2689,7 +2699,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
             }
             case HFP_CMD_HF_REQUEST_PHONE_NUMBER:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG);
+                hfp_ag_emit_simple_event(hfp_connection, HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG);
                 break;
             case HFP_CMD_TURN_OFF_EC_AND_NR:
                 hfp_connection->command = HFP_CMD_NONE;
