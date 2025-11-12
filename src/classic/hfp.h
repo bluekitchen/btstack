@@ -866,9 +866,7 @@ void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8
  * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
  */
 void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status);
-
-void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
-
+    
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
