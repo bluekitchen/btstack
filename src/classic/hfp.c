@@ -897,6 +897,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     hfp_connection_t * hfp_connection = NULL;
     uint8_t status;
 
+    bool forward_event_to_all = false;
+
     log_debug("HFP HCI event handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
     switch (hci_event_packet_get_type(packet)) {
@@ -923,12 +925,20 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     // configure SBC coded if needed
                     hfp_prepare_for_sco(hfp_connection);
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
+
+                    // trigger hfp run for role
+                    hfp_emit_event_for_context(hfp_connection, packet, size);
                     break;
                 default:
                     break;                    
             }            
             break;
-        
+
+        case HCI_EVENT_COMMAND_COMPLETE:
+            // to allow sending HCI Commands
+            forward_event_to_all = true;
+            break;
+
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
                 if (hfp_sco_establishment_active == NULL) break;
@@ -945,6 +955,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_emit_sco_connection_established(hfp_connection, status,
                                                     hfp_connection->negotiated_codec, 0, 0);
             }
+            // to allow sending HCI Commands
+            forward_event_to_all = true;
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
@@ -1063,6 +1075,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
         default:
             break;
+    }
+
+    if (forward_event_to_all) {
+        if (hfp_ag_callback != NULL) {
+            (*hfp_ag_callback)(packet_type, channel, packet, size);
+        }
+        if (hfp_hf_callback != NULL) {
+            (*hfp_hf_callback)(packet_type, channel, packet, size);
+        }
     }
 }
 
