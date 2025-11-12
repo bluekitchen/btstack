@@ -73,6 +73,7 @@ static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection);
 static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection);
 static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
+static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 // public prototypes
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
@@ -712,7 +713,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     }    
 
     // notify user
-    hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
+    hfp_ag_emit_slc_connection_event(ERROR_CODE_SUCCESS, hfp_connection->acl_handle, hfp_connection->remote_addr);
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){
@@ -848,6 +849,20 @@ static bool hfp_ag_voice_recognition_enhanced_session_active(hfp_connection_t * 
         return false;
     }
     return hfp_connection->vra_engine_current_state == HFP_VRA_ENHANCED_ACTIVE;
+}
+
+static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = status; // status 0 == OK
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void hfp_ag_emit_vra_enhanced_state_activated(hfp_connection_t * hfp_connection, uint8_t status){
