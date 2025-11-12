@@ -180,7 +180,7 @@ static void hfp_hf_emit_string_event(hfp_connection_t * hfp_connection, uint8_t 
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 6 + string_len);
 }
 
-void hfp_hf_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
+static void hfp_hf_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     uint8_t event[5];
     event[0] = HCI_EVENT_HFP_META;
@@ -315,7 +315,7 @@ static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connect
 }
 
 
-void hfp_hf_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
+static void hfp_hf_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
     btstack_assert(hfp_connection != NULL);
 
     uint8_t event[7];
@@ -329,7 +329,7 @@ void hfp_hf_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, ui
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_hf_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
+static void hfp_hf_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
     btstack_assert(hfp_connection != NULL);
 
     uint8_t event[6];
