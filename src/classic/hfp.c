@@ -464,13 +464,10 @@ void hfp_emit_sco_connection_established(hfp_connection_t *hfp_connection, uint8
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+#ifdef ENABLE_HFP_AT_MESSAGES
 static void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
     btstack_assert(hfp_connection != NULL);
-#ifdef ENABLE_HFP_AT_MESSAGES
     uint8_t event[256];
-#else
-    uint8_t event[40];
-#endif
     uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 4 + string_len;
@@ -480,6 +477,7 @@ static void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t eve
     event[5 + string_len] = 0;
     hfp_emit_event_for_context(hfp_connection, event, 6 + string_len);
 }
+#endif
 
 btstack_linked_list_t * hfp_get_connections(void){
     return (btstack_linked_list_t *) &hfp_connections;
