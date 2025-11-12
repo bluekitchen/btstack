@@ -68,10 +68,15 @@ static enum {
     W4_HID_DEVICE_FOUND,
     W4_CONNECTED,
     W4_ENCRYPTED,
+    W2_QUERY_HID_SERVICE,
     W4_HID_SERVICE_FOUND,
+    W2_QUERY_HID_CHARACTERISTICS,
     W4_HID_CHARACTERISTICS_FOUND,
+    W2_ENABLE_BOOT_KEYBOARD,
     W4_BOOT_KEYBOARD_ENABLED,
+    W2_ENABLE_BOOT_MOUSE,
     W4_BOOT_MOUSE_ENABLED,
+    W2_WRITE_WITHOUT_RESPONSE_SWITCH_TO_BOOT_MODE,
     READY,
     W4_TIMEOUT_THEN_SCAN,
     W4_TIMEOUT_THEN_RECONNECT,
@@ -79,6 +84,11 @@ static enum {
 
 static le_device_addr_t remote_device;
 static hci_con_handle_t connection_handle;
+
+static btstack_context_callback_registration_t hog_host_query_request;
+static void hog_host_request_to_send(void);
+static void hog_host_request_to_write_without_response(void);
+static uint8_t boot_protocol_mode = 0;
 
 // used for GATT queries
 static gatt_client_service_t       hid_service;
@@ -342,7 +352,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(size);
     gatt_client_characteristic_t characteristic;
     uint8_t att_status;
-    static uint8_t boot_protocol_mode = 0;
 
     switch (app_state) {
         case W4_HID_SERVICE_FOUND:
@@ -358,9 +367,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         handle_outgoing_connection_error();
                         break;
                     }
-                    printf("Find required HID Service Characteristics...\n");
-                    app_state = W4_HID_CHARACTERISTICS_FOUND;
-                    gatt_client_discover_characteristics_for_service(&handle_gatt_client_event, connection_handle, &hid_service);
+                    app_state = W2_QUERY_HID_CHARACTERISTICS;
+                    hog_host_request_to_send();
                     break;
                 default:
                     break;
@@ -395,9 +403,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         handle_outgoing_connection_error();
                         break;
                     }
-                    printf("Enable Notifications for Boot Keyboard Input Report..\n");
-                    app_state = W4_BOOT_KEYBOARD_ENABLED;
-                    gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, connection_handle, &boot_keyboard_input_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    app_state = W2_ENABLE_BOOT_KEYBOARD;
+                    hog_host_request_to_send();
                     break;
                 default:
                     break;
@@ -414,10 +421,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     }
                     // setup listener
                     gatt_client_listen_for_characteristic_value_updates(&keyboard_notifications, &handle_boot_keyboard_event, connection_handle, &boot_keyboard_input_characteristic);
-                    //
-                    printf("Enable Notifications for Boot Mouse Input Report..\n");
-                    app_state = W4_BOOT_MOUSE_ENABLED;
-                    gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, connection_handle, &boot_mouse_input_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    app_state = W2_ENABLE_BOOT_MOUSE;
+                    hog_host_request_to_send();
                     break;
                 default:
                     break;
@@ -436,16 +441,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_client_listen_for_characteristic_value_updates(&mouse_notifications, &handle_boot_mouse_event, connection_handle, &boot_mouse_input_characteristic);
 
                     // switch to boot mode
-                    printf("Set Protocol Mode to Boot Mode..\n");
-                    gatt_client_write_value_of_characteristic_without_response(connection_handle, protocol_mode_characteristic.value_handle, 1, &boot_protocol_mode);
-
-                    // store device as bonded
-                    if (btstack_tlv_singleton_impl){
-                        btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, TLV_TAG_HOGD, (const uint8_t *) &remote_device, sizeof(remote_device));
-                    }
-                    // done
-                    printf("Ready - please start typing or mousing..\n");
-                    app_state = READY;
+                    app_state = W2_WRITE_WITHOUT_RESPONSE_SWITCH_TO_BOOT_MODE;
+                    hog_host_request_to_write_without_response();
                     break;
                 default:
                     break;
@@ -523,6 +520,63 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 /* LISTING_END */
 
+static void hog_host_send_next_query(void * context){
+    UNUSED(context);
+
+    switch (app_state){
+        case W2_QUERY_HID_SERVICE:
+            app_state = W4_HID_SERVICE_FOUND;
+            printf("Search for HID service.\n");
+            gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
+            break;
+
+        case W2_QUERY_HID_CHARACTERISTICS:
+            app_state = W4_HID_CHARACTERISTICS_FOUND;
+            printf("Find required HID Service Characteristics...\n");
+            gatt_client_discover_characteristics_for_service(&handle_gatt_client_event, connection_handle, &hid_service);
+            break;
+
+        case W2_ENABLE_BOOT_KEYBOARD:
+            app_state = W4_BOOT_KEYBOARD_ENABLED;
+            printf("Enable Notifications for Boot Keyboard Input Report..\n");
+            gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, connection_handle, &boot_keyboard_input_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+            break;
+
+        case W2_ENABLE_BOOT_MOUSE:
+            app_state = W4_BOOT_MOUSE_ENABLED;
+            printf("Enable Notifications for Boot Mouse Input Report..\n");
+            gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, connection_handle, &boot_mouse_input_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+            break;
+
+        case W2_WRITE_WITHOUT_RESPONSE_SWITCH_TO_BOOT_MODE:
+            printf("Set Protocol Mode to Boot Mode..\n");
+            gatt_client_write_value_of_characteristic_without_response(connection_handle, protocol_mode_characteristic.value_handle, 1, &boot_protocol_mode);
+
+            // store device as bonded
+            if (btstack_tlv_singleton_impl){
+                btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, TLV_TAG_HOGD, (const uint8_t *) &remote_device, sizeof(remote_device));
+            }
+            // done
+            printf("Ready - please start typing or mousing..\n");
+            app_state = READY;
+            break;
+
+        default:
+            btstack_assert(false);
+            break;
+    }
+}
+
+static void hog_host_request_to_send(void){
+    hog_host_query_request.callback = &hog_host_send_next_query;
+    gatt_client_request_to_send_gatt_query(&hog_host_query_request, connection_handle);
+}
+static void hog_host_request_to_write_without_response(void){
+    hog_host_query_request.callback = &hog_host_send_next_query;
+    gatt_client_request_to_write_without_response(&hog_host_query_request, connection_handle);
+}
+
+
 /* @section HCI packet handler
  *
  * @text The SM packet handler receives Security Manager Events required for pairing.
@@ -581,9 +635,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (connect_to_service){
         // continue - query primary services
-        printf("Search for HID service.\n");
-        app_state = W4_HID_SERVICE_FOUND;
-        gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
+        app_state = W2_QUERY_HID_SERVICE;
+        hog_host_request_to_send();
     }
 }
 /* LISTING_END */
