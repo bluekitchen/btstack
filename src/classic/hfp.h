@@ -851,7 +851,6 @@ void hfp_register_custom_hf_command(hfp_custom_at_command_t * at_command);
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
-void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
 
 /**
  * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event
