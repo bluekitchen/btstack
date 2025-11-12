@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- HCI: add hci_request_sco_can_send_now_event_for_con_handle
+- HCI: emit HCI_EVENT_SCO_CAN_SEND_NOW round robin
+- HCI: fix implicit flow control for small SCO buffers
 - Linked List: add get previous item
 - Port for Ezurio Vela IF820 dev kit
 - HCI Dump: Log printf into packet log with ENABLE_PRINTF_TO_LOG
