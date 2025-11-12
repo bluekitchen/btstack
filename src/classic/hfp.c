@@ -1032,26 +1032,23 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->nxp_stop_audio_handle = hfp_connection->sco_handle;
 #endif
 
-            if (hfp_connection->sco_handle == handle){
-                hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
-                hfp_connection->release_audio_connection = 0;
-                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_emit_audio_connection_released(hfp_connection, handle);
+            hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+            hfp_connection->release_audio_connection = 0;
+            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            hfp_emit_audio_connection_released(hfp_connection, handle);
 
-                if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
-                    hfp_vra_handle_disconnect(hfp_connection);
-                    // cache acl handle and role for event
-                    hci_con_handle_t acl_handle = hfp_connection->acl_handle;
-                    hfp_role_t role = hfp_connection->local_role;
-                    hfp_finalize_connection_context(hfp_connection);
-                    hfp_emit_slc_released(acl_handle, role);
-                    break;
-                } else if (hfp_connection->release_slc_connection == 1){
-                    hfp_connection->release_slc_connection = 0;
-                    hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                    rfcomm_disconnect(hfp_connection->acl_handle);
-                }
-            } 
+            if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
+                hfp_vra_handle_disconnect(hfp_connection);
+                // cache role for event
+                hfp_role_t role = hfp_connection->local_role;
+                hfp_finalize_connection_context(hfp_connection);
+                hfp_emit_slc_released(HCI_CON_HANDLE_INVALID, role);
+                break;
+            } else if (hfp_connection->release_slc_connection == 1){
+                hfp_connection->release_slc_connection = 0;
+                hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+                rfcomm_disconnect(hfp_connection->acl_handle);
+            }
 
             if (hfp_connection->state == HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN){
                 // RFCOMM already closed -> remote power off
