@@ -561,12 +561,12 @@ hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp
     return NULL;
 }
 
-hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hfp_role_t hfp_role){
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if ((hfp_connection->sco_handle == handle) && (hfp_connection->local_role == hfp_role)){
+        if (hfp_connection->sco_handle == handle){
             return hfp_connection;
         }
     }
@@ -1028,7 +1028,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = little_endian_read_16(packet,3);
-            hfp_connection = get_hfp_connection_context_for_sco_handle(handle, local_role);
+            hfp_connection = get_hfp_connection_context_for_sco_handle(handle);
             
             if (!hfp_connection) break;
 

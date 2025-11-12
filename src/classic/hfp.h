@@ -881,7 +881,7 @@ void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_conn
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);
-hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hfp_role_t hfp_role);
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
 hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hfp_role_t hfp_role);
 
 btstack_linked_list_t * hfp_get_connections(void);
