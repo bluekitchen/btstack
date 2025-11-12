@@ -2797,7 +2797,7 @@ static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
 }
 
 static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
+    hfp_handle_hci_event(packet_type, channel, packet, size);
     hfp_ag_run();
 }
 

@@ -892,7 +892,7 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     return 1;
 }
 
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
     UNUSED(channel);    // ok: no channel
     UNUSED(size);    
@@ -911,8 +911,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 case 0: //  SCO
                 case 2: // eSCO
                     hci_event_connection_request_get_bd_addr(packet, event_addr);
-                    hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-                    if (!hfp_connection) break;
+                    // lookup connection by address and role:
+                    // We cannot decide if the SCO request is for HF or AG role if a service connections to both exist.
+                    // As the audio connection is usually set up by the AG, we prioritize the HF role here
+                    hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, HFP_ROLE_HF);
+                    if (hfp_connection == NULL) {
+                        // and fallback to AG role
+                        hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, HFP_ROLE_AG);
+                    }
+                    if (hfp_connection == NULL) break;
                     if (hci_event_connection_request_get_link_type(packet) == 2){
                         hfp_connection->accept_sco = 2;
                     } else {
@@ -1003,7 +1010,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
 
-            switch (local_role){
+            switch (hfp_connection->local_role){
                 case HFP_ROLE_AG:
                     hfp_ag_sco_established(hfp_connection);
                     break;
@@ -1048,7 +1055,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_audio_connection_released(hfp_connection, handle);
 
-                switch (local_role) {
+                switch (hfp_connection->local_role) {
                     case HFP_ROLE_HF:
                         hfp_hf_sco_released(hfp_connection);
                         break;
