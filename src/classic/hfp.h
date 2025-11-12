@@ -852,21 +852,6 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
 
-/**
- * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event
- * @param hfp_connection
- * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
- * @param evra_supported
- */
-void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported);
-
-/**
- * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event
- * @param hfp_connection
- * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
- */
-void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status);
-    
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);
 hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);

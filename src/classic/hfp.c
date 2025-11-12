@@ -398,21 +398,7 @@ static void hfp_emit_slc_released(hci_con_handle_t acl_handle, hfp_role_t role){
     hfp_emit_event_for_role(role, event, sizeof(event));
 }
 
-void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
-    btstack_assert(hfp_connection != NULL);
-
-    uint8_t event[7];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED;
-    
-    little_endian_store_16(event, 3, hfp_connection->acl_handle);
-    event[5] = status; // 0:success
-    event[6] = evra_supported;
-    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
-}
-
-void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
+static void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
     btstack_assert(hfp_connection != NULL);
 
     uint8_t event[6];
