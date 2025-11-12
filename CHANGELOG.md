@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: emit Dedicated Bonding Complete after link key was received
 - GATT Client: handle notifications and indications during MTU exchange
 - ATT Server: restore CCC for HCI_EVENT_ENCRYPTION_CHANGE_V2
+- HFP: rework event handling, fixes issue with parallel audio setup
 
 ### Changed
 - btstack_audio: return 0 on success for source and sink init 
