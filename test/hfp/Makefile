@@ -87,7 +87,7 @@ build-asan/%.o: %.c | build-asan
 build-asan/%.o: %.cpp | build-asan
 	${CXX} -c $(CFLAGS_ASAN) $< -o $@
 
-build-coverage/hfp_at_parser_test: ${COMMON_OBJ_COVERAGE} build-coverage/hfp_gsm_model.o build-coverage/hfp_ag.o build-coverage/hfp.o build-coverage/hfp_at_parser_test.o | build-coverage
+build-coverage/hfp_at_parser_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_gsm_model.o build-coverage/hfp_ag.o build-coverage/hfp.o build-coverage/hfp_at_parser_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-coverage/hfp_hf_client_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_hf.o build-coverage/hfp.o build-coverage/hfp_hf_client_test.o | build-coverage
@@ -96,7 +96,7 @@ build-coverage/hfp_hf_client_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_hf.o 
 build-coverage/hfp_ag_client_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_gsm_model.o build-coverage/hfp_ag.o build-coverage/hfp.o build-coverage/hfp_ag_client_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-coverage/cvsd_plc_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_cvsd_plc.o build-coverage/wav_util.o build-coverage/cvsd_plc_test.o | build-coverage
+build-coverage/cvsd_plc_test: ${MOCK_OBJ_COVERAGE} build-coverage/btstack_cvsd_plc.o build-coverage/wav_util.o build-coverage/cvsd_plc_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 build-coverage/hfp_link_settings_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_hf.o build-coverage/hfp.o build-coverage/hfp_link_settings_test.o | build-coverage
@@ -109,7 +109,7 @@ build-coverage/hfp_ag_vra_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_gsm_mode
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 
-build-asan/hfp_at_parser_test: ${COMMON_OBJ_ASAN} build-asan/hfp_gsm_model.o build-asan/hfp_ag.o build-asan/hfp.o build-asan/hfp_at_parser_test.o | build-asan
+build-asan/hfp_at_parser_test: ${MOCK_OBJ_ASAN} build-asan/hfp_gsm_model.o build-asan/hfp_ag.o build-asan/hfp.o build-asan/hfp_at_parser_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-asan/hfp_hf_client_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-asan/hfp.o build-asan/hfp_hf_client_test.o | build-asan
@@ -118,7 +118,7 @@ build-asan/hfp_hf_client_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-asan/h
 build-asan/hfp_ag_client_test: ${MOCK_OBJ_ASAN} build-asan/hfp_gsm_model.o build-asan/hfp_ag.o build-asan/hfp.o build-asan/hfp_ag_client_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
-build-asan/cvsd_plc_test: ${COMMON_OBJ_ASAN} build-asan/btstack_cvsd_plc.o build-asan/wav_util.o build-asan/cvsd_plc_test.o | build-asan
+build-asan/cvsd_plc_test: ${MOCK_OBJ_ASAN} build-asan/btstack_cvsd_plc.o build-asan/wav_util.o build-asan/cvsd_plc_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 build-asan/hfp_link_settings_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-asan/hfp.o build-asan/hfp_link_settings_test.o | build-asan
