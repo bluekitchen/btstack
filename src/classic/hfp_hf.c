@@ -152,6 +152,17 @@ static hfp_connection_t * get_hfp_hf_connection_context_for_acl_handle(uint16_t 
 
 /* emit functions */
 
+static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = value;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void hfp_hf_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
@@ -1366,9 +1377,8 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
 
     // notify user
     hfp_hf_emit_slc_connection_event(ERROR_CODE_SUCCESS, hfp_connection->acl_handle, hfp_connection->remote_addr);
-
-    hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
-    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
+    hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
+    hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_hf_speaker_gain);
 }
 
 static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
@@ -1393,7 +1403,7 @@ static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
 static void hfp_hf_apple_extension_supported(hfp_connection_t * hfp_connection, bool supported){
     hfp_connection->apple_accessory_commands_supported = supported;
     log_info("Apple Extension supported: %u", supported);
-    hfp_emit_event(hfp_connection, HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED, hfp_hf_microphone_gain);
+    hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED, hfp_hf_microphone_gain);
 }
 
 static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8_t status){
@@ -1405,10 +1415,10 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
 
     switch (response_pending_for_command){
         case HFP_CMD_TURN_OFF_EC_AND_NR:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
             break;
         case HFP_CMD_CUSTOM_MESSAGE:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, status);
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, status);
             break;
         case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
             hfp_hf_apple_extension_supported(hfp_connection, true);
@@ -1478,13 +1488,13 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     if (hfp_connection->enable_status_update_for_ag_indicators != 0xFF){
                         hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
-                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
+                        hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
                         break;
                     }
 
                     if (hfp_connection->change_status_update_for_individual_ag_indicators == 1){
                         hfp_connection->change_status_update_for_individual_ag_indicators = 0;
-                        hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
+                        hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
                         break;
                     }
 
@@ -1593,7 +1603,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
             hfp_hf_emit_subscriber_information(hfp_connection, 0);
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS, btstack_atoi((char *)&hfp_connection->line_buffer[0]));
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS, btstack_atoi((char *)&hfp_connection->line_buffer[0]));
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:
             hfp_hf_emit_enhanced_call_status(hfp_connection);
@@ -1601,12 +1611,12 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
         case HFP_CMD_SET_SPEAKER_GAIN:
             value = btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_hf_speaker_gain = value;
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, value);
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, value);
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
             value = btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_hf_microphone_gain = value;
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
             break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
             hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, hfp_connection->bnip_number);
@@ -1620,7 +1630,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             hfp_connection->ok_pending = 0;
             hfp_connection->extended_audio_gateway_error = 0;
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
         case HFP_CMD_AG_VOICE_RECOGNITION_STATE:
             hfp_hf_handle_ag_voice_recognition_state(hfp_connection);
@@ -1653,7 +1663,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
 
             event_emitted = hfp_hf_switch_on_ag_response(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emitted){
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
+                hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
             }
             break;
 
@@ -1680,7 +1690,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
     		hfp_hf_handle_suggested_codec(hfp_connection);
 			break;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_IN_BAND_RING_TONE, get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE));
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_IN_BAND_RING_TONE, get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE));
             break;
         case HFP_CMD_CUSTOM_MESSAGE:
             hfp_parser_reset_line_buffer(hfp_connection);
