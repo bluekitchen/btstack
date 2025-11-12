@@ -163,6 +163,23 @@ static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_s
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void hfp_hf_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+    btstack_assert(hfp_connection != NULL);
+#ifdef ENABLE_HFP_AT_MESSAGES
+    uint8_t event[256];
+#else
+    uint8_t event[40];
+#endif
+    uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 4 + string_len;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    memcpy((char*)&event[5], value, string_len);
+    event[5 + string_len] = 0;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 6 + string_len);
+}
+
 void hfp_hf_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     uint8_t event[5];
@@ -1195,7 +1212,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         char buffer[2];
         buffer[0] = code;
         buffer[1] = 0;
-        hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, buffer);
+        hfp_hf_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, buffer);
         return;
     }
 
@@ -1629,7 +1646,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
             hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
             break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
-            hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, hfp_connection->bnip_number);
+            hfp_hf_emit_string_event(hfp_connection, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, hfp_connection->bnip_number);
             break;
         case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
             hfp_hf_emit_type_number_alpha(hfp_connection, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION);
@@ -1719,7 +1736,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 static void hfp_hf_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     hfp_log_rfcomm_message("HFP_HF_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
-    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
+    hfp_hf_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
 #endif
 
     // process messages byte-wise
