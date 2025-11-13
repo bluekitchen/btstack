@@ -183,7 +183,8 @@ typedef struct {
     
     hid_service_client_state_t state;
     btstack_packet_handler_t   client_handler;
-    btstack_context_callback_registration_t write_request;
+    btstack_context_callback_registration_t gatt_query_request;
+    btstack_context_callback_registration_t gatt_write_without_response_request;
 
     uint8_t num_instances;
     hid_service_t services[MAX_NUM_HID_SERVICES];
@@ -198,8 +199,6 @@ typedef struct {
 
     hids_client_report_t external_reports[HIDS_CLIENT_NUM_REPORTS];
     uint8_t num_external_reports;
-
-    btstack_context_callback_registration_t write_without_response_request;
 
     // index used for report and report map search
     uint8_t   report_index;

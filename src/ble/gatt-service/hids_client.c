@@ -915,9 +915,9 @@ static void hids_client_send_next_query(void * context){
 
         case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
         case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
-            client->write_without_response_request.callback = &hids_client_handle_can_write_without_reponse;
-            client->write_without_response_request.context = client;
-            (void) gatt_client_request_to_write_without_response(&client->write_without_response_request, client->con_handle);
+            client->gatt_write_without_response_request.callback = &hids_client_handle_can_write_without_reponse;
+            client->gatt_write_without_response_request.context = client;
+            (void) gatt_client_request_to_write_without_response(&client->gatt_write_without_response_request, client->con_handle);
             break;
 
         default:
@@ -927,9 +927,9 @@ static void hids_client_send_next_query(void * context){
 
 
 static void hids_client_request_to_send_next_query(hids_client_t * client){
-    client->write_request.callback = &hids_client_send_next_query;
-    client->write_request.context = client;
-    gatt_client_request_to_write_without_response(&client->write_request, client->con_handle);
+    client->gatt_query_request.callback = &hids_client_send_next_query;
+    client->gatt_query_request.context = client;
+    gatt_client_request_to_write_without_response(&client->gatt_query_request, client->con_handle);
 }
 
 
