@@ -917,11 +917,6 @@ static void hids_client_send_next_query(void * context){
                 client->handle);
             break;
 
-        case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
-        case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
-            hids_client_request_to_send_write_without_response(client);
-            break;
-
         default:
             break;
     }
@@ -1301,7 +1296,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                             // set boot mode
                             client->service_index = 0;
                             client->state = HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE;
-                            break;
+                            hids_client_request_to_send_write_without_response(client);
+                            return;
                     }
                     break;
 
@@ -1624,7 +1620,7 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_in
     client->value = (uint8_t)protocol_mode;
     
     client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
-    hids_client_request_to_send_next_query(client);
+    hids_client_request_to_send_write_without_response(client);
     return ERROR_CODE_SUCCESS;
 }
 
