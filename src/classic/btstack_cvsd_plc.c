@@ -449,10 +449,10 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
     return count;
 }
 
-static int count_value(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size, uint16_t value){
+static int count_value(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size, BTSTACK_CVSD_PLC_SAMPLE_FORMAT value){
     int nr_values = 0;
     int i;
-    for (i = 0; i < (size-1); i++){
+    for (i = 0; i < size; i++){
         if (frame[i] == value){
             nr_values++;
         }
@@ -483,11 +483,7 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is
     if (!is_bad_frame) {
         bool is_zero_frame = zero_frame(in, num_samples);
         bool is_ffff_frame = ffff_frame(in, num_samples);
-        if (is_zero_frame){
-            plc_state->silent_frames_nr++;
-        } if (is_ffff_frame) {
-            // treat frames with only 0xffff as silence
-            memset(in, 0, num_samples * 2);
+        if (is_zero_frame || is_ffff_frame){
             plc_state->silent_frames_nr++;
         } else {
             is_bad_frame = bad_frame(plc_state, in, num_samples);
