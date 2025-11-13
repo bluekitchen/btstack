@@ -63,8 +63,14 @@
 #define HID_REPORT_MODE_HID_INFORMATION_ID      5
 #define HID_REPORT_MODE_HID_CONTROL_POINT_ID    6
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+// prototypes
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hids_client_handle_can_write_without_reponse(void * context);
 static void hids_client_request_to_send_next_query(hids_client_t * client);
+static void hids_client_request_to_send_write_without_response(hids_client_t * client);
+
+// globals
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static btstack_linked_list_t clients;
 static uint16_t hids_cid_counter = 0;
@@ -72,8 +78,6 @@ static uint16_t hids_cid_counter = 0;
 static uint8_t * hids_client_descriptor_storage;
 static uint16_t  hids_client_descriptor_storage_len;
 
-static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void hids_client_handle_can_write_without_reponse(void * context);
 
 #ifdef ENABLE_TESTING_SUPPORT
 static char * hid_characteristic_name(uint16_t uuid){
@@ -915,9 +919,7 @@ static void hids_client_send_next_query(void * context){
 
         case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE:
         case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
-            client->gatt_write_without_response_request.callback = &hids_client_handle_can_write_without_reponse;
-            client->gatt_write_without_response_request.context = client;
-            (void) gatt_client_request_to_write_without_response(&client->gatt_write_without_response_request, client->con_handle);
+            hids_client_request_to_send_write_without_response(client);
             break;
 
         default:
@@ -932,6 +934,11 @@ static void hids_client_request_to_send_next_query(hids_client_t * client){
     gatt_client_request_to_send_gatt_query(&client->gatt_query_request, client->con_handle);
 }
 
+static void hids_client_request_to_send_write_without_response(hids_client_t * client){
+    client->gatt_write_without_response_request.callback = &hids_client_handle_can_write_without_reponse;
+    client->gatt_write_without_response_request.context = client;
+    (void) gatt_client_request_to_write_without_response(&client->gatt_write_without_response_request, client->con_handle);
+}
 
 static void hids_client_handle_can_write_without_reponse(void * context) {
     hids_client_t *client = (hids_client_t *) context;
