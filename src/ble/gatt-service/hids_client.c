@@ -929,7 +929,7 @@ static void hids_client_send_next_query(void * context){
 static void hids_client_request_to_send_next_query(hids_client_t * client){
     client->gatt_query_request.callback = &hids_client_send_next_query;
     client->gatt_query_request.context = client;
-    gatt_client_request_to_write_without_response(&client->gatt_query_request, client->con_handle);
+    gatt_client_request_to_send_gatt_query(&client->gatt_query_request, client->con_handle);
 }
 
 
