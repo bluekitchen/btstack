@@ -58,6 +58,10 @@
 // TAG to store remote device address and type in TLV
 #define TLV_TAG_HOGD ((((uint32_t) 'H') << 24 ) | (((uint32_t) 'O') << 16) | (((uint32_t) 'G') << 8) | 'D')
 
+// prototypes
+static void hog_host_request_to_send(void);
+static void hog_host_request_to_write_without_response(void);
+
 typedef struct {
     bd_addr_t addr;
     bd_addr_type_t addr_type;
@@ -82,12 +86,12 @@ static enum {
     W4_TIMEOUT_THEN_RECONNECT,
 } app_state;
 
+// globals
 static le_device_addr_t remote_device;
 static hci_con_handle_t connection_handle;
 
-static btstack_context_callback_registration_t hog_host_query_request;
-static void hog_host_request_to_send(void);
-static void hog_host_request_to_write_without_response(void);
+// single request object for query and write without response - only one in parallel
+static btstack_context_callback_registration_t hog_host_gatt_request;
 static uint8_t boot_protocol_mode = 0;
 
 // used for GATT queries
@@ -548,6 +552,16 @@ static void hog_host_send_next_query(void * context){
             gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, connection_handle, &boot_mouse_input_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
             break;
 
+        default:
+            btstack_assert(false);
+            break;
+    }
+}
+
+static void hog_host_send_next_write_without_response(void * context) {
+    UNUSED(context);
+
+    switch (app_state) {
         case W2_WRITE_WITHOUT_RESPONSE_SWITCH_TO_BOOT_MODE:
             printf("Set Protocol Mode to Boot Mode..\n");
             gatt_client_write_value_of_characteristic_without_response(connection_handle, protocol_mode_characteristic.value_handle, 1, &boot_protocol_mode);
@@ -568,14 +582,14 @@ static void hog_host_send_next_query(void * context){
 }
 
 static void hog_host_request_to_send(void){
-    hog_host_query_request.callback = &hog_host_send_next_query;
-    gatt_client_request_to_send_gatt_query(&hog_host_query_request, connection_handle);
-}
-static void hog_host_request_to_write_without_response(void){
-    hog_host_query_request.callback = &hog_host_send_next_query;
-    gatt_client_request_to_write_without_response(&hog_host_query_request, connection_handle);
+    hog_host_gatt_request.callback = &hog_host_send_next_query;
+    gatt_client_request_to_send_gatt_query(&hog_host_gatt_request, connection_handle);
 }
 
+static void hog_host_request_to_write_without_response(void){
+    hog_host_gatt_request.callback = &hog_host_send_next_write_without_response;
+    gatt_client_request_to_write_without_response(&hog_host_gatt_request, connection_handle);
+}
 
 /* @section HCI packet handler
  *
