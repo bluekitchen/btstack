@@ -465,7 +465,7 @@ static int zero_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
 }
 
 static int ffff_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
-    return count_value(frame, size, 0xffff) == size;
+    return count_value(frame, size, (BTSTACK_CVSD_PLC_SAMPLE_FORMAT) 0xffff) == size;
 }
 
 // more than half the samples are the same -> bad frame
