@@ -292,11 +292,13 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_t * client)
     return client->cid_counter;
 }
 
+#ifdef ENABLE_GATT_CLIENT_CACHING
 static void gatt_service_client_report_connected(void * context) {
     gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)context;
     gatt_service_client_t * client = connection->client;
     gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
 }
+#endif
 
 static void gatt_service_client_handle_connected(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
 #ifdef ENABLE_GATT_CLIENT_CACHING
