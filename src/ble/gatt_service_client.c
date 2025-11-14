@@ -292,6 +292,12 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_t * client)
     return client->cid_counter;
 }
 
+static void gatt_service_client_report_connected(void * context) {
+    gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)context;
+    gatt_service_client_t * client = connection->client;
+    gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+}
+
 static void gatt_service_client_handle_connected(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
 #ifdef ENABLE_GATT_CLIENT_CACHING
     if (connection->device_index >= 0) {
@@ -313,6 +319,8 @@ static void gatt_service_client_handle_connected(const gatt_service_client_t * c
             connection->request_hash, client->characteristics_desc_num);
         tlv_impl->store_tag(tlv_context, tag, cached_characteristics_data, 8 + 2 * client->characteristics_desc_num);
     }
+#else
+    UNUSED(client);
 #endif
 
     connection->characteristic_index = 0;
@@ -376,15 +384,6 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
     return status;
 }
 
-static uint8_t gatt_service_client_request_send_gatt_query(gatt_service_client_t * client, gatt_service_client_connection_t * connection){
-    uint8_t status = gatt_client_request_to_send_gatt_query(&connection->can_send_query_registration, connection->con_handle);
-    if (status != ERROR_CODE_SUCCESS){
-        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_client_att_status_to_error_code(status));
-        gatt_service_client_finalize_connection(client, connection);
-    }
-    return status;
-}
-
 static void gatt_service_client_send_next_query(void * context) {
     gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)context;
     gatt_service_client_t * client = connection->client;
@@ -405,7 +404,10 @@ static void gatt_service_client_send_next_query(void * context) {
                 // enter connected state
                 connection->characteristic_index = 0;
                 connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+                // queue notify
+                connection->can_send_query_registration.callback = gatt_service_client_report_connected;
+                connection->can_send_query_registration.context = connection;
+                btstack_run_loop_execute_on_main_thread(&connection->can_send_query_registration);
                 break;
             }
 #endif
@@ -504,6 +506,16 @@ static void gatt_service_client_send_next_query(void * context) {
     }
 }
 
+static uint8_t gatt_service_client_request_send_gatt_query(gatt_service_client_t * client, gatt_service_client_connection_t * connection){
+    connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
+    uint8_t status = gatt_client_request_to_send_gatt_query(&connection->can_send_query_registration, connection->con_handle);
+    if (status != ERROR_CODE_SUCCESS){
+        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_client_att_status_to_error_code(status));
+        gatt_service_client_finalize_connection(client, connection);
+    }
+    return status;
+}
+
 // @return true if client valid / run function should be called
 static bool gatt_service_client_handle_query_complete(gatt_service_client_t *client,
                                                       gatt_service_client_connection_t *connection,
@@ -555,6 +567,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
                 gatt_service_client_handle_connected(client, connection);
+                return false;
             }
             break;
 
@@ -570,6 +583,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
                 gatt_client_listen_for_service_characteristic_value_updates(&connection->notification_listener, client->packet_handler,
                                                                             connection->con_handle, &service, client->service_id, connection->cid);
                 gatt_service_client_handle_connected(client, connection);
+                return false;
             }
 
             break;
@@ -578,7 +592,6 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
             break;
 
     }
-    // TODO run_for_client
     return true;
 }
 
@@ -773,7 +786,6 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
     connection->cid                 = gatt_service_client_get_next_cid(client);
     connection->client              = client;
     connection->characteristics     = characteristics;
-    connection->can_send_query_registration.callback = &gatt_service_client_send_next_query;
     connection->can_send_query_registration.context = connection;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
