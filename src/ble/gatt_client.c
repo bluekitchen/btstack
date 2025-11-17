@@ -816,7 +816,15 @@ gatt_client_caching_emit_database_hash(gatt_client_t *gatt_client, const uint8_t
 }
 
 static void gatt_client_caching_handle_database_hash(gatt_client_t * gatt_client, const uint8_t * database_hash) {
-    // Get stored database hash
+    // log database hash
+    log_info("Database hash");
+    log_info_hexdump(database_hash, 16);
+
+    // store database hash
+    memcpy(gatt_client->database_hash, database_hash, 16);
+    gatt_client->database_hash_valid = true;
+
+    // Verify stored database hash
     uint16_t database_version = 0;
     int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
     if (le_device_db_index >= 0) {
@@ -825,14 +833,15 @@ static void gatt_client_caching_handle_database_hash(gatt_client_t * gatt_client
         void * tlv_context;
         btstack_tlv_get_instance(&tlv_impl, &tlv_context);
         if (tlv_impl != NULL) {
-            bool update_entry = false;
+            bool update_entry = true;
             gatt_client_database_hash_entry_t entry = { 0 };
             uint32_t tag = gatt_client_caching_database_hash_tag_for_index((uint8_t) le_device_db_index);
             int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(gatt_client_database_hash_entry_t));
             if (len == sizeof(gatt_client_database_hash_entry_t)) {
                 database_version = entry.database_version;
-                if (memcmp(&entry.database_hash, database_hash, 16) != 0) {
-                    update_entry = true;
+                if (memcmp(&entry.database_hash, database_hash, 16) == 0) {
+                    log_info("Database hash match");
+                    update_entry = false;
                 }
             }
             if (update_entry) {
@@ -846,6 +855,7 @@ static void gatt_client_caching_handle_database_hash(gatt_client_t * gatt_client
     }
     gatt_client_caching_emit_database_hash(gatt_client, database_hash, database_version);
 }
+
 static void gatt_client_caching_delete_database_hash(int le_device_db_index) {
     // get btstack_tlv
     const btstack_tlv_t * tlv_impl = NULL;
@@ -3453,7 +3463,10 @@ const uint8_t * gatt_client_get_database_hash(hci_con_handle_t con_handle) {
     if (status != ERROR_CODE_SUCCESS){
         return NULL;
     }
-    return gatt_client->database_hash;
+    if (gatt_client->database_hash_valid) {
+        return gatt_client->database_hash;
+    }
+    return NULL;
 }
 
 uint16_t gatt_client_get_next_cache_id(hci_con_handle_t con_handle) {

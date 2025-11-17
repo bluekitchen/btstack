@@ -303,8 +303,8 @@ typedef struct gatt_client{
     uint16_t                    gatt_service_changed_end_handle;
     // - Database Hash
     uint16_t                    gatt_service_database_hash_value_handle;
-
     uint8_t                     database_hash[16];
+    bool                        database_hash_valid;
     uint16_t                    cache_id;
 #endif
 } gatt_client_t;
