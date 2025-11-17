@@ -55,7 +55,7 @@ static snd_mixer_elem_t* master_volume = NULL;
 static long volume_max;
 static uint32_t current_sample_rate;
 static uint8_t num_channels;
-static void (*playback_callback)(int16_t *buffer, uint16_t num_samples);
+static void (*playback_callback)(int16_t *buffer, uint16_t num_samples, const btstack_audio_context_t * context);
 
 static unsigned int buffer_time = 500000;   /* ring buffer length in us */
 static unsigned int period_time = 100000;   /* period time in us */
@@ -124,7 +124,7 @@ static void btstack_audio_alsa_handler(btstack_data_source_t * ds, btstack_data_
     }
 
     int16_t buffer[1024] = { 0 };
-    playback_callback( buffer, 512 );
+    playback_callback( buffer, 512, NULL );
     err = snd_pcm_writei( pcm_handle, buffer, 512 );
     if (err < 512) {
         fprintf(stderr, "Write error: %s\n", snd_strerror(err));
@@ -178,7 +178,7 @@ static int alsa_mixer_init() {
     return 0;
 }
 
-static int alsa_init(uint8_t channels, uint32_t samplerate, void (*playback)(int16_t *, uint16_t)) {
+static int alsa_init(uint8_t channels, uint32_t samplerate, void (*playback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * timeinfo)) {
     int err, dir;
     snd_pcm_hw_params_t *hw_params;
     snd_pcm_sw_params_t *sw_params;
