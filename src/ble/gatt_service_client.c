@@ -743,6 +743,25 @@ gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, u
         gatt_service_client_request_send_gatt_query(client, connection);
     }
 }
+#ifdef ENABLE_GATT_CLIENT_CACHING
+static void gatt_service_client_handle_service_changed(hci_con_handle_t con_handle) {
+    log_info("Service Changed for 0x%04x", con_handle);
+    // for all clients
+    btstack_linked_list_iterator_t client_it;
+    btstack_linked_list_iterator_init(&client_it,  &gatt_service_clients);
+    while (btstack_linked_list_iterator_has_next(&client_it)){
+        gatt_service_client_t * service_client = (gatt_service_client_t *)btstack_linked_list_iterator_next(&it);
+        // for all connections
+        btstack_linked_list_iterator_t connection_it;
+        btstack_linked_list_iterator_init(&connection_it, (btstack_linked_list_t *) &service_client->connections);
+        while (btstack_linked_list_iterator_has_next(&connection_it)){
+            gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+            // - set reload flag
+            // - reset state
+        }
+    }
+}
+#endif
 
 static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
@@ -775,6 +794,16 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
                 break;
             }
             break;
+        case HCI_EVENT_GATTSERVICE_META:
+            switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+                case GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED:
+                    con_handle = gattservice_subevent_gatt_service_changed_get_con_handle(packet);
+                    gatt_service_client_handle_service_changed(con_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
 #endif
         default:
             break;
@@ -796,11 +825,17 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
 }
 
 /* API */
+static btstack_packet_callback_registration_t gatt_service_client_service_changed_registration;
 
 void gatt_service_client_init(void){
     if (false == gatt_service_client_intitialized){
+        // register for HCI events
         gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
         hci_add_event_handler(&gatt_service_client_hci_callback_registration);
+        // register for GATT Client Service Changed / Database Hash events
+        gatt_service_client_service_changed_registration.callback = &gatt_service_client_hci_event_handler;
+        gatt_client_add_service_changed_handler(&gatt_service_client_service_changed_registration);
+        // done
         gatt_service_client_intitialized = true;
     }
 }
