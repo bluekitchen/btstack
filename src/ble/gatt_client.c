@@ -1349,10 +1349,6 @@ static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_
 static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
 	if (!gatt_client_accept_server_message(gatt_client)) return;
 #ifdef ENABLE_GATT_CLIENT_CACHING
-    // Directly Handle GATT Service Changed and Database Hash indications
-    if (value_handle == gatt_client->gatt_service_database_hash_value_handle){
-        gatt_client_caching_emit_database_hash(gatt_client, value, length);
-    }
     if (value_handle == gatt_client->gatt_service_changed_value_handle){
         gatt_client_caching_emit_service_changed(gatt_client, value, length);
     }
