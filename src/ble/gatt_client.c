@@ -1366,6 +1366,9 @@ static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_ha
 #ifdef ENABLE_GATT_CLIENT_CACHING
     if (value_handle == gatt_client->gatt_service_changed_value_handle){
         gatt_client_caching_emit_service_changed(gatt_client, value, length);
+        log_info("GATT Service Changed, restart caching");
+        gatt_client->caching_state = GATT_CLIENT_CACHING_DISCOVER_CHARACTERISTICS_W2_SEND;
+        gatt_client_notify_can_send_query(gatt_client);
     }
 #endif
     report_gatt_characteristic_value_change(gatt_client, GATT_EVENT_INDICATION, value_handle, value, length);
@@ -1802,6 +1805,11 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
     if (done){
         return packet_sent;
+    }
+
+    // block write without response while internal query active
+    if (gatt_client_internal_query_pending(gatt_client)) {
+        return false;
     }
 
     // write without response callback
