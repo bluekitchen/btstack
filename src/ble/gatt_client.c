@@ -258,16 +258,21 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
     return ERROR_CODE_SUCCESS;
 }
 
-static bool is_ready(gatt_client_t * gatt_client){
+static bool gatt_client_internal_query_pending(const gatt_client_t * gatt_client) {
 #ifdef ENABLE_GATT_CLIENT_CACHING
-    if (gatt_client->service_query_state != GATT_CLIENT_SERVICE_QUERY_DONE) return false;
+    if (gatt_client->service_query_state != GATT_CLIENT_SERVICE_QUERY_DONE) return true;
 #endif
 #ifdef ENABLE_GATT_CLIENT_CACHING
-    if (gatt_client->caching_state != GATT_CLIENT_CACHING_DONE) return false;
+    if (gatt_client->caching_state != GATT_CLIENT_CACHING_DONE) return true;
 #endif
 #ifdef ENABLE_GATT_OVER_EATT
-    if ((gatt_client->eatt_state != GATT_CLIENT_EATT_READY) && (gatt_client->eatt_state != GATT_CLIENT_EATT_IDLE)) return false;
+    if ((gatt_client->eatt_state != GATT_CLIENT_EATT_READY) && (gatt_client->eatt_state != GATT_CLIENT_EATT_IDLE)) return true;
 #endif
+    return false;
+}
+
+static bool gatt_cilent_is_ready_internal(gatt_client_t * gatt_client){
+    if (gatt_client_internal_query_pending(gatt_client)) return false;
     return gatt_client->state == P_READY;
 }
 
@@ -298,7 +303,7 @@ static uint8_t gatt_client_provide_context_for_request(hci_con_handle_t con_hand
     }
 #endif
 
-    if (is_ready(gatt_client) == false){
+    if (gatt_cilent_is_ready_internal(gatt_client) == false){
         return GATT_CLIENT_IN_WRONG_STATE;
     }
 
@@ -315,7 +320,7 @@ int gatt_client_is_ready(hci_con_handle_t con_handle){
     if (status != ERROR_CODE_SUCCESS){
         return 0;
     }
-    return is_ready(gatt_client) ? 1 : 0;
+    return gatt_cilent_is_ready_internal(gatt_client) ? 1 : 0;
 }
 
 void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled){
@@ -1904,7 +1909,7 @@ static void gatt_client_emit_events(void * context){
 }
 
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code) {
-    if (is_ready(gatt_client)) return;
+    if (gatt_cilent_is_ready_internal(gatt_client)) return;
     gatt_client_handle_transaction_complete(gatt_client, att_error_code);
 }
 
@@ -2690,7 +2695,7 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
-    if (is_ready(gatt_client) == 0){
+    if (gatt_cilent_is_ready_internal(gatt_client) == 0){
         return GATT_CLIENT_IN_WRONG_STATE;
     }
 
