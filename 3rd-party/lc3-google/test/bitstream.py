@@ -164,7 +164,7 @@ class BitstreamWriter(Bitstream):
         self.low &= 0xffffff
         self.range = r * sym_freq
         while self.range < 0x10000:
-            self.range <<= 8;
+            self.range <<= 8
             self.ac_shift()
 
     def get_bits_left(self):
@@ -188,8 +188,8 @@ class BitstreamWriter(Bitstream):
         while self.range >> (24 - bits) == 0:
             bits += 1
 
-        mask = 0xffffff >> bits;
-        val = self.low + mask;
+        mask = 0xffffff >> bits
+        val = self.low + mask
 
         over1 = val >> 24
         val &= 0x00ffffff
@@ -212,7 +212,7 @@ class BitstreamWriter(Bitstream):
         while bits > 0:
             self.ac_shift()
             bits -= 8
-        bits += 8;
+        bits += 8
 
         val = self.cache
 
@@ -227,7 +227,7 @@ class BitstreamWriter(Bitstream):
 
             val = 0xff >> (8 - bits)
 
-        mask = 0x80;
+        mask = 0x80
         for k in range(bits):
 
             if val & mask == 0:

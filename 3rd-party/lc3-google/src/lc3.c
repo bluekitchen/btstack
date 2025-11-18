@@ -122,7 +122,7 @@ LC3_EXPORT int lc3_hr_frame_block_bytes(
         nchannels * lc3_max_frame_bytes(dt, sr) );
 }
 
-LC3_EXPORT int lc3_frame_bock_bytes(int dt_us, int nchannels, int bitrate)
+LC3_EXPORT int lc3_frame_block_bytes(int dt_us, int nchannels, int bitrate)
 {
     return lc3_hr_frame_block_bytes(false, dt_us, 8000, nchannels, bitrate);
 }
@@ -301,7 +301,7 @@ static void analyze(struct lc3_encoder *encoder,
 
     bool att = lc3_attdet_run(dt, sr_pcm, nbytes, &encoder->attdet, xt);
 
-    side->pitch_present =
+    side->pitch_present = !encoder->ltpf_bypass &&
         lc3_ltpf_analyse(dt, sr_pcm, &encoder->ltpf, xt, &side->ltpf);
 
     memmove(xt - nt, xt + (ns-nt), nt * sizeof(*xt));
@@ -313,7 +313,7 @@ static void analyze(struct lc3_encoder *encoder,
     lc3_mdct_forward(dt, sr_pcm, sr, xs, xd, xf);
 
     bool nn_flag = lc3_energy_compute(dt, sr, xf, e);
-    if (nn_flag)
+    if (nn_flag || encoder->ltpf_bypass)
         lc3_ltpf_disable(&side->ltpf);
 
     side->bw = lc3_bwdet_run(dt, sr, e);
@@ -422,6 +422,12 @@ LC3_EXPORT struct lc3_encoder *lc3_setup_encoder(
     int dt_us, int sr_hz, int sr_pcm_hz, void *mem)
 {
     return lc3_hr_setup_encoder(false, dt_us, sr_hz, sr_pcm_hz, mem);
+}
+
+LC3_EXPORT void lc3_encoder_disable_ltpf(
+    struct lc3_encoder *encoder)
+{
+    encoder->ltpf_bypass = true;
 }
 
 /**

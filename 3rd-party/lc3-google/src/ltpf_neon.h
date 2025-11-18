@@ -132,7 +132,7 @@ LC3_HOT static void neon_resample_32k_12k8(
 LC3_HOT static void neon_resample_48k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(16) h[4][64] = {
+    alignas(16) static const int16_t h[4][64] = {
 
     {  -13,   -25,   -20,    10,    51,    71,    38,   -47,  -133,  -145,
        -42,   139,   277,   242,     0,  -329,  -511,  -351,   144,   698,

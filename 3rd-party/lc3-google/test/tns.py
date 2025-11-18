@@ -300,8 +300,8 @@ class TnsSynthesis(Tns):
             xi = x[i] - rc[rc_order-1] * st[rc_order-1]
             for k in range(rc_order-2, -1, -1):
                 xi -= rc[k] * st[k]
-                st[k+1] = xi * rc[k] + st[k];
-            st[0] = xi;
+                st[k+1] = xi * rc[k] + st[k]
+            st[0] = xi
 
             y[i] = xi
 

@@ -189,7 +189,7 @@ class SpectrumAnalysis(SpectrumQuantization):
             lev = 0
             while max(a, b) >= 4:
                 nbits_est += \
-                    T.AC_SPEC_BITS[T.AC_SPEC_LOOKUP[t + lev*1024]][16];
+                    T.AC_SPEC_BITS[T.AC_SPEC_LOOKUP[t + lev*1024]][16]
                 if lev == 0 and mode == 1:
                     nbits_lsb += 2
                 else:
@@ -206,20 +206,20 @@ class SpectrumAnalysis(SpectrumQuantization):
             b_lsb = abs(x[n+1])
             nbits_est += (min(a_lsb, 1) + min(b_lsb, 1)) * 2048
             if lev > 0 and mode == 1:
-                a_lsb >>= 1;
-                b_lsb >>= 1;
+                a_lsb >>= 1
+                b_lsb >>= 1
                 nbits_lsb += int(a_lsb == 0 and x[n  ] != 0)
                 nbits_lsb += int(b_lsb == 0 and x[n+1] != 0)
 
             if (x[n] != 0 or x[n+1] != 0) and \
                     (nbits_est <= nbits_spec * 2048):
-                lastnz_trunc = n + 2;
+                lastnz_trunc = n + 2
                 nbits_trunc = nbits_est
 
-            t = 1 + (a + b) * (lev + 1) if lev <= 1 else 12 + lev;
-            c = (c & 15) * 16 + t;
+            t = 1 + (a + b) * (lev + 1) if lev <= 1 else 12 + lev
+            c = (c & 15) * 16 + t
 
-        nbits_est = (nbits_est + 2047) // 2048 + nbits_lsb;
+        nbits_est = (nbits_est + 2047) // 2048 + nbits_lsb
         nbits_trunc = (nbits_trunc + 2047) // 2048
 
         self.rate = rate
@@ -248,7 +248,7 @@ class SpectrumAnalysis(SpectrumQuantization):
             delta = nbits / 48
 
         else:
-            delta = T3[sr] / 48;
+            delta = T3[sr] / 48
 
         delta = np.fix(delta + 0.5).astype(int)
 
@@ -257,7 +257,7 @@ class SpectrumAnalysis(SpectrumQuantization):
 
             factor = [ 3 + (nbits >= 520), 2, 0, 1 ][dt]
             g_incr = int(factor * (1 + (nbits - nbits_spec) / delta))
-            return min(g_idx + g_incr, 255) - g_idx;
+            return min(g_idx + g_incr, 255) - g_idx
 
         elif self.sr < T.SRATE_48K_HR and \
             ( (g_idx < 255 and nbits > nbits_spec) or \
@@ -418,8 +418,8 @@ class SpectrumAnalysis(SpectrumQuantization):
             if b_lsb > 0:
                 bits.write_bit(int(x[n+1] < 0))
 
-            t = 1 + (a + b) * (lev + 1) if lev <= 1 else 12 + lev;
-            c = (c & 15) * 16 + t;
+            t = 1 + (a + b) * (lev + 1) if lev <= 1 else 12 + lev
+            c = (c & 15) * 16 + t
 
         ### Residual data
 
@@ -531,8 +531,8 @@ class SpectrumSynthesis(SpectrumQuantization):
                 x[n+1] = -x[n+1]
 
             lev = min(lev, 3)
-            t = 1 + (a + b) * (lev + 1) if lev <= 1 else 12 + lev;
-            c = (c & 15) * 16 + t;
+            t = 1 + (a + b) * (lev + 1) if lev <= 1 else 12 + lev
+            c = (c & 15) * 16 + t
 
         ### Residual data
 

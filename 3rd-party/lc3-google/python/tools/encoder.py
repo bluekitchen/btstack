@@ -51,13 +51,13 @@ wavfile = wave.open(f_wav, 'rb')
 
 samplerate = wavfile.getframerate()
 nchannels = wavfile.getnchannels()
-bitdepth = wavfile.getsampwidth() * 8
+bit_depth = wavfile.getsampwidth() * 8
 stream_length = wavfile.getnframes()
 
 # --- Setup encoder ---
 
 enc = lc3.Encoder(
-    args.frame_duration, samplerate, nchannels, libpath=args.libpath)
+    int(args.frame_duration)*1000, samplerate, nchannels, libpath=args.libpath)
 frame_size = enc.get_frame_bytes(args.bitrate)
 frame_length = enc.get_frame_samples()
 bitrate = enc.resolve_bitrate(frame_size)
@@ -77,7 +77,7 @@ for i in range(0, stream_length, frame_length):
     f_lc3.write(struct.pack('=H', frame_size))
 
     pcm = wavfile.readframes(frame_length)
-    f_lc3.write(enc.encode(pcm, frame_size, bitdepth=bitdepth))
+    f_lc3.write(enc.encode(pcm, frame_size, bit_depth=bit_depth))
 
 # --- Cleanup ---
 

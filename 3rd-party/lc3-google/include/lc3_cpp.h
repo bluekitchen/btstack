@@ -137,6 +137,11 @@ class Encoder : public Base<struct lc3_encoder> {
     }
   }
 
+  void DisableLTPF() {
+    for (auto &s : states)
+      lc3_encoder_disable_ltpf(s.get());
+  }
+
   ~Encoder() override = default;
 
   // Reset encoder state

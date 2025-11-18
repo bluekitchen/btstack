@@ -34,8 +34,8 @@ parser.add_argument(
     type=argparse.FileType('wb'), default=sys.stdout.buffer)
 
 parser.add_argument(
-    '--bitdepth',
-    help='Output bitdepth, default is 16 bits',
+    '--bit_depth',
+    help='Output bit depth, default is 16 bits',
     type=int, choices=[16, 24], default=16)
 
 parser.add_argument(
@@ -53,18 +53,18 @@ if header[0] != 0xcc1c:
 
 samplerate = header[2] * 100
 nchannels = header[4]
-frame_duration = header[5] / 100
+frame_duration = header[5] * 10
 stream_length = header[7]
 
 # --- Setup output ---
 
-bitdepth = args.bitdepth
-pcm_size = nchannels * (bitdepth // 8)
+bit_depth = args.bit_depth
+pcm_size = nchannels * (bit_depth // 8)
 
 f_wav = args.wav_file
 wavfile = wave.open(f_wav)
 wavfile.setnchannels(nchannels)
-wavfile.setsampwidth(bitdepth // 8)
+wavfile.setsampwidth(bit_depth // 8)
 wavfile.setframerate(samplerate)
 wavfile.setnframes(stream_length)
 
@@ -80,7 +80,7 @@ encoded_length = stream_length + dec.get_delay_samples()
 for i in range(0, encoded_length, frame_length):
 
     lc3_frame_size = struct.unpack('=H', f_lc3.read(2))[0]
-    pcm = dec.decode(f_lc3.read(lc3_frame_size), bitdepth=bitdepth)
+    pcm = dec.decode(f_lc3.read(lc3_frame_size), bit_depth=bit_depth)
 
     pcm = pcm[max(encoded_length - stream_length - i, 0) * pcm_size:
               min(encoded_length - i, frame_length) * pcm_size]
