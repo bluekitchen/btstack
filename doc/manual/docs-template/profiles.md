@@ -690,6 +690,28 @@ For more details on the available GATT queries, please consult
 [GATT Client API](#sec:gattClientAPIAppendix).
 
 
+#### GATT Client Caching
+
+When accessing a remote GATT Server, one needs to send multiple GATT queries to find all Services and Characteristics before being able to access them. If you only access a single service or two, this is fast enough and usually not noticeable. On the other end, a device implementing LE Audio Unicast Gateway needs to query and connect to multiple services, e.g. CSIS, PACS, ASCS, MCS, VCS. Depending on the used connection parameters and the responsiveness of the remote device, this can take quite long. We measured up to a whole minute connecting to an LE Audio Headset.
+ 
+To reduce this time, GATT Client Caching can be used. The general idea is that the remote GATT database usually does not change. Instead of repeating the GATT queries on every connect, it's much faster to store the results locally. However, we need to make sure that we avoid the case that the GATT database acutally changes and we use incorrect ATT Attribute Handles. For this, devices can provide the GATT Database Hash Characteristic since Bluetooth Core Spec v5.1. The Database Hash is calculated over the structure, not the values, of the complete GATT Database. If the Database Hash matches the one from the last connect, we can be sure that the ATT Attribute Handles haven't changed and all services are still there. 
+ 
+In BTstack, you can enable tracking of this GATT Database Hash by enabling `ENABLE_GATT_CLIENT_CACHING` in btstack_config.h. The GATT Client will automatically cache and track changes to the Database Hash and also register for Service Changed notifications. In both cases, a `GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED` or a `GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH` will be emitted.
+ 
+In addition, the GATT Service Client will automatically make use of these mechanisms to cache information about the Characteristics required by it's clients without changes to your existing code.
+  
+ For this caching to work, a few conditions need to be true:
+ - `ENABLE_GATT_CLIENT_CACHING` is defined.
+ - Your application supports bonding.
+ - Your application instructs the GATT Client to use an encrypted connection by calling `gatt_client_set_required_security_level` with a level > 0.
+ - Your applications usually connects to remote GATT Services via the GATT Service Client in the same order. The GATT Service Client will work correctly even if the order changes, but it will need to repeat the query to refresh the cached data.
+
+Please note: if the remote database changes while a GATT Service Client is connected to it, it will emit a `GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED` event with status set to `ERROR_CODE_UNSPECIFIED_ERROR` and consider the connection as closed to avoid sending or receiving incorrect data. If required, the application can then restart their logic and request the GATT Service Client to reconnect to the remote service again.
+ 
+In addition to the GATT Service Client requests that are cached, the tracking of the remote Database Hash allows your application to cache data on a higher level if data is unlikely to change. For example, an LE Audio Unicast Gateway needs to use the Coordinated Set Identification Service (CSIS) to figure out if the connected device is part of a set of devices. It also needs to use the Published Audio Capabilities Service (PACS) to learn what audio codecs are supported in detail. In both cases, the application can cache the values assuming that they don't change during the lifetime of a remote device. 
+
+To make use of this, your application can register itself with the GATT Client via `gatt_client_add_service_changed_handler(..)` to get `GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH` events which contains both the Database Hash as well as a local 16 bit version. In addition, you can use the LE Device Index you can get from the Security Manage with `sm_le_device_index(..)` to construct a unique tag for use with the BTstack's TLV. To invalidate the cached data, you need to respond to `GAP_SUBEVENT_BONDING_DELETED` event received by registering for HCI events via `hci_add_event_handler(..)`.
+
 
 ### GATT Server {#sec:GATTServerProfiles}
 
