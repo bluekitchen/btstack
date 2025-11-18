@@ -80,12 +80,15 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
 
     uint16_t pos = 2;
 
+    const char *format = event->format;
+
     // store subevent code if set
     if (event->subevent_code != 0){
         hci_event_buffer[pos++] = event->subevent_code;
+        btstack_assert(*format == '1');
+        format++;
     }
     
-    const char *format = event->format;
     uint16_t word;
     uint32_t longword;
     uint8_t * ptr;

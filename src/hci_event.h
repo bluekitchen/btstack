@@ -74,6 +74,9 @@ extern "C" {
  *   J: 1-byte length of following variable-length data blob 'V', length is included in packet
  *   K: 1-byte length of following variable-length data blob 'V', length is not included in packet
  *   V: variable-length data blob of len provided in 'J' field
+ *
+ *   For sub-events: format field must contain a '1' as first specifier which is set by the subevent_code in hci_event_t
+ *   (This matches the use of the format field in btstack_defines.h)
  */
 uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_buffer, uint16_t buffer_size, const hci_event_t *event, va_list argptr);
 
