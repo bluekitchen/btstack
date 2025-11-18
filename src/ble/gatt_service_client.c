@@ -59,12 +59,21 @@
 #define MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS 32
 #endif
 
+// prototypes
+
 static void gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static bool gatt_service_client_intitialized = false;
+// globals
+
+static bool gatt_service_client_initialized = false;
 static uint16_t gatt_service_client_service_cid;
 static btstack_linked_list_t gatt_service_clients;
 static btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
+
+#ifdef ENABLE_GATT_CLIENT_CACHING
+static btstack_packet_callback_registration_t gatt_service_client_service_changed_registration;
+#endif
+
 
 #ifdef ENABLE_GATT_CLIENT_CACHING
 static uint32_t gatt_service_client_tag_for_cache(uint8_t device_index, uint8_t cache_index) {
@@ -834,10 +843,8 @@ static void gatt_service_client_start_connect(gatt_service_client_t *client, gat
 }
 
 /* API */
-static btstack_packet_callback_registration_t gatt_service_client_service_changed_registration;
-
 void gatt_service_client_init(void){
-    if (false == gatt_service_client_intitialized){
+    if (false == gatt_service_client_initialized){
         // register for HCI events
         gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
         hci_add_event_handler(&gatt_service_client_hci_callback_registration);
@@ -847,14 +854,14 @@ void gatt_service_client_init(void){
         gatt_client_add_service_changed_handler(&gatt_service_client_service_changed_registration);
 #endif
         // done
-        gatt_service_client_intitialized = true;
+        gatt_service_client_initialized = true;
     }
 }
 
 void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
                                          const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num) {
 
-    btstack_assert(gatt_service_client_intitialized);
+    btstack_assert(gatt_service_client_initialized);
 
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
     client->service_id =gatt_service_client_service_cid;
@@ -869,7 +876,7 @@ void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *cli
 void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
                                                  const uuid128_t *characteristic_uuid128s, uint16_t characteristic_uuid128s_num){
 
-    btstack_assert(gatt_service_client_intitialized);
+    btstack_assert(gatt_service_client_initialized);
 
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
     client->service_id = gatt_service_client_service_cid;
@@ -1042,6 +1049,6 @@ void gatt_service_client_replace_subevent_id_and_emit(btstack_packet_handler_t c
 void gatt_service_client_deinit(void){
     gatt_service_client_service_cid = 0;
     gatt_service_clients = NULL;
-    gatt_service_client_intitialized = false;
+    gatt_service_client_initialized = false;
 }
 
