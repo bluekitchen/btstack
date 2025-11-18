@@ -272,10 +272,10 @@ static void gatt_service_client_emit_connected(btstack_packet_handler_t event_ca
     (*event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void gatt_service_client_emit_disconnected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid){
+static void gatt_service_client_emit_disconnected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
     btstack_assert(event_callback != NULL);
 
-    uint8_t event[7];
+    uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -284,6 +284,7 @@ static void gatt_service_client_emit_disconnected(btstack_packet_handler_t event
     pos += 2;
     little_endian_store_16(event, pos, cid);
     pos += 2;
+    event[pos++] = status;
     (*event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -625,7 +626,7 @@ static uint8_t gatt_service_client_get_uninitialized_characteristic_index(
         return index;
 }
 
-static void gatt_service_client_handle_disconnect(hci_con_handle_t con_handle){
+static void gatt_service_client_handle_disconnect(hci_con_handle_t con_handle, uint8_t status){
     btstack_linked_list_iterator_t service_it;
     btstack_linked_list_iterator_init(&service_it, &gatt_service_clients);
     while (btstack_linked_list_iterator_has_next(&service_it)){
@@ -635,7 +636,7 @@ static void gatt_service_client_handle_disconnect(hci_con_handle_t con_handle){
         while (btstack_linked_list_iterator_has_next(&connection_it)){
             gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&connection_it);
             if (connection->con_handle == con_handle) {
-                gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
+                gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid, status);
                 gatt_service_client_finalize_connection(client, connection);
             }
         }
@@ -750,14 +751,22 @@ static void gatt_service_client_handle_service_changed(hci_con_handle_t con_hand
     btstack_linked_list_iterator_t client_it;
     btstack_linked_list_iterator_init(&client_it,  &gatt_service_clients);
     while (btstack_linked_list_iterator_has_next(&client_it)){
-        gatt_service_client_t * service_client = (gatt_service_client_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_t * client = (gatt_service_client_t *)btstack_linked_list_iterator_next(&client_it);
         // for all connections
         btstack_linked_list_iterator_t connection_it;
-        btstack_linked_list_iterator_init(&connection_it, (btstack_linked_list_t *) &service_client->connections);
+        btstack_linked_list_iterator_init(&connection_it, (btstack_linked_list_t *) &client->connections);
         while (btstack_linked_list_iterator_has_next(&connection_it)){
-            gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
-            // - set reload flag
-            // - reset state
+            gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&connection_it);
+            // invalidate
+            uint16_t cid = connection->cid;
+            gatt_service_client_finalize_connection(client, connection);
+            if (connection->state == GATT_SERVICE_CLIENT_STATE_CONNECTED) {
+                // emit disconnected
+                gatt_service_client_emit_disconnected(client->packet_handler, con_handle, cid, ERROR_CODE_UNSPECIFIED_ERROR);
+            } else {
+                // emit connection failed
+                gatt_service_client_emit_connected(client->packet_handler, con_handle, cid, ERROR_CODE_UNSPECIFIED_ERROR);
+            }
         }
     }
 }
@@ -778,7 +787,7 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            gatt_service_client_handle_disconnect(con_handle);
+            gatt_service_client_handle_disconnect(con_handle, hci_event_disconnection_complete_get_status(packet));
             break;
 #ifdef ENABLE_GATT_CLIENT_CACHING
         case HCI_EVENT_META_GAP:
@@ -979,9 +988,13 @@ gatt_service_client_can_query_characteristic(const gatt_service_client_connectio
 }
 
 uint8_t gatt_service_client_disconnect(gatt_service_client_connection_t *connection) {
+    // cache connection info
+    uint16_t cid = connection->cid;
+    hci_con_handle_t con_handle = connection->con_handle;
     // finalize connections
-    gatt_service_client_emit_disconnected(connection->client->packet_handler, connection->con_handle, connection->cid);
     gatt_service_client_finalize_connection(connection->client, connection);
+    // emit disconnected
+    gatt_service_client_emit_disconnected(connection->client->packet_handler, con_handle, cid, ERROR_CODE_SUCCESS);
     return ERROR_CODE_SUCCESS;
 }
 
