@@ -112,7 +112,7 @@ void btstack_audio_player_play(btstack_audio_player_t * audio_player) {
             case BTSTACK_AUDIO_SONG_MOD:
                 mod_song = (btstack_audio_song_mod_t *)song;
                 btstack_audio_generator_modplayer_init(&audio_player->mod_generator,
-                    audio_player->sample_rate, audio_player->channels, mod_song->mod_title->data, mod_song->mod_title->len);
+                    audio_player->sample_rate, audio_player->channels, mod_song->mod_title->data, (uint32_t) mod_song->mod_title->len);
                 audio_player->active_generator_initialized = true;
                 break;
 #endif
