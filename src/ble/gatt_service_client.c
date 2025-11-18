@@ -841,9 +841,11 @@ void gatt_service_client_init(void){
         // register for HCI events
         gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
         hci_add_event_handler(&gatt_service_client_hci_callback_registration);
+#ifdef ENABLE_GATT_CLIENT_CACHING
         // register for GATT Client Service Changed / Database Hash events
         gatt_service_client_service_changed_registration.callback = &gatt_service_client_hci_event_handler;
         gatt_client_add_service_changed_handler(&gatt_service_client_service_changed_registration);
+#endif
         // done
         gatt_service_client_intitialized = true;
     }
