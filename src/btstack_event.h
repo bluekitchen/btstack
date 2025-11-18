@@ -14909,6 +14909,15 @@ static inline hci_con_handle_t gattservice_subevent_client_disconnected_get_con_
 static inline uint16_t gattservice_subevent_client_disconnected_get_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_client_disconnected_get_status(const uint8_t * event){
+    return event[7];
+}
 
 /**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED

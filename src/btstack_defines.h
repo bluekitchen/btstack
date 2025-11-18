@@ -4388,14 +4388,14 @@ typedef SSIZE_T ssize_t;
  * @param status
  * @param protocol_mode
  * @param num_instances
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x17u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hids_cid
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_DISCONNECTED                     0x18u
 
 /**
@@ -4406,7 +4406,7 @@ typedef SSIZE_T ssize_t;
  * @param report_id
  * @param report_len
  * @param report
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x19u
 
 /**
@@ -4418,7 +4418,7 @@ typedef SSIZE_T ssize_t;
  * @param country_code              Country HID Device hardware is localized for (not localized: 0x00)
  * @param remote_wake               Indicates whether HID Device is capable of sending a wake-signal to a HID Host
  * @param normally_connectable      Indicates whether HID Device will be advertising when bonded but not connected.
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x1Au
 
 /**
@@ -4427,7 +4427,7 @@ typedef SSIZE_T ssize_t;
  * @param hids_cid
  * @param service_index
  * @param protocol_mode    see hid_protocol_mode_t in btstack_hid.h
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x1Bu
 
 /**
@@ -4435,7 +4435,7 @@ typedef SSIZE_T ssize_t;
  * @param subevent_code
  * @param hids_cid
  * @param configuration
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x1Cu
 
 /**
@@ -4444,7 +4444,7 @@ typedef SSIZE_T ssize_t;
  * @param hids_cid
  * @param service_index
  * @param report_id
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN                           0x1Du
 
 /**
@@ -4481,15 +4481,16 @@ typedef SSIZE_T ssize_t;
  * @param cid
  * @param num_included_services
  * @param status
-*/
+ */
 #define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                              0x21u
 
 /**
- * @format 1H2
+ * @format 1H21
  * @param subevent_code
  * @param con_handle
  * @param cid
-*/
+ * @param status
+ */
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                           0x22u
 
 /**
@@ -4498,14 +4499,14 @@ typedef SSIZE_T ssize_t;
  * @param con_handle
  * @param lls_cid
  * @param status
-*/
+ */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED                          0x23u
 
 /**
  * @format 12
  * @param subevent_code
  * @param lls_cid
-*/
+ */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED                       0x24u
 
 /**
