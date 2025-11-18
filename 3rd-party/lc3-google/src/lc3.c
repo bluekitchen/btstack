@@ -150,7 +150,7 @@ LC3_EXPORT int lc3_hr_resolve_bitrate(
     if (dt >= LC3_NUM_DT || sr >= LC3_NUM_SRATE || nbytes < 0)
         return -1;
 
-    return LC3_MIN(((int64_t)nbytes * 3200 + dt) / (1 + dt), INT_MAX);
+    return (int) LC3_MIN(((int64_t)nbytes * 3200 + dt) / (1 + dt), INT_MAX);
 }
 
 LC3_EXPORT int lc3_resolve_bitrate(int dt_us, int nbytes)
