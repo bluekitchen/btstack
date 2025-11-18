@@ -1864,7 +1864,7 @@ void hxcmod_fillbuffer(modcontext * modctx, msample * outbuffer, mssize nbsample
 							if( trkbuf->nb_of_state < trkbuf->nb_max_of_state )
 							{
 								trkbuf->track_state_buf[trkbuf->nb_of_state].number_of_tracks = modctx->number_of_channels;
-								trkbuf->track_state_buf[trkbuf->nb_of_state].buf_index = i;
+								trkbuf->track_state_buf[trkbuf->nb_of_state].buf_index = (unsigned int) i;
 								trkbuf->track_state_buf[trkbuf->nb_of_state].cur_pattern = modctx->song.patterntable[modctx->tablepos];
 								trkbuf->track_state_buf[trkbuf->nb_of_state].cur_pattern_pos = modctx->patternpos / modctx->number_of_channels;
 								trkbuf->track_state_buf[trkbuf->nb_of_state].cur_pattern_table_pos = modctx->tablepos;
