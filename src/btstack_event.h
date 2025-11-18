@@ -4224,6 +4224,15 @@ static inline uint8_t sm_event_pairing_complete_get_status(const uint8_t * event
 static inline uint8_t sm_event_pairing_complete_get_reason(const uint8_t * event){
     return event[12];
 }
+/**
+ * @brief Get field ctkd_active from event SM_EVENT_PAIRING_COMPLETE
+ * @param event packet
+ * @return ctkd_active
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_pairing_complete_get_ctkd_active(const uint8_t * event){
+    return event[13];
+}
 #endif
 
 #ifdef ENABLE_BLE

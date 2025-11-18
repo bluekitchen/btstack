@@ -1815,12 +1815,13 @@ typedef SSIZE_T ssize_t;
   *        ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION  -> disconnect
   *        ERROR_CODE_AUTHENTICATION_FAILURE             -> SM protocol error, see reason field with SM_REASON_* from bluetooth.h
   *
-  * @format H1B11
+  * @format H1B111
   * @param handle
   * @param addr_type
   * @param address
   * @param status
   * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
+  * @param ctkd_active
   */
 #define SM_EVENT_PAIRING_COMPLETE                                0xD5u
 
