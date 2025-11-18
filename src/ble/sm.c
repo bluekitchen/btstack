@@ -666,14 +666,20 @@ static void sm_pairing_started(sm_connection_t * sm_conn){
 
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
 
+    bool ctkd_active = false;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+    ctkd_active = setup->sm_link_key_type != INVALID_LINK_KEY;
+#endif
+
     if (!sm_conn->sm_pairing_active) return;
 
     sm_conn->sm_pairing_active = false;
 
-    uint8_t event[13];
+    uint8_t event[14];
     sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
     event[11] = status;
     event[12] = reason;
+    event[13] = ctkd_active ? 1 : 0;
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
