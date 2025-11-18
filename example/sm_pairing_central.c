@@ -86,7 +86,7 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void sm_pairing_central_setup(void){
+static void sm_pairing_central_setup(void) {
     l2cap_init();
 
     // setup SM: Display only
@@ -279,7 +279,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case SM_EVENT_PAIRING_COMPLETE:
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
-                    printf("Pairing complete, success\n");
+                    printf("Pairing complete, success. CTKD active %u\n", sm_event_pairing_complete_get_ctkd_active(packet));
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
                     printf("Pairing failed, timeout\n");
