@@ -306,7 +306,7 @@ int main(int argc, const char * argv[]){
         printf("Specified USB Path: ");
         while (1){
             char * delimiter;
-            int port = strtol(usb_path_string, &delimiter, 16);
+            int port = (int) strtol(usb_path_string, &delimiter, 16);
             usb_path[usb_path_len] = port;
             usb_path_len++;
             printf("%02x ", port);
