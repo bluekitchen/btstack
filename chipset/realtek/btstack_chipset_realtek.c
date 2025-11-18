@@ -511,7 +511,7 @@ static uint32_t read_file(FILE **file, uint8_t **buf, const char *name) {
 
     // determine length of file
     fseek(*file, 0, SEEK_END);
-    size = ftell(*file);
+    size = (uint32_t) ftell(*file);
     fseek(*file, 0, SEEK_SET);
     if (size <= 0) {
         return 0;
