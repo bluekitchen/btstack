@@ -259,10 +259,11 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
 }
 
 static bool gatt_client_internal_query_pending(const gatt_client_t * gatt_client) {
-#ifdef ENABLE_GATT_CLIENT_CACHING
-    if (gatt_client->service_query_state != GATT_CLIENT_SERVICE_QUERY_DONE) return true;
+#if !defined(ENABLE_GATT_CLIENT_CACHING) && !defined(ENABLE_GATT_OVER_EATT)
+    UNUSED(gatt_client);
 #endif
 #ifdef ENABLE_GATT_CLIENT_CACHING
+    if (gatt_client->service_query_state != GATT_CLIENT_SERVICE_QUERY_DONE) return true;
     if (gatt_client->caching_state != GATT_CLIENT_CACHING_DONE) return true;
 #endif
 #ifdef ENABLE_GATT_OVER_EATT
