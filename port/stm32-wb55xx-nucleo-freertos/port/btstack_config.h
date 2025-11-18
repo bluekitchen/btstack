@@ -14,16 +14,17 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
+#define ENABLE_GATT_CLIENT_SERVICE_CHANGED
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
+#define ENABLE_LE_SET_ADV_PARAMS_ON_RANDOM_ADDRESS_CHANGE
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_MICRO_ECC_P256
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SOFTWARE_AES128
 #define ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-#define ENABLE_LE_SET_ADV_PARAMS_ON_RANDOM_ADDRESS_CHANGE
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (512 + 4) //Max official att size + l2cap header size
