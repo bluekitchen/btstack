@@ -125,8 +125,8 @@ static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_
     // get time
     struct timeval curr_time;
     gettimeofday(&curr_time, NULL);
-    tv_sec = curr_time.tv_sec;
-    tv_us  = curr_time.tv_usec;
+    tv_sec = (uint32_t) curr_time.tv_sec;
+    tv_us  = (uint32_t) curr_time.tv_usec;
 
     uint16_t header_len = 0;
     switch (dump_format){

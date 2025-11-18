@@ -56,7 +56,7 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     UNUSED(callback_type);
 
     char data;
-    int result = read(stdin_source.source.fd, &data, 1);
+    ssize_t result = read(stdin_source.source.fd, &data, 1);
     if (result < 1) return;
     if (stdin_handler == NULL) return;
 
