@@ -670,7 +670,7 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
     usb_process_ds((struct btstack_data_source *) NULL, DATA_SOURCE_CALLBACK_READ);
 
     // Get the amount of time until next event is due
-    long msec = ASYNC_POLLING_INTERVAL_MS;
+    uint32_t msec = ASYNC_POLLING_INTERVAL_MS;
 
     // Activate timer
     btstack_run_loop_set_timer(&usb_timer, msec);
