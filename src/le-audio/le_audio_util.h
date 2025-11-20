@@ -59,6 +59,13 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 
 uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata);
 
+/**
+ * @brief Serialize Metadata
+ * @param metadata
+ * @param event
+ * @param event_size
+ * @return length or zero if complete metadata doesn't fit into buffer
+ */
 uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size);
 
 uint16_t le_audio_util_metadata_serialize_using_mask(const le_audio_metadata_t *metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);

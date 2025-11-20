@@ -343,43 +343,66 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
 }
 
 uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size){
-    UNUSED(event_size);
+
+    // calculate total size based on chunks below, all length fields are 8-bit
+    uint16_t total_size = 5 +
+                          1 + metadata->program_info_length +
+                          3 +
+                          1 + metadata->ccids_num +
+                          1 +
+                          1 + metadata->program_info_uri_length +
+                          2 +
+                          1 + metadata->extended_metadata_length +
+                          2 +
+                          1 + metadata->vendor_specific_metadata_length;
+
+    if (event_size > total_size) return 0;
 
     uint8_t pos = 0;
-    
+
+    // 5
     event[pos++] = (uint8_t)metadata->metadata_mask;
     little_endian_store_16(event, pos, metadata->preferred_audio_contexts_mask);
     pos += 2;
     little_endian_store_16(event, pos, metadata->streaming_audio_contexts_mask);
     pos += 2;
 
+    // 1 + metadata->program_info_length
     event[pos++] = metadata->program_info_length;
     memcpy(&event[pos], &metadata->program_info[0], metadata->program_info_length);
     pos += metadata->program_info_length;
 
+    // 3
     little_endian_store_24(event, pos, metadata->language_code);
     pos += 3;
 
+    // 1 + metadata->ccids_num
     event[pos++] = metadata->ccids_num;
     memcpy(&event[pos], &metadata->ccids[0], metadata->ccids_num);
     pos += metadata->ccids_num;
-    
+
+    // 1
     event[pos++] = (uint8_t)metadata->parental_rating;
-    
+
+    // 1 + metadata->program_info_uri_length
     event[pos++] = metadata->program_info_uri_length;
     memcpy(&event[pos], &metadata->program_info_uri[0], metadata->program_info_uri_length);
     pos += metadata->program_info_uri_length;
 
+    // 2
     little_endian_store_16(event, pos, metadata->extended_metadata_type);
     pos += 2;
 
+    // 1 + metadata->extended_metadata_length
     event[pos++] = metadata->extended_metadata_length;
     memcpy(&event[pos], &metadata->extended_metadata[0], metadata->extended_metadata_length);
     pos += metadata->extended_metadata_length;
 
+    // 2
     little_endian_store_16(event, pos, metadata->vendor_specific_company_id);
     pos += 2;
 
+    // 1 + metadata->vendor_specific_metadata_length
     event[pos++] = metadata->vendor_specific_metadata_length;
     memcpy(&event[pos], &metadata->vendor_specific_metadata[0], metadata->vendor_specific_metadata_length);
     pos += metadata->vendor_specific_metadata_length;
