@@ -2727,11 +2727,6 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
         log_info("hci notify_dedicated_bonding_failed");
         hci_emit_dedicated_bonding_result(bd_address, status);
     }
-
-    // if authentication error, also delete link key
-    if (status == ERROR_CODE_AUTHENTICATION_FAILURE) {
-        gap_drop_link_key_for_bd_addr(bd_address);
-    }
 #else
     UNUSED(status);
 #endif
@@ -3974,7 +3969,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     hci_emit_nr_connections_changed();
                 } else {
                     // connection failed
-                    hci_handle_connection_failed(conn, packet[2]);
+                    hci_handle_connection_failed(conn, hci_event_connection_complete_get_status(packet));
                 }
             }
             break;
