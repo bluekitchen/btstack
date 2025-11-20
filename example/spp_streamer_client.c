@@ -245,6 +245,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     bd_addr_t event_addr;
     uint32_t class_of_device;
+    uint8_t status;
 
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
@@ -302,30 +303,40 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
 				case RFCOMM_EVENT_CHANNEL_OPENED:
-					if (rfcomm_event_channel_opened_get_status(packet)) {
-                        printf("RFCOMM channel open failed, status 0x%02x\n", rfcomm_event_channel_opened_get_status(packet));
-                    } else {
-                        rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                        rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID 0x%02x, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
-                        test_reset();
+			        status = rfcomm_event_channel_opened_get_status(packet);
+			        switch (status) {
+			            case ERROR_CODE_SUCCESS:
+			                rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+			                rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+			                printf("RFCOMM channel open succeeded. New RFCOMM Channel ID 0x%02x, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
+			                test_reset();
 
-                        // disable page/inquiry scan to get max performance
-                        gap_discoverable_control(0);
-                        gap_connectable_control(0);
+			                // disable page/inquiry scan to get max performance
+			                gap_discoverable_control(0);
+			                gap_connectable_control(0);
 
 #if (TEST_MODE & TEST_MODE_SEND)
-                        // configure test data
-                        spp_test_data_len = rfcomm_mtu;
-                        if (spp_test_data_len > sizeof(test_data)){
-                            spp_test_data_len = sizeof(test_data);
-                        }
-                        spp_create_test_data();
-                        state = SENDING;
-                        // start sending
-                        rfcomm_request_can_send_now_event(rfcomm_cid);
+			                // configure test data
+			                spp_test_data_len = rfcomm_mtu;
+			                if (spp_test_data_len > sizeof(test_data)){
+			                    spp_test_data_len = sizeof(test_data);
+			                }
+			                spp_create_test_data();
+			                state = SENDING;
+			                // start sending
+			                rfcomm_request_can_send_now_event(rfcomm_cid);
 #endif
-                    }
+			                break;
+			            case L2CAP_CONNECTION_PIN_OR_LINK_KEY_MISSING:
+			                printf("Encryption failed due to missing pin or link key.\n");
+			                printf("Deleting local limk key and retry connection\n");
+			                gap_drop_link_key_for_bd_addr(peer_addr);
+			                rfcomm_create_channel(packet_handler, peer_addr, rfcomm_server_channel, NULL);
+			                break;
+			            default:
+			                printf("RFCOMM channel open failed, status 0x%02x\n", status);
+			                break;
+			        }
 					break;
 
 #if (TEST_MODE & TEST_MODE_SEND)
@@ -342,8 +353,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     gap_discoverable_control(1);
                     gap_connectable_control(1);
                     break;
-
-
 
                 default:
                     break;
