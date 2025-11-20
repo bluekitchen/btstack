@@ -198,7 +198,7 @@ static bool hci_ssp_supported(hci_connection_t * connection);
 static void hci_notify_if_sco_can_send_now(void);
 static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con_handle, uint8_t status);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
-static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
+static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level, uint8_t status);
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
 static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
@@ -2801,11 +2801,11 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
 }
 
 #ifdef ENABLE_CLASSIC
-static void hci_handle_mutual_authentication_completed(hci_connection_t * conn){
+static void hci_handle_mutual_authentication_completed(hci_connection_t * conn, uint8_t status){
     // bonding complete if connection is authenticated (either initiated or BR/EDR SC)
     conn->requested_security_level = LEVEL_0;
     gap_security_level_t security_level = gap_security_level_for_connection(conn);
-    hci_emit_security_level(conn->con_handle, security_level);
+    hci_emit_security_level(conn->con_handle, security_level, status);
 
 }
 
@@ -2815,7 +2815,7 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
 
     // mutual authentication complete if authenticated and we have retrieved the encryption key size
     if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) != 0) {
-        hci_handle_mutual_authentication_completed(conn);
+        hci_handle_mutual_authentication_completed(conn, ERROR_CODE_SUCCESS);
     } else {
         // otherwise trigger remote feature request and send authentication request
         hci_trigger_remote_features_for_connection(conn);
@@ -4319,7 +4319,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         conn->bonding_status = status;
                     }
                     // trigger security update -> level 0
-                    hci_handle_mutual_authentication_completed(conn);
+                    hci_handle_mutual_authentication_completed(conn, ERROR_CODE_SUCCESS);
                 }
 #endif
             }
@@ -4370,7 +4370,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 
             // emit updated security level (will be 0 if not authenticated)
-            hci_handle_mutual_authentication_completed(conn);
+            hci_handle_mutual_authentication_completed(conn, hci_event_authentication_complete_get_status(packet));
             break;
 
         case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
@@ -8466,15 +8466,16 @@ static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status)
 
 #ifdef ENABLE_CLASSIC
 
-static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
+static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level, uint8_t status){
     log_info("hci_emit_security_level %u for handle %x", level, con_handle);
-    uint8_t event[5];
+    uint8_t event[6];
     int pos = 0;
     event[pos++] = GAP_EVENT_SECURITY_LEVEL;
     event[pos++] = sizeof(event) - 2;
     little_endian_store_16(event, 2, con_handle);
     pos += 2;
     event[pos++] = level;
+    event[pos++] = status;
     hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
@@ -8636,7 +8637,7 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t requested_level){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection){
-        hci_emit_security_level(con_handle, LEVEL_0);
+        hci_emit_security_level(con_handle, LEVEL_0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
         return;
     }
 
@@ -8664,7 +8665,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     } else {
         // no request active, notify if security sufficient
         if (requested_level <= current_level){
-            hci_emit_security_level(con_handle, current_level);
+            hci_emit_security_level(con_handle, current_level, ERROR_CODE_SUCCESS);
             return;
         }
 
