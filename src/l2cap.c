@@ -3514,7 +3514,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             // channel closed
                             channel->state = L2CAP_STATE_CLOSED;
                             // map l2cap connection response result to BTstack status enumeration
-                            l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
+                            l2cap_handle_channel_open_failed(channel, (L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM - 2) + result);
 
                             // discard channel
                             btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
