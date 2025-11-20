@@ -3043,6 +3043,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 #ifdef ENABLE_CLASSIC
     bd_addr_t address;
     gap_security_level_t security_level;
+    uint8_t status;
 #endif
 #ifdef L2CAP_USES_CHANNELS
     hci_con_handle_t handle;
@@ -3068,8 +3069,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 (void)memcpy(address, l2cap_outgoing_classic_addr, 6);
                 memset(l2cap_outgoing_classic_addr, 0, 6);
                 // error => outgoing connection failed
-                uint8_t status = hci_event_command_status_get_status(packet);
-                if (status){
+                status = hci_event_command_status_get_status(packet);
+                if (status != ERROR_CODE_SUCCESS){
                     l2cap_handle_connection_failed_for_addr(address, status);
                 }
             }
@@ -3080,22 +3081,24 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 #ifdef ENABLE_CLASSIC
         // handle connection complete events
         case HCI_EVENT_CONNECTION_COMPLETE:
-            reverse_bd_addr(&packet[5], address);
-            if (packet[2] == 0){
-                handle = little_endian_read_16(packet, 3);
+            hci_event_connection_complete_get_bd_addr(packet, address);
+            status = hci_event_connection_complete_get_status(packet);
+            if (status == ERROR_CODE_SUCCESS){
+                handle = hci_event_connection_complete_get_connection_handle(packet);
                 l2cap_handle_connection_success_for_addr(address, handle);
             } else {
-                l2cap_handle_connection_failed_for_addr(address, packet[2]);
+                l2cap_handle_connection_failed_for_addr(address, status);
             }
             break;
 
         // handle successful create connection cancel command
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_CREATE_CONNECTION_CANCEL) {
-                if (packet[5] == 0){
-                    reverse_bd_addr(&packet[6], address);
+                const uint8_t * return_parameter = hci_event_command_complete_get_return_parameters(packet);
+                if (return_parameter[0] == 0){
+                    reverse_bd_addr(&return_parameter[1], address);
                     // CONNECTION TERMINATED BY LOCAL HOST (0X16)
-                    l2cap_handle_connection_failed_for_addr(address, 0x16);
+                    l2cap_handle_connection_failed_for_addr(address, ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST);
                 }
             }
             l2cap_run();    // try sending signaling packets first
@@ -3105,7 +3108,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 #ifdef L2CAP_USES_CHANNELS
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            handle = little_endian_read_16(packet, 3);
+            handle = hci_event_disconnection_complete_get_connection_handle(packet);
             l2cap_handle_disconnection_complete(handle);
             break;
 #endif
@@ -3124,8 +3127,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             break;
 
         case GAP_EVENT_SECURITY_LEVEL:
-            handle = little_endian_read_16(packet, 2);
-            security_level = (gap_security_level_t) packet[4];
+            handle = gap_event_security_level_get_handle(packet);
+            security_level = (gap_security_level_t) gap_event_security_level_get_security_level(packet);
             l2cap_handle_security_level(handle, security_level);
             break;
 #endif
