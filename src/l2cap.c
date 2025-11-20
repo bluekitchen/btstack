@@ -3515,12 +3515,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             channel->state = L2CAP_STATE_CLOSED;
                             // map l2cap connection response result to BTstack status enumeration
                             l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
-                            
-                            // drop link key if security block
-                            if ((L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result) == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
-                                gap_drop_link_key_for_bd_addr(channel->address);
-                            }
-                            
+
                             // discard channel
                             btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                             l2cap_free_channel_entry(channel);

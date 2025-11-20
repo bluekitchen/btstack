@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - btstack_audio: return 0 on success for source and sink init 
+- L2CAP: don't drop link key for connection response "security block"
 - Zephyr: update port for Zephyr 4.2.0
 - Zephyr: support Ezurio M.2 Adapter for STM32 Nucleo-144 boards
 
