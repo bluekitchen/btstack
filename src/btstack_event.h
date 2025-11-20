@@ -4322,6 +4322,15 @@ static inline hci_con_handle_t gap_event_security_level_get_handle(const uint8_t
 static inline uint8_t gap_event_security_level_get_security_level(const uint8_t * event){
     return event[4];
 }
+/**
+ * @brief Get field status from event GAP_EVENT_SECURITY_LEVEL
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_security_level_get_status(const uint8_t * event){
+    return event[5];
+}
 
 /**
  * @brief Get field status from event GAP_EVENT_DEDICATED_BONDING_COMPLETED

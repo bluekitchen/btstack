@@ -1851,9 +1851,10 @@ typedef SSIZE_T ssize_t;
 // GAP
 
 /**
- * @format H1
+ * @format H11
  * @param handle
  * @param security_level
+ * @param status
  */
 #define GAP_EVENT_SECURITY_LEVEL                                 0xD8u
 
