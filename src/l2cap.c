@@ -2920,7 +2920,7 @@ static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * ch
     l2cap_emit_incoming_connection(channel);
 }
 
-static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_level_t actual_level){
+static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_level_t actual_level, uint8_t status){
     log_info("security level update for handle 0x%04x", handle);
 
     // trigger l2cap information requests
@@ -2961,7 +2961,9 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
                         l2cap_ready_to_connect(channel);
                     } else {
                         // security level insufficient, report error and free channel
-                        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
+                        uint8_t l2cap_status = status == ERROR_CODE_PIN_OR_KEY_MISSING ?
+                            L2CAP_CONNECTION_PIN_OR_LINK_KEY_MISSING : L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY;
+                        l2cap_handle_channel_open_failed(channel, l2cap_status);
                         btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
                         l2cap_free_channel_entry(channel);
                     }
@@ -3129,7 +3131,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         case GAP_EVENT_SECURITY_LEVEL:
             handle = gap_event_security_level_get_handle(packet);
             security_level = (gap_security_level_t) gap_event_security_level_get_security_level(packet);
-            l2cap_handle_security_level(handle, security_level);
+            status = gap_event_security_level_get_status(packet);
+            l2cap_handle_security_level(handle, security_level, status);
             break;
 #endif
         default:
