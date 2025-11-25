@@ -2920,6 +2920,21 @@ static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * ch
     l2cap_emit_incoming_connection(channel);
 }
 
+struct channel_and_security_level {
+    hci_con_handle_t handle;
+    gap_security_level_t security_level;
+};
+
+static bool l2cap_outgoing_channel_with_insufficient_security(const btstack_linked_item_t * item, void * context) {
+    struct channel_and_security_level * info = (struct channel_and_security_level *) context;
+    hci_con_handle_t con_handle = info->handle;
+    l2cap_channel_t *channel = (l2cap_channel_t *) item;
+    if (!l2cap_is_dynamic_channel_type(channel->channel_type)) return false;
+    if (channel->con_handle != con_handle) return false;
+    if (channel->state != L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE) return false;
+    return channel->required_security_level > info->security_level;
+}
+
 static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_level_t actual_level, uint8_t status){
     log_info("security level update for handle 0x%04x", handle);
 
@@ -2932,47 +2947,48 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
         }
     }
 
-    bool done = false;
-    while (!done){
-        done = true;
-        btstack_linked_list_iterator_t it;
-        btstack_linked_list_iterator_init(&it, &l2cap_channels);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-            if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-            if (channel->con_handle != handle) continue;
-
-            gap_security_level_t required_level = channel->required_security_level;
-
-            log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
-
-            switch (channel->state){
-                case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
-                    if (actual_level >= required_level){
-                        l2cap_handle_security_level_incoming_sufficient(channel);
-                    } else {
-                        channel->reason = L2CAP_CONNECTION_RESULT_SECURITY_BLOCK;
-                        channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-                    }
-                    break;
-
-                case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
-                    if (actual_level >= required_level){
-                        l2cap_ready_to_connect(channel);
-                    } else {
-                        // security level insufficient, report error and free channel
-                        uint8_t l2cap_status = status == ERROR_CODE_PIN_OR_KEY_MISSING ?
-                            L2CAP_CONNECTION_PIN_OR_LINK_KEY_MISSING : L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY;
-                        l2cap_handle_channel_open_failed(channel, l2cap_status);
-                        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
-                        l2cap_free_channel_entry(channel);
-                    }
-                    break;
-
-                default:
-                    break;
-            }
+    // handle channels with pending security - no channels will be finalized yet
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (channel->con_handle != handle) continue;
+        gap_security_level_t required_level = channel->required_security_level;
+        log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
+        switch (channel->state){
+            case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+                if (actual_level >= required_level){
+                    l2cap_handle_security_level_incoming_sufficient(channel);
+                } else {
+                    channel->reason = L2CAP_CONNECTION_RESULT_SECURITY_BLOCK;
+                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                }
+                break;
+            case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
+                if (actual_level >= required_level){
+                    l2cap_ready_to_connect(channel);
+                }
+                break;
+            default:
+                break;
         }
+    }
+
+    // handle insufficient security for outgoing channels that need to finalized
+    btstack_linked_list_t failed_channels = NULL;
+    struct channel_and_security_level context = { handle, actual_level};
+    btstack_linked_list_filter(&l2cap_channels, &failed_channels, l2cap_outgoing_channel_with_insufficient_security, &context);
+    btstack_linked_list_iterator_init(&it, &failed_channels);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        // security level insufficient, report error and free channel
+        uint8_t l2cap_status = status == ERROR_CODE_PIN_OR_KEY_MISSING ?
+            L2CAP_CONNECTION_PIN_OR_LINK_KEY_MISSING : L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY;
+        // remove item via iterator as finalize will free its memory
+        btstack_linked_list_iterator_remove(&it);
+        l2cap_handle_channel_open_failed(channel, l2cap_status);
+        l2cap_free_channel_entry(channel);
     }
 }
 #endif
