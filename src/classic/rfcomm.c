@@ -999,6 +999,13 @@ static void rfcomm_multiplexer_set_state_and_request_can_send_now_event(rfcomm_m
 /**
  * @return handled packet
  */
+
+static bool rfcomm_uses_multiplexer(const btstack_linked_item_t * item, void * context) {
+    rfcomm_channel_t * channel = (rfcomm_channel_t *) item;
+    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) context;
+    return channel->multiplexer == multiplexer;
+}
+
 static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
 
     UNUSED(size);   // ok: handling own l2cap events
@@ -1087,25 +1094,20 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 // mark multiplexer as shutting down
                 multiplexer->state = RFCOMM_MULTIPLEXER_SHUTTING_DOWN;
 
+                // get list of channels to finalize
+                btstack_linked_list_t channels_to_finalize = NULL;
+                btstack_linked_list_filter(&rfcomm_channels, &channels_to_finalize, rfcomm_uses_multiplexer, (void *) multiplexer);
+
                 // emit rfcomm_channel_opened with status and free channel
-                // note: repeatedly go over list until full iteration causes no further change
-                int done;
-                do {
-                    done = 1;
-                    btstack_linked_item_t * it = (btstack_linked_item_t *) &rfcomm_channels;
-                    while (it->next) {
-                        rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
-                        if (channel->multiplexer == multiplexer){
-                            done = 0;
-                            rfcomm_emit_channel_opened(channel, status);
-                            btstack_linked_list_remove(&rfcomm_channels, (btstack_linked_item_t *) channel);
-                            btstack_memory_rfcomm_channel_free(channel);
-                            break;
-                        } else {
-                            it = it->next;
-                        }
-                    }
-                } while (!done);
+                btstack_linked_list_iterator_t it;
+                btstack_linked_list_iterator_init(&it, &channels_to_finalize);
+                while (btstack_linked_list_iterator_has_next(&it)){
+                    rfcomm_channel_t * channel = (rfcomm_channel_t*) btstack_linked_list_iterator_next(&it);
+                    // remove item via iterator as finalize will free its memory
+                    btstack_linked_list_iterator_remove(&it);
+                    rfcomm_emit_channel_opened(channel, status);
+                    btstack_memory_rfcomm_channel_free(channel);
+                }
 
                 // free multiplexer
                 rfcomm_multiplexer_free(multiplexer);
