@@ -2998,7 +2998,7 @@ static bool l2cap_channel_matches_con_handle(const btstack_linked_item_t * item,
     hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t) context;
     l2cap_channel_t *channel = (l2cap_channel_t *) item;
     if (!l2cap_is_dynamic_channel_type(channel->channel_type)) return false;
-    return channel->con_handle != con_handle;
+    return channel->con_handle == con_handle;
 }
 static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
     // collect channels to close
