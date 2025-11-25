@@ -97,6 +97,13 @@ void btstack_linked_list_split(btstack_linked_list_t * input,
     *input = NULL;
 }
 
+void btstack_linked_list_filter(btstack_linked_list_t * input,
+                                btstack_linked_list_t * matches,
+                                bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context) {
+    btstack_linked_list_t temp = NULL;
+    btstack_linked_list_split(input, matches, &temp, predicate, context);
+    *input = temp;
+}
 
 /**
  * btstack_linked_list_add

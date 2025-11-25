@@ -144,6 +144,17 @@ void btstack_linked_list_split(btstack_linked_list_t * input,
                                 bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context);
 
 /**
+ * @brief Filter matching items into second list
+ * @param input list of items
+ * @param matches list of matching items
+ * @param predicate is called with linked list item and context, returns true if item matches
+ * @param context
+ */
+void btstack_linked_list_filter(btstack_linked_list_t * input,
+                                btstack_linked_list_t * matches,
+                                bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context);
+
+/**
  * @brief Initialize Linked List Iterator
  * @note robust against removal of current element by btstack_linked_list_remove
  * @param it iterator context
