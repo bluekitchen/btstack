@@ -197,7 +197,7 @@ const hci_event_t hci_event_number_of_completed_packets_1 = {
 /* LE Subevents */
 
 const hci_event_t hci_subevent_le_connection_complete = {
-    HCI_EVENT_LE_META, HCI_SUBEVENT_LE_CONNECTION_COMPLETE, "1H11B2221"
+    HCI_EVENT_LE_META, HCI_SUBEVENT_LE_CONNECTION_COMPLETE, "11H11B2221"
 };
 
 /* GAP Subevents */
