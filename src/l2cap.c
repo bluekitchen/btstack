@@ -2978,19 +2978,20 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
 #endif
 
 #ifdef L2CAP_USES_CHANNELS
+static bool l2cap_channel_matches_con_handle(const btstack_linked_item_t * item, void * context) {
+    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t) context;
+    l2cap_channel_t *channel = (l2cap_channel_t *) item;
+    if (!l2cap_is_dynamic_channel_type(channel->channel_type)) return false;
+    return channel->con_handle != con_handle;
+}
 static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
     // collect channels to close
     btstack_linked_list_t channels_to_close = NULL;
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)) {
-        l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-        if (channel->con_handle != handle) continue;
-        btstack_linked_list_iterator_remove(&it);
-        btstack_linked_list_add(&channels_to_close, (btstack_linked_item_t *) channel);
-    }
+    btstack_linked_list_filter(&l2cap_channels, &channels_to_close,
+        l2cap_channel_matches_con_handle, (void *)(uintptr_t) handle);
+
     // send l2cap open failed or closed events for all channels on this handle and free them
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &channels_to_close);
     while (btstack_linked_list_iterator_has_next(&it)) {
         l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
