@@ -130,7 +130,18 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
  */
 int btstack_linked_list_count(btstack_linked_list_t * list);
 
-
+/**
+ * @brief Split list into matching and not-matching items based on a criteria
+ * @param input list of items
+ * @param matches list of matching items
+ * @param other all other items
+ * @param predicate is called with linked list item and context, returns true if item matches
+ * @param context
+ */
+void btstack_linked_list_split(btstack_linked_list_t * input,
+                                btstack_linked_list_t * matches,
+                                btstack_linked_list_t * other,
+                                bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context);
 
 /**
  * @brief Initialize Linked List Iterator

@@ -69,6 +69,34 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
     return lastItem;
 }
 
+void btstack_linked_list_split(btstack_linked_list_t * input,
+                                btstack_linked_list_t * matches,
+                                btstack_linked_list_t * other,
+                                bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context) {
+    btstack_linked_item_t ** current = input;
+    *matches = NULL;
+    *other   = NULL;
+    btstack_linked_item_t ** last_match = matches;
+    btstack_linked_item_t ** last_other = other;
+
+    while (*current) {
+        btstack_linked_item_t * node = *current;
+        *current = node->next;   // detach node from input
+        node->next = NULL;
+
+        if (predicate(node, context)) {
+            *last_match = node;
+            last_match = &node->next;
+        } else {
+            *last_other = node;
+            last_other = &node->next;
+        }
+    }
+
+    // input list is now empty
+    *input = NULL;
+}
+
 
 /**
  * btstack_linked_list_add
