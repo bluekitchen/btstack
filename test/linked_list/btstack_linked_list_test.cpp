@@ -1,6 +1,10 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include "btstack_linked_list.h"
+#include "../../src/btstack_linked_list.h"
+#include <stdarg.h>
+
+#include "../../src/btstack_defines.h"
 
 btstack_linked_list_t testList;
 btstack_linked_item_t itemA;
@@ -316,6 +320,54 @@ TEST(LinkedList, RemoveAllUsingIterator){
     btstack_linked_list_iterator_remove(&it);
     CHECK(!btstack_linked_list_iterator_has_next(&it));
 }
+
+// helepr for SplitList test
+static bool is_item_b_or_c(const btstack_linked_item_t * item, void * context) {
+    UNUSED(context);
+    return item == &itemB || item == &itemC;
+}
+static bool all_matches(const btstack_linked_item_t * item, void * context) {
+    return true;
+}
+static bool none_matches(const btstack_linked_item_t * item, void * context) {
+    return false;
+}
+TEST(LinkedList, SplitEmptyList) {
+    btstack_linked_list_t matchesList = NULL;
+    btstack_linked_list_t otherList = NULL;
+    testList = NULL;
+    btstack_linked_list_split(&testList, &matchesList, &otherList, is_item_b_or_c, NULL);
+    CHECK_EQUAL(btstack_linked_list_count(&testList), 0);
+    CHECK_EQUAL(btstack_linked_list_count(&matchesList), 0);
+    CHECK_EQUAL(btstack_linked_list_count(&otherList), 0);
+}
+TEST(LinkedList, SplitList) {
+    btstack_linked_list_t matchesList = NULL;
+    btstack_linked_list_t otherList = NULL;
+    btstack_linked_list_split(&testList, &matchesList, &otherList, is_item_b_or_c, NULL);
+    CHECK_EQUAL(btstack_linked_list_count(&testList), 0);
+    CHECK_EQUAL(btstack_linked_list_count(&matchesList), 2);
+    CHECK_EQUAL(btstack_linked_list_count(&otherList), 2);
+    CHECK(btstack_linked_list_get_first_item(&matchesList) == &itemB);
+    CHECK(btstack_linked_list_get_first_item(&otherList) == &itemA);
+}
+TEST(LinkedList, SplitAllMatches) {
+    btstack_linked_list_t matchesList = NULL;
+    btstack_linked_list_t otherList = NULL;
+    btstack_linked_list_split(&testList, &matchesList, &otherList, all_matches, NULL);
+    CHECK_EQUAL(btstack_linked_list_count(&testList), 0);
+    CHECK_EQUAL(btstack_linked_list_count(&matchesList), 4);
+    CHECK_EQUAL(btstack_linked_list_count(&otherList), 0);
+}
+TEST(LinkedList, SplitNoneMatches) {
+    btstack_linked_list_t matchesList = NULL;
+    btstack_linked_list_t otherList = NULL;
+    btstack_linked_list_split(&testList, &matchesList, &otherList, none_matches, NULL);
+    CHECK_EQUAL(btstack_linked_list_count(&testList), 0);
+    CHECK_EQUAL(btstack_linked_list_count(&matchesList), 0);
+    CHECK_EQUAL(btstack_linked_list_count(&otherList), 4);
+}
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
