@@ -74,6 +74,7 @@ static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection);
 static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
 static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
+static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
 
 // public prototypes
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
