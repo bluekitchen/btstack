@@ -5224,9 +5224,9 @@ void sm_init(void){
     // other
     btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
 
-    // register for HCI Events
+    // register to get HCI events before any other packet handler
     hci_event_callback_registration.callback = &sm_event_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    hci_add_event_handler_for_security_manager(&hci_event_callback_registration);
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
     // register for L2CAP events
