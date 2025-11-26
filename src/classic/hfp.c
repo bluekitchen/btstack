@@ -94,9 +94,6 @@ static hfp_sdp_query_context_t                 hfp_sdp_query_context;
 static btstack_context_callback_registration_t hfp_sdp_query_request;
 
 
-
-
-
 // custom commands
 static btstack_linked_list_t hfp_custom_commands_ag;
 static btstack_linked_list_t hfp_custom_commands_hf;
@@ -104,7 +101,9 @@ static btstack_linked_list_t hfp_custom_commands_hf;
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 static void parse_sequence(hfp_connection_t * context);
-
+#ifdef ENABLE_HFP_AT_MESSAGES
+static void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
+#endif
 
 #define CODEC_MASK_CVSD   (1 << HFP_CODEC_CVSD)
 #define CODEC_MASK_OTHER ((1 << HFP_CODEC_MSBC) | (1 << HFP_CODEC_LC3_SWB))
