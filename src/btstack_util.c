@@ -249,8 +249,15 @@ int nibble_for_char(char c){
     return -1;
 }
 
-#ifdef ENABLE_PRINTF_HEXDUMP
 void printf_hexdump(const void * data, int size){
+#ifdef ENABLE_PRINTF_HEXDUMP
+#ifdef ENABLE_PRINTF_TO_LOG
+#define temp_printf printf
+#undef printf
+#ifdef ENABLE_LOG_INFO
+    log_info_hexdump(data, size);
+#endif
+#endif
     char buffer[4];
     buffer[2] = ' ';
     buffer[3] =  0;
@@ -263,6 +270,10 @@ void printf_hexdump(const void * data, int size){
         size--;
     }
     printf("\n");
+#ifdef ENABLE_PRINTF_HEXDUMP
+#define printf temp_printf
+#undef temp_printf
+#endif
 }
 #endif
 
