@@ -271,6 +271,10 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
 }
 
+void hci_add_event_handler_for_security_manager(btstack_packet_callback_registration_t * callback_handler){
+	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
+}
+
 void l2cap_reserve_packet_buffer(void){
 	printf("l2cap_reserve_packet_buffer\n");
 }
