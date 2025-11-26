@@ -1911,6 +1911,9 @@ uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool
 // internal, called by security manager and other gap services
 void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump);
 
+// internal, called by security manager
+void hci_add_event_handler_for_security_manager(btstack_packet_callback_registration_t * callback_handler);
+
 // Only for PTS testing
 
 // Disable automatic L2CAP disconnect if no L2CAP connection is established

@@ -5014,6 +5014,11 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
     btstack_linked_list_add_tail(&hci_stack->event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
+// same as before, but adds packet handler as first element to guarantee sm is called before any other handler
+void hci_add_event_handler_for_security_manager(btstack_packet_callback_registration_t * callback_handler) {
+    btstack_linked_list_add(&hci_stack->event_handlers, (btstack_linked_item_t*) callback_handler);
+}
+
 /**
  * @brief Remove event packet handler.
  */
