@@ -249,68 +249,60 @@ int nibble_for_char(char c){
     return -1;
 }
 
-#ifdef ENABLE_PRINTF_HEXDUMP
-void printf_hexdump(const void * data, int size){
-#ifdef ENABLE_PRINTF_TO_LOG
-#define temp_printf printf
-#undef printf
-#ifdef ENABLE_LOG_INFO
-    log_info_hexdump(data, size);
-#endif
-#endif
-
-    char buffer[4];
-    buffer[2] = ' ';
-    buffer[3] =  0;
-    const uint8_t * ptr = (const uint8_t *) data;
-    while (size > 0){
-        uint8_t byte = *ptr++;
-        buffer[0] = char_for_high_nibble(byte);
-        buffer[1] = char_for_low_nibble(byte);
-        printf("%s", buffer);
-        size--;
+#if defined(ENABLE_PRINTF_HEXDUMP) || defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
+// serialized data into a line buffer either as pure hex data with spaces or in c_style
+// returns number of chars excluding trailing \0
+static uint16_t btstack_util_hexdump(const uint8_t * data, uint16_t size, bool c_style, char * buffer, uint16_t buf_size) {
+    if (c_style) {
+        btstack_assert(buf_size > 6 * size);
+    } else {
+        btstack_assert(buf_size > 3 * size);
     }
-    printf("\n");
-
-#ifdef ENABLE_PRINTF_TO_LOG
-#define printf temp_printf
-#undef temp_printf
+    uint16_t pos = 0;
+    for (uint16_t i=0; i<size;i++) {
+        uint8_t byte = ((uint8_t *)data)[i];
+        if (c_style) {
+            buffer[pos++] = '0';
+            buffer[pos++] = 'x';
+        }
+        buffer[pos++] = char_for_high_nibble(byte);
+        buffer[pos++] = char_for_low_nibble(byte);
+        if (c_style) {
+            buffer[pos++] = ',';
+        }
+        buffer[pos++] = ' ';
+    }
+    buffer[pos] = 0;
+    return pos;
+}
 #endif
+
+#ifdef ENABLE_PRINTF_HEXDUMP
+#define ITEMS_PER_LINE_PRINTF_HEXDUMP 32
+void printf_hexdump(const void * input, int size) {
+    uint8_t * data = (uint8_t *) input;
+    char buffer[ITEMS_PER_LINE_PRINTF_HEXDUMP * 3 + 1];
+    while (size > 0) {
+        uint16_t chunk_len = btstack_min(size, ITEMS_PER_LINE_PRINTF_HEXDUMP);
+        btstack_util_hexdump(data, chunk_len, false, buffer, sizeof(buffer));
+        size -= chunk_len;
+        data += chunk_len;
+        printf(size > 0 ? "%s" : "%s\n", buffer);
+    }
 }
 #endif
 
 #if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
-static void log_hexdump(int level, const void * data, int size){
-#define ITEMS_PER_LINE 16
-// template '0x12, '
-#define BYTES_PER_BYTE  6
-    char buffer[BYTES_PER_BYTE*ITEMS_PER_LINE+1];
-    int i, j;
-    j = 0;
-    for (i=0; i<size;i++){
-
-        // help static analyzer proof that j stays within bounds
-        if (j > (BYTES_PER_BYTE * (ITEMS_PER_LINE-1))){
-            j = 0;
-        }
-
-        uint8_t byte = ((uint8_t *)data)[i];
-        buffer[j++] = '0';
-        buffer[j++] = 'x';
-        buffer[j++] = char_for_high_nibble(byte);
-        buffer[j++] = char_for_low_nibble(byte);
-        buffer[j++] = ',';
-        buffer[j++] = ' ';     
-
-        if (j >= (BYTES_PER_BYTE * ITEMS_PER_LINE) ){
-            buffer[j] = 0;
-            hci_dump_log(level, "%s", buffer);
-            j = 0;
-        }
-    }
-    if (j != 0){
-        buffer[j] = 0;
+#define ITEMS_PER_LINE_LOG_HEXDUMP 16
+static void log_hexdump(int level, const void * input, int size) {
+    uint8_t * data = (uint8_t *) input;
+    char buffer[ITEMS_PER_LINE_LOG_HEXDUMP * 6 + 1];
+    while (size > 0) {
+        uint16_t chunk_len = btstack_min(size, ITEMS_PER_LINE_LOG_HEXDUMP);
+        btstack_util_hexdump(data, chunk_len, false, buffer, sizeof(buffer));
         hci_dump_log(level, "%s", buffer);
+        size -= chunk_len;
+        data += chunk_len;
     }
 }
 #endif
