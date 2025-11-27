@@ -896,7 +896,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 if (status == ERROR_CODE_SUCCESS) break;
                 
                 hfp_connection = hfp_sco_establishment_active;
-                if (hfp_handle_failed_sco_connection(status)) break;
+                if (hfp_handle_failed_sco_connection(status)) {
+                    // trigger hfp run for role
+                    hfp_emit_event_for_context(hfp_connection, packet, size);
+                    break;
+                }
 
                 hfp_connection->accept_sco = 0;
                 hfp_connection->establish_audio_connection = 0;
