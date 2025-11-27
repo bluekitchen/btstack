@@ -113,6 +113,7 @@ typedef enum {
     HCI_OPCODE_HCI_READ_CLOCK_OFFSET = HCI_OPCODE (OGF_LINK_CONTROL, 0x1F),
     HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x0028),
     HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x0029),
+    HCI_OPCODE_HCI_REJECT_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x002A),
     HCI_OPCODE_HCI_IO_CAPABILITY_REQUEST_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x2b),
     HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x2c),
     HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x2d),
@@ -409,22 +410,21 @@ extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;
 extern const hci_cmd_t hci_read_bd_addr;
 extern const hci_cmd_t hci_read_buffer_size;
+extern const hci_cmd_t hci_read_clock;
 extern const hci_cmd_t hci_read_clock_offset;
 extern const hci_cmd_t hci_read_encryption_key_size;
 extern const hci_cmd_t hci_read_extended_inquiry_length;
 extern const hci_cmd_t hci_read_extended_page_timeout;
+extern const hci_cmd_t hci_read_failed_contact_counter;
+extern const hci_cmd_t hci_read_inquiry_response_transmit_power_level;
 extern const hci_cmd_t hci_read_inquiry_scan_activity;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
+extern const hci_cmd_t hci_read_link_quality;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
 extern const hci_cmd_t hci_read_local_extended_oob_data;
 extern const hci_cmd_t hci_read_local_name;
 extern const hci_cmd_t hci_read_local_oob_data;
-extern const hci_cmd_t hci_read_inquiry_response_transmit_power_level;
-extern const hci_cmd_t hci_write_inquiry_transmit_power_level;
-extern const hci_cmd_t hci_read_clock;
-extern const hci_cmd_t hci_read_failed_contact_counter;
-extern const hci_cmd_t hci_read_link_quality;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
 extern const hci_cmd_t hci_read_local_version_information;
@@ -439,6 +439,7 @@ extern const hci_cmd_t hci_read_remote_version_information;
 extern const hci_cmd_t hci_read_rssi;
 extern const hci_cmd_t hci_read_transmit_power_level;
 extern const hci_cmd_t hci_reject_connection_request;
+extern const hci_cmd_t hci_reject_synchronous_connection;
 extern const hci_cmd_t hci_remote_name_request;
 extern const hci_cmd_t hci_remote_name_request_cancel;
 extern const hci_cmd_t hci_remote_oob_data_request_negative_reply;
@@ -473,6 +474,7 @@ extern const hci_cmd_t hci_write_extended_page_timeout;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_inquiry_scan_activity;
 extern const hci_cmd_t hci_write_inquiry_scan_type;
+extern const hci_cmd_t hci_write_inquiry_transmit_power_level;
 extern const hci_cmd_t hci_write_le_host_supported;
 extern const hci_cmd_t hci_write_link_policy_settings;
 extern const hci_cmd_t hci_write_link_supervision_timeout;

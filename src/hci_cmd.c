@@ -516,6 +516,14 @@ const hci_cmd_t hci_accept_synchronous_connection = {
 
 /**
  * @param bd_addr
+ * @param reason
+ */
+const hci_cmd_t hci_reject_synchronous_connection = {
+    HCI_OPCODE_HCI_REJECT_SYNCHRONOUS_CONNECTION, "B1"
+};
+
+/**
+ * @param bd_addr
  * @param IO_capability
  * @param OOB_data_present
  * @param authentication_requirements
