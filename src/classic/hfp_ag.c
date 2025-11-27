@@ -3577,9 +3577,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
 	btstack_assert(callback != NULL);
-    
 	hfp_ag_callback = callback;
-	hfp_set_ag_callback(callback);
 }
 
 void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event)){
