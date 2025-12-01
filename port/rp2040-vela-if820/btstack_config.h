@@ -51,7 +51,7 @@ uint32_t hal_audio_sink_get_frequency(void);
 #define MAX_NR_GATT_CLIENTS 1
 #define MAX_NR_HCI_CONNECTIONS 2
 #define MAX_NR_HFP_CONNECTIONS 1
-#define MAX_NR_HIDS_CLIENTS 1
+#define MAX_NR_HIDS_HOSTS 1
 #define MAX_NR_HID_HOST_CONNECTIONS 1
 #define MAX_NR_L2CAP_CHANNELS  4
 #define MAX_NR_L2CAP_SERVICES  3
