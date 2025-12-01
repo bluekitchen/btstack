@@ -91,7 +91,7 @@ GATT_CLIENT += \
 	battery_service_client.c 				\
 	device_information_service_client.c 	\
 	scan_parameters_service_client.c 	    \
-	hids_client.c 	    					\
+	hids_host.c 	    					\
 
 PAN += \
 	pan.c \
