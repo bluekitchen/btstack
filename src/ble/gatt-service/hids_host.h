@@ -212,7 +212,7 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Initialize HID Service Client. The HID Descriptor storage is shared between all connections.
+ * @brief Initialize HID Service Host. The HID Descriptor storage is shared between all connections.
  *
  * @param hid_descriptor_storage
  * @param hid_descriptor_storage_len
@@ -226,8 +226,8 @@ void hids_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_st
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no service or report map or report are found.
  * It also contains the number of individual HIDS Services. 
  *
- * Connection state is stored in hids_client_t objects provided via memory pool
- * Max number of connections is limited by MAX_NR_HIDS_CLIENTS unless HAVE_MALLOC is used
+ * Connection state is stored in hids_host_t objects provided via memory pool
+ * Max number of connections is limited by MAX_NR_HIDS_HOSTS unless HAVE_MALLOC is used
  *
  * @param con_handle
  * @param packet_handler
