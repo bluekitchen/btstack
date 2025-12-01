@@ -1272,57 +1272,57 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 #endif
 
 
-// MARK: hids_client_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HIDS_CLIENTS)
-    #if defined(MAX_NO_HIDS_CLIENTS)
-        #error "Deprecated MAX_NO_HIDS_CLIENTS defined instead of MAX_NR_HIDS_CLIENTS. Please update your btstack_config.h to use MAX_NR_HIDS_CLIENTS."
+// MARK: hids_host_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HIDS_HOSTS)
+    #if defined(MAX_NO_HIDS_HOSTS)
+        #error "Deprecated MAX_NO_HIDS_HOSTS defined instead of MAX_NR_HIDS_HOSTS. Please update your btstack_config.h to use MAX_NR_HIDS_HOSTS."
     #else
-        #define MAX_NR_HIDS_CLIENTS 0
+        #define MAX_NR_HIDS_HOSTS 0
     #endif
 #endif
 
-#ifdef MAX_NR_HIDS_CLIENTS
-#if MAX_NR_HIDS_CLIENTS > 0
-static hids_client_t hids_client_storage[MAX_NR_HIDS_CLIENTS];
-static btstack_memory_pool_t hids_client_pool;
-hids_client_t * btstack_memory_hids_client_get(void){
-    void * buffer = btstack_memory_pool_get(&hids_client_pool);
+#ifdef MAX_NR_HIDS_HOSTS
+#if MAX_NR_HIDS_HOSTS > 0
+static hids_host_t hids_host_storage[MAX_NR_HIDS_HOSTS];
+static btstack_memory_pool_t hids_host_pool;
+hids_host_t * btstack_memory_hids_host_get(void){
+    void * buffer = btstack_memory_pool_get(&hids_host_pool);
     if (buffer){
-        memset(buffer, 0, sizeof(hids_client_t));
+        memset(buffer, 0, sizeof(hids_host_t));
     }
-    return (hids_client_t *) buffer;
+    return (hids_host_t *) buffer;
 }
-void btstack_memory_hids_client_free(hids_client_t *hids_client){
-    btstack_memory_pool_free(&hids_client_pool, hids_client);
+void btstack_memory_hids_host_free(hids_host_t *hids_host){
+    btstack_memory_pool_free(&hids_host_pool, hids_host);
 }
 #else
-hids_client_t * btstack_memory_hids_client_get(void){
+hids_host_t * btstack_memory_hids_host_get(void){
     return NULL;
 }
-void btstack_memory_hids_client_free(hids_client_t *hids_client){
-    UNUSED(hids_client);
+void btstack_memory_hids_host_free(hids_host_t *hids_host){
+    UNUSED(hids_host);
 }
 #endif
 #elif defined(HAVE_MALLOC)
 
 typedef struct {
     btstack_memory_buffer_t tracking;
-    hids_client_t data;
-} btstack_memory_hids_client_t;
+    hids_host_t data;
+} btstack_memory_hids_host_t;
 
-hids_client_t * btstack_memory_hids_client_get(void){
-    btstack_memory_hids_client_t * buffer = (btstack_memory_hids_client_t *) malloc(sizeof(btstack_memory_hids_client_t));
+hids_host_t * btstack_memory_hids_host_get(void){
+    btstack_memory_hids_host_t * buffer = (btstack_memory_hids_host_t *) malloc(sizeof(btstack_memory_hids_host_t));
     if (buffer){
-        memset(buffer, 0, sizeof(btstack_memory_hids_client_t));
+        memset(buffer, 0, sizeof(btstack_memory_hids_host_t));
         btstack_memory_tracking_add(&buffer->tracking);
         return &buffer->data;
     } else {
         return NULL;
     }
 }
-void btstack_memory_hids_client_free(hids_client_t *hids_client){
+void btstack_memory_hids_host_free(hids_host_t *hids_host){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hids_client)[-1];
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hids_host)[-1];
     btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
@@ -2047,8 +2047,8 @@ void btstack_memory_init(void){
 #if MAX_NR_GATT_CLIENTS > 0
     btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
 #endif
-#if MAX_NR_HIDS_CLIENTS > 0
-    btstack_memory_pool_create(&hids_client_pool, hids_client_storage, MAX_NR_HIDS_CLIENTS, sizeof(hids_client_t));
+#if MAX_NR_HIDS_HOSTS > 0
+    btstack_memory_pool_create(&hids_host_pool, hids_host_storage, MAX_NR_HIDS_HOSTS, sizeof(hids_host_t));
 #endif
 #if MAX_NR_SM_LOOKUP_ENTRIES > 0
     btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));

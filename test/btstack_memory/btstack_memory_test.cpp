@@ -941,43 +941,43 @@ TEST(btstack_memory, gatt_client_NotEnoughBuffers){
 
 
 
-TEST(btstack_memory, hids_client_GetAndFree){
-    hids_client_t * context;
+TEST(btstack_memory, hids_host_GetAndFree){
+    hids_host_t * context;
 #ifdef HAVE_MALLOC
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context != NULL);
-    btstack_memory_hids_client_free(context);
+    btstack_memory_hids_host_free(context);
 #else
-#ifdef MAX_NR_HIDS_CLIENTS
+#ifdef MAX_NR_HIDS_HOSTS
     // single
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context != NULL);
-    btstack_memory_hids_client_free(context);
+    btstack_memory_hids_host_free(context);
 #else
     // none
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context == NULL);
-    btstack_memory_hids_client_free(context);
+    btstack_memory_hids_host_free(context);
 #endif
 #endif
 }
 
-TEST(btstack_memory, hids_client_NotEnoughBuffers){
-    hids_client_t * context;
+TEST(btstack_memory, hids_host_NotEnoughBuffers){
+    hids_host_t * context;
 #ifdef HAVE_MALLOC
     simulate_no_memory = 1;
 #else
-#ifdef MAX_NR_HIDS_CLIENTS
+#ifdef MAX_NR_HIDS_HOSTS
     int i;
     // alloc all static buffers
-    for (i = 0; i < MAX_NR_HIDS_CLIENTS; i++){
-        context = btstack_memory_hids_client_get();
+    for (i = 0; i < MAX_NR_HIDS_HOSTS; i++){
+        context = btstack_memory_hids_host_get();
         CHECK(context != NULL);
     }
 #endif
 #endif
     // get one more
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context == NULL);
 }
 

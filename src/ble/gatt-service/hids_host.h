@@ -36,12 +36,12 @@
  */
 
 /**
- * @title HID Service Client
+ * @title HID Service Client - HIDS Host
  * 
  */
 
-#ifndef HIDS_CLIENT_H
-#define HIDS_CLIENT_H
+#ifndef HIDS_HOST_H
+#define HIDS_HOST_H
 
 #include <stdint.h>
 #include "btstack_defines.h"
@@ -55,76 +55,76 @@ extern "C" {
 #endif
 
 /** 
- * @text The HID Service Client is used on the HID Host to receive reports and other HID data.
+ * @text The HIDS Host is used to receive reports and other HID data.
  */
 
 #ifndef MAX_NUM_HID_SERVICES
 #define MAX_NUM_HID_SERVICES 3
 #endif
-#define HIDS_CLIENT_INVALID_REPORT_INDEX 0xFF
+#define HIDS_HOST_INVALID_REPORT_INDEX 0xFF
 
-#define HIDS_CLIENT_NUM_REPORTS 15
+#define HIDS_HOST_NUM_REPORTS 15
 
 typedef enum {
-    HIDS_CLIENT_STATE_IDLE,
+    HIDS_HOST_STATE_IDLE,
     
     // get all HID services
-    HIDS_CLIENT_STATE_W2_QUERY_SERVICE,
-    HIDS_CLIENT_STATE_W4_SERVICE_RESULT,
+    HIDS_HOST_STATE_W2_QUERY_SERVICE,
+    HIDS_HOST_STATE_W4_SERVICE_RESULT,
     
     // for each service, discover all characteristics
-    HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
-    HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    HIDS_HOST_STATE_W2_QUERY_CHARACTERISTIC,
+    HIDS_HOST_STATE_W4_CHARACTERISTIC_RESULT,
 
     // called if BOOT mode
-    HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE,
+    HIDS_HOST_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE,
     
     // for each REPORT_MAP characteristic, read HID Descriptor (Report Map Characteristic Value)
-    HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR,
-    HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR,
+    HIDS_HOST_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR,
+    HIDS_HOST_STATE_W4_REPORT_MAP_HID_DESCRIPTOR,
     
     // for REPORT_MAP characteristic, discover descriptor 
-    HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
-    HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT,
+    HIDS_HOST_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
+    HIDS_HOST_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT,
 
     // for REPORT_MAP characteristic, read External Report Reference Characteristic Descriptor
-    HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_EXTERNAL_REPORT_REFERENCE_UUID,
-    HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID,
+    HIDS_HOST_STATE_W2_REPORT_MAP_READ_EXTERNAL_REPORT_REFERENCE_UUID,
+    HIDS_HOST_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID,
 
     // for every external report reference uuid, discover external Report characteristic
-    HIDS_CLIENT_STATE_W2_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC,
-    HIDS_CLIENT_STATE_W4_EXTERNAL_REPORT_CHARACTERISTIC_RESULT,
+    HIDS_HOST_STATE_W2_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC,
+    HIDS_HOST_STATE_W4_EXTERNAL_REPORT_CHARACTERISTIC_RESULT,
 
     // for each Report characteristics, discover Report characteristic descriptor
-    HIDS_CLIENT_STATE_W2_FIND_REPORT,
-    HIDS_CLIENT_STATE_W4_REPORT_FOUND,
+    HIDS_HOST_STATE_W2_FIND_REPORT,
+    HIDS_HOST_STATE_W4_REPORT_FOUND,
 
     // then read value of Report characteristic descriptor to get report ID and type  
-    HIDS_CLIENT_STATE_W2_READ_REPORT_ID_AND_TYPE,
-    HIDS_CLIENT_STATE_W4_REPORT_ID_AND_TYPE,
+    HIDS_HOST_STATE_W2_READ_REPORT_ID_AND_TYPE,
+    HIDS_HOST_STATE_W4_REPORT_ID_AND_TYPE,
     
-    HIDS_CLIENT_STATE_W2_ENABLE_INPUT_REPORTS,
-    HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED,
+    HIDS_HOST_STATE_W2_ENABLE_INPUT_REPORTS,
+    HIDS_HOST_STATE_W4_INPUT_REPORTS_ENABLED,
 
-    HIDS_CLIENT_STATE_CONNECTED,
+    HIDS_HOST_STATE_CONNECTED,
 
-    HIDS_CLIENT_W2_SEND_WRITE_REPORT,
-    HIDS_CLIENT_W4_WRITE_REPORT_DONE,
+    HIDS_HOST_W2_SEND_WRITE_REPORT,
+    HIDS_HOST_W4_WRITE_REPORT_DONE,
 
-    HIDS_CLIENT_W2_SEND_GET_REPORT,
-    HIDS_CLIENT_W4_GET_REPORT_RESULT,
+    HIDS_HOST_W2_SEND_GET_REPORT,
+    HIDS_HOST_W4_GET_REPORT_RESULT,
 
-    HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC,
-    HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT,
+    HIDS_HOST_W2_READ_VALUE_OF_CHARACTERISTIC,
+    HIDS_HOST_W4_VALUE_OF_CHARACTERISTIC_RESULT,
     
-    HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE,
+    HIDS_HOST_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE,
 
-    HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS,
-    HIDS_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED,
+    HIDS_HOST_STATE_W2_CONFIGURE_NOTIFICATIONS,
+    HIDS_HOST_STATE_W4_NOTIFICATIONS_CONFIGURED,
 
 #ifdef ENABLE_TESTING_SUPPORT
-    HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
-    HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
+    HIDS_HOST_W2_READ_CHARACTERISTIC_CONFIGURATION,
+    HIDS_HOST_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
 #endif
 
 } hid_service_client_state_t;
@@ -151,7 +151,7 @@ typedef struct {
     hid_report_type_t report_type;
     uint8_t boot_report;
     gatt_client_notification_t notification_listener;
-} hids_client_report_t;
+} hids_host_report_t;
 
 typedef struct {
     hid_protocol_mode_t protocol_mode;
@@ -194,10 +194,10 @@ typedef struct {
     hid_protocol_mode_t required_protocol_mode;
 
     // send report
-    hids_client_report_t reports[HIDS_CLIENT_NUM_REPORTS];
+    hids_host_report_t reports[HIDS_HOST_NUM_REPORTS];
     uint8_t num_reports;
 
-    hids_client_report_t external_reports[HIDS_CLIENT_NUM_REPORTS];
+    hids_host_report_t external_reports[HIDS_HOST_NUM_REPORTS];
     uint8_t num_external_reports;
 
     // index used for report and report map search
@@ -207,7 +207,7 @@ typedef struct {
     // used to write control_point and  protocol_mode
     uint16_t handle;
     uint8_t  value;
-} hids_client_t;
+} hids_host_t;
 
 /* API_START */
 
@@ -217,7 +217,7 @@ typedef struct {
  * @param hid_descriptor_storage
  * @param hid_descriptor_storage_len
  */
-void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len);
+void hids_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len);
 
 /**
  * @brief Connect to HID Services of remote device. Event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED will be emitted
@@ -236,7 +236,7 @@ void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client
  *         associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED.
  */
-uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid);
+uint8_t hids_host_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid);
 
 /**
  * @brief Send HID report. Event GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN is emitted.
@@ -251,7 +251,7 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found, or
  * ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if report length exceeds MTU.
  */
-uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_report_type_t report_type, const uint8_t * report, uint8_t report_len);
+uint8_t hids_host_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_report_type_t report_type, const uint8_t * report, uint8_t report_len);
 
 /**
  * @brief Get HID report. Event GATTSERVICE_SUBEVENT_HID_REPORT is emitted.
@@ -264,7 +264,7 @@ uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found, or
  * ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if report length exceeds MTU.
  */
-uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_report_type_t report_type);
+uint8_t hids_host_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_report_type_t report_type);
 
 /**
  * @brief Get HID Information. Event GATTSERVICE_SUBEVENT_HID_INFORMATION is emitted.
@@ -275,7 +275,7 @@ uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_re
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
-uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index);
+uint8_t hids_host_get_hid_information(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief Get Protocol Mode. Event GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE is emitted.
@@ -286,7 +286,7 @@ uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
-uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index);
+uint8_t hids_host_get_protocol_mode(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief Set Protocol Mode.
@@ -298,7 +298,7 @@ uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index);
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
-uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_index, hid_protocol_mode_t protocol_mode);
+uint8_t hids_host_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_index, hid_protocol_mode_t protocol_mode);
 
 /**
  * @brief Send Suspend to remote HID service.
@@ -309,7 +309,7 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_in
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
-uint8_t hids_client_send_suspend(uint16_t hids_cid, uint8_t service_index);
+uint8_t hids_host_send_suspend(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief Send Exit Suspend to remote HID service.
@@ -320,7 +320,7 @@ uint8_t hids_client_send_suspend(uint16_t hids_cid, uint8_t service_index);
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state, or
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no report with given type and ID is found.
  */
-uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index);
+uint8_t hids_host_send_exit_suspend(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief Enable all notifications. Event GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION reports current configuration.
@@ -329,7 +329,7 @@ uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index);
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, or
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state.
  */
-uint8_t hids_client_enable_notifications(uint16_t hids_cid);
+uint8_t hids_host_enable_notifications(uint16_t hids_cid);
 
 /**
  * @brief Disable all notifications. Event GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION reports current configuration.
@@ -338,7 +338,7 @@ uint8_t hids_client_enable_notifications(uint16_t hids_cid);
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, or
  * ERROR_CODE_COMMAND_DISALLOWED if client is in wrong state.
  */
-uint8_t hids_client_disable_notifications(uint16_t hids_cid);
+uint8_t hids_host_disable_notifications(uint16_t hids_cid);
 
 /**
  * @brief Disconnect from HID Service.
@@ -346,7 +346,7 @@ uint8_t hids_client_disable_notifications(uint16_t hids_cid);
  * @param hids_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER
  */
-uint8_t hids_client_disconnect(uint16_t hids_cid);
+uint8_t hids_host_disconnect(uint16_t hids_cid);
 
 /*
  * @brief Get descriptor data. For services in boot mode without a Report Map, a default HID Descriptor for Keyboard/Mouse is provided.
@@ -354,7 +354,7 @@ uint8_t hids_client_disconnect(uint16_t hids_cid);
  * @param hid_cid
  * @return data
  */
-const uint8_t * hids_client_descriptor_storage_get_descriptor_data(uint16_t hids_cid, uint8_t service_index);
+const uint8_t * hids_host_descriptor_storage_get_descriptor_data(uint16_t hids_cid, uint8_t service_index);
 
 /*
  * @brief Get descriptor length
@@ -362,13 +362,13 @@ const uint8_t * hids_client_descriptor_storage_get_descriptor_data(uint16_t hids
  * @param hid_cid
  * @return length
  */
-uint16_t hids_client_descriptor_storage_get_descriptor_len(uint16_t hids_cid, uint8_t service_index);
+uint16_t hids_host_descriptor_storage_get_descriptor_len(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief De-initialize HID Service Client. 
  *
  */
-void hids_client_deinit(void);
+void hids_host_deinit(void);
 
 /* API_END */
 

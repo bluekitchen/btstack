@@ -96,7 +96,7 @@
 #include "ble/gatt-service/device_information_service_server.h"
 #include "ble/gatt_service_client.h"
 #include "ble/gatt-service/heart_rate_service_server.h"
-#include "ble/gatt-service/hids_client.h"
+#include "ble/gatt-service/hids_host.h"
 #include "ble/gatt-service/hids_device.h"
 #include "ble/gatt-service/immediate_alert_service_client.h"
 #include "ble/gatt-service/immediate_alert_service_server.h"
