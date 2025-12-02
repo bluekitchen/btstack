@@ -1686,7 +1686,16 @@ typedef SSIZE_T ssize_t;
  */
  #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4u
 
- /**
+/**
+ * @format H1B1
+ * @param handle
+ * @param addr_type
+ * @param address
+ * @param auth_req
+ */
+#define SM_EVENT_SECURITY_REQUEST                                0xC7u
+
+/**
   * @format H1B1
   * @param handle
   * @param addr_type
