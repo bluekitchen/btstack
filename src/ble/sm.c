@@ -610,6 +610,12 @@ static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, u
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
+static void sm_notify_client_security_request(hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t auth_req){
+    uint8_t event[12];
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_SECURITY_REQUEST, con_handle, addr_type, address);
+    event[11] = auth_req;
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
 
 static void sm_reencryption_started(sm_connection_t * sm_conn){
 
@@ -4364,16 +4370,18 @@ static int sm_validate_stk_generation_method(void){
 
 #ifdef ENABLE_LE_CENTRAL
 static void sm_initiator_connected_handle_security_request(sm_connection_t * sm_conn, const uint8_t *packet){
+    uint8_t auth_req = packet[1];
+
+    // notify user
+    sm_notify_client_security_request(sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, auth_req);
+
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (sm_sc_only_mode){
-        uint8_t auth_req = packet[1];
         if ((auth_req & SM_AUTHREQ_SECURE_CONNECTION) == 0){
             sm_pairing_error(sm_conn, SM_REASON_AUTHENTHICATION_REQUIREMENTS);
             return;
         }
     }
-#else
-    UNUSED(packet);
 #endif
 
     int have_ltk;
