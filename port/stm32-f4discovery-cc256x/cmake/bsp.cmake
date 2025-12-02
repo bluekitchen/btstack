@@ -1,5 +1,5 @@
 if(DEFINED BSP)
-    set( BSP_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Drivers/BSP )
+    set( BSP_SOURCE_DIR ${STM32F4CUBE_PATH}/Drivers/BSP )
     include_directories(${BSP_SOURCE_DIR}/${BSP})
 
     # Locate sources
