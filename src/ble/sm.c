@@ -1508,6 +1508,18 @@ static void sm_store_le_bonding_information(sm_connection_t *sm_conn, int le_db_
     }
 }
 
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+static void sm_store_classic_bonding_information(sm_connection_t * sm_conn) {
+    if ((setup->sm_link_key_type != INVALID_LINK_KEY) &&
+        (sm_ctkd_from_le_could_update(sm_conn))) {
+
+        // store link key derived via CTKD from LTK
+        log_info("sm: store link key type %u", setup->sm_link_key_type);
+        gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_link_key, setup->sm_link_key_type);
+    }
+}
+#endif
+
 static void sm_process_bonding_information(sm_connection_t * sm_conn){
     int le_db_index = -1;
 
@@ -1582,13 +1594,7 @@ static void sm_process_bonding_information(sm_connection_t * sm_conn){
     }
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-    if ((setup->sm_link_key_type != INVALID_LINK_KEY) &&
-        (sm_ctkd_from_le_could_update(sm_conn))) {
-
-        // store link key derived via CTKD from LTK
-        log_info("sm: store link key type %u", setup->sm_link_key_type);
-        gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_link_key, setup->sm_link_key_type);
-    }
+    sm_store_classic_bonding_information(sm_conn);
 #endif
 }
 
