@@ -33,6 +33,9 @@ project(${CMAKE_PROJECT_NAME})
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
+# Set STM32F4Cube path
+set(STM32F4CUBE_PATH "${CMAKE_SOURCE_DIR}/../../3rd-party/STM32CubeF4/")
+
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 

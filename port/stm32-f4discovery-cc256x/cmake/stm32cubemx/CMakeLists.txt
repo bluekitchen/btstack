@@ -17,11 +17,11 @@ target_compile_options(stm32cubemx INTERFACE -Wno-unused-parameter)
 
 target_include_directories(stm32cubemx INTERFACE
     ../../Inc
-    ../../Drivers/STM32F4xx_HAL_Driver/Inc
-    ../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
-    ../../Middlewares/ST/STM32_Audio/Addons/PDM/Inc
-    ../../Drivers/CMSIS/Device/ST/STM32F4xx/Include
-    ../../Drivers/CMSIS/Include
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Inc
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
+    ${STM32F4CUBE_PATH}/Middlewares/ST/STM32_Audio/Addons/PDM/Inc
+    ${STM32F4CUBE_PATH}/Drivers/CMSIS/Device/ST/STM32F4xx/Include
+    ${STM32F4CUBE_PATH}/Drivers/CMSIS/Include
 )
 
 target_sources(stm32cubemx INTERFACE
@@ -37,37 +37,39 @@ target_sources(stm32cubemx INTERFACE
     ../../Src/usb_otg.c
     ../../Src/stm32f4xx_it.c
     ../../Src/stm32f4xx_hal_msp.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c
-    ../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
-    ../../Src/system_stm32f4xx.c
-    ../../Src/sysmem.c
-    ../../Src/syscalls.c
-    ../../startup_stm32f407xx.s
+	../../Src/system_stm32f4xx.c
+	../../Src/sysmem.c
+	../../Src/syscalls.c
+	../../startup_stm32f407xx.s
+
+	# STM32CubeF4
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c
+    ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
 )
 
 target_link_directories(stm32cubemx INTERFACE
-    ../../Middlewares/ST/STM32_Audio/Addons/PDM/Lib
-    ../../Middlewares/ST/STM32_Audio/Addons/PDM/Lib
+    ${STM32F4CUBE_PATH}/Middlewares/ST/STM32_Audio/Addons/PDM/Lib
+    ${STM32F4CUBE_PATH}/Middlewares/ST/STM32_Audio/Addons/PDM/Lib
 )
 
 target_link_libraries(stm32cubemx INTERFACE 
