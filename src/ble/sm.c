@@ -4384,6 +4384,7 @@ static void sm_initiator_connected_handle_security_request(sm_connection_t * sm_
     }
 #endif
 
+#ifndef ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST
     int have_ltk;
     uint8_t ltk[16];
 
@@ -4410,6 +4411,7 @@ static void sm_initiator_connected_handle_security_request(sm_connection_t * sm_
             sm_conn->sm_security_request_received = true;
             break;
     }
+#endif
 }
 #endif
 

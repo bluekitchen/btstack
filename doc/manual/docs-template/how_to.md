@@ -105,6 +105,7 @@ BTstack properties:
 | ENABLE_EXPLICIT_DEDICATED_<br>BONDING_DISCONNECT                              | Keep connection after dedicated bonding is complete                                                                         |
 | ENABLE_EXPLICIT_IO_<br>CAPABILITIES_REPLY                                     | Let application trigger sending IO Capabilities (Negative) Reply                                                            |
 | ENABLE_EXPLICIT_LINK_<br>KEY_REPLY                                            | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup                       |
+| ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST                                   | Let application trigger LE Pairing upon SM_EVENT_SECURITY_REQUEST                                                           |
 | ENABLE_GATT_CLIENT_<br>PAIRING                                                | Enable GATT Client to start pairing and retry operation on security error                                                   |
 | ENABLE_GATT_CLIENT_<br>CACHING                                                | Enable GATT Service Client to cache Characteristics in TLV                                                                  |
 | ENABLE_H5                                                                     | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                     |

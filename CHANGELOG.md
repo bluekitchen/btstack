@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: add hci_request_sco_can_send_now_event_for_con_handle
 - HCI: emit HCI_EVENT_SCO_CAN_SEND_NOW round robin
 - HCI: fix implicit flow control for small SCO buffers
+- SM: emit SM_EVENT_SECURITY_REQUEST from Peripheral
+- SM: applications triggers pairing on SM_EVENT_SECURITY_REQUEST if ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST
 - Linked List: add get previous item
 - Port for Ezurio Vela IF820 dev kit
 - HCI Dump: Log printf into packet log with ENABLE_PRINTF_TO_LOG
