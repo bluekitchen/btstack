@@ -1468,6 +1468,22 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             break;
     }
 }
+
+static int sm_le_device_db_index_lookup(bd_addr_type_t address_type, bd_addr_t address){
+    int i;
+    for (i=0; i < le_device_db_max_count(); i++){
+        bd_addr_t db_address;
+        int db_address_type = BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &db_address_type, db_address, NULL);
+        // skip unused entries
+        if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
+        if ((address_type == (unsigned int)db_address_type) && (memcmp(address, db_address, 6) == 0)){
+            return i;
+        }
+    }
+    return -1;
+}
+
 static void sm_store_le_bonding_information(sm_connection_t *sm_conn, int le_db_index) {
     sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
     sm_conn->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
@@ -1550,20 +1566,7 @@ static void sm_process_bonding_information(sm_connection_t * sm_conn){
     // if not found, lookup via public address if possible
     log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
     if ((le_db_index < 0) && (setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC)){
-        int i;
-        for (i=0; i < le_device_db_max_count(); i++){
-            bd_addr_t address;
-            int address_type = BD_ADDR_TYPE_UNKNOWN;
-            le_device_db_info(i, &address_type, address, NULL);
-            // skip unused entries
-            if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
-            log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
-            if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && (memcmp(address, setup->sm_peer_address, 6) == 0)){
-                log_info("sm: device found for public address, updating");
-                le_db_index = i;
-                break;
-            }
-        }
+        le_db_index = sm_le_device_db_index_lookup(BD_ADDR_TYPE_LE_PUBLIC, setup->sm_peer_address);
     }
 
     // emit GAP_SUBEVENT_BONDING_DELETED and remove address resolution entry if it was bonded before
@@ -1601,21 +1604,6 @@ static void sm_process_bonding_information(sm_connection_t * sm_conn){
 static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
     sm_conn->sm_pairing_failed_reason = reason;
     sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-}
-
-static int sm_le_device_db_index_lookup(bd_addr_type_t address_type, bd_addr_t address){
-    int i;
-    for (i=0; i < le_device_db_max_count(); i++){
-        bd_addr_t db_address;
-        int db_address_type = BD_ADDR_TYPE_UNKNOWN;
-        le_device_db_info(i, &db_address_type, db_address, NULL);
-        // skip unused entries
-        if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
-        if ((address_type == (unsigned int)db_address_type) && (memcmp(address, db_address, 6) == 0)){
-            return i;
-        }
-    }
-    return -1;
 }
 
 static void sm_remove_le_device_db_entry(uint16_t i) {
