@@ -197,6 +197,16 @@ static bool att_find_handle(att_iterator_t *it, uint16_t handle){
     return false;
 }
 
+static bool att_iterator_new_service_started(const att_iterator_t *it) {
+    switch (att_iterator_get_uuid16(it)) {
+        case GATT_PRIMARY_SERVICE_UUID:
+        case GATT_SECONDARY_SERVICE_UUID:
+            return true;
+        default:
+            return false;
+    }
+}
+
 // experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle){
     att_iterator_t it;
@@ -1437,7 +1447,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        int new_service_started = att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID);
+        int new_service_started = att_iterator_new_service_started(&it);
 
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
@@ -1542,7 +1552,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid1
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        int new_service_started = att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID);
+        int new_service_started = att_iterator_new_service_started(&it);
 
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
