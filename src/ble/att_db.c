@@ -142,17 +142,25 @@ static void att_iterator_fetch_next(att_iterator_t *it){
     it->att_ptr += it->size;
 }
 
-static bool att_iterator_match_uuid16(att_iterator_t *it, uint16_t uuid){
+static uint16_t att_iterator_get_uuid16(const att_iterator_t *it) {
     if (it->handle == 0u){
         return false;
     }
     if ((it->flags & (uint16_t)ATT_PROPERTY_UUID128) != 0u){
         if (!is_Bluetooth_Base_UUID(it->uuid)){
-            return false;
+            return 0;
         }
-        return little_endian_read_16(it->uuid, 12) == uuid;
+        return little_endian_read_16(it->uuid, 12);
     }
-    return little_endian_read_16(it->uuid, 0)  == uuid;
+    return little_endian_read_16(it->uuid, 0);
+}
+
+static bool att_iterator_match_uuid16(const att_iterator_t *it, uint16_t uuid16){
+    if (uuid16 == 0) {
+        return false;
+    }
+    uint16_t current_uuid16 = att_iterator_get_uuid16(it);
+    return current_uuid16 == uuid16;
 }
 
 static bool att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len){
