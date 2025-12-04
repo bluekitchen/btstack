@@ -586,12 +586,14 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
             continue;
         }
         if (it.handle > end_handle){
-        break;  // (1)
-    }
+            break;  // (1)
+        }
+
+        bool new_service_started = att_iterator_new_service_started(&it);
 
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
-            ((it.handle == 0u) || att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID))){
+            ((it.handle == 0u) || new_service_started)){
 
             log_info("End of group, handle 0x%04x", prev_handle);
             little_endian_store_16(response_buffer, offset, prev_handle);
@@ -1044,10 +1046,11 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
         }
 
         // log_info("Handle 0x%04x", it.handle);
-        
+        bool new_service_started = att_iterator_new_service_started(&it);
+
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
-            ((it.handle == 0u) || att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID))){
+            ((it.handle == 0u) || new_service_started)){
             // log_info("End of group, handle 0x%04x, val_len: %u", prev_handle, pair_len - 4);
             
             little_endian_store_16(response_buffer, offset, group_start_handle);
@@ -1447,7 +1450,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        int new_service_started = att_iterator_new_service_started(&it);
+        bool new_service_started = att_iterator_new_service_started(&it);
 
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
@@ -1510,13 +1513,15 @@ uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16
         if (it.handle == 0u){
             break;
         }
-        if (att_iterator_match_uuid16(&it, characteristic_uuid16)){
+        uint16_t uuid16 = att_iterator_get_uuid16(&it);
+
+        if (uuid16 == characteristic_uuid16){
             characteristic_found = true;
             continue;
         }
-        if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 
-         || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID)
-         || att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID)){
+        if ((uuid16 == GATT_PRIMARY_SERVICE_UUID)
+         || (uuid16 == GATT_SECONDARY_SERVICE_UUID)
+         || (uuid16 == GATT_CHARACTERISTICS_UUID)){
             if (characteristic_found){
                 break;
             }
@@ -1615,13 +1620,15 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
         if (it.handle == 0u){
             break;
         }
+
         if (att_iterator_match_uuid(&it, attribute_value, 16)){
             characteristic_found = true;
             continue;
         }
-        if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 
-         || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID)
-         || att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID)){
+        uint16_t uuid16 = att_iterator_get_uuid16(&it);
+        if ((uuid16 == GATT_PRIMARY_SERVICE_UUID)
+         || (uuid16 == GATT_SECONDARY_SERVICE_UUID)
+         || (uuid16 == GATT_CHARACTERISTICS_UUID)){
             if (characteristic_found){
                 break;
             }
