@@ -173,7 +173,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             chunk_parser_state  = W4_ATTRIBUTE_LEN;
             break;
         case W4_ATTRIBUTE_LEN:
-            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, ancs_bytes_received-2u);
+            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, (int)(ancs_bytes_received-2u));
             ancs_bytes_received = 0;
             ancs_bytes_needed   = ancs_attribute_len;
             if (ancs_attribute_len == 0u) {
