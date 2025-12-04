@@ -73,7 +73,7 @@ static bool is_Bluetooth_Base_UUID(uint8_t const *uuid){
 
 static uint16_t uuid16_from_uuid(uint16_t uuid_len, uint8_t * uuid){
     if (uuid_len == 2u){
-        return little_endian_read_16(uuid, 0u);
+        return little_endian_read_16(uuid, 0);
     }
     if (!is_Bluetooth_Base_UUID(uuid)){
         return 0;
@@ -234,7 +234,7 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
     }
     
     // STATIC
-    uint16_t bytes_to_copy = btstack_min(it->value_len - offset, buffer_size);
+    uint16_t bytes_to_copy = (uint16_t) btstack_min(it->value_len - offset, buffer_size);
     (void)memcpy(buffer, it->value, bytes_to_copy);
     return bytes_to_copy;
 }
@@ -423,7 +423,7 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
     uint16_t client_rx_mtu = little_endian_read_16(request_buffer, 1);
     
     // find min(local max mtu, remote mtu) >= ATT_DEFAULT_MTU and use as mtu for this connection
-    uint16_t min_mtu = btstack_min(client_rx_mtu, att_connection->max_mtu);
+    uint16_t min_mtu = (uint16_t) btstack_min(client_rx_mtu, att_connection->max_mtu);
     uint16_t new_mtu = btstack_max(ATT_DEFAULT_MTU, min_mtu);
     att_connection->mtu_exchanged = true;
     att_connection->mtu = new_mtu;
@@ -1203,7 +1203,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     }
 
     // response: echo request
-    uint16_t bytes_to_echo = btstack_min(request_len, response_buffer_size);
+    uint16_t bytes_to_echo = (uint16_t) btstack_min(request_len, response_buffer_size);
     (void)memcpy(response_buffer, request_buffer, bytes_to_echo);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
     return request_len;
@@ -1298,7 +1298,7 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
                                      uint16_t value_len, 
                                      uint8_t * response_buffer){
     little_endian_store_16(response_buffer, 1, handle);
-    uint16_t bytes_to_copy = btstack_min(value_len, att_connection->mtu - 3u);
+    uint16_t bytes_to_copy = (uint16_t) btstack_min(value_len, att_connection->mtu - 3u);
     (void)memcpy(&response_buffer[3], value, bytes_to_copy);
     return value_len + 3u;
 }
@@ -1422,7 +1422,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
     uint16_t service_start = 0;
 
     uint8_t attribute_value[2];
-    const uint16_t attribute_len = sizeof(attribute_value);
+    const uint16_t attribute_len = (uint16_t) sizeof(attribute_value);
     little_endian_store_16(attribute_value, 0, uuid16);
 
     att_iterator_t it;
@@ -1702,7 +1702,7 @@ uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size,
     if (buffer != NULL){
         uint16_t bytes_to_copy = 0;
         if (blob_size >= offset){
-            bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
+            bytes_to_copy = (uint16_t) btstack_min(blob_size - offset, buffer_size);
             (void)memcpy(buffer, &blob[offset], bytes_to_copy);
         }
         return bytes_to_copy;
@@ -1714,19 +1714,19 @@ uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size,
 uint16_t att_read_callback_handle_little_endian_32(uint32_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     uint8_t value_buffer[4];
     little_endian_store_32(value_buffer, 0, value);
-    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+    return att_read_callback_handle_blob(value_buffer, (uint16_t) sizeof(value_buffer), offset, buffer, buffer_size);
 }
 
 uint16_t att_read_callback_handle_little_endian_16(uint16_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     uint8_t value_buffer[2];
     little_endian_store_16(value_buffer, 0, value);
-    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+    return att_read_callback_handle_blob(value_buffer, (uint16_t) sizeof(value_buffer), offset, buffer, buffer_size);
 }
 
 uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     uint8_t value_buffer[1];
     value_buffer[0] = value;
-    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+    return att_read_callback_handle_blob(value_buffer, (uint16_t) sizeof(value_buffer), offset, buffer, buffer_size);
 }
 
 
@@ -1867,7 +1867,7 @@ uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t
     // fetch len
     // assume: con handle not relevant here, else, it needs to get passed in
     // att_update_value_len(&it, HCI_CON_HANDLE_INVALID);
-    uint16_t bytes_to_copy = btstack_min( response_buffer_size - 3, it.value_len);
+    uint16_t bytes_to_copy = (uint16_t) btstack_min( response_buffer_size - 3, it.value_len);
     little_endian_store_16(response_buffer, pos, bytes_to_copy);
     pos += 2;
     // get value - only works for non-dynamic data
