@@ -701,9 +701,13 @@ In BTstack, you can enable tracking of this GATT Database Hash by enabling `ENAB
 In addition, the GATT Service Client will automatically make use of these mechanisms to cache information about the Characteristics required by it's clients without changes to your existing code.
   
 For this caching to work, a few conditions need to be true:
+ 
 - `ENABLE_GATT_CLIENT_CACHING` is defined.
+
 - Your application supports bonding.
+
 - Your application instructs the GATT Client to use an encrypted connection by calling `gatt_client_set_required_security_level` with a level > 0.
+
 - Your applications usually connects to remote GATT Services via the GATT Service Client in the same order. The GATT Service Client will work correctly even if the order changes, but it will need to repeat the query to refresh the cached data.
 
 Please note: if the remote database changes while a GATT Service Client is connected to it, it will emit a `GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED` event with status set to `ERROR_CODE_UNSPECIFIED_ERROR` and consider the connection as closed to avoid sending or receiving incorrect data. If required, the application can then restart their logic and request the GATT Service Client to reconnect to the remote service again.
@@ -782,7 +786,9 @@ WRITE_AUTHENTICATED     | Write operations require Authentication
 ENCRYPTION_KEY_SIZE_X   | Require encryption size >= X, with W in [7..16]
 
 For example, Volume State Characteristic (Voice Control Service) requires:
+
 - Mandatory Properties: Read, Notify
+
 - Security Permissions: Encryption Required
 
 In addition, its read is handled by application. We can model this Characteristic as follows:
