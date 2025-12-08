@@ -10936,7 +10936,8 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<cig_params->num_cis;i++){
-        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS,HCI_ROLE_MASTER, HCI_ISO_STREAM_STATE_REQUESTED, cig_params->cig_id, i);
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS,HCI_ROLE_MASTER,
+            HCI_ISO_STREAM_STATE_REQUESTED,cig_params->cig_id, cig_params->cis_params[i].cis_id);
         if (iso_stream == NULL) {
             status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
