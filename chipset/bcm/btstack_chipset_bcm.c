@@ -76,7 +76,7 @@
 #endif
 
 static int send_download_command;
-static uint32_t init_script_offset;
+static int32_t init_script_offset;
 
 // Embedded == non posix systems
 
