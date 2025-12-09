@@ -12,14 +12,12 @@
 #include "btstack.h"
 #include "btstack_debug.h"
 #include "btstack_audio.h"
-#include "btstack_chipset_cc256x.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 #include "ble/le_device_db_tlv.h"
-#include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_flash_bank_stm32.h"
 
@@ -270,18 +268,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
                 uint16_t manufacturer   = little_endian_read_16(packet, 10);
                 uint16_t lmp_subversion = little_endian_read_16(packet, 12);
-                // assert manufacturer is TI
-                if (manufacturer != BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
-                    printf("ERROR: Expected Bluetooth Chipset from TI but got manufacturer 0x%04x\n", manufacturer);
+                // assert manufacturer is Infineon
+                if (manufacturer != BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG){
+                    printf("ERROR: Expected AIROC Chipset from Infineon but got manufacturer 0x%04x\n", manufacturer);
                     break;
                 }
-                // assert correct init script is used based on expected lmp_subversion
-                if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
-                    printf("Error: LMP Subversion does not match initscript! ");
-                    printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
-                    printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
-                    break;
-                }
+                // assert lmp_subversion
+                UNUSED(lmp_subversion);
             }
             break;
         default:
