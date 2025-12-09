@@ -24,6 +24,9 @@ set(CMAKE_PROJECT_NAME stm32f4-discovery-cyw55310)
 # Include toolchain file
 include("cmake/gcc-arm-none-eabi.cmake")
 
+# to generate .h from .gatt files and ozone files
+find_package(Python REQUIRED COMPONENTS Interpreter)
+
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
