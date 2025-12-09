@@ -128,9 +128,9 @@ void hal_uart_dma_set_sleep(uint8_t sleep){
 // reset Bluetooth using n_shutdown
 static void bluetooth_power_cycle(void){
     printf("Bluetooth power cycle\n");
-    HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_RESET );
+    HAL_GPIO_WritePin( BLUETOOTH_ENABLE_GPIO_Port, BLUETOOTH_ENABLE_Pin, GPIO_PIN_RESET );
     HAL_Delay( 250 );
-    HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_SET );
+    HAL_GPIO_WritePin( BLUETOOTH_ENABLE_GPIO_Port, BLUETOOTH_ENABLE_Pin, GPIO_PIN_SET );
     HAL_Delay( 500 );
 }
 
