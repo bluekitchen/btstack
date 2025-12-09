@@ -1,30 +1,59 @@
-# BTstack Port for STM32 F4 Discovery Board with CC256x
+# BTstack Port for STM32 F4 Discovery Board with Ezurio Vela IF310 Devkit
 
-This port uses the STM32 F4 Discovery Board with TI's CC256XEM ST Adapter Kit that allows to plug in a CC256xB or CC256xC Bluetooth module.
+This port uses the STM32 F4 Discovery Board with Ezurio's Vela IF310 Development Kit based on the Infineon AIROC CYW55310.
+
 STCubeMX was used to provide the HAL, initialize the device, and create an initial CMakeLists.txt. For easy development, Ozone project files are generated as well.
 
 ## Hardware
 
-STM32 Development kit and adapter for CC256x module:
+STM32 Development kit:
 - [STM32 F4 Discovery Board](http://www.st.com/en/evaluation-tools/stm32f4discovery.html)
-- [CC256xEM Bluetooth Adatper Kit for ST](https://store.ti.com/CC256XEM-STADAPT-CC256xEM-Bluetooth-Adapter-Kit-P45158.aspx)
 
-CC256x Bluetooth module:
-- [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
-- [CC2564C Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/CC256XCQFN-EM-CC2564C-Dual-Mode-Bluetooth-Controller-Evaluation-Module-P51277.aspx)
+Vela IF310 Development kit:
+- [Vela IF310 - Bluetooth® Classic and LE Audio Development Kit ](https://www.ezurio.com/wireless-modules/bluetooth-modules/vela-if310-bluetooth-6-classic-and-le-module)
 
-The module with the older CC2564B is around USD 20, while the one with the new CC2564C costs around USD 60. The projects are configured for the CC2564C. When using the CC2564B, *bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c* should be used as cc256x_init_script.
+Setup:
+- Make sure the mini dip switches on the IF310 development kit are set like this. Next to each each switch is a signal multiplexer IC with an easy to read/find print.
+
+| Switch                      | Position |
+|-----------------------------|----------|
+| FTDI 3V3 Level Shifter (U8) | OFF / EN |
+| FTDI vs RP2040 Switch (U9)  | ON / L   |
+| Ext. TDM vs. SMARC (U6)     | OFF / H  |
+| TDM1 vs. RP2040 (U20)       | OFF / H  |
+
+- Connect F4 Discovery board with the IF310 Development Kit using Female-to-Female Jumper Wires.
+
+| STM32            | PIN  | Vela IF310      | CYW55310    | Comment    | Color  |
+|------------------|------|-----------------|-------------|------------|--------|
+| GND              | GND  | BT_REG_ON_3V3-3 | GND         | Right pin  | Gray   |
+| VDD              | VDD  | BT_REG_ON_3V3-1 | VCC         | Left pin   | Purple |
+| USART2_TX        | PA2  |                 | N.C.        | Console TX |        |
+| USART2_RX        | PA3  |                 | N.C         | Console RX |        |
+| Bluetooth Enable | PE14 | BT_REG_ON_3V3-2 | BT_REG_ON   | Middle pin | Yellow |
+| USART3_TX        | PD8  | FTDI_3.3-TX     | BT_UART_RX  |            | Black  |
+| USART3_RX        | PD9  | FTDI_3.3-RX     | BT_UART_TX  |            | Brown  |
+| USART3_CTS       | PD11 | FTDI_3.3-CTS    | BT_UART_RTS |            | Red    | 
+| USART3_RTS       | PD12 | FTDI_3.3-RTS    | BT_UART_CTS |            | Orange |
+
+- Connect the F4 Discovery board to your desktop
+
+
 
 ## Software
 
-The build system uses CMake. To build all examples, run `cmake` and `make` in the build folder. The examples are built with
-    
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+The build system uses CMake with Make or Ninja and uses the [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 
-All examples and the .jedbug Ozone project files are placed in the 'build' folder.
+To build all examples, run `cmake` and `ninja` in the build folder. The examples are built with
+    
+    $ cmake -G Ninja -B build
+    $ cmake --build build
+
+All examples and the .jdebug Ozone project files are placed in the 'build' folder.
+
+If you want to build only a single example, you can pass the name of the example at the end after a double-slash, e.g.
+    
+    $ cmake --build build -- gatt_counter
 
 ## Flash And Run The Examples
 
@@ -32,14 +61,17 @@ Cmake builds different versions:
 - example.elf: .elf file with all debug information
 - example.bin: .bin file that can be used for flashing
 
-There are different options to flash and debug the F4 Discovery board. The F4 Discovery boards comes with an on-board [ST-Link programmer and debugger](https://www.st.com/en/development-tools/st-link-v2.html). As an alternative, the ST-Link programmer can be replaced by an [SEGGER J-Link OB](https://www.segger.com/products/debug-probes/j-link/models/other-j-links/st-link-on-board/). Finally, the STM32 can be programmed with any ARM Cortex JTAG or SWD programmer via the SWD jumper.
+There are different options to flash and debug the F4 Discovery board. The F4 Discovery boards comes with an on-board [ST-Link programmer and debugger](https://www.st.com/en/development-tools/st-link-v2.html).
+
+As an alternative, the ST-Link programmer can be replaced by an [SEGGER J-Link OB](https://www.segger.com/products/debug-probes/j-link/models/other-j-links/st-link-on-board/). Finally, the STM32 can be programmed with any ARM Cortex JTAG or SWD programmer via the SWD jumper.
 
 ## Run Example Project using Ozone
 
 When using an external J-Link programmer or after installing J-Link OB on the F4 Discovery board, you can flash and debug using the cross-platform [SEGGER Ozone Debugger](https://www.segger.com/products/development-tools/ozone-j-link-debugger/). It is included in some J-Link programmers or can be used for free for evaluation usage.
 
-Just start Ozone and open the .jdebug file in the build folder. When compiled with "ENABLE_SEGGER_RTT", the debug output shows up in the Terminal window of Ozone. 
+Just start Ozone and open the .jdebug file in the build folder. 
 
+When compiled with "ENABLE_SEGGER_RTT" enabled in `port/btstack_config.h`, the debug console shows up in the Terminal window of Ozone. You might need to enable "Capture RTT" via the Terminal window context menu. 
 
 ## Debug output
 
@@ -49,11 +81,10 @@ In src/btstack_config.h resp. in example/btstack_config.h of the generated proje
 
 Also, the full packet log can be enabled in src/port.c resp. btstack/port/stm32-f4discovery-cc256x/src/port.c by uncommenting the hci_dump_init(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
 
+## PatchRAM
+
+The port downloads the latest PatchRAM for the CYW55310 from the Bluetkitchen Web server.
+
 ## GATT Database
+
 In BTstack, the GATT Database is defined via the .gatt file in the example folder. The CMakeLists.txt contains rules to update the .h file when the .gatt was modified.
-
-
-## Maintainer Notes - Updating The Port
-
-The Audio BSP is from the STM32F4Cube V1.16 firmware and not generated from STM32CubeMX. To update the HAL, run 'generate code' in CubeMX. After that, make sure to re-apply the patches to the UART and check if the hal config was changed.
-
