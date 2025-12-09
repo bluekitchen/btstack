@@ -31,7 +31,6 @@ list(APPEND INCLUDES_PATH 3rd-party/segger-rtt)
 list(APPEND INCLUDES_PATH 3rd-party/yxml)
 list(APPEND INCLUDES_PATH 3rd-party/tinydir)
 list(APPEND INCLUDES_PATH src)
-list(APPEND INCLUDES_PATH chipset/zephyr)
 list(APPEND INCLUDES_PATH platform/embedded)
 list(APPEND INCLUDES_PATH platform/lwip)
 list(APPEND INCLUDES_PATH platform/lwip/port)
@@ -55,7 +54,6 @@ file(GLOB SOURCES_YXML           "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL       "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_EMBEDDED       "${BTSTACK_ROOT}/platform/embedded/*.c")
-file(GLOB SOURCES_CHIPSET_ZEPHYR "${BTSTACK_ROOT}/chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE     "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 
 set( SOURCES_SEGGER_RTT
@@ -131,7 +129,6 @@ set(SOURCES
     ${SOURCES_UECC}
     ${SOURCES_SEGGER_RTT}
     ${SOURCES_HXCMOD}
-    ${SOURCES_CHIPSET_ZEPHYR}
 )
 list(SORT SOURCES)
 

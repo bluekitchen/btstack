@@ -52,10 +52,6 @@ message("Build: ${CMAKE_BUILD_TYPE}\n")
 # Include BTStack
 include(cmake/btstack.cmake)
 
-# Add CC256x Support and specify init script
-set(CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
-include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
-
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")
 list(SORT EXAMPLES_C)

@@ -315,7 +315,6 @@ void port_main(void){
 
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
-    hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
