@@ -107,7 +107,8 @@ static void bnep_handle_can_send_now(uint16_t cid);
 
 static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status, uint8_t setup_connection_response)
 {
-    log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s, handler %p", status, bd_addr_to_str(channel->remote_addr), channel->packet_handler);
+    log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s",
+        status, bd_addr_to_str(channel->remote_addr));
     if (!channel->packet_handler) return;
 
     uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t) + 3];
@@ -127,7 +128,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
 
 static void bnep_emit_channel_timeout(bnep_channel_t *channel) 
 {
-    log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s, handler %p", bd_addr_to_str(channel->remote_addr), channel->packet_handler);
+    log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s", bd_addr_to_str(channel->remote_addr));
     if (!channel->packet_handler) return;
 
     uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t) + sizeof(uint8_t)];
@@ -144,7 +145,7 @@ static void bnep_emit_channel_timeout(bnep_channel_t *channel)
 
 static void bnep_emit_channel_closed(bnep_channel_t *channel) 
 {
-    log_info("BNEP_EVENT_CHANNEL_CLOSED bd_addr: %s, handler %p", bd_addr_to_str(channel->remote_addr), channel->packet_handler);
+    log_info("BNEP_EVENT_CHANNEL_CLOSED bd_addr: %s", bd_addr_to_str(channel->remote_addr));
     if (!channel->packet_handler) return;
 
     uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
@@ -1342,7 +1343,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             // data: event (8), len(8), channel (16)
             l2cap_cid   = little_endian_read_16(packet, 2);
             channel = bnep_channel_for_l2cap_cid(l2cap_cid);
-            log_info("L2CAP_EVENT_CHANNEL_CLOSED cid 0x%0x, channel %p", l2cap_cid, channel);
+            log_info("L2CAP_EVENT_CHANNEL_CLOSED cid 0x%0x, channel %p", l2cap_cid, (void*) channel);
 
             if (!channel) {
                 break;
