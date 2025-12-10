@@ -53,7 +53,10 @@
 extern "C" {
 #endif
 
-#define BASS_CLIENT_MAX_ATT_BUFFER_SIZE             512
+#ifndef MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER
+#define MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER             512
+#endif
+
 /* API_START */
 
 typedef enum {
@@ -136,8 +139,8 @@ typedef struct {
     bass_client_source_t * receive_states;
 
     // used for write segmentation
-    uint8_t  buffer[BASS_CLIENT_MAX_ATT_BUFFER_SIZE];
-    uint16_t buffer_offset;
+    uint8_t  long_write_buffer[MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER];
+    uint16_t long_write_buffer_offset;
     uint16_t data_size;
 
     gatt_client_notification_t notification_listener;

@@ -346,7 +346,7 @@ static void bass_server_reset_source(bass_server_source_t * source){
 
 static void bass_server_reset_client_long_write_buffer(bass_server_connection_t * client){
     memset(client->long_write_buffer, 0, sizeof(client->long_write_buffer));
-    client->long_write_value_size = 0;
+    client->long_write_buffer_data_size = 0;
 }
 
 static int bass_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -374,7 +374,7 @@ static int bass_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 return ATT_ERROR_WRITE_REQUEST_REJECTED;
             }
             memcpy(&connection->long_write_buffer[0], buffer, buffer_size);
-            connection->long_write_value_size = total_value_len;
+            connection->long_write_buffer_data_size = total_value_len;
             break;
 
         case ATT_TRANSACTION_MODE_ACTIVE:
@@ -386,8 +386,8 @@ static int bass_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
             connection->long_write_attribute_handle = attribute_handle;
             
             memcpy(&connection->long_write_buffer[offset], buffer, buffer_size);
-            if (total_value_len > connection->long_write_value_size){
-                connection->long_write_value_size = total_value_len;
+            if (total_value_len > connection->long_write_buffer_data_size){
+                connection->long_write_buffer_data_size = total_value_len;
             }
             return 0;
 
@@ -403,13 +403,13 @@ static int bass_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
     }
 
     if (attribute_handle == bass_audio_scan_control_point_handle){
-        if (connection->long_write_value_size < 2){
+        if (connection->long_write_buffer_data_size < 2){
             return ATT_ERROR_WRITE_REQUEST_REJECTED;
         }
 
         bass_opcode_t opcode = (bass_opcode_t)connection->long_write_buffer[0];
         uint8_t  *remote_data = &connection->long_write_buffer[1];
-        uint16_t remote_data_size = connection->long_write_value_size - 1;
+        uint16_t remote_data_size = connection->long_write_buffer_data_size - 1;
         
         bass_server_source_t * source;
         uint8_t broadcast_code[16];
@@ -612,7 +612,7 @@ static void bass_service_can_send_now(void * context){
         uint8_t task = (1 << source_index);
         if ((client->sources_to_notify & task) != 0){
             client->sources_to_notify &= ~task;
-            uint8_t  buffer[BASS_MAX_NOTIFY_BUFFER_SIZE];
+            uint8_t  buffer[MAX_SIZE_BASS_SERVER_NOTIFICATION_BUFFER];
             uint16_t bytes_copied = bass_server_copy_source_to_buffer(&bass_sources[source_index], 0, buffer, sizeof(buffer));
             att_server_notify(client->con_handle, bass_sources[source_index].bass_receive_state_handle, &buffer[0], bytes_copied);
             return;

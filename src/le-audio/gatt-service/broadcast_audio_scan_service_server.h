@@ -60,6 +60,13 @@
 extern "C" {
 #endif
 
+#ifndef MAX_SIZE_BASS_SERVER_LONG_WRITE_BUFFER
+#define MAX_SIZE_BASS_SERVER_LONG_WRITE_BUFFER             512
+#endif
+#ifndef MAX_SIZE_BASS_SERVER_NOTIFICATION_BUFFER
+#define MAX_SIZE_BASS_SERVER_NOTIFICATION_BUFFER           200
+#endif
+
 /* API_START */
 // memory for list of these structs is allocated by the application
 typedef struct {
@@ -83,8 +90,8 @@ typedef struct {
     uint16_t sources_to_notify;
 
     // used for caching long write
-    uint8_t  long_write_buffer[512];
-    uint16_t long_write_value_size;
+    uint8_t  long_write_buffer[MAX_SIZE_BASS_SERVER_LONG_WRITE_BUFFER];
+    uint16_t long_write_buffer_data_size;
     uint16_t long_write_attribute_handle;
 } bass_server_connection_t;
 

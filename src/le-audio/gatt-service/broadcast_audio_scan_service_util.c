@@ -125,8 +125,8 @@ bool bass_util_pa_sync_state_and_subgroups_in_valid_range(const uint8_t *buffer,
     // pa_interval
     pos += 2;
     uint8_t num_subgroups = buffer[pos++];
-    if (num_subgroups > BASS_SUBGROUPS_MAX_NUM){
-        log_info("Number of subgroups %u exceedes maximum %u", num_subgroups, BASS_SUBGROUPS_MAX_NUM);
+    if (num_subgroups > MAX_NR_BASS_SUBGROUPS){
+        log_info("Number of subgroups %u exceedes maximum %u", num_subgroups, MAX_NR_BASS_SUBGROUPS);
         return false;
     }
 

@@ -236,8 +236,8 @@ static bool bass_client_remote_broadcast_receive_state_buffer_valid(uint8_t *buf
 
     // num subgroups
     uint8_t num_subgroups = buffer[pos++];
-    if (num_subgroups > BASS_SUBGROUPS_MAX_NUM){
-        log_info("Number of subgroups %u exceedes maximum %u", num_subgroups, BASS_SUBGROUPS_MAX_NUM);
+    if (num_subgroups > MAX_NR_BASS_SUBGROUPS){
+        log_info("Number of subgroups %u exceeds maximum %u", num_subgroups, MAX_NR_BASS_SUBGROUPS);
         return false;
     }
 
@@ -327,9 +327,9 @@ static bool bass_client_register_notification(bass_client_connection_t * connect
 static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t * connection){
     const bass_source_data_t * receive_state = connection->control_point_operation_data;
 
-    uint16_t  buffer_offset = connection->buffer_offset;
-    uint8_t * buffer        = connection->buffer;
-    uint16_t  buffer_size   = btstack_min(sizeof(connection->buffer), connection->mtu);
+    uint16_t  buffer_offset = connection->long_write_buffer_offset;
+    uint8_t * buffer        = connection->long_write_buffer;
+    uint16_t  buffer_size   = btstack_min(sizeof(connection->long_write_buffer), connection->mtu);
 
     btstack_assert(buffer_offset == 0);
 
@@ -366,9 +366,9 @@ static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t *
 static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_t * connection){
     const bass_source_data_t * receive_state = connection->control_point_operation_data;
 
-    uint16_t  buffer_offset = connection->buffer_offset;
-    uint8_t * buffer        = connection->buffer;
-    uint16_t  buffer_size   = btstack_min(sizeof(connection->buffer), connection->mtu);
+    uint16_t  buffer_offset = connection->long_write_buffer_offset;
+    uint8_t * buffer        = connection->long_write_buffer;
+    uint16_t  buffer_size   = btstack_min(sizeof(connection->long_write_buffer), connection->mtu);
 
     btstack_assert(buffer_offset == 0);
 
@@ -466,10 +466,10 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
 #endif      
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_ADD_SOURCE;
             stored_bytes = bass_client_prepare_add_source_buffer(connection);
-            connection->buffer_offset += stored_bytes;
+            connection->long_write_buffer_offset += stored_bytes;
 
             status = gatt_client_write_long_value_of_characteristic(&bass_client_handle_gatt_client_event, connection->con_handle,
-                                                           connection->control_point_value_handle, stored_bytes, connection->buffer);
+                                                           connection->control_point_value_handle, stored_bytes, connection->long_write_buffer);
             UNUSED(status);
             break;
 
@@ -479,10 +479,10 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
 #endif    
             connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_MODIFY_SOURCE;
             stored_bytes = bass_client_prepare_modify_source_buffer(connection);
-            connection->buffer_offset += stored_bytes;
+            connection->long_write_buffer_offset += stored_bytes;
 
             status = gatt_client_write_long_value_of_characteristic(&bass_client_handle_gatt_client_event, connection->con_handle,
-                                                           connection->control_point_value_handle, stored_bytes, connection->buffer);
+                                                           connection->control_point_value_handle, stored_bytes, connection->long_write_buffer);
             UNUSED(status);
             break;
         
@@ -891,7 +891,7 @@ uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const 
 
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_ADD_SOURCE;
     connection->control_point_operation_data = add_source_data;
-    connection->buffer_offset = 0;
+    connection->long_write_buffer_offset = 0;
     connection->data_size = bass_client_receive_state_len(add_source_data);
 
     bass_client_run_for_connection(connection);
@@ -910,7 +910,7 @@ uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uin
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_MODIFY_SOURCE;
     connection->control_point_operation_data = modify_source_data;
     connection->control_point_operation_source_id = source_id;
-    connection->buffer_offset = 0;
+    connection->long_write_buffer_offset = 0;
     connection->data_size = bass_client_receive_state_len(modify_source_data);
 
     bass_client_run_for_connection(connection);
