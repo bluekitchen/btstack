@@ -1060,7 +1060,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(local_cid);
                     connection = avdtp_get_connection_for_l2cap_signaling_cid(local_cid);
                     
-                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
+                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p",
+                        local_cid, (void *) connection, (void *) stream_endpoint);
 
                     if (stream_endpoint){
                         if (stream_endpoint->l2cap_media_cid == local_cid){
