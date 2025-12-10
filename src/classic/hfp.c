@@ -611,7 +611,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
 void hfp_finalize_connection_context(hfp_connection_t * hfp_connection){
     log_info("Finalize HFP context %p: role %u, addr %s",
-        hfp_connection, hfp_connection->local_role, bd_addr_to_str(hfp_connection->remote_addr));
+        (void *) hfp_connection, hfp_connection->local_role, bd_addr_to_str(hfp_connection->remote_addr));
     btstack_run_loop_remove_timer(&hfp_connection->command_timer);
     btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*) hfp_connection);
     btstack_memory_hfp_connection_free(hfp_connection);
@@ -626,7 +626,7 @@ static hfp_connection_t * hfp_create_connection(bd_addr_t bd_addr, hfp_role_t lo
     }
     (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
     hfp_connection->local_role = local_role;
-    log_info("Create HFP context %p: role %u, addr %s", hfp_connection, local_role, bd_addr_to_str(bd_addr));
+    log_info("Create HFP context %p: role %u, addr %s", (void *) hfp_connection, local_role, bd_addr_to_str(bd_addr));
 
 #ifdef ENABLE_NXP_PCM_WBS
     hfp_connection->nxp_start_audio_handle = HCI_CON_HANDLE_INVALID;
