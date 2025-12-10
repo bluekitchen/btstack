@@ -150,6 +150,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         port/hal_audio_f4discovery.c
         port/hal_flash_bank_stm32.c
         port/port.c
+        port/CYW55500A1_001.002.032.0233.0000_251002_TEST_ONLY.c
         ${SOURCES_EXAMPLE}
     )
 

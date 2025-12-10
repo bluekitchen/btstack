@@ -12,6 +12,7 @@
 #include "btstack.h"
 #include "btstack_debug.h"
 #include "btstack_audio.h"
+#include "btstack_chipset_bcm.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"
@@ -37,8 +38,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    4000000,
+    921600,
+    921600,
     1,
     NULL,
     BTSTACK_UART_PARITY_OFF
@@ -269,8 +270,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 uint16_t manufacturer   = little_endian_read_16(packet, 10);
                 uint16_t lmp_subversion = little_endian_read_16(packet, 12);
                 // assert manufacturer is Infineon
-                if (manufacturer != BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG){
-                    printf("ERROR: Expected AIROC Chipset from Infineon but got manufacturer 0x%04x\n", manufacturer);
+                if (manufacturer != BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION){
+                    printf("ERROR: Expected AIROC Chipset from Infineon (reported as Broadcom) but got manufacturer 0x%04x\n", manufacturer);
                     break;
                 }
                 // assert lmp_subversion
@@ -308,6 +309,7 @@ void port_main(void){
 
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
+    hci_set_chipset(btstack_chipset_bcm_instance());
 
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
