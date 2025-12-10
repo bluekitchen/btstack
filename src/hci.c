@@ -3977,7 +3977,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
             reverse_bd_addr(&packet[5], addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
-            log_info("Synchronous Connection Complete for %p (status=%u) %s", conn, packet[2], bd_addr_to_str(addr));
+            log_info("Synchronous Connection Complete for %p (status=%u) %s", (void *) conn, packet[2], bd_addr_to_str(addr));
 
             // SCO exists unless fuzzer
             if (conn == NULL) break;
