@@ -2439,7 +2439,8 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
     if ((channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE) || (channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION)) {
-        log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
+        log_info("connection complete con_handle %04x - for channel %p cid 0x%04x",
+            (int) con_handle, (void *) channel, channel->local_cid);
         channel->con_handle = con_handle;
         // query remote features if pairing is required
         if (channel->required_security_level > LEVEL_0){
@@ -2910,7 +2911,7 @@ static void l2cap_handle_features_complete(hci_con_handle_t handle){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
         if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
         if (channel->con_handle != handle) continue;
-        log_info("remote supported features, channel %p, cid %04x - state %u", channel, channel->local_cid, channel->state);
+        log_info("remote supported features, channel %p, cid %04x - state %u", (void *) channel, channel->local_cid, channel->state);
         l2cap_handle_remote_supported_features_received(channel);
     }
 }
@@ -2955,7 +2956,8 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
         if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
         if (channel->con_handle != handle) continue;
         gap_security_level_t required_level = channel->required_security_level;
-        log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
+        log_info("channel %p, cid %04x - state %u: actual %u >= required %u?",
+            (void *) channel, channel->local_cid, channel->state, actual_level, required_level);
         switch (channel->state){
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
                 if (actual_level >= required_level){
