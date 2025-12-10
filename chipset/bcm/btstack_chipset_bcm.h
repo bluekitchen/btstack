@@ -52,6 +52,12 @@ extern "C" {
 
 const btstack_chipset_t * btstack_chipset_bcm_instance(void);
 
+// Support for loading .hci init files from Flash
+// actual data provided by separate patchram.c
+extern const uint8_t brcm_patchram_buf[];
+extern const int     brcm_patch_ram_length;
+extern const char    brcm_patch_version[];
+
 
 // Support for loading .hcd init files on POSIX systems
 

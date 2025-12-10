@@ -78,13 +78,6 @@
 static int send_download_command;
 static int32_t init_script_offset;
 
-// Embedded == non posix systems
-
-// actual init script provided by separate bt_firmware_image.c from WICED SDK
-extern const uint8_t brcm_patchram_buf[];
-extern const int     brcm_patch_ram_length;
-extern const char    brcm_patch_version[];
-
 //
 // @note: Broadcom chips require higher UART clock for baud rate > 3000000 -> limit baud rate in hci.c
 static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
