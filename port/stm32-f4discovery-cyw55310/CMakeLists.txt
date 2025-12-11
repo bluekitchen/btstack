@@ -122,6 +122,14 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     configure_file(${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE})
     list(APPEND SOURCES_EXAMPLE ${OZONE_PROJECT_FILE})
 
+    #
+    add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd
+            COMMAND ${Python_EXECUTABLE}
+            ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd ${CMAKE_CURRENT_BINARY_DIR}
+    )
+
     # Create an executable target for the example
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
 
@@ -152,7 +160,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         port/hal_audio_f4discovery.c
         port/hal_flash_bank_stm32.c
         port/port.c
-        port/CYW55500A1_001.002.032.0233.0000_251002_TEST_ONLY.c
+        ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c
         ${SOURCES_EXAMPLE}
     )
 
