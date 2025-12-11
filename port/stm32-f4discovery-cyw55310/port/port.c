@@ -26,6 +26,7 @@
 #include "SEGGER_RTT.h"
 #include "hci_dump_segger_rtt_stdout.h"
 #else
+#include <errno.h>
 #include "hci_dump_embedded_stdout.h"
 #endif
 
@@ -223,8 +224,8 @@ ssize_t _write(int file, const void *buf, size_t len);
 ssize_t _write(int file, const void *buf, size_t len){
 #if 1
     uint8_t cr = '\r';
-    int i;
-    uint8_t *ptr = buf;
+    size_t i;
+    const uint8_t *ptr = buf;
     if (file == STDOUT_FILENO || file == STDERR_FILENO) {
         for (i = 0; i < len; i++) {
             if (ptr[i] == '\n') {
