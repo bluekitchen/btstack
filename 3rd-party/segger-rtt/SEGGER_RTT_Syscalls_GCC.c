@@ -119,6 +119,9 @@ _ssize_t __attribute__((weak)) _write_r(struct _reent *r, int file, const void *
   return len;
 }
 
+#else
+/* Avoid empty translation unit */
+typedef int dummy_translation_unit_t;
 #endif
 #endif
 /****** End Of File *************************************************/
