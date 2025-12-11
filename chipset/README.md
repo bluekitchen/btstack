@@ -62,40 +62,41 @@ As the following Table has too many columns, we split it in two parts.
 
 Part 1.
 
-| Chipset                              | Type             | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE     | Multiple LE Roles (3) | 
-|--------------------------------------|------------------|----------------|--------------|------------------|------------|-----------------------|
-| Atmel ATWILC3000                     | LE               | H4             | Yes          | n.a              | No         | No                    | 
-| Broadcom UART                        | Dual mode        | H4, H5         | Rarely       | Partially (2)    | No         | Maybe (3)             | 
-| Broadcom USB Dongles                 | Dual mode        | USB            | Yes          | Yes              | No         | No                    | 
-| CSR UART                             | Dual mode        | H4, H5, BCSP   | Rarely       | Partially (2)    | No         | No                    | 
-| CSR USB Dongles                      | Dual mode        | USB            | Mostly       | Yes              | No         | No                    | 
-| Infineon CYW207xx                    | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | 
-| Infineon CYW208xx                    | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | 
-| Infineon CYW43xxx                    | Dual mode + Wifi | H4, H5         | Don't know   | Partially (2)    | Don't know | On newer versions     | 
-| Infineon CYW5551x, CYW5557x          | Dual mode + Wifi | H4, H5         | Mostly       | Yes              | Yes        | Yes                   | 
-| Cypress PSoC 4                       | LE               | H4             | Don't know   | n.a.             | Yes        | Don't know            | 
-| Dialog DA14531                       | LE               | H4             | No           | n.a.             | Yes        | Yes                   | 
-| Dialog DA14581                       | LE               | H4, SPI        | No           | n.a.             | No         | No                    | 
-| Dialog DA14585                       | LE               | H4, SPI        | No           | n.a.             | Yes        | Yes                   | 
-| Dialog DA1469x                       | LE               | H4, SPI        | No           | n.a.             | Yes        | Yes                   | 
-| Espressif ESP32                      | Dual mode + Wifi | VHCI, H4       | Yes          | Yes              | Yes        | Yes                   | 
-| Espressif ESP32-S3, C2, C3, C5, C6,H2| LE + Wifi        | VHCI, H4       | Yes          | No               | Yes        | Yes                   | 
-| EM 9301                              | LE               | SPI, H4        | No           | n.a.             | No         | No                    | 
-| EM 9304                              | LE               | SPI, H4        | Yes          | n.a.             | Yes        | Yes                   | 
-| EM 9305                              | LE               | SPI, H4        | Yes          | n.a.             | Yes        | Yes                   | 
-| Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Yes          | Probably         | Don't know | Don't know            | 
-| Nordic nRF                           | LE               | H4             | Fixed Random | n.a.             | Yes        | Yes                   | 
-| NXP 88W8997                          | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | 
-| NXP IW416                            | Dual mode        | H4             | Yes          | No               | Yes        | Yes                   | 
-| NXP IW61x                            | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | 
-| STM STLC2500D                        | Classic          | H4             | No           | Don't know       | n.a        | n.a.                  | 
-| STM32WB                              | LE               | VHCI           | Yes          | n.a.             | Yes        | Yes                   | 
-| STM32WB0                             | LE               | VHCI, H4       | Yes          | n.a.             | Yes        | Yes                   | 
-| Renesas RX23W                        | LE               | H4             | No           | n.a.             | Yes        | Yes                   | 
-| Realtek UART                         | Dual mode + Wifi | H5             | Yes          | Yes              | Don't know | Don't know            | 
-| Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes          | Yes              | Don't know | Don't know            | 
-| Toshiba TC35661                      | Dual mode        | H4             | No           | No               | No         | No                    | 
-| TI CC256x, WL183x                    | Dual mode        | H4, H5, eHCILL | Yes          | Yes              | No         | Yes for CC256XC       | 
+| Chipset                               | Type             | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE     | Multiple LE Roles (3) | 
+|---------------------------------------|------------------|----------------|--------------|------------------|------------|-----------------------|
+| Atmel ATWILC3000                      | LE               | H4             | Yes          | n.a              | No         | No                    | 
+| Broadcom UART                         | Dual mode        | H4, H5         | Rarely       | Partially (2)    | No         | Maybe (3)             | 
+| Broadcom USB Dongles                  | Dual mode        | USB            | Yes          | Yes              | No         | No                    | 
+| CSR UART                              | Dual mode        | H4, H5, BCSP   | Rarely       | Partially (2)    | No         | No                    | 
+| CSR USB Dongles                       | Dual mode        | USB            | Mostly       | Yes              | No         | No                    | 
+| Infineon CYW207xx                     | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | 
+| Infineon CYW208xx                     | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | 
+| Infineon CYW43xxx                     | Dual mode + Wifi | H4, H5         | Don't know   | Partially (2)    | Don't know | On newer versions     | 
+| Infineon CYW5310                      | Dual mode        | H4             | Don't know   | Yes              | Yes        | Yes                   | 
+| Infineon CYW5551x, CYW5557x           | Dual mode + Wifi | H4, H5         | Mostly       | Yes              | Yes        | Yes                   | 
+| Cypress PSoC 4                        | LE               | H4             | Don't know   | n.a.             | Yes        | Don't know            | 
+| Dialog DA14531                        | LE               | H4             | No           | n.a.             | Yes        | Yes                   | 
+| Dialog DA14581                        | LE               | H4, SPI        | No           | n.a.             | No         | No                    | 
+| Dialog DA14585                        | LE               | H4, SPI        | No           | n.a.             | Yes        | Yes                   | 
+| Dialog DA1469x                        | LE               | H4, SPI        | No           | n.a.             | Yes        | Yes                   | 
+| Espressif ESP32                       | Dual mode + Wifi | VHCI, H4       | Yes          | Yes              | Yes        | Yes                   | 
+| Espressif ESP32-S3, C2, C3, C5, C6,H2 | LE + Wifi        | VHCI, H4       | Yes          | No               | Yes        | Yes                   | 
+| EM 9301                               | LE               | SPI, H4        | No           | n.a.             | No         | No                    | 
+| EM 9304                               | LE               | SPI, H4        | Yes          | n.a.             | Yes        | Yes                   | 
+| EM 9305                               | LE               | SPI, H4        | Yes          | n.a.             | Yes        | Yes                   | 
+| Intel Dual Wireless 3165, 8260, 8265  | Dual mode        | USB            | Yes          | Probably         | Don't know | Don't know            | 
+| Nordic nRF                            | LE               | H4             | Fixed Random | n.a.             | Yes        | Yes                   | 
+| NXP 88W8997                           | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | 
+| NXP IW416                             | Dual mode        | H4             | Yes          | No               | Yes        | Yes                   | 
+| NXP IW61x                             | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | 
+| STM STLC2500D                         | Classic          | H4             | No           | Don't know       | n.a        | n.a.                  | 
+| STM32WB                               | LE               | VHCI           | Yes          | n.a.             | Yes        | Yes                   | 
+| STM32WB0                              | LE               | VHCI, H4       | Yes          | n.a.             | Yes        | Yes                   | 
+| Renesas RX23W                         | LE               | H4             | No           | n.a.             | Yes        | Yes                   | 
+| Realtek UART                          | Dual mode + Wifi | H5             | Yes          | Yes              | Don't know | Don't know            | 
+| Realtek USB Dongles                   | Dual mode + Wifi | USB            | Yes          | Yes              | Don't know | Don't know            | 
+| Toshiba TC35661                       | Dual mode        | H4             | No           | No               | No         | No                    | 
+| TI CC256x, WL183x                     | Dual mode        | H4, H5, eHCILL | Yes          | Yes              | No         | Yes for CC256XC       | 
 
 
 Part 2.
@@ -110,7 +111,8 @@ Part 2.
 | Infineon CYW207xx                    | Yes               | Yes                | bcm            |                                                  |
 | Infineon CYW208xx                    | Yes               | Don't know         | bcm            | Keep CTS high during power cycle                 |
 | Infineon CYW43xxx                    | On newer versions | On newer versions  | bcm            | Bluetooth + Wifi Combo Controller                |
-| Infineon CYW5551x, CYW5557x          | Yes               | Yes                | bcm            | Bautobaud-mode needed, see posix-h4-bcm          |
+| Infineon CYW55310                    | Yes               | Yes                | bcm            | autobaud-mode needed, see posix-h4-airoc         |
+| Infineon CYW5551x, CYW5557x          | Yes               | Yes                | bcm            | autobaud-mode needed, see posix-h4-airoc         |
 | Cypress PSoC 4                       | n.a.              | Don't know         |                | HCI Firmware part of PSoC Creator kits examples  |
 | Dialog DA14531                       | n.a.              | Don't know         | da145xx        | Official HCI firmware included in BTstack        |
 | Dialog DA14581                       | n.a.              | Don't know         | da145xx        | Official HCI firmware included in BTstack        |
