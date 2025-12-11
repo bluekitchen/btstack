@@ -1,20 +1,16 @@
-# Requirements: cpputest.github.io
 
-BTSTACK_ROOT =  ../..
+include ../common.make
 
-# CppuTest from pkg-config
-CFLAGS  += ${shell pkg-config --cflags CppuTest}
-LDFLAGS += ${shell pkg-config --libs   CppuTest}
+INCLUDES := -I${BTSTACK_ROOT}/src
+INCLUDES += -I${BTSTACK_ROOT}/test/mock
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/rijndael
+INCLUDES += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
-CFLAGS += -x c++ -g -Wall -Wnarrowing -Wconversion-null
-
-CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I${BTSTACK_ROOT}/test/mock
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
+CFLAGS += ${INCLUDES}
+CXXFLAGS += ${INCLUDES}
 
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/src/ble 
+VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/le-audio/gatt-service
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -38,19 +34,10 @@ COMMON = 										\
 	mock_att_server.c           				\
 	nordic_spp_service_server.c 				\
 	tx_power_service_server.c 					\
-	ublox_spp_service_server.c 					\
-
-
-CFLAGS_COVERAGE = ${CFLAGS} -Ibuild-coverage -fprofile-arcs -ftest-coverage 
-CFLAGS_ASAN     = ${CFLAGS} -Ibuild-asan     -fsanitize=address -DHAVE_ASSERT
-
-LDFLAGS += -lCppUTest -lCppUTestExt
-LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
-LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
+	ublox_spp_service_server.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
-
 
 all: build-coverage/battery_service_server_test 			build-asan/battery_service_server_test 				\
 	 build-coverage/device_information_service_server_test 	build-asan/device_information_service_server_test 	\
@@ -58,65 +45,41 @@ all: build-coverage/battery_service_server_test 			build-asan/battery_service_se
 	 build-coverage/bond_management_service_server_test 	build-asan/bond_management_service_server_test 		\
 	 build-coverage/heart_rate_service_server_test 			build-asan/heart_rate_service_server_test 			\
 
-build-%:
-	mkdir -p $@
+build-coverage/battery_service_server_test.o: build-coverage/battery_service_server_test.h
+build-coverage/battery_service_server_test: ${COMMON_OBJ_COVERAGE}
 
-build-%/battery_service_server_test.h: battery_service_server_test.gatt | build-%
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+build-asan/battery_service_server_test.o: build-asan/battery_service_server_test.h
+build-asan/battery_service_server_test: ${COMMON_OBJ_ASAN}
 
-build-%/device_information_service_server_test.h: device_information_service_server_test.gatt| build-%
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+build-coverage/device_information_service_server_test.o: build-coverage/device_information_service_server_test.h
+build-coverage/device_information_service_server_test: ${COMMON_OBJ_COVERAGE}
 
-build-%/tx_power_service_server_test.h: tx_power_service_server_test.gatt| build-%
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+build-asan/device_information_service_server_test.o: build-asan/device_information_service_server_test.h
+build-asan/device_information_service_server_test: ${COMMON_OBJ_ASAN}
 
-build-%/bond_management_service_server_test.h: bond_management_service_server_test.gatt| build-%
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+build-coverage/tx_power_service_server_test.o: build-coverage/tx_power_service_server_test.h 
+build-coverage/tx_power_service_server_test: ${COMMON_OBJ_COVERAGE}
 
-build-%/heart_rate_service_server_test.h: heart_rate_service_server_test.gatt| build-%
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+build-asan/tx_power_service_server_test.o: build-asan/tx_power_service_server_test.h 
+build-asan/tx_power_service_server_test: ${COMMON_OBJ_ASAN}
 
-build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+build-coverage/bond_management_service_server_test.o: build-coverage/bond_management_service_server_test.h 
+build-coverage/bond_management_service_server_test: ${COMMON_OBJ_COVERAGE} build-coverage/bond_management_service_server.o
 
-build-coverage/%.o: %.cpp | build-coverage
-	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
+build-asan/bond_management_service_server_test.o: build-asan/bond_management_service_server_test.h 
+build-asan/bond_management_service_server_test: ${COMMON_OBJ_ASAN} build-asan/bond_management_service_server.o
 
-build-asan/%.o: %.c | build-asan
-	${CC} -c $(CFLAGS_ASAN) $< -o $@
+build-coverage/microphone_control_service_server_test.o: build-coverage/microphone_control_service_server_test.h 
+build-coverage/microphone_control_service_server_test: ${COMMON_OBJ_COVERAGE}
 
-build-asan/%.o: %.cpp | build-asan
-	${CXX} -c $(CFLAGS_ASAN) $< -o $@
+build-asan/microphone_control_service_server_test.o: build-asan/microphone_control_service_server_test.h 
+build-asan/microphone_control_service_server_test: ${COMMON_OBJ_ASAN}
 
-build-coverage/battery_service_server_test: build-coverage/battery_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_server_test.o | build-coverage
-	${CXX} $(filter-out build-coverage/battery_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
+build-coverage/heart_rate_service_server_test.o: build-coverage/heart_rate_service_server_test.h 
+build-coverage/heart_rate_service_server_test: ${COMMON_OBJ_COVERAGE} build-coverage/heart_rate_service_server.o
 
-build-asan/battery_service_server_test: build-asan/battery_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/battery_service_server_test.o | build-asan
-	${CXX} $(filter-out build-asan/battery_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
-
-build-coverage/device_information_service_server_test: build-coverage/device_information_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_server_test.o  | build-coverage
-	${CXX} $(filter-out build-coverage/device_information_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/device_information_service_server_test: build-asan/device_information_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/device_information_service_server_test.o  | build-asan
-	${CXX} $(filter-out build-asan/device_information_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
-
-build-coverage/tx_power_service_server_test: build-coverage/tx_power_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/tx_power_service_server_test.o  | build-coverage
-	${CXX} $(filter-out build-coverage/tx_power_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/tx_power_service_server_test: build-asan/tx_power_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/tx_power_service_server_test.o  | build-asan
-	${CXX} $(filter-out build-asan/tx_power_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
-
-build-coverage/bond_management_service_server_test: build-coverage/bond_management_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/bond_management_service_server.o build-coverage/bond_management_service_server_test.o  | build-coverage
-	${CXX} $(filter-out build-coverage/bond_management_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/bond_management_service_server_test: build-asan/bond_management_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/bond_management_service_server.o  build-asan/bond_management_service_server_test.o  | build-asan
-	${CXX} $(filter-out build-asan/bond_management_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
-
-build-coverage/heart_rate_service_server_test: build-coverage/heart_rate_service_server_test.h ${COMMON_OBJ_COVERAGE} build-coverage/heart_rate_service_server.o build-coverage/heart_rate_service_server_test.o  | build-coverage
-	${CXX} $(filter-out build-coverage/heart_rate_service_server_test.h,$^) ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/heart_rate_service_server_test: build-asan/heart_rate_service_server_test.h ${COMMON_OBJ_ASAN} build-asan/heart_rate_service_server.o  build-asan/heart_rate_service_server_test.o  | build-asan
-	${CXX} $(filter-out build-asan/heart_rate_service_server_test.h,$^) ${LDFLAGS_ASAN} -o $@
+build-asan/heart_rate_service_server_test.o: build-asan/heart_rate_service_server_test.h 
+build-asan/heart_rate_service_server_test: ${COMMON_OBJ_ASAN} build-asan/heart_rate_service_server.o
 
 test: all
 	build-asan/battery_service_server_test

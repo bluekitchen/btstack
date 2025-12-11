@@ -27,9 +27,11 @@
 
 static uint32_t bond_management_features = 0xFFFFFF;
 static uint8_t  request[550];
-    
+
 // mocks
 void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
+    UNUSED(address_type);
+    UNUSED(address);
     // traack call if needed
 }
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
