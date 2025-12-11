@@ -55,6 +55,11 @@ message("Build: ${CMAKE_BUILD_TYPE}\n")
 # Include BTStack
 include(cmake/btstack.cmake)
 
+# PatchRAM file for CYW55310
+set(PATCHRAM CYW55500A1_001.002.032.0233.0000_251002_TEST_ONLY)
+message("Downloading PatchRAM ${PATCHRAM}")
+file (DOWNLOAD https://bluekitchen-gmbh.com/files/ezurio/${PATCHRAM}.hcd ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd)
+
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")
 list(SORT EXAMPLES_C)
@@ -77,6 +82,8 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
+
+message("")
 
 # Create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
