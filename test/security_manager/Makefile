@@ -1,21 +1,16 @@
-# Requirements: cpputest.github.io
+include ../common.make
 
-BTSTACK_ROOT =  ../..
+DEFINES := -D HAVE_EMBEDDED_TIME_MS
+INCLUDES := -I${BTSTACK_ROOT}/src
+INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
+INCLUDES += -I${BTSTACK_ROOT}/platform/posix
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/rijndael
+INCLUDES += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
-# CppuTest from pkg-config
-CFLAGS  += ${shell pkg-config --cflags CppuTest}
-LDFLAGS += ${shell pkg-config --libs   CppuTest}
-
-CFLAGS += -D HAVE_EMBEDDED_TIME_MS
-CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
-CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
-CFLAGS += -I${BTSTACK_ROOT}/platform/posix
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
-LDFLAGS +=  -lCppUTest -lCppUTestExt
+CFLAGS += ${INCLUDES} ${DEFINES}
+CXXFLAGS += ${INCLUDES} ${DEFINES}
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -40,42 +35,15 @@ COMMON = \
 	rijndael.c 					\
 	sm.c     					\
 	btstack_util.c			            \
-	btstack_tlv.c \
-	
-CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
-
-LDFLAGS += -lCppUTest -lCppUTestExt
-LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
-LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
+	btstack_tlv.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o)) build-coverage/uECC.o
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o)) build-asan/uECC.o
 
 all: build-coverage/security_manager build-asan/security_manager
 
-build-%:
-	mkdir -p $@
-
-build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-coverage/%.o: %.cpp | build-coverage
-	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-asan/%.o: %.c | build-asan
-	${CC} -c $(CFLAGS_ASAN) $< -o $@
-
-build-asan/%.o: %.cpp | build-asan
-	${CXX} -c $(CFLAGS_ASAN) $< -o $@
-
-
-build-coverage/security_manager: ${COMMON_OBJ_COVERAGE} build-coverage/security_manager.o | build-coverage
-	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/security_manager: ${COMMON_OBJ_ASAN} build-asan/security_manager.o | build-asan
-	${CXX} $^ ${LDFLAGS_ASAN} -o $@
-
+build-coverage/security_manager: ${COMMON_OBJ_COVERAGE}
+build-asan/security_manager: ${COMMON_OBJ_ASAN}
 
 test: all
 	build-asan/security_manager
