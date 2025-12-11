@@ -98,6 +98,11 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/sco_demo_util.c)
     endif()
 
+    # add Audio Player Demo util
+    if ("audio_player" MATCHES ${EXAMPLE})
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/audio_player_demo_util.c)
+    endif()
+
     # add lwip sources for lwip examples
     if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
         list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
