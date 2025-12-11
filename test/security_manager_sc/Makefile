@@ -1,9 +1,5 @@
-# Makefile for libusb based PTS tests
-BTSTACK_ROOT = ../..
 
-# CppuTest from pkg-config
-CFLAGS  += ${shell pkg-config --cflags CppuTest}
-LDFLAGS += ${shell pkg-config --libs   CppuTest}
+include ../common.make
 
 CORE += \
 	btstack_memory.c            \
@@ -47,18 +43,24 @@ GATT_CLIENT += \
 SM += \
 	sm.c 				 	    \
 
-CFLAGS += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
-CFLAGS += -D ENABLE_TESTING_SUPPORT
-CFLAGS += -DCOVERAGE
-CFLAGS += -Ibuild-coverage
-CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
-CFLAGS += -I${BTSTACK_ROOT}/chipset/zephyr
-CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
-CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
-CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
+DEFINES := -D ENABLE_TESTING_SUPPORT
+DEFINES += -DCOVERAGE
+INCLUDES := -Ibuild-coverage
+INCLUDES += -I${BTSTACK_ROOT}/src
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/rijndael
+INCLUDES += -I${BTSTACK_ROOT}/3rd-party/tinydir
+INCLUDES += -I${BTSTACK_ROOT}/chipset/zephyr
+INCLUDES += -I${BTSTACK_ROOT}/platform/posix 
+INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
+INCLUDES += -I${BTSTACK_ROOT}/test/include/coverage-ble
+
+LIBUSB_CFLAGS = ${shell pkg-config --cflags libusb-1.0}
+LIBUSB_LDFLAGS = ${shell pkg-config --ldflags libusb-1.0}
+
+CFLAGS += ${INCLUDES} ${DEFINES} ${LIBUSB_CFLAGS}
+CXXFLAGS += ${INCLUDES} ${DEFINES} ${LIBUSB_CFLAGS}
+LDFLAGS += ${LIBUSB_LDFLAGS}
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
@@ -68,14 +70,6 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
-# coverage
-CFLAGS  += -fprofile-arcs -ftest-coverage
-LDFLAGS += -fprofile-arcs -ftest-coverage
-
-# use pkg-config for libusb
-CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
-LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
-
 CORE_OBJ = $(addprefix build-coverage/,$(CORE:.c=.o))
 COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 ATT_OBJ = $(addprefix build-coverage/,$(ATT:.c=.o))
@@ -83,25 +77,11 @@ SM_OBJ = $(addprefix build-coverage/,$(SM:.c=.o))
 GATT_CLIENT_OBJ = $(addprefix build-coverage/,$(GATT_CLIENT:.c=.o))
 GATT_SERVER_OBJ = $(addprefix build-coverage/,$(GATT_SERVER:.c=.o))
 
-# compile .gatt descriptions
-build-coverage/%.h: %.gatt
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-
 .PHONY: all coverage test
 
 all: build-coverage/sm_test
 
-build-%:
-	mkdir -p $@
-
-build-coverage/sm_test.h: sm_test.gatt | build-coverage
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-
-build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
-
-build-coverage/sm_test: build-coverage/sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} build-coverage/sm_test.o | build-coverage
-	${CC} $(filter-out build-coverage/sm_test.h,$^) ${LDFLAGS} -o $@
+build-coverage/sm_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ}
 
 myclean:
 	rm -rf build-coverage
