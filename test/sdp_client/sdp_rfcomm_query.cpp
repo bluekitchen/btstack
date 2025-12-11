@@ -87,6 +87,9 @@ static uint8_t  sdp_test_record_list[] = { 0x36, 0x02, 0xE7, 0x35, 0x48,
 
 
 void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             channel_nr[service_index] = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);

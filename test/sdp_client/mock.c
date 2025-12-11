@@ -9,6 +9,7 @@
 static btstack_packet_handler_t packet_handler;
 
 int l2cap_can_send_packet_now(uint16_t cid){
+    UNUSED(cid);
     return 1;
 }
 uint8_t l2cap_request_can_send_now_event(uint16_t cid){
@@ -19,10 +20,15 @@ uint8_t l2cap_request_can_send_now_event(uint16_t cid){
 }
 
 uint8_t l2cap_create_channel(btstack_packet_handler_t handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
+    UNUSED(address);
+    UNUSED(psm);
+    UNUSED(mtu);
+    UNUSED(out_local_cid);
 	packet_handler = handler;
     return 0x41;
 }
 uint8_t l2cap_disconnect(uint16_t local_cid){
+    UNUSED(local_cid);
     return ERROR_CODE_SUCCESS;
 }
 uint8_t *l2cap_get_outgoing_buffer(void){
@@ -35,5 +41,7 @@ int l2cap_reserve_packet_buffer(void){
     return 0;
 }
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
+    UNUSED(local_cid);
+    UNUSED(len);
     return 0;
 }
