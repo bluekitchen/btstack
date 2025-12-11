@@ -153,6 +153,12 @@ TEST(ADParser, ad_data_contains_uuid16){
 
     contains_uuid = ad_data_contains_uuid16(sizeof(adv_data), adv_data,  0xaa10);
     CHECK(contains_uuid);
+
+    uint8_t uuid128[16], uuid128_le[16];
+    uuid_add_bluetooth_prefix(uuid128, 0xff10);
+    reverse_128(uuid128, uuid128_le);
+    contains_uuid = ad_data_contains_uuid128(sizeof(adv_data), adv_data, uuid128_le);
+    CHECK(contains_uuid);
 }
 
 TEST(ADParser, ad_data_contains_uuid128){
