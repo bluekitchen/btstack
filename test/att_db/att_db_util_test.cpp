@@ -92,8 +92,10 @@ void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 extern "C" {
 
     void att_set_db(uint8_t const * db){
+        UNUSED(db);
     }
     void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+        UNUSED(callback_handler);
     }
     bool hci_can_send_command_packet_now(void){
         return true;

@@ -77,6 +77,9 @@ static write_callback_mode_t write_callback_mode = WRITE_CALLBACK_MODE_RETURN_DE
 
 // these can be tweaked to report errors or some data as needed by test case
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    UNUSED(con_handle);
+    UNUSED(attribute_handle);
+
 	switch (read_callback_mode){
 		case READ_CALLBACK_MODE_RETURN_ONE_BYTE:
 			return att_read_callback_handle_byte(0x55, offset, buffer, buffer_size);
@@ -88,6 +91,13 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
 }
 
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(con_handle);
+    UNUSED(attribute_handle);
+    UNUSED(transaction_mode);
+    UNUSED(offset);
+    UNUSED(buffer);
+    UNUSED(buffer_size);
+
 	switch (write_callback_mode){
 		case WRITE_CALLBACK_MODE_RETURN_ERROR_WRITE_RESPONSE_PENDING:
 			return ATT_ERROR_WRITE_RESPONSE_PENDING;
@@ -125,6 +135,13 @@ static uint16_t att_prepare_write_request(uint16_t request_type, uint16_t attrib
 
 // ignore for now
 extern "C" void btstack_crypto_aes128_cmac_generator(btstack_crypto_aes128_cmac_t * request, const uint8_t * key, uint16_t size, uint8_t (*get_byte_callback)(uint16_t pos), uint8_t * hash, void (* callback)(void * arg), void * callback_arg){
+    UNUSED(request);
+    UNUSED(key);
+    UNUSED(size);
+    UNUSED(get_byte_callback);
+    UNUSED(hash);
+    UNUSED(callback);
+    UNUSED(callback_arg);
 }
 
 TEST_GROUP(AttDb){
