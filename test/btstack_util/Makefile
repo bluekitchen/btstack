@@ -1,12 +1,11 @@
-
 include ../common.make
 
+DEFINES := -DUNIT_TEST_ASSERT
 INCLUDES = -I${BTSTACK_ROOT}/src
-# the test verifies that asserts are triggered, btstack_config.h redirects it to test_assert
-INCLUDES += -I.
+INCLUDES += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
-CFLAGS   += ${INCLUDES}
-CXXFLAGS += ${INCLUDES}
+CFLAGS   += ${INCLUDES} ${DEFINES}
+CXXFLAGS += ${INCLUDES} ${DEFINES}
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic

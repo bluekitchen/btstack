@@ -2,8 +2,10 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "btstack_util.h"
 #include "btstack_config.h"
+
+#include "btstack_util.h"
+#include "btstack_debug.h"
 #include <stdio.h>
 
 static bool assert_failed;
