@@ -234,13 +234,14 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-static char short_options[] = "hu:l:r";
+static char short_options[] = "hu:l:r:b:";
 
 static struct option long_options[] = {
     {"help",        no_argument,        NULL,   'h'},
     {"logfile",    required_argument,  NULL,   'l'},
     {"reset-tlv",    no_argument,       NULL,   'r'},
     {"usbpath",    required_argument,  NULL,   'u'},
+    {"usbbus",    required_argument,  NULL,   'b'},
     {0, 0, 0, 0}
 };
 
@@ -248,7 +249,8 @@ static char *help_options[] = {
     "print (this) help.",
     "set file to store debug output and HCI trace.",
     "reset bonding information stored in TLV.",
-    "set USB path to Bluetooth Controller.",
+    "set USB path (base 16, dash or colon separated) of Bluetooth Controller.",
+    "set USB bus number (base 10) of Bluetooth Controller.",
 };
 
 static char *option_arg_name[] = {
@@ -256,6 +258,7 @@ static char *option_arg_name[] = {
     "LOGFILE",
     "",
     "USBPATH",
+    "USBBUS",
 };
 
 static void usage(const char *name){
@@ -271,13 +274,14 @@ static void usage(const char *name){
 int main(int argc, const char * argv[]){
 
     uint8_t usb_path[USB_MAX_PATH_LEN];
+    uint8_t usb_bus = 0;
     int usb_path_len = 0;
     const char * usb_path_string = NULL;
     const char * log_file_path = NULL;
 
     // parse command line parameters
     while(true){
-        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        int c = getopt_long(argc, (char* const*)argv, short_options, long_options, NULL);
         if (c < 0) {
             break;
         }
@@ -293,6 +297,9 @@ int main(int argc, const char * argv[]){
                 break;
             case 'r':
                 tlv_reset = true;
+                break;
+            case 'b':
+                usb_bus = (uint8_t)strtol(optarg, NULL, 10);
                 break;
             case 'h':
             default:
@@ -317,12 +324,19 @@ int main(int argc, const char * argv[]){
         printf("\n");
     }
 
+    if (usb_bus != 0 && usb_path_string == NULL) {
+        printf("ERROR: USB bus specified without USB path\n");
+        return EXIT_FAILURE;
+    }
+
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
     if (usb_path_len){
-        hci_transport_usb_set_path(usb_path_len, usb_path);
+        // Note: if usb_bus was not set, has the same effect as calling 
+        // hci_transport_usb_set_bus.
+        hci_transport_usb_set_bus_and_path(usb_bus, usb_path_len, usb_path);
     }
 
     // log into file using HCI_DUMP_PACKETLOGGER format

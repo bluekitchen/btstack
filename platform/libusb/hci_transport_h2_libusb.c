@@ -380,6 +380,7 @@ static int sco_in_addr;
 static int sco_out_addr;
 
 // device info
+static uint8_t usb_bus;
 static int usb_path_len;
 static uint8_t usb_path[USB_MAX_PATH_LEN];
 static uint16_t usb_vendor_id;
@@ -419,6 +420,11 @@ void hci_transport_usb_set_path(int len, uint8_t * port_numbers){
     }
     usb_path_len = len;
     memcpy(usb_path, port_numbers, len);
+}
+
+void hci_transport_usb_set_bus_and_path(uint8_t bus, int len, uint8_t* port_numbers) {
+    hci_transport_usb_set_path(len, port_numbers);
+    usb_bus = bus;
 }
 
 LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
@@ -1087,7 +1093,9 @@ static int usb_open(void){
         int i;
         for (i=0;i<num_devices;i++){
             uint8_t port_numbers[USB_MAX_PATH_LEN];
+            uint8_t device_usb_bus = libusb_get_bus_number(devs[i]);
             int len = libusb_get_port_numbers(devs[i], port_numbers, USB_MAX_PATH_LEN);
+            if (usb_bus != 0 && device_usb_bus != usb_bus) continue;
             if (len != usb_path_len) continue;
             if (memcmp(usb_path, port_numbers, len) == 0){
                 log_info("USB device found at specified path");
