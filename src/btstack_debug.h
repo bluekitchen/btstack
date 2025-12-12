@@ -68,6 +68,11 @@ extern "C" {
 #define BTSTACK_FILE__ __FILE__
 #endif
 
+// map btstack_assert to test_assert
+#ifdef UNIT_TEST_ASSERT
+void test_assert(bool condition);
+#define btstack_assert test_assert
+#else
 #ifdef HAVE_ASSERT
 // allow to override btstack_assert in btstack_config.h
 #ifndef btstack_assert
@@ -91,8 +96,9 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #define btstack_assert(condition)         {(void)(condition);}
 #endif /* btstack_assert */
 #endif /* HAVE_ASSERT */
- 
-// mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
+#endif /* UNIT_TEST_ASSERT */
+
+ // mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
 #ifdef UNIT_TEST
 #define btstack_unreachable()
 #else
