@@ -37,6 +37,7 @@ SUBDIRS =  \
 
 # not testing anything in source tree
 #	maths \
+#	pts \
 # no unit tests
 #	embedded \
 #	gatt_server \
