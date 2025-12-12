@@ -6,8 +6,9 @@ CPPUTEST_CFLAGS  := ${shell pkg-config --cflags cpputest}
 CPPUTEST_LDFLAGS := ${shell pkg-config --libs   cpputest}
 
 # CppuTest from pkg-config
-CFLAGS  += ${CPPUTEST_CFLAGS}
-LDFLAGS += ${CPPUTEST_LDFLAGS}
+CFLAGS   += ${CPPUTEST_CFLAGS}
+CXXFLAGS += ${CPPUTEST_CFLAGS}
+LDFLAGS  += ${CPPUTEST_LDFLAGS}
 
 # General
 CFLAGS   += ${GENERIC_FLAGS} -std=gnu11
