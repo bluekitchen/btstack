@@ -8,9 +8,6 @@ if( DEFINED ENV{BTSTACK_ROOT} )
     set(BTSTACK_ROOT $ENV{BTSTACK_ROOT})
 endif()
 
-# pkgconfig
-find_package(PkgConfig REQUIRED)
-
 # to generate .h from .gatt files
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
