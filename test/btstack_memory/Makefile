@@ -29,27 +29,27 @@ all: build-coverage/btstack_memory_pool_test_single \
 	 build-asan/btstack_memory_pool_test_single \
 	 build-asan/btstack_memory_test_single
 
-build-coverage/%_none.o: %.c
+build-coverage/%_none.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) -I config_none $< -o $@
-build-coverage/%_none.o: %.cpp
+build-coverage/%_none.o: %.cpp | build-coverage
 	${CXX} -c $(CXXFLAGS_COVERAGE) -I config_none $< -o $@
 
-build-coverage/%_single.o: %.c
+build-coverage/%_single.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) -I config_single $< -o $@
-build-coverage/%_single.o: %.cpp
+build-coverage/%_single.o: %.cpp | build-coverage
 	${CXX} -c $(CXXFLAGS_COVERAGE) -I config_single $< -o $@
 
-build-coverage/%_malloc.o: %.c
+build-coverage/%_malloc.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) -I config_malloc $< -o $@
-build-coverage/%_malloc.o: %.cpp
+build-coverage/%_malloc.o: %.cpp | build-coverage
 	${CXX} -c $(CXXFLAGS_COVERAGE) -I config_malloc $< -o $@
 
-build-asan/%_single.o: %.c
+build-asan/%_single.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) -I config_single $< -o $@
-build-asan/%_single.o: %.cpp
+build-asan/%_single.o: %.cpp | build-asan
 	${CXX} -c $(CXXFLAGS_ASAN) -I config_single $< -o $@
 
-build-coverage/btstack_memory_pool_test_single: ${COMMON_OBJ_COVERAGE_SINGLE}
+build-coverage/btstack_memory_pool_test_single: ${COMMON_OBJ_COVERAGE_SINGLE} 
 
 build-coverage/btstack_memory_test_single: ${COMMON_OBJ_COVERAGE_SINGLE}
 build-coverage/btstack_memory_test_none: ${COMMON_OBJ_COVERAGE_NONE}
