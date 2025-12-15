@@ -185,6 +185,7 @@ TEST_GROUP(L2CAP_CHANNELS){
         hci_dump_init(hci_dump_posix_stdout_get_instance());
         l2cap_channel_opened = false;
         allow_sending();
+        mock_out_of_memory(false);
     }
     void teardown(void){
         l2cap_remove_event_handler(&l2cap_event_callback_registration);
@@ -219,8 +220,11 @@ TEST(L2CAP_CHANNELS, some_functions){
     l2cap_reserve_packet_buffer();
     (void) l2cap_get_outgoing_buffer();
     l2cap_release_packet_buffer();
+    CHECK(l2cap_max_le_mtu() == HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE);
     l2cap_set_max_le_mtu(30);
-    l2cap_set_max_le_mtu(30);
+    CHECK(l2cap_max_le_mtu() == 30);
+    l2cap_set_max_le_mtu(HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE + 1);
+    CHECK(l2cap_max_le_mtu() == 30);
     l2cap_cbm_unregister_service(TEST_PSM);
     l2cap_cbm_accept_connection(0X01, NULL, 0, 0);
     l2cap_cbm_decline_connection(0x01, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
@@ -291,6 +295,7 @@ TEST(L2CAP_CHANNELS, incoming_1){
     l2cap_cbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, LEVEL_0);
     // simulate conn request
     l2cap_channel_accept_incoming = true;
+    mock_out_of_memory(true);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_conn_request_1, sizeof(le_data_channel_conn_request_1));
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // print_acl("le_data_channel_conn_response_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);

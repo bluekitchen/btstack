@@ -68,7 +68,6 @@ void *mock_malloc(size_t size) {
 }
 
 void mock_free(void *ptr) {
-    printf("%s\n", __func__);
     free(ptr);
 }
 
