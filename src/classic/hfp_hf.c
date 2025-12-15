@@ -648,8 +648,11 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
     }
 
     if (hfp_connection->enable_extended_audio_gateway_error_report){
+        uint8_t enable = hfp_connection->enable_extended_audio_gateway_error_report;
+        hfp_connection->enable_extended_audio_gateway_error_report = 0;
         hfp_connection->ok_pending = 1;
-        hfp_hf_cmd_enable_extended_audio_gateway_error_report(hfp_connection->rfcomm_cid, hfp_connection->enable_extended_audio_gateway_error_report);
+        hfp_connection->response_pending_for_command = HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
+        hfp_hf_cmd_enable_extended_audio_gateway_error_report(hfp_connection->rfcomm_cid, enable);
         return true;
     }
 
@@ -1487,6 +1490,7 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
     switch (response_pending_for_command){
         case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
+        case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
             hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
             break;
         case HFP_CMD_TURN_OFF_EC_AND_NR:
@@ -1573,11 +1577,6 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
                             break;
                     }
 
-                    if (hfp_connection->enable_extended_audio_gateway_error_report){
-                        hfp_connection->enable_extended_audio_gateway_error_report = 0;
-                        break;
-                    }
-                
                     switch (hfp_connection->codecs_state){
                         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
                             hfp_connection->codecs_state = HFP_CODECS_W4_AG_COMMON_CODEC;
