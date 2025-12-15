@@ -25,11 +25,11 @@ COMMON = \
 	ad_parser.c \
 	l2cap.c \
 	l2cap_signaling.c \
-	btstack_memory.c \
+	mock_memory.c \
 	btstack_run_loop.c \
 	btstack_run_loop_embedded.c \
 	hci_dump.c \
-	hci_dump_posix_stdout.c \
+	hci_dump_posix_stdout.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
