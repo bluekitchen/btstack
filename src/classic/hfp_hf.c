@@ -620,7 +620,9 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
     };
 
     if (hfp_connection->change_status_update_for_individual_ag_indicators){
+        hfp_connection->change_status_update_for_individual_ag_indicators = 0;
         hfp_connection->ok_pending = 1;
+        hfp_connection->response_pending_for_command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
         hfp_hf_cmd_activate_status_update_for_ag_indicator(hfp_connection->rfcomm_cid,
                 hfp_connection->ag_indicators_status_update_bitmap,
                 hfp_connection->ag_indicators_nr);
@@ -1480,6 +1482,9 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
     hfp_connection->ok_pending = 0;
 
     switch (response_pending_for_command){
+        case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
+            hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
+            break;
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
             break;
@@ -1554,12 +1559,6 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     if (hfp_connection->enable_status_update_for_ag_indicators != 0xFF){
                         hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
-                        hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
-                        break;
-                    }
-
-                    if (hfp_connection->change_status_update_for_individual_ag_indicators == 1){
-                        hfp_connection->change_status_update_for_individual_ag_indicators = 0;
                         hfp_ag_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, status);
                         break;
                     }
