@@ -128,8 +128,8 @@ static bool gatt_service_client_caching_restore(gatt_service_client_t *client, g
     connection->request_hash = crc;
 
     log_info("Cache ID %u, request hash %08" PRIX32, connection->cache_id, connection->request_hash);
-    // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
-    uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
+    // Look for cached characteristics: 4 bytes hash + 4 bytes start/end handle + 1 bytes num characteristics + 3 bytes reserved + value handles
+     uint8_t cached_characteristics_data[12 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
     uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
     int len = tlv_impl->get_tag(tlv_context, tag, cached_characteristics_data, sizeof(cached_characteristics_data));
     if (len <= 8) {
@@ -143,13 +143,18 @@ static bool gatt_service_client_caching_restore(gatt_service_client_t *client, g
         return false;
     }
 
-    log_info("Request hash matches")
+    log_info("Request hash matches -> restore service cache")
 
+    // load start / end handle
+    connection->start_handle = little_endian_read_16(cached_characteristics_data, 4);
+    connection->end_handle = little_endian_read_16(cached_characteristics_data, 6);
+    log_info("Service start 0x%04x - end 0x%04x", connection->start_handle, connection->end_handle);
     // load cached characteristics
-    uint8_t num_cached_characteristics = cached_characteristics_data[4];
+    uint8_t num_cached_characteristics = cached_characteristics_data[8];
     btstack_assert(num_cached_characteristics <= MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS);
     for (int i=0;i<num_cached_characteristics;i++) {
-        connection->characteristics[i].value_handle = little_endian_read_32(cached_characteristics_data, 8 + 2 * i);
+        connection->characteristics[i].value_handle = little_endian_read_16(cached_characteristics_data, 12 + 2 * i);
+        log_info("Characteristic #%u, value handle 0x%04x", i, connection->characteristics[i].value_handle);
     }
 
     return true;
@@ -313,23 +318,27 @@ static void gatt_service_client_report_connected(void * context) {
 static void gatt_service_client_handle_connected(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
 #ifdef ENABLE_GATT_CLIENT_CACHING
     if (connection->device_index >= 0) {
-        // Look for cached characteristics: 4 bytes hash + 1 bytes num characteristics + 3 bytes reserved + value handles
-        uint8_t cached_characteristics_data[8 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
+        // Look for cached characteristics: 4 bytes hash + 4 bytes start/end handle + 1 bytes num characteristics + 3 bytes reserved + value handles
+        uint8_t cached_characteristics_data[12 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
         const btstack_tlv_t * tlv_impl = NULL;
         void * tlv_context;
         btstack_tlv_get_instance(&tlv_impl, &tlv_context);
         btstack_assert(tlv_impl != NULL);
         uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
         // store characteristics
-        memset(cached_characteristics_data, 0, 8);
+        memset(cached_characteristics_data, 0, 12);
         little_endian_store_32(cached_characteristics_data, 0, connection->request_hash);
-        cached_characteristics_data[4] = client->characteristics_desc_num;
-        for (int i=0;i<client->characteristics_desc_num;i++) {
-            little_endian_store_16(cached_characteristics_data, 8 + 2 * i, connection->characteristics[i].value_handle);
-        }
+        little_endian_store_16(cached_characteristics_data, 4, connection->start_handle);
+        little_endian_store_16(cached_characteristics_data, 6, connection->end_handle);
+        cached_characteristics_data[8] = client->characteristics_desc_num;
         log_info("Store Characteristics: device %u, cache id %u, hash %08x, handles %u", connection->device_index, connection->cache_id,
             connection->request_hash, client->characteristics_desc_num);
-        tlv_impl->store_tag(tlv_context, tag, cached_characteristics_data, 8 + 2 * client->characteristics_desc_num);
+        log_info("Service start 0x%04x - end 0x%04x", connection->start_handle, connection->end_handle);
+        for (int i=0;i<client->characteristics_desc_num;i++) {
+            little_endian_store_16(cached_characteristics_data, 12 + 2 * i, connection->characteristics[i].value_handle);
+            log_info("Characteristic #%u, value handle 0x%04x", i, connection->characteristics[i].value_handle);
+        }
+        tlv_impl->store_tag(tlv_context, tag, cached_characteristics_data, 12 + 2 * client->characteristics_desc_num);
     }
 #else
     UNUSED(client);
