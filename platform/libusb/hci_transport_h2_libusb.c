@@ -390,14 +390,15 @@ static uint16_t usb_product_id;
 static int usb_transport_open;
 
 static void hci_transport_h2_libusb_emit_usb_info(void) {
-    uint8_t event[7 + USB_MAX_PATH_LEN];
+    uint8_t event[8 + USB_MAX_PATH_LEN];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_TRANSPORT_USB_INFO;
-    event[pos++] = 5 + usb_path_len;
+    event[pos++] = 6 + usb_path_len;
     little_endian_store_16(event, pos, usb_vendor_id);
     pos+=2;
     little_endian_store_16(event, pos, usb_product_id);
     pos+=2;
+    event[pos++] = usb_bus;
     event[pos++] = usb_path_len;
     memcpy(&event[pos], usb_path, usb_path_len);
     pos += usb_path_len;
