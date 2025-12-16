@@ -1143,9 +1143,10 @@ typedef SSIZE_T ssize_t;
 
 /**
  * @brief Transport USB Bluetooth Controller info
- * @format 22JV
+ * @format 221JV
  * @param vendor_id
  * @param product_id
+ * @param bus
  * @param path_len
  * @param path
  */

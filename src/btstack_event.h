@@ -1666,13 +1666,22 @@ static inline uint16_t hci_event_transport_usb_info_get_product_id(const uint8_t
     return little_endian_read_16(event, 4);
 }
 /**
+ * @brief Get field bus from event HCI_EVENT_TRANSPORT_USB_INFO
+ * @param event packet
+ * @return bus
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_transport_usb_info_get_bus(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field path_len from event HCI_EVENT_TRANSPORT_USB_INFO
  * @param event packet
  * @return path_len
  * @note: btstack_type J
  */
 static inline uint8_t hci_event_transport_usb_info_get_path_len(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field path from event HCI_EVENT_TRANSPORT_USB_INFO
@@ -1681,7 +1690,7 @@ static inline uint8_t hci_event_transport_usb_info_get_path_len(const uint8_t * 
  * @note: btstack_type V
  */
 static inline const uint8_t * hci_event_transport_usb_info_get_path(const uint8_t * event){
-    return &event[7];
+    return &event[8];
 }
 
 /**
