@@ -139,11 +139,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // print device path
             product_id = hci_event_transport_usb_info_get_product_id(packet);
             vendor_id = hci_event_transport_usb_info_get_vendor_id(packet);
-            printf("USB device 0x%04x/0x%04x, path: %02x:",
+            printf("USB device 0x%04x/0x%04x, path: %u:",
                 vendor_id, product_id, hci_event_transport_usb_info_get_bus(packet));
             for (i=0;i<usb_path_len;i++){
-                if (i) printf("-");
-                printf("%02x", usb_path[i]);
+                if (i) printf(".");
+                printf("%u", usb_path[i]);
             }
             printf("\n");
 
@@ -313,7 +313,7 @@ int main(int argc, const char * argv[]){
             if (have_bus == false && *delimiter == ':') {
                 usb_bus = number;
                 have_bus = true;
-                printf("Bus %02x : ", usb_bus);
+                printf("Bus %u and ", usb_bus);
                 usb_path_string = delimiter+1;
                 continue;
             }
@@ -322,9 +322,9 @@ int main(int argc, const char * argv[]){
             }
             usb_path[usb_path_len] = number;
             usb_path_len++;
-            printf("%02x ", number);
+            printf("%u ", number);
             if (!delimiter) break;
-            if (*delimiter != '-') break;
+            if ((*delimiter != '-') && (*delimiter != '.')) break;
             usb_path_string = delimiter+1;
         }
         printf("\n");

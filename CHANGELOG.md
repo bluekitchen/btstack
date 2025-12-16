@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - btstack_audio: return 0 on success for source and sink init 
 - L2CAP: don't drop link key for connection response "security block"
 - HIDS Client: rename into HIDS Host to match HIDS Device
+- libusb: allow to specify USB device with bus ID and port path
 - Zephyr: update port for Zephyr 4.2.0
 - Zephyr: support Ezurio M.2 Adapter for STM32 Nucleo-144 boards
 
