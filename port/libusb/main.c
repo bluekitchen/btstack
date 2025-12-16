@@ -139,7 +139,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // print device path
             product_id = hci_event_transport_usb_info_get_product_id(packet);
             vendor_id = hci_event_transport_usb_info_get_vendor_id(packet);
-            printf("USB device 0x%04x/0x%04x, path: ", vendor_id, product_id);
+            printf("USB device 0x%04x/0x%04x, path: %02x:",
+                vendor_id, product_id, hci_event_transport_usb_info_get_bus(packet));
             for (i=0;i<usb_path_len;i++){
                 if (i) printf("-");
                 printf("%02x", usb_path[i]);
@@ -241,7 +242,6 @@ static struct option long_options[] = {
     {"logfile",    required_argument,  NULL,   'l'},
     {"reset-tlv",    no_argument,       NULL,   'r'},
     {"usbpath",    required_argument,  NULL,   'u'},
-    {"usbbus",    required_argument,  NULL,   'b'},
     {0, 0, 0, 0}
 };
 
@@ -249,8 +249,7 @@ static char *help_options[] = {
     "print (this) help.",
     "set file to store debug output and HCI trace.",
     "reset bonding information stored in TLV.",
-    "set USB path (base 16, dash or colon separated) of Bluetooth Controller.",
-    "set USB bus number (base 10) of Bluetooth Controller.",
+    "set USB path, format BUS:PORT-PORT-PORT, e.g. 1:1.2.3 of Bluetooth Controller.",
 };
 
 static char *option_arg_name[] = {
@@ -258,7 +257,6 @@ static char *option_arg_name[] = {
     "LOGFILE",
     "",
     "USBPATH",
-    "USBBUS",
 };
 
 static void usage(const char *name){
@@ -298,9 +296,6 @@ int main(int argc, const char * argv[]){
             case 'r':
                 tlv_reset = true;
                 break;
-            case 'b':
-                usb_bus = (uint8_t)strtol(optarg, NULL, 10);
-                break;
             case 'h':
             default:
                 usage(argv[0]);
@@ -309,24 +304,30 @@ int main(int argc, const char * argv[]){
     }
 
     if (usb_path_string != NULL){
-        // parse command line options for "-u 11:22:33"
-        printf("Specified USB Path: ");
+        // parse command line options for "-u 1:1-2-3"
+        printf("Specified USB ");
+        bool have_bus = false;
         while (1){
             char * delimiter;
-            int port = (int) strtol(usb_path_string, &delimiter, 16);
-            usb_path[usb_path_len] = port;
+            int number = (int) strtol(usb_path_string, &delimiter, 16);
+            if (have_bus == false && *delimiter == ':') {
+                usb_bus = number;
+                have_bus = true;
+                printf("Bus %02x : ", usb_bus);
+                usb_path_string = delimiter+1;
+                continue;
+            }
+            if (usb_path_len == 0) {
+                printf("Path ");
+            }
+            usb_path[usb_path_len] = number;
             usb_path_len++;
-            printf("%02x ", port);
+            printf("%02x ", number);
             if (!delimiter) break;
-            if (*delimiter != ':' && *delimiter != '-') break;
+            if (*delimiter != '-') break;
             usb_path_string = delimiter+1;
         }
         printf("\n");
-    }
-
-    if (usb_bus != 0 && usb_path_string == NULL) {
-        printf("ERROR: USB bus specified without USB path\n");
-        return EXIT_FAILURE;
     }
 
 	/// GET STARTED with BTstack ///
