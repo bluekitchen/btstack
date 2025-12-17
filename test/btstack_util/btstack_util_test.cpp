@@ -58,6 +58,29 @@ TEST(btstack_util, some_functions) {
     CHECK_EQUAL(btstack_clz(0x80000000), 0);
 }
 
+TEST(btstack_util, sscanf_bd_addr ){
+    bd_addr_t addr;
+    int ret = sscanf_bd_addr("00:01:02:03:04:05", addr);
+    CHECK( ret );
+    MEMCMP_EQUAL("\x00\x01\x02\x03\x04\x05", addr, 6);
+    bzero(addr, 6);
+
+    ret = sscanf_bd_addr("00:01::02:::03::::04:::::05", addr);
+    CHECK( ret == 0 );
+    MEMCMP_EQUAL("\x00\x00\x00\x00\x00\x00", addr, 6);
+    bzero(addr, 6);
+
+    ret = sscanf_bd_addr("00 01 02 03 04 05", addr);
+    CHECK( ret );
+    MEMCMP_EQUAL("\x00\x01\x02\x03\x04\x05", addr, 6);
+    bzero(addr, 6);
+
+    ret = sscanf_bd_addr("00-01-02-03-04-05", addr);
+    CHECK( ret );
+    MEMCMP_EQUAL("\x00\x01\x02\x03\x04\x05", addr, 6);
+    bzero(addr, 6);
+}
+
 TEST(btstack_util, btstack_printf_strlen){
     CHECK_EQUAL(4, btstack_printf_strlen("%04x", 0x1234));
 }

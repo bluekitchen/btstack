@@ -416,7 +416,7 @@ static int scan_hex_byte(const char * byte_string){
 int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
     const char * the_string = addr_string;
     uint8_t buffer[BD_ADDR_LEN];
-    int result = 0;
+    int result;
     int i;
     for (i = 0; i < BD_ADDR_LEN; i++) {
         int single_byte = scan_hex_byte(the_string);
@@ -424,17 +424,15 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
         the_string += 2;
         buffer[i] = (uint8_t)single_byte;
         // don't check separator after last byte
-        if (i == (BD_ADDR_LEN - 1)) {
-            result = 1;
-            break;
-        }
-        // skip supported separators
-        char next_char = *the_string;
-        if ((next_char == ':') || (next_char == '-') || (next_char == ' ')) {
-            the_string++;
+        if (i < BD_ADDR_LEN-1) {
+            // skip supported separators
+            char next_char = *the_string;
+            if ((next_char == ':') || (next_char == '-') || (next_char == ' ')) {
+                the_string++;
+            }
         }
     }
-
+    result = (i==BD_ADDR_LEN);
     if (result != 0){
         bd_addr_copy(addr, buffer);
     }
@@ -717,13 +715,9 @@ uint16_t btstack_snprintf_best_effort(char * buffer, size_t size, const char * f
     va_start(argptr, format);
     int len = vsnprintf(buffer, size, format, argptr);
     va_end(argptr);
-    if (len < 0) {
-        // error -> len = 0
-        return 0;
-    } else {
-        // min of total string len and buffer size
-        return (uint16_t) btstack_min((uint32_t) len, (uint32_t) size - 1);
-    }
+    btstack_assert( len >= 0 );
+    // min of total string len and buffer size
+    return (uint16_t) btstack_min((uint32_t) len, (uint32_t) size - 1);
 }
 
 uint16_t btstack_virtual_memcpy(
