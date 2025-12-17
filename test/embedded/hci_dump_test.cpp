@@ -76,6 +76,7 @@ TEST(hci_dump, header_setup_packetlogger){
     hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_ACL_DATA_PACKET, 0, 0);
     hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_SCO_DATA_PACKET, 0, 0);
     hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_EVENT_PACKET, 0, 0);
+    hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_ISO_PACKET, 0, 0);
     hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_COMMAND_DATA_PACKET, 0, 0);
     hci_dump_setup_header_packetlogger(buffer, 0, 0, LOG_MESSAGE_PACKET, 0, 0);
     hci_dump_setup_header_packetlogger(buffer, 0, 0, 0x77, 0, 0);
