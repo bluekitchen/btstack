@@ -35,6 +35,29 @@ TEST_GROUP(btstack_util){
     }
 };
 
+TEST(btstack_util, some_functions) {
+    uint8_t buf[4] = {0};
+    little_endian_store_08(buf, 0, 42);
+    uint8_t value = little_endian_read_08(buf, 0);
+    CHECK_EQUAL( 42, value );
+    buf[0] = 0;
+    big_endian_store_08(buf, 0, 42);
+    value = big_endian_read_08(buf, 0);
+    CHECK_EQUAL( 42, value );
+    const char *str = "Test, 123, Test, 123, Test, 123, Test, 123, Test, 123, "
+        "Test, 123, Test, 123, Test, 123, Test, 123, Test, 123, Done";
+    int str_len = strlen(str);
+    log_debug_hexdump(str, str_len);
+
+    uint8_t out[4];
+    btstack_bytes_to_hex((char*)buf, (uint8_t*)"\xde\xad\xbe\xef", 4);
+    btstack_hex_to_bytes(out, 4, (char*)buf);
+    MEMCMP_EQUAL("\xde\xad\xbe\xef", out, 4);
+    btstack_hex_to_bytes(out, 4, (char*)"\xff\xff\xff\xff");
+
+    CHECK_EQUAL(btstack_clz(0x80000000), 0);
+}
+
 TEST(btstack_util, btstack_printf_strlen){
     CHECK_EQUAL(4, btstack_printf_strlen("%04x", 0x1234));
 }
