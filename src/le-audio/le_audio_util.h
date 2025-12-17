@@ -51,6 +51,14 @@
 extern "C" {
 #endif
 
+// max size of le_audio_util_metadata_serialize
+#define LE_AUDIO_METADATA_SERIALIZE_MAX_SIZE (18  + \
+    + LE_AUDIO_PROGRAM_INFO_MAX_LENGTH \
+    + LE_CCIDS_MAX_NUM \
+    + LE_AUDIO_PROGRAM_INFO_URI_MAX_LENGTH \
+    + LE_AUDIO_EXTENDED_METADATA_MAX_LENGHT \
+    + LE_AUDIO_VENDOR_SPECIFIC_METADATA_MAX_LENGTH)
+
 uint16_t le_audio_util_virtual_memcpy_helper(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset,
     uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
@@ -61,6 +69,7 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
 
 /**
  * @brief Serialize Metadata
+ * @note max size: LE_AUDIO_METADATA_SERIALIZE_MAX_SIZE
  * @param metadata
  * @param event
  * @param event_size

@@ -344,19 +344,7 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
 
 uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size){
 
-    // calculate total size based on chunks below, all length fields are 8-bit
-    uint16_t total_size = 5 +
-                          1 + metadata->program_info_length +
-                          3 +
-                          1 + metadata->ccids_num +
-                          1 +
-                          1 + metadata->program_info_uri_length +
-                          2 +
-                          1 + metadata->extended_metadata_length +
-                          2 +
-                          1 + metadata->vendor_specific_metadata_length;
-
-    if (event_size > total_size) return 0;
+    if (event_size < LE_AUDIO_METADATA_SERIALIZE_MAX_SIZE) return 0;
 
     uint8_t pos = 0;
 
