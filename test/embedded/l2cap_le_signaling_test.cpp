@@ -36,6 +36,10 @@ TEST(L2CAP_LE_Signaling, l2cap_create_signaling_le_invalid_cmd_FF){
     CHECK_EQUAL(0, size);
 }
 #endif
+TEST(L2CAP_LE_Signaling, l2cap_create_signaling_le_unknown_options){
+    uint16_t size = l2cap_send_le_signaling_packet((hci_con_handle_t) 0x01, CONFIGURE_RESPONSE_UNKNOWN_OPTIONS, 1, 2, 3, 4, 5, "Hello");
+    CHECK_EQUAL(33, size);
+}
 
 TEST(L2CAP_LE_Signaling, l2cap_create_signaling_le_invalid_cmd_M_format){
     uint16_t size = l2cap_send_le_signaling_packet((hci_con_handle_t) 0x01, COMMAND_WITH_INVALID_FORMAT, 1);
