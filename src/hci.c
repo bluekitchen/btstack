@@ -11162,6 +11162,9 @@ void gap_privacy_client_unregister(gap_privacy_client_t * client){
 
 #endif /* ENABLE_BLE */
 
+// Ideally, we would use LCOV__EXCL__START (with single underscore), but this doesn't work with CLang & lcov combination
+// We use LCOV_EXCL_LINE for now
+// TODO: use LCOV__EXCL__START after switching to llvm-cov and llvm-profdata
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void hci_setup_test_connections_fuzz(void){
     hci_connection_t * conn;
@@ -11210,16 +11213,17 @@ void hci_setup_test_connections_fuzz(void){
     conn->sm_connection.sm_connection_encrypted = 1;
 }
 
-void hci_free_connections_fuzz(void){
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
-        hci_connection_stop_timer(con);
-        btstack_linked_list_iterator_remove(&it);
-        btstack_memory_hci_connection_free(con);
-    }
-}
+void hci_free_connections_fuzz(void){                                                        // LCOV_EXCL_LINE
+    btstack_linked_list_iterator_t it;                                                       // LCOV_EXCL_LINE
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);                         // LCOV_EXCL_LINE
+    while (btstack_linked_list_iterator_has_next(&it)){                                      // LCOV_EXCL_LINE
+        hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it); // LCOV_EXCL_LINE
+        hci_connection_stop_timer(con);                                                      // LCOV_EXCL_LINE
+        btstack_linked_list_iterator_remove(&it);                                            // LCOV_EXCL_LINE
+        btstack_memory_hci_connection_free(con);                                             // LCOV_EXCL_LINE
+    }                                                                                        // LCOV_EXCL_LINE
+}                                                                                            // LCOV_EXCL_LINE
+
 void hci_simulate_working_fuzz(void){
     hci_stack->le_scanning_param_update = false;
     hci_init_done();
