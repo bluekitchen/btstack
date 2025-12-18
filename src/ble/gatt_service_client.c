@@ -62,6 +62,7 @@
 // prototypes
 
 static void gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void gatt_service_client_start_listening(gatt_service_client_t* client, gatt_service_client_connection_t* connection);
 
 // globals
 
@@ -307,6 +308,16 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_t * client)
     return client->cid_counter;
 }
 
+static void gatt_service_client_start_listening(gatt_service_client_t* client, gatt_service_client_connection_t* connection) {
+    // all notifications registered, start listening
+    gatt_client_service_t service;
+    service.start_group_handle = connection->start_handle;
+    service.end_group_handle = connection->end_handle;
+
+    gatt_client_listen_for_service_characteristic_value_updates(&connection->notification_listener, client->packet_handler,
+                                                                connection->con_handle, &service, client->service_id, connection->cid);
+}
+
 #ifdef ENABLE_GATT_CLIENT_CACHING
 static void gatt_service_client_report_connected(void * context) {
     gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)context;
@@ -425,6 +436,8 @@ static void gatt_service_client_send_next_query(void * context) {
                 // enter connected state
                 connection->characteristic_index = 0;
                 connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+                // start listenig
+                gatt_service_client_start_listening(client, connection);
                 // queue notify
                 connection->can_send_query_registration.callback = gatt_service_client_report_connected;
                 connection->can_send_query_registration.context = connection;
@@ -596,13 +609,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
             if (gatt_service_client_have_more_notifications_to_enable(client, connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
-                // all notifications registered, start listening
-                gatt_client_service_t service;
-                service.start_group_handle = connection->start_handle;
-                service.end_group_handle = connection->end_handle;
-
-                gatt_client_listen_for_service_characteristic_value_updates(&connection->notification_listener, client->packet_handler,
-                                                                            connection->con_handle, &service, client->service_id, connection->cid);
+                gatt_service_client_start_listening(client, connection);
                 gatt_service_client_handle_connected(client, connection);
                 return false;
             }
