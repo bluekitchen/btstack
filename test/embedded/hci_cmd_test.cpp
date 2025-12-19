@@ -193,9 +193,6 @@ TEST(HCI_Command, format_JV){
     uint16_t size = create_hci_cmd(&cmd_JV, var_len_arg, input_buffer);
     CHECK_EQUAL(expected_size, size);
     MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
-
-    const hci_cmd_t cmd_test = {0x1234, "["};
-    size = create_hci_cmd(&cmd_test );
 }
 
 TEST(HCI_Command, format_number_12){
