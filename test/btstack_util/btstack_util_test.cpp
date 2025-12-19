@@ -50,8 +50,9 @@ TEST(btstack_util, some_functions) {
     log_debug_hexdump(str, str_len);
 
     uint8_t out[4];
-    btstack_bytes_to_hex((char*)buf, (uint8_t*)"\xde\xad\xbe\xef", 4);
-    btstack_hex_to_bytes(out, 4, (char*)buf);
+    char hex_buffer[9];
+    btstack_bytes_to_hex(hex_buffer, (uint8_t*)"\xde\xad\xbe\xef", 4);
+    btstack_hex_to_bytes(out, 4, hex_buffer);
     MEMCMP_EQUAL("\xde\xad\xbe\xef", out, 4);
     btstack_hex_to_bytes(out, 4, (char*)"\xff\xff\xff\xff");
 
