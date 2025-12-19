@@ -57,6 +57,14 @@
 #include "hci_event.h"
 #include "l2cap.h"
 
+// By using hci_add_event_handler_for_security_manager, the security manager
+// receives security events events before GATT Client or Server which makes them
+// work correctly. Unfortunately, this breaks our security_manager_sc_replay test
+// Keep using initialization order from test recording here
+#ifdef ENABLE_SM_REPLAY_TEST
+#define hci_add_event_handler_for_security_manager hci_add_event_handler
+#endif
+
 #if !defined(ENABLE_LE_PERIPHERAL) && !defined(ENABLE_LE_CENTRAL)
 #error "LE Security Manager used, but neither ENABLE_LE_PERIPHERAL nor ENABLE_LE_CENTRAL defined. Please add at least one to btstack_config.h."
 #endif
