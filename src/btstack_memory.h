@@ -190,6 +190,11 @@ void   btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream);
 
 #endif
 
+
+#ifdef ENABLE_MALLOC_TEST
+void btstack_memory_simulate_malloc_failure(bool out_of_memory);
+#endif
+
 #if defined __cplusplus
 }
 #endif

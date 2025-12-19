@@ -111,6 +111,11 @@ void btstack_memory_deinit(void);
 """
 
 hfile_header_end = """
+
+#ifdef ENABLE_MALLOC_TEST
+void btstack_memory_simulate_malloc_failure(bool out_of_memory);
+#endif
+
 #if defined __cplusplus
 }
 #endif
@@ -139,8 +144,17 @@ cfile_header_begin = """
 #include <stdlib.h>
 
 #ifdef ENABLE_MALLOC_TEST
-void * test_malloc(size_t size);
-#define malloc test_malloc
+static bool mock_out_of_memory = false;
+void btstack_memory_simulate_malloc_failure(bool out_of_memory) {
+    mock_out_of_memory = out_of_memory;
+}
+static void *btstack_memory_mock_malloc(size_t size) {
+    if(mock_out_of_memory) {
+        return NULL;
+    }
+    return malloc(size);
+}
+#define malloc btstack_memory_mock_malloc
 #endif
 
 #ifdef HAVE_MALLOC
