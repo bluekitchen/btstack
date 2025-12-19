@@ -185,7 +185,7 @@ TEST_GROUP(L2CAP_CHANNELS){
         hci_dump_init(hci_dump_posix_stdout_get_instance());
         l2cap_channel_opened = false;
         allow_sending();
-        mock_out_of_memory(false);
+        btstack_memory_simulate_malloc_failure(false);
     }
     void teardown(void){
         l2cap_remove_event_handler(&l2cap_event_callback_registration);
@@ -236,9 +236,9 @@ TEST(L2CAP_CHANNELS, some_functions){
     uint8_t  buffer[10];
     uint16_t out_local_cid;
 
-    mock_out_of_memory(true);
+    btstack_memory_simulate_malloc_failure(true);
     l2cap_le_register_service(&l2cap_channel_packet_handler, TEST_PSM, LEVEL_2);
-    mock_out_of_memory(false);
+    btstack_memory_simulate_malloc_failure(false);
     l2cap_le_register_service(&l2cap_channel_packet_handler, TEST_PSM, LEVEL_2);
     l2cap_le_register_service(&l2cap_channel_packet_handler, TEST_PSM, LEVEL_2);
     l2cap_le_unregister_service(TEST_PSM);
@@ -295,7 +295,7 @@ TEST(L2CAP_CHANNELS, incoming_1){
     l2cap_cbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, LEVEL_0);
     // simulate conn request
     l2cap_channel_accept_incoming = true;
-    mock_out_of_memory(true);
+    btstack_memory_simulate_malloc_failure(true);
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_conn_request_1, sizeof(le_data_channel_conn_request_1));
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // print_acl("le_data_channel_conn_response_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);

@@ -1,7 +1,7 @@
 
 include ../common.make
 
-DEFINES  := -D FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+DEFINES  := -D FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -D ENABLE_MALLOC_TEST
 INCLUDES := -Ibuild-coverage
 INCLUDES += -I${BTSTACK_ROOT}/src
 INCLUDES += -I${BTSTACK_ROOT}/src/ble
@@ -25,7 +25,7 @@ COMMON = \
 	ad_parser.c \
 	l2cap.c \
 	l2cap_signaling.c \
-	mock_memory.c \
+	btstack_memory.c \
 	btstack_run_loop.c \
 	btstack_run_loop_embedded.c \
 	hci_dump.c \
