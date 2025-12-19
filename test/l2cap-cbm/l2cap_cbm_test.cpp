@@ -1,5 +1,3 @@
-#include "mock_memory.h"
-
 // hal_cpu
 #include "hal_cpu.h"
 void hal_cpu_disable_irqs(void){}
