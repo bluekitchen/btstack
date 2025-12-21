@@ -82,6 +82,7 @@ file(GLOB SOURCES_TC2566X   "${BTSTACK_ROOT}/chipset/tc3566x/*.c")
 file(GLOB SOURCES_REALTEK   "${BTSTACK_ROOT}/chipset/realtek/*.c")
 file(GLOB SOURCES_ZEPHYR    "${BTSTACK_ROOT}/chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
+file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
 set(LWIP_CORE_SRC
@@ -141,6 +142,7 @@ set(SOURCES
   ${SOURCES_GATT}
   ${SOURCES_HXCMOD}
   ${SOURCES_HXCMOD}
+  ${SOURCES_LE_AUDIO}
   ${SOURCES_LIBUSB}
   ${SOURCES_MD5}
   ${SOURCES_MESH}
@@ -155,7 +157,7 @@ set(SOURCES
   ${SOURCES_POSIX}
   ${SOURCES_YXML}
   ${SOURCES_ZEPHYR}
-        ${SOURCES_QRCODEGEN}
+  ${SOURCES_QRCODEGEN}
 )
 list(SORT SOURCES)
 
