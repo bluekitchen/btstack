@@ -128,20 +128,30 @@ static bool gatt_service_client_caching_restore(gatt_service_client_t *client, g
     crc = btstack_crc32_update(crc, (const uint8_t*) &connection->end_handle, 2);
     connection->request_hash = crc;
 
-    log_info("Cache ID %u, request hash %08" PRIX32, connection->cache_id, connection->request_hash);
     // Look for cached characteristics: 4 bytes hash + 4 bytes start/end handle + 1 bytes num characteristics + 3 bytes reserved + value handles
-     uint8_t cached_characteristics_data[12 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
-    uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, connection->cache_id );
-    int len = tlv_impl->get_tag(tlv_context, tag, cached_characteristics_data, sizeof(cached_characteristics_data));
-    if (len <= 8) {
-        return false;
-    }
+    uint8_t cached_characteristics_data[12 + MAX_NUM_GATT_SERVICE_CLIENT_CHARACTERISTICS * 2];
+    log_info("Request hash %08" PRIX32, connection->request_hash);
 
-    // verify hash
-    uint32_t stored_request_hash = little_endian_read_32(cached_characteristics_data, 0);
-    if (stored_request_hash != connection->request_hash) {
-        log_info("Request hash does not match stored %08x", stored_request_hash);
-        return false;
+    // check stored requests
+    uint16_t cache_id = connection->cache_id;
+    while (true) {
+        uint32_t tag = gatt_service_client_tag_for_cache(connection->device_index, cache_id );
+        int len = tlv_impl->get_tag(tlv_context, tag, cached_characteristics_data, sizeof(cached_characteristics_data));
+        if (len <= 8) {
+            return false;
+        }
+        uint32_t stored_request_hash = little_endian_read_32(cached_characteristics_data, 0);
+        log_info("Cache ID %u, stored hash %08" PRIX32,cache_id, stored_request_hash);
+        // verify hash. Update cache_ID if found
+        if (stored_request_hash == connection->request_hash) {
+            connection->cache_id = cache_id;
+            break;
+        }
+        // try next
+        cache_id++;
+        if (cache_id >= 256) {
+            return false;
+        }
     }
 
     log_info("Request hash matches -> restore service cache")
