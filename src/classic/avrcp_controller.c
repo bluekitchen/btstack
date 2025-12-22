@@ -1508,10 +1508,11 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             return;
         case AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST:
-            // build command in local buffer
-            pos = 0;
+            // build command in local buffer - local buffer is copied in avrcp_send_cmd_with_avctp_fragmentation
+            // cppcheck-suppress autoVariables
             connection->data = get_element_attributes_command;
             // write identifier
+            pos = 0;
             memset(connection->data, 0, 8);
             pos += 8;
             num_attributes_index = pos;
