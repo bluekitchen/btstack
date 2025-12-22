@@ -141,6 +141,7 @@ cfile_header_begin = """
 #include "btstack_memory_pool.h"
 #include "btstack_debug.h"
 
+#include <stddef.h>
 #include <stdlib.h>
 
 #ifdef ENABLE_MALLOC_TEST
@@ -267,8 +268,9 @@ STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) STRUCT_NAME)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_STRUCT_NAME_t *buffer = (btstack_memory_STRUCT_NAME_t *)
+        ((uint8_t *)STRUCT_NAME - offsetof(btstack_memory_STRUCT_NAME_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -374,14 +376,6 @@ test_header = """
 #include <stdlib.h>
 #include <string.h>
 
-// malloc hook
-static int simulate_no_memory;
-extern "C" void * test_malloc(size_t size);
-void * test_malloc(size_t size){
-    if (simulate_no_memory) return NULL;
-    return malloc(size);
-}
-
 #include "btstack_config.h"
 
 #include "CppUTest/TestHarness.h"
@@ -395,7 +389,9 @@ void * test_malloc(size_t size){
 TEST_GROUP(btstack_memory){
     void setup(void){
         btstack_memory_init();
-        simulate_no_memory = 0;
+#ifdef HAVE_MALLOC
+        btstack_memory_simulate_malloc_failure(false);
+#endif
     }
 };
 
@@ -443,7 +439,7 @@ TEST(btstack_memory, STRUCT_NAME_GetAndFree){
 TEST(btstack_memory, STRUCT_NAME_NotEnoughBuffers){
     STRUCT_NAME_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef POOL_COUNT
     int i;
