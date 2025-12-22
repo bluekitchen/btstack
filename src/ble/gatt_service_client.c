@@ -425,6 +425,19 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
     }
     return status;
 }
+static void gatt_service_client_enter_connected_after_restore(gatt_service_client_t * client,
+    gatt_service_client_connection_t * connection) {
+
+    // enter connected state
+    connection->characteristic_index = 0;
+    connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+    // start listening
+    gatt_service_client_start_listening(client, connection);
+    // queue notify
+    connection->can_send_query_registration.callback = gatt_service_client_report_connected;
+    connection->can_send_query_registration.context = connection;
+    btstack_run_loop_execute_on_main_thread(&connection->can_send_query_registration);
+}
 
 static void gatt_service_client_send_next_query(void * context) {
     gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)context;
@@ -443,15 +456,7 @@ static void gatt_service_client_send_next_query(void * context) {
             restore_ok = gatt_service_client_caching_restore(client, connection);
             log_info("Caching: restore %u", restore_ok);
             if (restore_ok) {
-                // enter connected state
-                connection->characteristic_index = 0;
-                connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-                // start listenig
-                gatt_service_client_start_listening(client, connection);
-                // queue notify
-                connection->can_send_query_registration.callback = gatt_service_client_report_connected;
-                connection->can_send_query_registration.context = connection;
-                btstack_run_loop_execute_on_main_thread(&connection->can_send_query_registration);
+                gatt_service_client_enter_connected_after_restore(client, connection);
                 break;
             }
 #endif
