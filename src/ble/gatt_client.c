@@ -854,7 +854,7 @@ static void gatt_client_caching_handle_database_hash(gatt_client_t * gatt_client
                 // database hash changed, update entry in tlv
                 database_version++;
                 entry.database_version = database_version;
-                memcpy(&entry.database_hash, &database_hash, 16);
+                memcpy(entry.database_hash, database_hash, 16);
                 (void) tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(gatt_client_database_hash_entry_t));
             }
         }
