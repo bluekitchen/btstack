@@ -166,8 +166,9 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
     log_info("store with tag %x", (unsigned int) tag_to_use);
 
     link_key_nvm_t entry;
-    
+    // cppcheck-suppress uninitvar ; entry.bd_addr is the target
     (void)memcpy(entry.bd_addr, bd_addr, 6);
+    // cppcheck-suppress uninitvar ; entry.link_key is the target
     (void)memcpy(entry.link_key, link_key, 16);
     entry.link_key_type = link_key_type;
     entry.seq_nr = highest_seq_nr + 1;
