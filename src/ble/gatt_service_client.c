@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "gatt_service_client_helper.c"
+#define BTSTACK_FILE__ "gatt_service_client.c"
 #include <inttypes.h>
 
 #include "btstack_tlv.h"
@@ -477,6 +477,18 @@ static void gatt_service_client_send_next_query(void * context) {
                         connection->cid);
             }
             break;
+
+        case GATT_SERVICE_CLIENT_STATE_W2_CHECK_RESTORE_BEFORE_QUERY_CHARACTERISTICS:
+#ifdef ENABLE_GATT_CLIENT_CACHING
+            restore_ok = gatt_service_client_caching_restore(client, connection);
+            log_info("Caching: restore %u", restore_ok);
+            if (restore_ok) {
+                gatt_service_client_enter_connected_after_restore(client, connection);
+                break;
+            }
+#endif
+
+            /* fall through */
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
 #ifdef ENABLE_TESTING_SUPPORT
@@ -1002,7 +1014,7 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
+    connection->state = GATT_SERVICE_CLIENT_STATE_W2_CHECK_RESTORE_BEFORE_QUERY_CHARACTERISTICS;
     memset(connection->service_uuid128, 0, 16);
     connection->service_uuid16      = service_uuid16;
     connection->service_index       = service_index;
