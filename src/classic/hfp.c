@@ -733,6 +733,7 @@ static void hfp_handle_slc_setup_error(hfp_connection_t * hfp_connection, uint8_
     // finalize connection struct
     hfp_finalize_connection_context(hfp_connection);
     // emit event
+    // cppcheck-suppress uninitvar ; remote_addr is reported as uninitialized although it's the destination of the memcpy
     hfp_emit_slc_connection_event(local_role, status, HCI_CON_HANDLE_INVALID, remote_addr);
 }
 
