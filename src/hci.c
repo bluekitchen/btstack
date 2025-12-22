@@ -5150,6 +5150,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
         hci_stack = (hci_stack_t*) malloc(sizeof(hci_stack_t));
     }
     btstack_assert(hci_stack != NULL);
+    // the btstack_assert isn't sufficient for cppcheck, so we explicitly abort here
+    if (hci_stack == NULL) {    // LCOV_EXCL_LINE
+        abort();                // LCOV_EXCL_LINE
+    }                           // LCOV_EXCL_LINE
 #else
     hci_stack = &hci_stack_static;
 #endif
