@@ -181,24 +181,24 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
 
-| \#define                                  | Description                                                                |
-|-------------------------------------------|----------------------------------------------------------------------------|
-| HCI_ACL_PAYLOAD_SIZE                      | Max size of HCI ACL payloads                                               |
-| HCI_ACL_CHUNK_SIZE_ALIGNMENT              | Alignment of ACL chunk size, can be used to align HCI transport writes     |
-| HCI_INCOMING_PRE_BUFFER_SIZE              | Number of bytes reserved before actual data for incoming HCI packets       |
-| MAX_NR_BNEP_CHANNELS                      | Max number of BNEP channels                                                |
-| MAX_NR_BNEP_SERVICES                      | Max number of BNEP services                                                |
-| MAX_NR_GATT_CLIENTS                       | Max number of GATT clients                                                 |
-| MAX_NR_HCI_CONNECTIONS                    | Max number of HCI connections                                              |
-| MAX_NR_HFP_CONNECTIONS                    | Max number of HFP connections                                              |
-| MAX_NR_L2CAP_CHANNELS                     | Max number of L2CAP connections                                            |
-| MAX_NR_L2CAP_SERVICES                     | Max number of L2CAP services                                               |
-| MAX_NR_RFCOMM_CHANNELS                    | Max number of RFOMMM connections                                           |
+| \#define                                  | Description                                                               |
+|-------------------------------------------|---------------------------------------------------------------------------|
+| HCI_ACL_PAYLOAD_SIZE                      | Max size of HCI ACL payloads                                              |
+| HCI_ACL_CHUNK_SIZE_ALIGNMENT              | Alignment of ACL chunk size, can be used to align HCI transport writes    |
+| HCI_INCOMING_PRE_BUFFER_SIZE              | Number of bytes reserved before actual data for incoming HCI packets      |
+| MAX_NR_BNEP_CHANNELS                      | Max number of BNEP channels                                               |
+| MAX_NR_BNEP_SERVICES                      | Max number of BNEP services                                               |
+| MAX_NR_GATT_CLIENTS                       | Max number of GATT clients                                                |
+| MAX_NR_HCI_CONNECTIONS                    | Max number of HCI connections                                             |
+| MAX_NR_HFP_CONNECTIONS                    | Max number of HFP connections                                             |
+| MAX_NR_L2CAP_CHANNELS                     | Max number of L2CAP connections                                           |
+| MAX_NR_L2CAP_SERVICES                     | Max number of L2CAP services                                              |
+| MAX_NR_RFCOMM_CHANNELS                    | Max number of RFCOMM connections                                          |
 | MAX_NR_RFCOMM_MULTIPLEXERS                | Max number of RFCOMM multiplexers, with one multiplexer per HCI connection |
-| MAX_NR_RFCOMM_SERVICES                    | Max number of RFCOMM services                                              |
-| MAX_NR_SERVICE_RECORD_ITEMS               | Max number of SDP service records                                          |
-| MAX_NR_SM_LOOKUP_ENTRIES                  | Max number of items in Security Manager lookup queue                       |
-| MAX_NR_WHITELIST_ENTRIES                  | Max number of items in GAP LE Whitelist to connect to                      |
+| MAX_NR_RFCOMM_SERVICES                    | Max number of RFCOMM services                                             |
+| MAX_NR_SERVICE_RECORD_ITEMS               | Max number of SDP service records                                         |
+| MAX_NR_SM_LOOKUP_ENTRIES                  | Max number of items in Security Manager lookup queue                      |
+| MAX_NR_WHITELIST_ENTRIES                  | Max number of items in GAP LE Whitelist to connect to                     |
 
 The memory is set up by calling *btstack_memory_init* function:
 
@@ -259,6 +259,47 @@ When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_init()` can be called with a
 | SEGGER_RTT_<br>PACKETLOG_CHANNEL     | 1                             | Channel to use for packet log. Channel 0 is used for terminal                                                     |
 | SEGGER_RTT_<br>PACKETLOG_BUFFER_SIZE | 1024                          | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings.                    |
 
+### LE Audio Configuration
+
+The following list of directives are all set with default values. Modify them if you need support for different number of:
+- BASS subgroups, 
+- ASCS Sink and Source endpoints, 
+- PACS Client Sink and Source Endpoint records,
+- number of services for VOCS, or
+- if you, in rare case, need to extend the buffers. 
+
+| \#define                                                 | Default | Description                                           |
+|----------------------------------------------------------|---------|-------------------------------------------------------|
+| MAX_SIZE_AICS_AUDIO_<br>INPUT_DESCRIPTION                | 30      | AICS: Size of audio input description.                |
+| MAX_NR_ASCS_SERVER_<br>SINK_ENDPOINTS                    | 3       | ASCS Server: Number of Audio Sink endpoints.          |
+| MAX_NR_ASCS_SERVER_<br>SOURCE_ENDPOINTS                  | 3       | ASCS Server: Number of Audio Source endpoints.        |
+| MAX_NR_ASCS_CLIENT_<br>SINK_ENDPOINTS                    | 3       | ASCS Client: Number of Audio Sink endpoints.          |
+| MAX_NR_ASCS_CLIENT_<br>SOURCE_ENDPOINTS                  | 3       | ASCS Client: Number of Audio Source endpoints.        |
+| MAX_SIZE_ASCS_SERVER_<br>LONG_WRITE_BUFFER               | 100     | ASCS Server: Size of long write buffer.               |
+| MAX_NR_BASS_<br>SUBGROUPS                                | 10      | BASS: Number of subgroups.                            |
+| MAX_SIZE_BASS_SERVER_<br>LONG_WRITE_BUFFER               | 512     | BASS Server: Size of long write buffer.               |
+| MAX_SIZE_BASS_SERVER_<br>NOTIFICATION_BUFFER             | 200     | BASS Server: Size of notification buffer.             |
+| MAX_SIZE_BASS_CLIENT_<br>LONG_WRITE_BUFFER               | 512     | BASS Client: Size of long write buffer.               |
+| MAX_SIZE_HAS_<br>PRESET_RECORD_NAME                      | 40      | HAS: Size of preset record name.                      |
+| MAX_SIZE_MCS_SERVER_<br>SEARCH_CONTROL_<br>POINT_COMMAND | 100     | MCS Server: Size of search command buffer.            |
+| MAX_SIZE_MCS_SERVER_<br>ICON_URL                         | 50      | MCS Server: Size of icon URL.                         |
+| MAX_SIZE_MCS_SERVER_<br>TRACK_TITLE                      | 50      | MCS Server: Size of track title.                      |
+| MAX_SIZE_MCS_CLIENT_<br>SEARCH_CONTROL_<br>POINT_COMMAND | 100     | MCS Client: Size of search command buffer.            |
+| MAX_NR_OTS_SERVER_<br>SERVER_FILTERS                     | 3       | OTS Server: Number of filters.                        |
+| MAX_SIZE_OTS_<br>STRING                                  | 60      | OTS Server: Size of string.                           |
+| MAX_NR_PACS_CLIENT_<br>SINK_ENDPOINT_RECORDS             | 3       | PACS Client: Number of Audio Sink endpoint records.   |
+| MAX_NR_PACS_CLIENT_<br>SOURCE_ENDPOINT_RECORDS           | 3       | PACS Client: Number of Audio Source endpoint records. |
+| MAX_SIZE_TBS_CLIENT_<br>SERIALISATION_BUFFER             | 255     | TBS Client: Size of serialization buffer.             |
+| MAX_NR_VOCS_SERVER_SERVICES                              | 5       | VOCS Server: Number of services.                      |
+| MAX_SIZE_VOCS_<br>AUDIO_OUTPUT_DESCRIPTION               | 30      | VOCS: Size of audio output description.               |
+| MAX_NR_TBS_SERVER_<br>URI                                | 252     | TBS Server: Size of URI.                              |
+| MAX_NR_TBS_SERVER_<br>PROVIDER_NAME                      | 30      | TBS Server: Size of provider name.                    |
+| MAX_NR_TBS_SERVER_<br>UNIFORM_CALLER_IDENTIFIER          | 10      | TBS Server: Size of uniform caller identifier.        |
+| MAX_NR_TBS_SERVER_<br>URI_SCHEMES_LIST                   | 30      | TBS Server: Size of URI schemes list.                 |
+| MAX_NR_TBS_SERVER_<br>CALL_CONTROL_POINT_NOTIFICATION    | 3       | TBS Server: Size of call control notification.        |
+| MAX_SIZE_TBS_CLIENT_<br>SERIALISATION_BUFFER             | 255     | TBS Client: Size of serialisation buffer.             |
+_
+
 ## Run-time configuration
 
 To allow code-reuse with different platforms
@@ -304,7 +345,7 @@ implementation for embedded systems is selected.
 
 The call to *hci_dump_init* configures BTstack to output all Bluetooth
 packets and its own debug and error message using printf with BTstack's
-millisecond tiomestamps.s as tim.
+millisecond timestamps.s as tim.
 The Python
 script *tools/create_packet_log.py* can be used to convert the console
 output into a Bluetooth PacketLogger format that can be opened by the OS
