@@ -1426,7 +1426,7 @@ static const btstack_chipset_t btstack_chipset_realtek = {
 
 const btstack_chipset_t *btstack_chipset_realtek_instance(void) { return &btstack_chipset_realtek; }
 
-
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
 uint8_t btstack_chipset_realtek_create_lc3_offloading_config(
     uint8_t * buffer,
     uint8_t size,
@@ -1452,3 +1452,4 @@ uint8_t btstack_chipset_realtek_create_lc3_offloading_config(
 
     return btstack_ltv_builder_get_length(&context);
 }
+#endif
