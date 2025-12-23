@@ -425,6 +425,8 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
     }
     return status;
 }
+
+#ifdef ENABLE_GATT_CLIENT_CACHING
 static void gatt_service_client_enter_connected_after_restore(gatt_service_client_t * client,
     gatt_service_client_connection_t * connection) {
 
@@ -438,6 +440,7 @@ static void gatt_service_client_enter_connected_after_restore(gatt_service_clien
     connection->can_send_query_registration.context = connection;
     btstack_run_loop_execute_on_main_thread(&connection->can_send_query_registration);
 }
+#endif
 
 static void gatt_service_client_send_next_query(void * context) {
     gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)context;
