@@ -5,31 +5,54 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ---
-
 ## Unreleased
 
 ### Added
+### Fixed
+### Changed
+
+## Release v1.8
+
+### Added
 - HCI: add hci_request_sco_can_send_now_event_for_con_handle
-- HCI: emit HCI_EVENT_SCO_CAN_SEND_NOW round robin
 - HCI: fix implicit flow control for small SCO buffers
+- HCI: provide status in GAP_EVENT_SECURITY_LEVEL
+- SM: provide CTKD Active field in SM_EVENT_PAIRING_COMPLETE
 - SM: emit SM_EVENT_SECURITY_REQUEST from Peripheral
 - SM: applications triggers pairing on SM_EVENT_SECURITY_REQUEST if ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST
-- Linked List: add get previous item
-- Port for Ezurio Vela IF820 dev kit
+- SM: emits GAP_SUBEVENT_BONDING_DELETED before storing updated bonding information and on gap_delete_bonding()
+- GATT Service: emit GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH if ENABLE_GATT_CLIENT_CACHING
+- GATT Service Client: cache service and characteristic results in TLV if ENABLE_GATT_CLIENT_CACHING
+- Linked List: add get previous item function
+- Linear Buffer provides streaming inteface for existing memory buffer, see src/btstack_chunk_buffer.h
 - HCI Dump: Log printf into packet log with ENABLE_PRINTF_TO_LOG
 - Audio Implementation using SDL2
+- Audio Generator: wrapper for Silence, Sine, MOD- and Vorbis-Player and "Bridge" generators
+- Audio Player: combines supported audio generators into a unified player interface
+- Chipset: support LC3 offloading for Infineon and Realtek Controller
+- Port for Ezurio Vela IF820 dev kit
+- Port for WebAssembly running in Chrome-based browsers that support WebSerial API
 
 ### Fixed
 - GAP: emit Dedicated Bonding Complete after link key was received
+- L2CAP: use L2CAP_CONNECTION_PIN_OR_LINK_KEY_MISSING status in connection complete event
+- RFCOMM: use L2CAP_CONNECTION_PIN_OR_LINK_KEY_MISSING status in connection complete event
+- HCI: fix association between iso streams and cis params via cis_id
+- RFCOMM: allow to trigger reconnect from failed channel open event
 - SM: Security Manager registers itself as first HCI packet handler
 - GATT Client: handle notifications and indications during MTU exchange
 - ATT Server: restore CCC for HCI_EVENT_ENCRYPTION_CHANGE_V2
 - HFP: rework event handling, fixes issue with parallel audio setup
+- HFP: emit service level connection after reporting indicator mapping
 
 ### Changed
-- btstack_audio: return 0 on success for source and sink init 
+- HCI: emit HCI_EVENT_SCO_CAN_SEND_NOW round robin
 - L2CAP: don't drop link key for connection response "security block"
 - HIDS Client: rename into HIDS Host to match HIDS Device
+  - src/ble/gatt-service/hids_client.* -> src/ble/gatt-service/hids_host.*
+  - MAX_NR_HIDS_CLIENTS -> MAX_NR_HIDS_HOSTS in btstack_config.h
+- btstack_audio: return 0 on success for source and sink init
+- btstack_audio: provide timeinfo in playback/recording callbacks for sample-accurate playback
 - libusb: allow to specify USB device with bus ID and port path
 - Zephyr: update port for Zephyr 4.2.0
 - Zephyr: support Ezurio M.2 Adapter for STM32 Nucleo-144 boards
