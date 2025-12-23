@@ -5,7 +5,6 @@
 //
 
 #ifndef __BTSTACK_CONFIG
-#define ENABLE_GATT_CLIENT_SERVICE_CHANGED
 #define __BTSTACK_CONFIG
 
 // Port related features

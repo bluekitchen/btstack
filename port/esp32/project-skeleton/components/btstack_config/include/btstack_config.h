@@ -17,7 +17,6 @@
 #define HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
 
 // HCI Controller to Host Flow Control
-#define ENABLE_GATT_CLIENT_SERVICE_CHANGED
 #define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 
 // BTstack features that can be enabled
