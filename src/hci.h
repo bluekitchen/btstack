@@ -620,16 +620,22 @@ typedef struct {
     uint32_t sco_established_ms;
     uint8_t  sco_tx_active;
 #endif
-    // generate sco can send now based on received packets, using timeout below
-    uint8_t  sco_tx_ready;
 
     // SCO payload length
     uint16_t sco_payload_length;
 
+    // SCO Voice Setting
+    uint16_t sco_voice_setting;
+
+    // SCO Request to Send
+    bool sco_request_to_send;
+
+    // generate sco can send now based on received packets
+    uint8_t  sco_tx_ready;
+
     // request role switch
     hci_role_t request_role;
 
-    btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
     // authentication and other errands
@@ -785,6 +791,11 @@ typedef struct {
     // ready to send
     bool emit_ready_to_send;
 
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
+    // 0: input (Host to Controller)
+    // 1: output (Controller to Host)
+    const le_audio_offload_config_t * offload_config[2];
+#endif
 } hci_iso_stream_t;
 
 
@@ -915,6 +926,12 @@ typedef enum hci_init_state{
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS,
     HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS,
+#ifdef ENABLE_LC3_OFFLOAD_AIROC
+    HCI_INIT_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_0,
+    HCI_INIT_W4_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_0,
+    HCI_INIT_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_1,
+    HCI_INIT_W4_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_1,
+#endif
 #endif
 
 #ifdef ENABLE_BLE
@@ -1204,7 +1221,6 @@ typedef struct {
     } gap_pairing_input;
     
     uint16_t  sco_voice_setting;
-    uint16_t  sco_voice_setting_active;
 
     uint8_t   loopback_mode;
 
@@ -1289,8 +1305,10 @@ typedef struct {
     le_connection_parameter_range_t le_connection_parameter_range;
 
     // TODO: move LE_ADVERTISEMENT_TASKS_SET_ADDRESS flag which is used for both roles into
-    //  some generic gap_le variable
+    //       some generic gap_le variable. See also: LE_ADVERTISEMENT_TASKS_PRIVACY_NOTIFY and
+    //       LE_ADVERTISEMENT_STATE_PRIVACY_PENDING
     uint16_t  le_advertisements_todo;
+    uint8_t   le_advertisements_state;
 
 #ifdef ENABLE_LE_PERIPHERAL
     uint8_t  * le_advertisements_data;
@@ -1308,8 +1326,6 @@ typedef struct {
     bd_addr_t le_advertisements_direct_address;
     uint8_t   le_advertisements_own_addr_type;
     bd_addr_t le_advertisements_own_address;
-
-    uint8_t  le_advertisements_state;
 
     bool     le_advertisements_enabled_for_current_roles;
     uint8_t le_max_number_peripheral_connections;
@@ -1511,12 +1527,30 @@ uint16_t hci_get_sco_packet_length(void);
 /**
  * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
  * @note HCI_EVENT_SCO_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
+ *       so packet handler should be ready to handle it.
+ * @param con_handle
+ */
+void hci_request_sco_can_send_now_event_for_con_handle(hci_con_handle_t con_handle);
+
+/**
+ * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
+ * @deprecated Please use hci_request_sco_can_send_now_event_for_con_handle instead
+ * @note HCI_EVENT_SCO_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it. con_handle will
+ *       be set to HCI_CON_HANDLE_INVALID in the event
  */
 void hci_request_sco_can_send_now_event(void);
 
 /**
  * @brief Check HCI packet buffer and if SCO packet can be sent to controller
+ * @param con_handle
+ * @return true if sco packet can be sent
+ */
+bool hci_can_send_sco_packet_now_for_con_handle(hci_con_handle_t con_handle);
+
+/**
+ * @brief Check HCI packet buffer and if SCO packet can be sent to controller
+ * @deprecated Please use hci_can_send_sco_packet_now_for_con_handle instead
  * @return true if sco packet can be sent
  */
 bool hci_can_send_sco_packet_now(void);
@@ -1884,6 +1918,12 @@ void hci_deinit(void);
 
 // defer disconnect on dedicated bonding complete, used internally for CTKD
 uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool defer);
+
+// internal, called by security manager and other gap services
+void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump);
+
+// internal, called by security manager
+void hci_add_event_handler_for_security_manager(btstack_packet_callback_registration_t * callback_handler);
 
 // Only for PTS testing
 

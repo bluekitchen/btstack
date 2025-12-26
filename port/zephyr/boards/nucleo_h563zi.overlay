@@ -1,0 +1,27 @@
+/ {
+    chosen {
+        zephyr,code-partition = &image_partition;
+    };
+};
+
+&flash0 {
+    /delete-node/ partitions;
+    partitions {
+        compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+        /* application image slot: 2016KB */
+        image_partition: partition@0 {
+			label = "image";
+			reg = <0x00000000 DT_SIZE_K(2016)>;
+			read-only;
+		};
+
+	    /* storage slot: 32KB */
+	    storage_partition: partition@1F8000 {
+            label = "storage";
+		    reg = <0x001F8000 DT_SIZE_K(32)>;
+	    };
+	};
+};

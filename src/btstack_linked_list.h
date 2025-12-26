@@ -110,6 +110,14 @@ bool btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_ite
 btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t * list);
 
 /**
+ * @breif Get previous element
+ * @param list
+ * @param item
+ * @return previous element or NULL if not found or element was first in liest
+ */
+btstack_linked_item_t * btstack_linked_list_get_previous_item(btstack_linked_list_t * list, btstack_linked_item_t * item);
+
+/**
  * @brief Get last element.
  * @param list
  * @return first element or NULL if list is empty
@@ -122,7 +130,29 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
  */
 int btstack_linked_list_count(btstack_linked_list_t * list);
 
+/**
+ * @brief Split list into matching and not-matching items based on a criteria
+ * @param input list of items
+ * @param matches list of matching items
+ * @param other all other items
+ * @param predicate is called with linked list item and context, returns true if item matches
+ * @param context
+ */
+void btstack_linked_list_split(btstack_linked_list_t * input,
+                                btstack_linked_list_t * matches,
+                                btstack_linked_list_t * other,
+                                bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context);
 
+/**
+ * @brief Filter matching items into second list
+ * @param input list of items
+ * @param matches list of matching items
+ * @param predicate is called with linked list item and context, returns true if item matches
+ * @param context
+ */
+void btstack_linked_list_filter(btstack_linked_list_t * input,
+                                btstack_linked_list_t * matches,
+                                bool (*predicate)(const btstack_linked_item_t *item, void * context), void * context);
 
 /**
  * @brief Initialize Linked List Iterator

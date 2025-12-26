@@ -52,6 +52,9 @@
 #include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_chipset_bcm.h"
+
+#include <btstack_ltv_builder.h>
+
 #include "hci.h"
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -76,14 +79,7 @@
 #endif
 
 static int send_download_command;
-static uint32_t init_script_offset;
-
-// Embedded == non posix systems
-
-// actual init script provided by separate bt_firmware_image.c from WICED SDK
-extern const uint8_t brcm_patchram_buf[];
-extern const int     brcm_patch_ram_length;
-extern const char    brcm_patch_version[];
+static int32_t init_script_offset;
 
 //
 // @note: Broadcom chips require higher UART clock for baud rate > 3000000 -> limit baud rate in hci.c
@@ -218,6 +214,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
             btstack_strcat(matched_file, sizeof(matched_file), "/");
             btstack_strcat(matched_file, sizeof(matched_file), file.name);
             hcd_file_path = matched_file;
+            log_info("PatchRAM: %s", hcd_file_path);
             break;
         }
     }
@@ -312,4 +309,26 @@ const char * btstack_chipset_bcm_identify_controller(uint16_t lmp_subversion) {
             break;
     }
     return device_name;
+}
+
+uint8_t btstack_chipset_bcm_create_lc3_offloading_config(
+    uint8_t * buffer,
+    uint8_t size,
+    uint16_t sampling_frequency_hz,
+    btstack_lc3_frame_duration_t frame_duration,
+    uint16_t octets_per_frame) {
+
+    btstack_ltv_builder_context_t context;
+    btstack_ltv_builder_init(&context, buffer, size);
+    // sampling frequency
+    btstack_ltv_builder_add_tag(&context, 0x01);
+    btstack_ltv_builder_add_08(&context, 1 << ((sampling_frequency_hz / 8000) - 1));
+    // frame duration
+    btstack_ltv_builder_add_tag(&context, 0x02);
+    btstack_ltv_builder_add_08(&context, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0x01 : 0x02);
+    // set codec frame length
+    btstack_ltv_builder_add_tag(&context, 0x04);
+    btstack_ltv_builder_add_little_endian_16(&context, octets_per_frame);
+
+    return btstack_ltv_builder_get_length(&context);
 }

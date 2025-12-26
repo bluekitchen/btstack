@@ -132,7 +132,7 @@ LC3_HOT static void neon_resample_32k_12k8(
 LC3_HOT static void neon_resample_48k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(16) h[4][64] = {
+    alignas(16) static const int16_t h[4][64] = {
 
     {  -13,   -25,   -20,    10,    51,    71,    38,   -47,  -133,  -145,
        -42,   139,   277,   242,     0,  -329,  -511,  -351,   144,   698,
@@ -192,25 +192,48 @@ LC3_HOT static void neon_resample_48k_12k8(
  */
 #ifndef dot
 
+//
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconversion"
+#endif
+
 LC3_HOT static inline float neon_dot(const int16_t *a, const int16_t *b, int n)
 {
-    int64x2_t v = vmovq_n_s64(0);
+    int64x2_t v = vmovq_n_s64(0);  // accumulator for NEON
 
     for (int i = 0; i < (n >> 4); i++) {
         int32x4_t u;
 
-        u = vmull_s16(   vld1_s16(a), vld1_s16(b)), a += 4, b += 4;
-        u = vmlal_s16(u, vld1_s16(a), vld1_s16(b)), a += 4, b += 4;
+        // First 8 multiplies
+        u = vmull_s16(vld1_s16(a), vld1_s16(b)); a += 4; b += 4;
+        u = vmlal_s16(u, vld1_s16(a), vld1_s16(b)); a += 4; b += 4;
         v = vpadalq_s32(v, u);
 
-        u = vmull_s16(   vld1_s16(a), vld1_s16(b)), a += 4, b += 4;
-        u = vmlal_s16(u, vld1_s16(a), vld1_s16(b)), a += 4, b += 4;
+        // Next 8 multiplies
+        u = vmull_s16(vld1_s16(a), vld1_s16(b)); a += 4; b += 4;
+        u = vmlal_s16(u, vld1_s16(a), vld1_s16(b)); a += 4; b += 4;
         v = vpadalq_s32(v, u);
     }
 
-    int32_t v32 = (vaddvq_s64(v) + (1 << 5)) >> 6;
+    // Stepwise accumulation to avoid narrowing warnings
+
+    // Accumulate 64-bit sum
+    int64_t acc = vaddvq_s64(v);
+
+    // Add rounding offset and shift
+    acc += (1LL << 5);
+    acc >>= 6;
+
+    // Explicit cast to int32_t
+    int32_t v32 = (int32_t)acc;
+
     return (float)v32;
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #ifndef TEST_NEON
 #define dot neon_dot

@@ -20,24 +20,28 @@ TEST_GROUP(BSTACK_TLV){
 	const btstack_tlv_t * btstack_tlv_impl;
 	btstack_tlv_posix_t   btstack_tlv_context;
     void setup(void){
-    	log_info("setup");
-    	// delete old file
-    	unlink(TEST_DB);
-    	// open db
+        log_info("setup");
+        // delete old file
+        unlink(TEST_DB);
+        // open db
 		btstack_tlv_impl = btstack_tlv_posix_init_instance(&btstack_tlv_context, TEST_DB);
     }
     void reopen_db(void){
-    	log_info("reopen");
-    	// close file 
-    	fclose(btstack_tlv_context.file);
-    	// reopen
+        log_info("reopen");
+        // close file 
+        if( btstack_tlv_context.file != NULL ) {
+            fclose(btstack_tlv_context.file);
+        }
+        // reopen
         btstack_tlv_posix_deinit(&btstack_tlv_context);
 		btstack_tlv_impl = btstack_tlv_posix_init_instance(&btstack_tlv_context, TEST_DB);
     }
     void teardown(void){
-    	log_info("teardown");
-    	// close file
-    	fclose(btstack_tlv_context.file);
+        log_info("teardown");
+        // close file
+        if( btstack_tlv_context.file != NULL ) {
+            fclose(btstack_tlv_context.file);
+        }
         btstack_tlv_posix_deinit(&btstack_tlv_context);
     }
 };
@@ -79,7 +83,7 @@ TEST(BSTACK_TLV, TestWriteABARead){
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
 	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag_a, &buffer, 1);
- 	data++;
+    data++;
 	buffer = data;
 	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag_b, &buffer, 1);
 	data++;

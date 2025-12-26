@@ -88,8 +88,7 @@ uint32_t little_endian_read_32(const uint8_t * buffer, int position){
 }
 
 void little_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
-    uint16_t pos = position;
-    buffer[pos] = value;
+    buffer[position] = value;
 }
 
 void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
@@ -130,8 +129,7 @@ uint32_t big_endian_read_32(const uint8_t * buffer, int position) {
 }
 
 void big_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
-    uint16_t pos = position;
-    buffer[pos++] = (uint8_t)(value);
+    buffer[position] = (uint8_t)(value);
 }
 
 void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
@@ -249,55 +247,60 @@ int nibble_for_char(char c){
     return -1;
 }
 
-#ifdef ENABLE_PRINTF_HEXDUMP
-void printf_hexdump(const void * data, int size){
-    char buffer[4];
-    buffer[2] = ' ';
-    buffer[3] =  0;
-    const uint8_t * ptr = (const uint8_t *) data;
-    while (size > 0){
-        uint8_t byte = *ptr++;
-        buffer[0] = char_for_high_nibble(byte);
-        buffer[1] = char_for_low_nibble(byte);
-        printf("%s", buffer);
-        size--;
+#if defined(ENABLE_PRINTF_HEXDUMP) || defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
+// serialized data into a line buffer either as pure hex data with spaces or in c_style
+// returns number of chars excluding trailing \0
+static uint16_t btstack_util_hexdump(const uint8_t * data, uint16_t size, bool c_style, char * buffer, uint16_t buf_size) {
+    if (c_style) {
+        btstack_assert(buf_size > 6 * size);
+    } else {
+        btstack_assert(buf_size > 3 * size);
     }
-    printf("\n");
+    uint16_t pos = 0;
+    for (uint16_t i=0; i<size;i++) {
+        uint8_t byte = ((uint8_t *)data)[i];
+        if (c_style) {
+            buffer[pos++] = '0';
+            buffer[pos++] = 'x';
+        }
+        buffer[pos++] = char_for_high_nibble(byte);
+        buffer[pos++] = char_for_low_nibble(byte);
+        if (c_style) {
+            buffer[pos++] = ',';
+        }
+        buffer[pos++] = ' ';
+    }
+    buffer[pos] = 0;
+    return pos;
+}
+#endif
+
+#ifdef ENABLE_PRINTF_HEXDUMP
+#define ITEMS_PER_LINE_PRINTF_HEXDUMP 32
+void printf_hexdump(const void * input, int size) {
+    uint8_t * data = (uint8_t *) input;
+    char buffer[ITEMS_PER_LINE_PRINTF_HEXDUMP * 3 + 1];
+    while (size > 0) {
+        uint16_t chunk_len = btstack_min(size, ITEMS_PER_LINE_PRINTF_HEXDUMP);
+        btstack_util_hexdump(data, chunk_len, false, buffer, sizeof(buffer));
+        size -= chunk_len;
+        data += chunk_len;
+        printf(size > 0 ? "%s" : "%s\n", buffer);
+    }
 }
 #endif
 
 #if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
-static void log_hexdump(int level, const void * data, int size){
-#define ITEMS_PER_LINE 16
-// template '0x12, '
-#define BYTES_PER_BYTE  6
-    char buffer[BYTES_PER_BYTE*ITEMS_PER_LINE+1];
-    int i, j;
-    j = 0;
-    for (i=0; i<size;i++){
-
-        // help static analyzer proof that j stays within bounds
-        if (j > (BYTES_PER_BYTE * (ITEMS_PER_LINE-1))){
-            j = 0;
-        }
-
-        uint8_t byte = ((uint8_t *)data)[i];
-        buffer[j++] = '0';
-        buffer[j++] = 'x';
-        buffer[j++] = char_for_high_nibble(byte);
-        buffer[j++] = char_for_low_nibble(byte);
-        buffer[j++] = ',';
-        buffer[j++] = ' ';     
-
-        if (j >= (BYTES_PER_BYTE * ITEMS_PER_LINE) ){
-            buffer[j] = 0;
-            hci_dump_log(level, "%s", buffer);
-            j = 0;
-        }
-    }
-    if (j != 0){
-        buffer[j] = 0;
+#define ITEMS_PER_LINE_LOG_HEXDUMP 16
+static void log_hexdump(int level, const void * input, int size) {
+    uint8_t * data = (uint8_t *) input;
+    char buffer[ITEMS_PER_LINE_LOG_HEXDUMP * 6 + 1];
+    while (size > 0) {
+        uint16_t chunk_len = btstack_min(size, ITEMS_PER_LINE_LOG_HEXDUMP);
+        btstack_util_hexdump(data, chunk_len, false, buffer, sizeof(buffer));
         hci_dump_log(level, "%s", buffer);
+        size -= chunk_len;
+        data += chunk_len;
     }
 }
 #endif
@@ -413,7 +416,7 @@ static int scan_hex_byte(const char * byte_string){
 int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
     const char * the_string = addr_string;
     uint8_t buffer[BD_ADDR_LEN];
-    int result = 0;
+    int result;
     int i;
     for (i = 0; i < BD_ADDR_LEN; i++) {
         int single_byte = scan_hex_byte(the_string);
@@ -421,17 +424,15 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
         the_string += 2;
         buffer[i] = (uint8_t)single_byte;
         // don't check separator after last byte
-        if (i == (BD_ADDR_LEN - 1)) {
-            result = 1;
-            break;
-        }
-        // skip supported separators
-        char next_char = *the_string;
-        if ((next_char == ':') || (next_char == '-') || (next_char == ' ')) {
-            the_string++;
+        if (i < BD_ADDR_LEN-1) {
+            // skip supported separators
+            char next_char = *the_string;
+            if ((next_char == ':') || (next_char == '-') || (next_char == ' ')) {
+                the_string++;
+            }
         }
     }
-
+    result = (i==BD_ADDR_LEN);
     if (result != 0){
         bd_addr_copy(addr, buffer);
     }
@@ -714,13 +715,9 @@ uint16_t btstack_snprintf_best_effort(char * buffer, size_t size, const char * f
     va_start(argptr, format);
     int len = vsnprintf(buffer, size, format, argptr);
     va_end(argptr);
-    if (len < 0) {
-        // error -> len = 0
-        return 0;
-    } else {
-        // min of total string len and buffer size
-        return (uint16_t) btstack_min((uint32_t) len, (uint32_t) size - 1);
-    }
+    btstack_assert( len >= 0 );
+    // min of total string len and buffer size
+    return (uint16_t) btstack_min((uint32_t) len, (uint32_t) size - 1);
 }
 
 uint16_t btstack_virtual_memcpy(

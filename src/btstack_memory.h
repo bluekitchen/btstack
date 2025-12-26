@@ -75,7 +75,7 @@ extern "C" {
 // BLE
 #ifdef ENABLE_BLE
 #include "ble/gatt-service/battery_service_client.h"
-#include "ble/gatt-service/hids_client.h"
+#include "ble/gatt-service/hids_host.h"
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 #endif
@@ -157,8 +157,8 @@ battery_service_client_t * btstack_memory_battery_service_client_get(void);
 void   btstack_memory_battery_service_client_free(battery_service_client_t *battery_service_client);
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
-hids_client_t * btstack_memory_hids_client_get(void);
-void   btstack_memory_hids_client_free(hids_client_t *hids_client);
+hids_host_t * btstack_memory_hids_host_get(void);
+void   btstack_memory_hids_host_free(hids_host_t *hids_host);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
 whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
@@ -188,6 +188,11 @@ void   btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet);
 hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void);
 void   btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream);
 
+#endif
+
+
+#ifdef ENABLE_MALLOC_TEST
+void btstack_memory_simulate_malloc_failure(bool out_of_memory);
 #endif
 
 #if defined __cplusplus

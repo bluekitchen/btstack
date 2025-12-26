@@ -18,7 +18,7 @@ add_compile_options( -DHAVE_ASSERT)
 add_compile_options( -g -fsanitize=address)
 add_link_options(       -fsanitize=address)
 
-include_directories(.)
+include_directories(../include/coverage-ble)
 include_directories(../../src)
 include_directories(../../platform/posix)
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})

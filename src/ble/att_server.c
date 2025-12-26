@@ -85,7 +85,7 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_handle_can_send_now(void);
 static void att_server_persistent_ccc_restore(att_server_t * att_server, att_connection_t * att_connection);
-static void att_server_persistent_ccc_clear(att_server_t * att_server);
+static void att_server_persistent_ccc_clear(int le_device_db_index);
 static void att_server_handle_att_pdu(att_server_t * att_server, att_connection_t * att_connection, uint8_t * packet, uint16_t size);
 
 typedef enum {
@@ -296,6 +296,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
     att_connection_t * att_connection;
     hci_con_handle_t con_handle;
     hci_connection_t * hci_connection;
+    bd_addr_t address;
 
     switch (packet_type) {
             
@@ -331,6 +332,13 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                             // notify all - new
                             att_emit_connected_event(att_server, att_connection);
                             break;
+                        case GAP_SUBEVENT_BONDING_DELETED:
+                            // clear CCCD
+                            gap_subevent_bonding_deleted_get_address(packet, address);
+                            log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(address),
+                                gap_subevent_bonding_deleted_get_index(packet));
+                            att_server_persistent_ccc_clear(gap_subevent_bonding_deleted_get_index(packet));
+                            break;
                         default:
                             break;
                     }
@@ -364,7 +372,8 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_connection->secure_connection = gap_secure_connection(con_handle) ? 1 : 0;
                     log_info("encrypted key size %u, authenticated %u, secure connection %u",
                         att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
-                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
+                    if ((hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE) ||
+                        (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE_V2) ){
                         // restore CCC values when encrypted for LE Connections
                         if (hci_event_encryption_change_get_encryption_enabled(packet) != 0u){
                             att_server_persistent_ccc_restore(att_server, att_connection);
@@ -428,23 +437,14 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_run_for_context(att_server, att_connection);
                     break;
 
-                // Pairing started - delete stored CCC values
-                // - assumes pairing indicates either new device or re-pairing, in both cases there should be no stored CCC values
-                // - assumes that all events have the con handle as the first field
-                case SM_EVENT_JUST_WORKS_REQUEST:
-                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                case SM_EVENT_PASSKEY_INPUT_NUMBER:
-                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                // Track pairing active
+                case SM_EVENT_PAIRING_STARTED:
                     con_handle = sm_event_just_works_request_get_handle(packet);
                     hci_connection = hci_connection_for_handle(con_handle);
                     if (!hci_connection) break;
                     att_server = &hci_connection->att_server;
                     log_info("SM Pairing started");
                     att_server->pairing_active = true;
-                    if (att_server->ir_le_device_db_index < 0) break;
-                    att_server_persistent_ccc_clear(att_server);
-                    // index not valid anymore
-                    att_server->ir_le_device_db_index = -1;
                     break;
 
                 // Bonding completed
@@ -1129,11 +1129,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     }
 }
 
-static void att_server_persistent_ccc_clear(att_server_t * att_server){
-    int le_device_index = att_server->ir_le_device_db_index;
-    log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
-    // check if bonded
-    if (le_device_index < 0) return;
+static void att_server_persistent_ccc_clear(int le_device_index){
     // get btstack_tlv
     const btstack_tlv_t * tlv_impl = NULL;
     void * tlv_context;

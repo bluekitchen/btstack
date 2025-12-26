@@ -42,12 +42,19 @@
 #include "btstack_defines.h" // UNUSED
 #include "hal_flash_bank_zephyr.h"
 
-#include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/flash.h>
+#include <zephyr/kernel.h>
+#include <zephyr/storage/flash_map.h>
 
+#if defined(CONFIG_FLASH) && \
+    DT_HAS_CHOSEN(zephyr_code_partition) && \
+    FIXED_PARTITION_EXISTS(storage_partition)
 static const struct device *const zephyr_flash_controller =
         DEVICE_DT_GET_OR_NULL(DT_CHOSEN(zephyr_flash_controller));
+#else
+static const struct device *const zephyr_flash_controller = NULL;
+#endif
 
 static uint32_t hal_flash_bank_zephyr_get_size(void * context){
 	hal_flash_bank_zephyr_t * self = (hal_flash_bank_zephyr_t *) context;
@@ -116,7 +123,7 @@ const hal_flash_bank_t * hal_flash_bank_zephyr_init_instance(hal_flash_bank_zeph
 
     /* use default: zephyr,flash-controller */
     if (!device_is_ready(zephyr_flash_controller)) {
-        log_error("efault flash driver not ready");
+        log_error("default flash driver not ready");
         btstack_assert(false);
         return NULL;
     }

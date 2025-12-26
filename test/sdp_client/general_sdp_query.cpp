@@ -145,6 +145,9 @@ static void test_attribute_value_event(const uint8_t * event){
 
 
 static void handle_sdp_parser_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
     switch (packet[0]){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             test_attribute_value_event(packet);

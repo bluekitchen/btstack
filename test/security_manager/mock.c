@@ -217,6 +217,9 @@ bool hci_is_le_identity_address_type(bd_addr_type_t address_type) {
     }
 }
 
+void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump){
+}
+
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
@@ -265,6 +268,10 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
 }
 
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
+}
+
+void hci_add_event_handler_for_security_manager(btstack_packet_callback_registration_t * callback_handler){
 	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
 }
 

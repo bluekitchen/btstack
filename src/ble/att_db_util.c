@@ -76,6 +76,11 @@ void att_db_util_init(void){
     if (att_db == NULL){
         att_db = (uint8_t*) malloc((size_t)ATT_DB_BUFFER_INCREMENT);
         att_db_max_size = (uint16_t)ATT_DB_BUFFER_INCREMENT;
+    	btstack_assert(att_db != NULL);
+    	// the btstack_assert isn't sufficient for cppcheck, so we explicitly abort here
+    	if (att_db == NULL) {    // LCOV_EXCL_LINE
+			abort();			 // LCOV_EXCL_LINE
+    	}                        // LCOV_EXCL_LINE
     }
 #else
 	att_db = att_db_storage;

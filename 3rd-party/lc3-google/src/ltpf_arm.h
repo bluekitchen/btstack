@@ -121,7 +121,7 @@ static inline void arm_resample_x192k_12k8(const int p, const int16x2_t *h,
 static void arm_resample_8k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(int32_t) h[2*8*12] = {
+    alignas(int32_t) static const int16_t h[2*8*12] = {
         0, 214,  417, -1052, -4529, 26233, -4529, -1052,   417,  214,   0, 0,
         0, 180,    0, -1522, -2427, 24506, -5289,     0,   763,  156, -28, 0,
         0,  92, -323, -1361,     0, 19741, -3885,  1317,   861,    0, -61, 0,
@@ -158,7 +158,7 @@ static void arm_resample_8k_12k8(
 static void arm_resample_16k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(int32_t) h[2*4*24] = {
+    alignas(int32_t) static const int16_t h[2*4*24] = {
 
             0,   -61,   214,  -398,   417,     0, -1052,  2686,
         -4529,  5997, 26233,  5997, -4529,  2686, -1052,     0,
@@ -216,7 +216,7 @@ static void arm_resample_16k_12k8(
 static void arm_resample_32k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(int32_t) h[2*2*48] = {
+    alignas(int32_t) static const int16_t h[2*2*48] = {
 
             0,   -30,   -31,    46,   107,     0,  -199,  -162,
           209,   430,     0,  -681,  -526,   658,  1343,     0,
@@ -265,7 +265,7 @@ static void arm_resample_32k_12k8(
 static void arm_resample_24k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(int32_t) h[2*8*32] = {
+    alignas(int32_t) static const int16_t h[2*8*32] = {
 
             0,   -50,    19,   143,   -93,  -290,   278,   485,
          -658,  -701,  1396,   901, -3019, -1042, 10276, 17488,
@@ -366,7 +366,7 @@ static void arm_resample_24k_12k8(
 static void arm_resample_48k_12k8(
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
-    static const int16_t alignas(int32_t) h[2*4*64] = {
+    alignas(int32_t) static const int16_t h[2*4*64] = {
 
             0,   -13,   -25,   -20,    10,    51,    71,    38,
           -47,  -133,  -145,   -42,   139,   277,   242,     0,

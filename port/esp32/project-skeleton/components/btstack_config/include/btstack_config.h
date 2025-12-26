@@ -20,19 +20,21 @@
 #define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 
 // BTstack features that can be enabled
-#define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
+#define ENABLE_PRINTF_HEXDUMP
 
 // Enable Classic/LE based on esp-idf sdkconfig
 #include "sdkconfig.h"
 #ifdef CONFIG_IDF_TARGET_ESP32
 // ESP32 as dual-mode Controller
-#define ENABLE_CLASSIC
 #define ENABLE_BLE
+#define ENABLE_CLASSIC
+
 #else /* CONFIG_IDF_TARGET_ESP32 */
 // ESP32-C3 and ESP32-S3 with LE-only Controller
 #define ENABLE_BLE
+
 #endif
 
 // Classic configuration
@@ -52,6 +54,7 @@
 // support CTKD if LE is available, too
 #ifdef ENABLE_BLE
 #define ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+
 #endif
 
 #define NVM_NUM_LINK_KEYS 16
@@ -61,15 +64,16 @@
 // LE configuration
 #ifdef ENABLE_BLE
 
+#define ENABLE_ATT_DELAYED_RESPONSE
 #define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #define ENABLE_LE_CENTRAL
-#define ENABLE_LE_ISOCHRONOUS_STREAMS
-#define ENABLE_LE_EXTENDED_ADVERTISING
-#define ENABLE_LE_PERIODIC_ADVERTISING
-#define ENABLE_ATT_DELAYED_RESPONSE
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
+#define ENABLE_LE_EXTENDED_ADVERTISING
+#define ENABLE_LE_ISOCHRONOUS_STREAMS
+#define ENABLE_LE_PERIODIC_ADVERTISING
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
+
 // ESP32 supports ECDH HCI Commands, but micro-ecc lib is already provided anyway
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 

@@ -449,19 +449,23 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
     return count;
 }
 
-static int count_zeros(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
-    int nr_zeros = 0;
+static int count_value(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size, BTSTACK_CVSD_PLC_SAMPLE_FORMAT value){
+    int nr_values = 0;
     int i;
-    for (i = 0; i < (size-1); i++){
-        if (frame[i] == 0){
-            nr_zeros++;
+    for (i = 0; i < size; i++){
+        if (frame[i] == value){
+            nr_values++;
         }
     }
-    return nr_zeros;
+    return nr_values;
 }
 
 static int zero_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
-    return count_zeros(frame, size) == size;
+    return count_value(frame, size, 0) == size;
+}
+
+static int ffff_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
+    return count_value(frame, size, (BTSTACK_CVSD_PLC_SAMPLE_FORMAT) 0xffff) == size;
 }
 
 // more than half the samples are the same -> bad frame
@@ -478,8 +482,9 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is
 
     if (!is_bad_frame) {
         bool is_zero_frame = zero_frame(in, num_samples);
-        if (is_zero_frame){
-            plc_state->zero_frames_nr++;
+        bool is_ffff_frame = ffff_frame(in, num_samples);
+        if (is_zero_frame || is_ffff_frame){
+            plc_state->silent_frames_nr++;
         } else {
             is_bad_frame = bad_frame(plc_state, in, num_samples);
         }
@@ -505,8 +510,8 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is
 
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
     UNUSED(state);
-    log_info("Good frames: %d\n", state->good_frames_nr);
-    log_info("Bad frames: %d\n", state->bad_frames_nr);
-    log_info("Zero frames: %d\n", state->zero_frames_nr);
+    log_info("Good frames:   %d\n", state->good_frames_nr);
+    log_info("Bad frames:    %d\n", state->bad_frames_nr);
+    log_info("Silent frames: %d\n", state->silent_frames_nr);
     log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);
 }

@@ -1,0 +1,7 @@
+shield:
+  name: ezurio_m2_nucleo_144_adapter
+  full_name: nucleo-144 to m2-2230 adapter
+  vendor: ezurio
+  supported_features:
+    - bluetooth
+    - wifi

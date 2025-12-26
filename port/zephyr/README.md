@@ -57,7 +57,7 @@ To flash a connected board:
 west flash
 ```
 
-## Buiding and Running on nRF5340
+## Building and Running on nRF5340
 
 The nrf5340 is a dual core SoC, where one core is used for Bluetooth HCI functionality and
 the other for the high level application logic. So both cores need to be programmed separately.
@@ -97,8 +97,35 @@ west build -b nrf5340dk/nrf5340/cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_s
 west flash
 ```
 
+## Build and Running on STM32 Nucleo 144 board with Ezurio M.2 Adapter and M.2 Bluetooth Controller
+
+Ezurio's [Wi-Fi M.2 2230 to STM32 Nucleo Adapter Card](https://www.ezurio.com/product/wi-fi-m-2-2230-to-stm32-nucleo-adapter-card)
+allows to connect any Bluetooth/Wifi M.2 Card to most STM32 Nucleo-144 boards. M.2 modules are available from multiple module 
+vendors, e.g. Ezurio, u-blox, and Embedded Artists.
+
+The adapter board takes care of 3.3V and 1.8V translation and routes SDIO for Wifi and UART for Bluetooth to the Nucleo board.
+On most Nucleo-144 boards, the Bluetooth UART ends up on the same STM32, namely: PD3-PD6. 
+See `port/zephyr/boards/shields/ezurio_m2_nucleo_144_adapter.overlay` for details.
+
+We tested CYW55513 and CYW55573 M.2 modules with the following boards:
+
+| Nucleo board  | Working |
+|---------------|---------|
+| nucleo_f439zi | x       | 
+| nucleo_h753zi | x       | 
+| nucleo_h563zi | x       | 
+| nucleo_h755zi |         | 
+
+The PatchRAM .hcd files can be placed in the project folder and specified by the `CONFIG_AIROC_CUSTOM_FIRMWARE_HCD_BLOB`
+option in the corresponding `boards/$BOARD.conf` file.
+
+### 1. Build Example
+
+```sh
+west build -b nucleo_f439zi --shield ezurio_m2_nucleo_144_adapter
+west build -b nucleo_h755zi_q/stm32h755xx/m7 --shield ezurio_m2_nucleo_144_adapter
+```
+
 ## TODO
 
 - Allow/document use of Zephyr HCI Drivers
-
-

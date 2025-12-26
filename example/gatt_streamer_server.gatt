@@ -6,11 +6,9 @@ CHARACTERISTIC, GAP_APPEARANCE, READ, 83 00
 PRIMARY_SERVICE, GATT_SERVICE
 CHARACTERISTIC, GATT_DATABASE_HASH, READ,
 
-// Test Service
+// Streaming Service
 PRIMARY_SERVICE, 0000FF10-0000-1000-8000-00805F9B34FB
-// Test Characteristic A, write_without_response as well as notify
+// Streaming Characteristic, write_without_response as well as notify
 CHARACTERISTIC,  0000FF11-0000-1000-8000-00805F9B34FB, WRITE_WITHOUT_RESPONSE | NOTIFY | DYNAMIC,
-// Test Characteristic B, write_without_response as well as notify
-CHARACTERISTIC,  0000FF12-0000-1000-8000-00805F9B34FB, WRITE_WITHOUT_RESPONSE | NOTIFY | DYNAMIC,
 
 

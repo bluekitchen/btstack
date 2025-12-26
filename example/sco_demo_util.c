@@ -46,6 +46,7 @@
 #include "sco_demo_util.h"
 
 #include "btstack_audio.h"
+#include "btstack_audio_generator.h"
 #include "btstack_debug.h"
 #include "btstack_ring_buffer.h"
 #include "classic/btstack_cvsd_plc.h"
@@ -75,7 +76,7 @@
 #define SCO_DEMO_MODE_MODPLAYER  2
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_MICROPHONE
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -93,6 +94,8 @@
 #define SAMPLE_RATE_16KHZ       16000
 #define SAMPLE_RATE_32KHZ       32000
 #define BYTES_PER_FRAME         2
+
+#define SCO_SAMPLES_CVSD        60
 
 // audio pre-buffer - also defines latency
 #define SCO_PREBUFFER_MS      50
@@ -114,27 +117,21 @@
 static uint16_t              audio_prebuffer_bytes;
 
 // output
-static int                   audio_output_paused  = 0;
 static uint8_t               audio_output_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
-static btstack_ring_buffer_t audio_output_ring_buffer;
+static btstack_audio_generator_bridge_t audio_output_bridge;
+static bool audio_output_initialized;
 
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
 #define USE_AUDIO_INPUT
+static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
 #else
 #define USE_ADUIO_GENERATOR
-static void (*sco_demo_audio_generator)(uint16_t num_samples, int16_t * data);
 #endif
-
-static int                   audio_input_paused  = 0;
-static uint8_t               audio_input_ring_buffer_storage[2 * PREBUFFER_BYTES_MAX];
-static btstack_ring_buffer_t audio_input_ring_buffer;
 
 // mod player
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
-#include "hxcmod.h"
 #include "mods/mod.h"
-static modcontext mod_context;
 #endif
 
 static int count_sent = 0;
@@ -177,92 +174,30 @@ static const codec_support_t * codec_current = NULL;
 static hfp_codec_t hfp_codec;
 #endif
 
-// Sine Wave
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-static uint16_t sine_wave_phase;
-static uint16_t sine_wave_steps_per_sample;
-#define SINE_WAVE_SAMPLE_RATE SAMPLE_RATE_32KHZ
-
-// input signal: pre-computed int16 sine wave, 32000 Hz at 266 Hz
-static const int16_t sine_int16[] = {
-     0,   1715,   3425,   5126,   6813,   8481,  10126,  11743,  13328,  14876,
- 16383,  17846,  19260,  20621,  21925,  23170,  24351,  25465,  26509,  27481,
- 28377,  29196,  29934,  30591,  31163,  31650,  32051,  32364,  32587,  32722,
- 32767,  32722,  32587,  32364,  32051,  31650,  31163,  30591,  29934,  29196,
- 28377,  27481,  26509,  25465,  24351,  23170,  21925,  20621,  19260,  17846,
- 16383,  14876,  13328,  11743,  10126,   8481,   6813,   5126,   3425,   1715,
-     0,  -1715,  -3425,  -5126,  -6813,  -8481, -10126, -11743, -13328, -14876,
--16384, -17846, -19260, -20621, -21925, -23170, -24351, -25465, -26509, -27481,
--28377, -29196, -29934, -30591, -31163, -31650, -32051, -32364, -32587, -32722,
--32767, -32722, -32587, -32364, -32051, -31650, -31163, -30591, -29934, -29196,
--28377, -27481, -26509, -25465, -24351, -23170, -21925, -20621, -19260, -17846,
--16384, -14876, -13328, -11743, -10126,  -8481,  -6813,  -5126,  -3425,  -1715,
-};
-
-static void sco_demo_sine_wave_host_endian(uint16_t num_samples, int16_t * data){
-    unsigned int i;
-    for (i=0; i < num_samples; i++){
-        data[i] = sine_int16[sine_wave_phase];
-        sine_wave_phase += sine_wave_steps_per_sample;
-        if (sine_wave_phase >= (sizeof(sine_int16) / sizeof(int16_t))){
-            sine_wave_phase = 0;
-        }
-    }
-}
+// Audio Generator
+static struct {
+    union {
+        btstack_audio_generator_t        base;
+        btstack_audio_generator_sine_t   sine;
+#ifdef ENABLE_MODPLAYER
+        btstack_audio_generator_mod_t    mod;
 #endif
-
-// Mod Player
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
-#define NUM_SAMPLES_GENERATOR_BUFFER 30
-static void sco_demo_modplayer(uint16_t num_samples, int16_t * data){
-    // mix down stereo
-    signed short samples[NUM_SAMPLES_GENERATOR_BUFFER * 2];
-    while (num_samples > 0){
-        uint16_t next_samples = btstack_min(num_samples, NUM_SAMPLES_GENERATOR_BUFFER);
-    	hxcmod_fillbuffer(&mod_context, (unsigned short *) samples, next_samples, NULL);
-        num_samples -= next_samples;
-        uint16_t i;
-        for (i=0;i<next_samples;i++){
-            int32_t left  = samples[2*i + 0];
-            int32_t right = samples[2*i + 1];
-            data[i] = (int16_t)((left + right) / 2);
-        }
-    }
-}
-#endif
+        btstack_audio_generator_bridge_t bridge;
+    } generator;
+    bool initialized;
+} audio_generator_state;
 
 // Audio Playback / Recording
 
-static void audio_playback_callback(int16_t * buffer, uint16_t num_samples){
-
-    // fill with silence while paused
-    if (audio_output_paused){
-        if (btstack_ring_buffer_bytes_available(&audio_output_ring_buffer) < audio_prebuffer_bytes){
-            memset(buffer, 0, num_samples * BYTES_PER_FRAME);
-           return;
-        } else {
-            // resume playback
-            audio_output_paused = 0;
-        }
-    }
-
-    // get data from ringbuffer
-    uint32_t bytes_read = 0;
-    btstack_ring_buffer_read(&audio_output_ring_buffer, (uint8_t *) buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
-    num_samples -= bytes_read / BYTES_PER_FRAME;
-    buffer      += bytes_read / BYTES_PER_FRAME;
-
-    // fill with 0 if not enough
-    if (num_samples){
-        memset(buffer, 0, num_samples * BYTES_PER_FRAME);
-        audio_output_paused = 1;
-    }
+static void audio_playback_callback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
+    UNUSED(context);
+    btstack_audio_generator_generate(&audio_output_bridge.base, buffer, num_samples);
 }
 
 #ifdef USE_AUDIO_INPUT
-static void audio_recording_callback(const int16_t * buffer, uint16_t num_samples){
-    btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)buffer, num_samples * 2);
+static void audio_recording_callback(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
+    UNUSED(context);
+    btstack_audio_generator_bridge_push(&audio_generator_state.generator.bridge, buffer, num_samples);
 }
 #endif
 
@@ -271,25 +206,21 @@ static int audio_initialize(int sample_rate){
 
     // -- output -- //
 
-    // init buffers
-    memset(audio_output_ring_buffer_storage, 0, sizeof(audio_output_ring_buffer_storage));
-    btstack_ring_buffer_init(&audio_output_ring_buffer, audio_output_ring_buffer_storage, sizeof(audio_output_ring_buffer_storage));
 
     // config and setup audio playback
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
     if (audio_sink != NULL){
+        // init buffers
+        uint32_t start_threshold = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000);
+        btstack_audio_generator_bridge_init(&audio_output_bridge, sample_rate, NUM_CHANNELS,
+            audio_output_ring_buffer_storage, sizeof(audio_output_ring_buffer_storage), start_threshold);
+        audio_output_initialized = true;
+
         audio_sink->init(1, sample_rate, &audio_playback_callback);
         audio_sink->start_stream();
-
-        audio_output_paused  = 1;
     }
 
     // -- input -- //
-
-    // init buffers
-    memset(audio_input_ring_buffer_storage, 0, sizeof(audio_input_ring_buffer_storage));
-    btstack_ring_buffer_init(&audio_input_ring_buffer, audio_input_ring_buffer_storage, sizeof(audio_input_ring_buffer_storage));
-    audio_input_paused  = 1;
 
 #ifdef USE_AUDIO_INPUT
     // config and setup audio recording
@@ -307,6 +238,11 @@ static void audio_terminate(void){
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
     if (!audio_sink) return;
     audio_sink->close();
+
+    if (audio_output_initialized) {
+        btstack_audio_generator_finalize(&audio_output_bridge.base);
+        audio_output_initialized = false;
+    }
 
 #ifdef USE_AUDIO_INPUT
     const btstack_audio_source_t * audio_source= btstack_audio_source_get_instance();
@@ -356,37 +292,19 @@ static void sco_demo_cvsd_receive(const uint8_t * packet, uint16_t size){
         wav_writer_close();
     }
 #endif
-
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)audio_frame_out, audio_bytes_read);
+    if (audio_output_initialized) {
+        btstack_audio_generator_bridge_push(&audio_output_bridge, audio_frame_out, num_samples);
+    }
 }
 
 static void sco_demo_cvsd_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
-    uint16_t bytes_to_copy = sco_payload_length;
-
-    // get data from ringbuffer
-    uint16_t pos = 0;
-    if (!audio_input_paused){
-        uint16_t samples_to_copy = sco_payload_length / 2;
-        uint32_t bytes_read = 0;
-        btstack_ring_buffer_read(&audio_input_ring_buffer, payload_buffer, bytes_to_copy, &bytes_read);
-        // flip 16 on big endian systems
-        // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
-        if (btstack_is_big_endian()){
-            uint16_t i;
-            for (i=0;i<samples_to_copy/2;i+=2){
-                uint8_t tmp           = payload_buffer[i*2];
-                payload_buffer[i*2]   = payload_buffer[i*2+1];
-                payload_buffer[i*2+1] = tmp;
-            }
-        }
-        bytes_to_copy -= bytes_read;
-        pos           += bytes_read;
-    }
-
-    // fill with 0 if not enough
-    if (bytes_to_copy){
-        memset(payload_buffer + pos, 0, bytes_to_copy);
-        audio_input_paused = 1;
+    btstack_assert(sco_payload_length <= SCO_SAMPLES_CVSD * 2);
+    // max samples per sco packet in CVSD / 8 kHz = 60
+    int16_t sample_buffer[SCO_SAMPLES_CVSD];
+    uint16_t num_samples = sco_payload_length / 2;
+    btstack_audio_generator_generate(&audio_generator_state.generator.base, sample_buffer, num_samples);
+    for (int i = 0; i < num_samples; i++) {
+        little_endian_store_16(payload_buffer, i * 2, sample_buffer[i]);
     }
 }
 
@@ -405,25 +323,22 @@ static const codec_support_t codec_cvsd = {
 // encode using hfp_codec
 #if defined(ENABLE_HFP_WIDE_BAND_SPEECH) || defined(ENABLE_HFP_SUPER_WIDE_BAND_SPEECH)
 static void sco_demo_codec_fill_payload(uint8_t * payload_buffer, uint16_t sco_payload_length){
-    if (!audio_input_paused){
-        int num_samples = hfp_codec_num_audio_samples_per_frame(&hfp_codec);
-        btstack_assert(num_samples <= SAMPLES_PER_FRAME_MAX);
-        uint16_t samples_available = btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) / BYTES_PER_FRAME;
-        if (hfp_codec_can_encode_audio_frame_now(&hfp_codec) && samples_available >= num_samples){
+    while (sco_payload_length > 0) {
+        // encode next frame
+        if (hfp_codec_can_encode_audio_frame_now(&hfp_codec)){
+            int num_samples = hfp_codec_num_audio_samples_per_frame(&hfp_codec);
+            btstack_assert(num_samples <= SAMPLES_PER_FRAME_MAX);
             int16_t sample_buffer[SAMPLES_PER_FRAME_MAX];
-            uint32_t bytes_read;
-            btstack_ring_buffer_read(&audio_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * BYTES_PER_FRAME, &bytes_read);
+            btstack_audio_generator_generate(&audio_generator_state.generator.base, sample_buffer, num_samples);
             hfp_codec_encode_audio_frame(&hfp_codec, sample_buffer);
             num_audio_frames++;
         }
-    }
-    // get data from encoder, fill with 0 if not enough
-    if (audio_input_paused || hfp_codec_num_bytes_available(&hfp_codec) < sco_payload_length){
-        // just send '0's
-        memset(payload_buffer, 0, sco_payload_length);
-        audio_input_paused = 1;
-    } else {
-        hfp_codec_read_from_stream(&hfp_codec, payload_buffer, sco_payload_length);
+        // fill from stream
+        uint16_t bytes_available = hfp_codec_num_bytes_available(&hfp_codec);
+        uint16_t bytes_to_read   = btstack_min(bytes_available, sco_payload_length);
+        hfp_codec_read_from_stream(&hfp_codec, payload_buffer, bytes_to_read);
+        sco_payload_length -= bytes_to_read;
+        payload_buffer     += bytes_to_read;
     }
 }
 #endif
@@ -440,7 +355,9 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
     UNUSED(num_channels);
 
     // samples in callback in host endianess, ready for playback
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
+    if (audio_output_initialized) {
+        btstack_audio_generator_bridge_push(&audio_output_bridge, data, num_samples);
+    }
 
 #ifdef SCO_WAV_FILENAME
     if (!num_samples_to_write) return;
@@ -500,7 +417,9 @@ static bool sco_demo_lc3swb_frame_callback(bool bad_frame, const uint8_t * frame
                                          samples, 1, &tmp_BEC_detect);
 
     // samples in callback in host endianess, ready for playback
-    btstack_ring_buffer_write(&audio_output_ring_buffer, (uint8_t *)samples, LC3_SWB_SAMPLES_PER_FRAME*2);
+    if (audio_output_initialized) {
+        btstack_audio_generator_bridge_push(&audio_output_bridge, samples, LC3_SWB_SAMPLES_PER_FRAME);
+    }
 
 #ifdef SCO_WAV_FILENAME
     if (num_samples_to_write > 0){
@@ -571,9 +490,6 @@ void sco_demo_init(void){
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
     printf("SCO Demo: Sending modplayer wave, audio output via btstack_audio.\n");
-    // init mod
-    int hxcmod_initialized = hxcmod_init(&mod_context);
-    btstack_assert(hxcmod_initialized != 0);
 #endif
 }
 
@@ -596,10 +512,7 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
             btstack_assert(false);
             break;
     }
-
     codec_current->init();
-
-    audio_initialize(codec_current->sample_rate);
 
     audio_prebuffer_bytes = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000) * BYTES_PER_FRAME;
 
@@ -608,17 +521,26 @@ void sco_demo_set_codec(uint8_t negotiated_codec){
     wav_writer_open(SCO_WAV_FILENAME, 1, codec_current->sample_rate);
 #endif
 
+    // configure audio generator
+    if (audio_generator_state.initialized) {
+        btstack_audio_generator_finalize(&audio_generator_state.generator.base);
+    }
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
-    sine_wave_steps_per_sample = SINE_WAVE_SAMPLE_RATE / codec_current->sample_rate;
-    sco_demo_audio_generator = &sco_demo_sine_wave_host_endian;
+    btstack_audio_generator_sine_init(&audio_generator_state.generator.sine, codec_current->sample_rate, 1, 266);
 #endif
-
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MODPLAYER
-    // load mod
-    hxcmod_setcfg(&mod_context, codec_current->sample_rate, 16, 1, 1, 1);
-    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
-    sco_demo_audio_generator = &sco_demo_modplayer;
+    btstack_audio_generator_modplayer_init(&audio_generator_state.generator.mod, codec_current->sample_rate, NUM_CHANNELS,
+        mod_titles[MOD_TITLE_DEFAULT].data, mod_titles[MOD_TITLE_DEFAULT].len);
 #endif
+#if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
+    uint32_t start_threshold = SCO_PREBUFFER_MS * (codec_current->sample_rate/1000);
+    btstack_audio_generator_bridge_init(&audio_generator_state.generator.bridge, codec_current->sample_rate,
+        NUM_CHANNELS, audio_input_ring_buffer_storage, sizeof(audio_input_ring_buffer_storage), start_threshold);
+#endif
+    audio_generator_state.initialized = true;
+
+    // initialize audio driver
+    audio_initialize(codec_current->sample_rate);
 }
 
 void sco_demo_receive(uint8_t * packet, uint16_t size){
@@ -652,27 +574,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     hci_reserve_packet_buffer();
     uint8_t * sco_packet = hci_get_outgoing_packet_buffer();
 
-#ifdef USE_ADUIO_GENERATOR
-    #define REFILL_SAMPLES 16
-    // re-fill audio buffer
-    uint16_t samples_free = btstack_ring_buffer_bytes_free(&audio_input_ring_buffer) / 2;
-    while (samples_free > 0){
-        int16_t samples_buffer[REFILL_SAMPLES];
-        uint16_t samples_to_add = btstack_min(samples_free, REFILL_SAMPLES);
-        (*sco_demo_audio_generator)(samples_to_add, samples_buffer);
-        btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)samples_buffer, samples_to_add * 2);
-        samples_free -= samples_to_add;
-    }
-#endif
-
-    // resume if pre-buffer is filled
-    if (audio_input_paused){
-        if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= audio_prebuffer_bytes){
-            // resume sending
-            audio_input_paused = 0;
-        }
-    }
-
     // fill payload by codec
     codec_current->fill_payload(&sco_packet[3], sco_payload_length);
 
@@ -684,7 +585,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     hci_send_sco_packet_buffer(sco_packet_length);
 
     // request another send event
-    hci_request_sco_can_send_now_event();
+    hci_request_sco_can_send_now_event_for_con_handle(sco_handle);
 
     count_sent++;
     if ((count_sent % SCO_REPORT_PERIOD) == 0) {

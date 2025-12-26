@@ -169,8 +169,8 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
 
         default:
             btstack_hid_parser_init(&parser, 
-                hids_client_descriptor_storage_get_descriptor_data(hids_cid, service_index), 
-                hids_client_descriptor_storage_get_descriptor_len(hids_cid, service_index), 
+                hids_host_descriptor_storage_get_descriptor_data(hids_cid, service_index), 
+                hids_host_descriptor_storage_get_descriptor_len(hids_cid, service_index), 
                 HID_REPORT_TYPE_INPUT, report, report_len);
             break;
 
@@ -507,7 +507,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         // continue - query primary services
         printf("Search for HID service.\n");
         app_state = W4_HID_CLIENT_CONNECTED;
-        hids_client_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
+        hids_host_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
     }
 }
 /* LISTING_END */
@@ -533,7 +533,7 @@ int btstack_main(int argc, const char * argv[]){
     // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android and iOS
     att_server_init(profile_data, NULL, NULL);
 
-    hids_client_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
+    hids_host_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
 
     // register for events from HCI
     hci_event_callback_registration.callback = &packet_handler;

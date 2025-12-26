@@ -356,6 +356,17 @@ LC3_EXPORT lc3_encoder_t lc3_setup_encoder(
     int dt_us, int sr_hz, int sr_pcm_hz, void *mem);
 
 /**
+ * Disable LTPF analysis
+ * encoder        Handle of the encoder
+ *
+ * LTPF analysis is known to take a lot of CPU time and work quite bad on
+ * synthetic signals such as sine waves, so it might be beneficial to
+ * disable it in such cases.
+ */
+LC3_EXPORT void lc3_encoder_disable_ltpf(
+    lc3_encoder_t encoder);
+
+/**
  * Encode a frame
  * encoder         Handle of the encoder
  * fmt             PCM input format

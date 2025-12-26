@@ -154,6 +154,7 @@ CSRCS += \
 	${BTSTACK_ROOT_CONFIG}/src/hci.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci_cmd.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci_dump.c \
+	${BTSTACK_ROOT_CONFIG}/src/hci_event.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci_transport_h4.c \
 	${BTSTACK_ROOT_CONFIG}/src/l2cap.c \
 	${BTSTACK_ROOT_CONFIG}/src/l2cap_signaling.c \

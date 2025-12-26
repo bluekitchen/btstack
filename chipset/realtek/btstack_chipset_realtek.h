@@ -50,6 +50,7 @@ extern "C" {
 
 #include "bluetooth.h"
 #include "btstack_chipset.h"
+#include "btstack_lc3.h"
 #include <stdint.h>
 
 /**
@@ -110,6 +111,27 @@ uint32_t btstack_chipset_realtek_get_config_baudrate(void);
  * Get chipset instance for REALTEK chipsets
  */
 const btstack_chipset_t *btstack_chipset_realtek_instance(void);
+
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
+/**
+ * @brief Setup Codec Config for LC3 Offloading
+ * Asserts if size is smaller than 17
+ * @param buffer
+ * @param size of buffer
+ * @param sampling_frequency_hz
+ * @param frame_duration
+ * @param channel_allocation,
+ * @param octets_per_frame
+ * @return size of config
+ */
+uint8_t btstack_chipset_realtek_create_lc3_offloading_config(
+    uint8_t * buffer,
+    uint8_t size,
+    uint16_t sampling_frequency_hz,
+    btstack_lc3_frame_duration_t frame_duration,
+    uint32_t channel_allocation,
+    uint16_t octets_per_frame);
+#endif
 
 #if defined __cplusplus
 }

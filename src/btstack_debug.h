@@ -68,6 +68,11 @@ extern "C" {
 #define BTSTACK_FILE__ __FILE__
 #endif
 
+// map btstack_assert to test_assert
+#ifdef UNIT_TEST_ASSERT
+void test_assert(bool condition);
+#define btstack_assert test_assert
+#else
 #ifdef HAVE_ASSERT
 // allow to override btstack_assert in btstack_config.h
 #ifndef btstack_assert
@@ -91,8 +96,9 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #define btstack_assert(condition)         {(void)(condition);}
 #endif /* btstack_assert */
 #endif /* HAVE_ASSERT */
- 
-// mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
+#endif /* UNIT_TEST_ASSERT */
+
+ // mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
 #ifdef UNIT_TEST
 #define btstack_unreachable()
 #else
@@ -149,25 +155,35 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #define HCI_DUMP_LOG( ... ) GET_LOGGER_TYPE_FOR_ARG_COUNT(__VA_ARGS__, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PUTS, UNUSED)( __VA_ARGS__ )
 
 #ifdef ENABLE_LOG_DEBUG
-#define log_debug(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_DEBUG, ## __VA_ARGS__)
+#define log_debug(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #else
 #define log_debug(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_INFO
-#define log_info(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_INFO, ## __VA_ARGS__)
+#define log_info(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_INFO, __VA_ARGS__)
 #else
 #define log_info(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_ERROR
-#define log_error(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_ERROR, ## __VA_ARGS__)
+#define log_error(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_ERROR, __VA_ARGS__)
 #else
 #define log_error(...) (void)(0)
 #endif
 
 #endif /* _MSC_VER */
 
+/**
+ * @Brief If ENABLE_PRINTF_TO_LOG is defined, printf is replaced by log_print,
+ *        which causes the message to get logged into the packet log.
+ *        In addition, it will also printed to the console via vprintf
+ */
+#ifdef ENABLE_PRINTF_TO_LOG
+// stdio.h needs to be included before it gets redefined
+#include <stdio.h>
+#define printf(...) hci_dump_log(HCI_DUMP_LOG_LEVEL_PRINT, __VA_ARGS__)
+#endif
 
 /* API_START */
 

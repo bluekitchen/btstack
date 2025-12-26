@@ -2,8 +2,10 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "btstack_util.h"
 #include "btstack_config.h"
+
+#include "btstack_util.h"
+#include "btstack_debug.h"
 #include <stdio.h>
 
 static bool assert_failed;
@@ -32,6 +34,53 @@ TEST_GROUP(btstack_util){
         assert_failed = false;
     }
 };
+
+TEST(btstack_util, some_functions) {
+    uint8_t buf[4] = {0};
+    little_endian_store_08(buf, 0, 42);
+    uint8_t value = little_endian_read_08(buf, 0);
+    CHECK_EQUAL( 42, value );
+    buf[0] = 0;
+    big_endian_store_08(buf, 0, 42);
+    value = big_endian_read_08(buf, 0);
+    CHECK_EQUAL( 42, value );
+    const char *str = "Test, 123, Test, 123, Test, 123, Test, 123, Test, 123, "
+        "Test, 123, Test, 123, Test, 123, Test, 123, Test, 123, Done";
+    int str_len = strlen(str);
+    log_debug_hexdump(str, str_len);
+
+    uint8_t out[4];
+    char hex_buffer[9];
+    btstack_bytes_to_hex(hex_buffer, (uint8_t*)"\xde\xad\xbe\xef", 4);
+    btstack_hex_to_bytes(out, 4, hex_buffer);
+    MEMCMP_EQUAL("\xde\xad\xbe\xef", out, 4);
+    btstack_hex_to_bytes(out, 4, (char*)"\xff\xff\xff\xff");
+
+    CHECK_EQUAL(btstack_clz(0x80000000), 0);
+}
+
+TEST(btstack_util, sscanf_bd_addr ){
+    bd_addr_t addr;
+    int ret = sscanf_bd_addr("00:01:02:03:04:05", addr);
+    CHECK( ret );
+    MEMCMP_EQUAL("\x00\x01\x02\x03\x04\x05", addr, 6);
+    bzero(addr, 6);
+
+    ret = sscanf_bd_addr("00:01::02:::03::::04:::::05", addr);
+    CHECK( ret == 0 );
+    MEMCMP_EQUAL("\x00\x00\x00\x00\x00\x00", addr, 6);
+    bzero(addr, 6);
+
+    ret = sscanf_bd_addr("00 01 02 03 04 05", addr);
+    CHECK( ret );
+    MEMCMP_EQUAL("\x00\x01\x02\x03\x04\x05", addr, 6);
+    bzero(addr, 6);
+
+    ret = sscanf_bd_addr("00-01-02-03-04-05", addr);
+    CHECK( ret );
+    MEMCMP_EQUAL("\x00\x01\x02\x03\x04\x05", addr, 6);
+    bzero(addr, 6);
+}
 
 TEST(btstack_util, btstack_printf_strlen){
     CHECK_EQUAL(4, btstack_printf_strlen("%04x", 0x1234));

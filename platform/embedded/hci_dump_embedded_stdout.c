@@ -131,6 +131,11 @@ static void hci_dump_embedded_stdout_log_packet(uint8_t packet_type, uint8_t in,
 static void hci_dump_embedded_stdout_log_message(int log_level, const char * format, va_list argptr){
     UNUSED(log_level);
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+    // strip trailing \n for messages caused by printf via ENABLE_PRINTF_TO_LOG
+    if ((log_level == HCI_DUMP_LOG_LEVEL_PRINT) && (len > 0) && (log_message_buffer[len-1] == '\n')) {
+        log_message_buffer[len-1] = '\0';
+        len--;
+    }
     hci_dump_embedded_stdout_log_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
 }
 

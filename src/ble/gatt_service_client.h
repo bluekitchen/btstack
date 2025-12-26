@@ -62,6 +62,7 @@ extern "C" {
 typedef enum {
     GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE,
     GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
+    GATT_SERVICE_CLIENT_STATE_W2_CHECK_RESTORE_BEFORE_QUERY_CHARACTERISTICS,
     GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
     GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
     GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
@@ -91,8 +92,8 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-    uint16_t service_uuid16;
-    uuid128_t * service_uuid128;
+    uint16_t  service_uuid16;
+    uuid128_t service_uuid128;
 
     uint8_t  service_index;
     uint16_t service_instances_num;
@@ -103,6 +104,12 @@ typedef struct {
     gatt_service_client_characteristic_t * characteristics;
 
     gatt_client_service_notification_t notification_listener;
+    btstack_context_callback_registration_t can_send_query_registration;
+#ifdef ENABLE_GATT_CLIENT_CACHING
+    uint16_t cache_id;
+    int16_t  device_index;
+    uint32_t request_hash;
+#endif
 } gatt_service_client_connection_t;
 
 typedef struct gatt_service_client {

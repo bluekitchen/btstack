@@ -1,16 +1,17 @@
-# Requirements: cpputest.github.io
 
-BTSTACK_ROOT =  ../..
+include ../common.make
 
-# CppuTest from pkg-config
-CFLAGS  += ${shell pkg-config --cflags CppuTest}
-LDFLAGS += ${shell pkg-config --libs   CppuTest}
+DEFINES := -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+INCLUDES := -Ibuild-coverage
+INCLUDES += -I${BTSTACK_ROOT}/src
+INCLUDES += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -I. -Ibuild-coverage -I${BTSTACK_ROOT}/src
+CFLAGS += ${INCLUDES} ${DEFINES}
+CXXFLAGS += ${INCLUDES} ${DEFINES}
 
 VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/src/ble 
-VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service 
+VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
@@ -27,50 +28,19 @@ COMMON = \
 	hci_event_builder.c         \
 	hci_dump.c                  \
 	le_device_db_memory.c       \
-	mock.c                      \
-
-CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
-
-LDFLAGS += -lCppUTest -lCppUTestExt
-LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
-LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
+	mock.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
 all: build-coverage/gatt_client_test build-coverage/le_central build-asan/gatt_client_test build-asan/le_central
 
-build-%:
-	mkdir -p $@
+build-coverage/gatt_client_test.o: build-coverage/profile.h
+build-coverage/gatt_client_test: ${COMMON_OBJ_COVERAGE}
+build-asan/gatt_client_test: ${COMMON_OBJ_ASAN}
 
-# compile .ble description
-build-%/profile.h: profile.gatt | build-%
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
-
-build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-coverage/%.o: %.cpp | build-coverage
-	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-asan/%.o: %.c | build-asan
-	${CC} -c $(CFLAGS_ASAN) $< -o $@
-
-build-asan/%.o: %.cpp | build-asan
-	${CXX} -c $(CFLAGS_ASAN) $< -o $@
-
-build-coverage/gatt_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/profile.h build-coverage/gatt_client_test.o expected_results.h | build-coverage
-	${CXX} $(filter-out build-coverage/profile.h expected_results.h,$^) ${LDFLAGS_COVERAGE} -o $@
-
-build-coverage/le_central: ${COMMON_OBJ_COVERAGE} build-coverage/le_central.o | build-coverage
-	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/gatt_client_test: ${COMMON_OBJ_ASAN} build-asan/profile.h  build-asan/gatt_client_test.o expected_results.h | build-asan
-	${CXX} $(filter-out build-asan/profile.h expected_results.h,$^) ${LDFLAGS_ASAN} -o $@
-
-build-asan/le_central: ${COMMON_OBJ_ASAN} build-asan/le_central.o | build-asan
-	${CXX} $^ ${LDFLAGS_ASAN} -o $@
+build-coverage/le_central: ${COMMON_OBJ_COVERAGE}
+build-asan/le_central: ${COMMON_OBJ_ASAN}
 
 test: all
 	build-asan/gatt_client_test

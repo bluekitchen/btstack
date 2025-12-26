@@ -112,9 +112,11 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
+#ifdef HAVE_BTSTACK_STDIN
 static hfp_voice_recognition_message_t msg = {
     0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich is 30 degrees.", 41
 };
+#endif
 
 #define INQUIRY_INTERVAL 5
 
@@ -497,7 +499,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Inquiry scan complete.\n");
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    sco_demo_send(sco_handle); 
+                    sco_demo_send(hci_event_sco_can_send_now_get_handle(event));
                     break; 
                 default:
                     break;
@@ -548,7 +550,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 break;
                         }
                         sco_demo_set_codec(negotiated_codec);
-                        hci_request_sco_can_send_now_event();
+                        hci_request_sco_can_send_now_event_for_con_handle(sco_handle);
                     }
                     break;
           

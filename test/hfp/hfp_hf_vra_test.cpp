@@ -69,8 +69,6 @@
 
 const uint8_t    rfcomm_channel_nr = 1;
 
-static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
-
 static uint8_t codecs[2] = {1,2};
 static uint16_t indicators[1] = {0x01};
 
@@ -96,22 +94,17 @@ static int supported_features_with_codec_negotiation =
         (1<<HFP_HFSF_EC_NR_FUNCTION) |
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
 
-static uint16_t acl_handle = -1;
-
 static char * get_next_hfp_hf_command(void){
     return get_next_hfp_command(0,2);
 }
 
-static int has_more_hfp_hf_commands(void){
-    return has_more_hfp_commands(0,2);
-}
-
+#ifdef ENABLE_PRINT_HF_COMMANDS
 static void print_hf_commands(void){
     while (has_more_hfp_hf_commands()){
         printf("HFP HF Command: %s\n", get_next_hfp_hf_command());
     }
 }
-
+#endif
 
 static bool check_equal_hf_commands(const char * cmd, uint16_t value){
     char * actual_command = get_next_hfp_hf_command();

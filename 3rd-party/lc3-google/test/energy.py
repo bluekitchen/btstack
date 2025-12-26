@@ -53,7 +53,7 @@ def check_unit(rng, dt, sr):
     (e_c, nn_c) = lc3.energy_compute(dt, sr, x)
     ok = ok and np.amax(np.abs(e_c - e)) < 1e-5 and nn_c == nn
 
-    x[15*ns//16:] *= 1e2;
+    x[15*ns//16:] *= 1e2
 
     (e  , nn  ) = nrg.compute(x)
     (e_c, nn_c) = lc3.energy_compute(dt, sr, x)

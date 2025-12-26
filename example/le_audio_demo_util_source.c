@@ -119,7 +119,8 @@ static btstack_audio_source_t const * le_audio_demo_audio_source;
 static le_audio_demo_source_generator le_audio_demo_util_source_generator = AUDIO_SOURCE_SINE;
 
 // recording callback has channels interleaved, collect per channel
-static void le_audio_util_source_recording_callback(const int16_t * buffer, uint16_t num_samples){
+static void le_audio_util_source_recording_callback(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * time_us){
+    UNUSED(time_us);
     log_info("store %u samples per channel", num_samples);
     uint32_t bytes_to_store = le_audio_demo_source_num_channels * num_samples * 2;
     if (bytes_to_store < btstack_ring_buffer_bytes_free(&le_audio_demo_source_recording_buffer)){

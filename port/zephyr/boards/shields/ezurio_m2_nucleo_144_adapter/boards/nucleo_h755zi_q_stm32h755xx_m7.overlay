@@ -1,0 +1,7 @@
+&usart2 {
+    bt_hci: bt_hci {
+        cyw555xx {
+        bt-reg-on-gpios = <&gpiog 8 GPIO_ACTIVE_HIGH>;
+        };
+    };
+};

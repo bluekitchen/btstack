@@ -22,11 +22,15 @@ add_executable(aes_ccm_test
 
 add_executable(aestest
         ../../3rd-party/rijndael/rijndael.c
+        ../../src/hci_dump.c
+        ../../src/btstack_util.c
         aestest.c
 )
 
 add_executable(ecc_micro_ecc
         ../../3rd-party/micro-ecc/uECC.c
+        ../../src/hci_dump.c
+        ../../src/btstack_util.c
         ecc_micro_ecc.c
 )
 

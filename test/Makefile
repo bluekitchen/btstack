@@ -37,6 +37,7 @@ SUBDIRS =  \
 
 # not testing anything in source tree
 #	maths \
+#	pts \
 # no unit tests
 #	embedded \
 #	gatt_server \
@@ -109,17 +110,17 @@ subdirs-coverage-ble:
 
 
 coverage-unit.info: subdirs-coverage
-	# run tests
-	$(MAKE) subdirs-coverage
 	# collect traces
 	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
 
 coverage-unit-ble.info: subdirs-coverage-ble
 	# run tests
 	$(MAKE) subdirs-coverage-ble
-	# collect traces
-	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
-
+	# collect trace for BLE tests
+	for dir in $(SUBDIRS_BLE); do \
+		lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory "$$dir" --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file "coverage-unit-ble-$$dir.info"; \
+	done
+	lcov -a "coverage-unit-ble*.info" --ignore-errors inconsistent --rc branch_coverage=1  -o coverage-unit-ble.info
 
 coverage-all: coverage-unit.info
 	# generate html output

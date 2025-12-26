@@ -123,7 +123,7 @@ static void avrcp_browsing_target_emit_search(btstack_packet_handler_t callback,
     pos += 2;
     little_endian_store_16(event, pos, connection->target_search_str_len);
     pos += 2;
-    uint16_t target_search_str_len = btstack_min(AVRCP_SEARCH_STRING_MAX_LENGTH, strlen(connection->target_search_str));
+    uint16_t target_search_str_len = btstack_min(AVRCP_SEARCH_STRING_MAX_LENGTH, (uint16_t) strlen(connection->target_search_str));
     little_endian_store_16(event, pos, target_search_str_len);
     pos += 2;
     if (target_search_str_len > 0){

@@ -40,6 +40,7 @@ libBTstack_OBJS  = 		           \
     btstack_tlv.o                  \
 	btstack_util.o 	               \
 	hci_cmd.o                      \
+	hci_event.o                    \
 	hci_event_builder.o            \
 	daemon_cmds.o                  \
 	hci_dump.o                     \

@@ -69,9 +69,13 @@ typedef enum {
     TC_W4_DATA_SOURCE_SUBSCRIBED,
     TC_W2_ENABLE_NOTIFICATION,
     TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED,
+    TC_W2_WRITE_NOTIFICATION_ATTRS_TO_CONTROL_POINT,
+    TC_W4_NOTIFICATION_ATTRS_WRITTEN,
     TC_SUBSCRIBED,
     TC_W4_DISCONNECT
 } tc_state_t;
+
+static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
 
 static uint32_t ancs_notification_uid;
 static hci_con_handle_t gc_handle;
@@ -169,7 +173,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             chunk_parser_state  = W4_ATTRIBUTE_LEN;
             break;
         case W4_ATTRIBUTE_LEN:
-            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, ancs_bytes_received-2u);
+            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, (int)(ancs_bytes_received-2u));
             ancs_bytes_received = 0;
             ancs_bytes_needed   = ancs_attribute_len;
             if (ancs_attribute_len == 0u) {
@@ -205,12 +209,11 @@ static void ancs_client_handle_notification(uint16_t value_handle, const uint8_t
         ancs_notification_uid = little_endian_read_32(value, 4);
         log_info("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x",
                  value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
-        static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
         little_endian_store_32(get_notification_attributes, 1, ancs_notification_uid);
         ancs_notification_uid = 0;
         ancs_chunk_parser_init();
-        gatt_client_write_value_of_characteristic(ancs_client_handle_gatt_client_event, gc_handle, ancs_control_point_characteristic.value_handle,
-                                                  sizeof(get_notification_attributes), get_notification_attributes);
+        tc_state = TC_W2_WRITE_NOTIFICATION_ATTRS_TO_CONTROL_POINT;
+        ancs_client_request_send_gatt_query();
     } else {
         log_info("Unknown Source: ");
         log_info_hexdump(value , value_length);
@@ -245,6 +248,12 @@ static void ancs_client_send_next_query(void * context){
             gatt_client_listen_for_characteristic_value_updates(&ancs_data_source_notification, &ancs_client_handle_gatt_client_event, gc_handle, &ancs_data_source_characteristic);
             gatt_client_write_client_characteristic_configuration(ancs_client_handle_gatt_client_event, gc_handle, &ancs_data_source_characteristic,
                                                                           GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+            break;
+
+        case TC_W2_WRITE_NOTIFICATION_ATTRS_TO_CONTROL_POINT:
+            tc_state = TC_W4_NOTIFICATION_ATTRS_WRITTEN;
+            gatt_client_write_value_of_characteristic(ancs_client_handle_gatt_client_event, gc_handle, ancs_control_point_characteristic.value_handle,
+                                                      sizeof(get_notification_attributes), get_notification_attributes);
             break;
 
         default:
@@ -381,6 +390,10 @@ static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                 default:
                     break;
             }
+            break;
+
+        case TC_W4_NOTIFICATION_ATTRS_WRITTEN:
+            tc_state = TC_SUBSCRIBED;
             break;
 
         case TC_SUBSCRIBED:

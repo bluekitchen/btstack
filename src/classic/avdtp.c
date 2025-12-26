@@ -348,6 +348,9 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid)
         // allow to call avdtp_connect after signaling connection was triggered remotely
         // @note this also allows to call avdtp_connect again before SLC is complete
         if (connection->state < AVDTP_SIGNALING_CONNECTION_OPENED){
+            if (avdtp_cid != NULL) {
+                *avdtp_cid = connection->avdtp_cid;
+            }
             return ERROR_CODE_SUCCESS;
         } else {
             return ERROR_CODE_COMMAND_DISALLOWED;
@@ -1057,7 +1060,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(local_cid);
                     connection = avdtp_get_connection_for_l2cap_signaling_cid(local_cid);
                     
-                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
+                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p",
+                        local_cid, (void *) connection, (void *) stream_endpoint);
 
                     if (stream_endpoint){
                         if (stream_endpoint->l2cap_media_cid == local_cid){

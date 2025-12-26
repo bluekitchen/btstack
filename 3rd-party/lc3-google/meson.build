@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 project('lc3', 'c',
-	version: '1.1.0',
+	version: '1.1.3',
 	license: 'Apache-2.0',
 	meson_version: '>= 0.48.0',
 	default_options: ['buildtype=release', 'b_lto=true'])

@@ -80,12 +80,15 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
 
     uint16_t pos = 2;
 
+    const char *format = event->format;
+
     // store subevent code if set
     if (event->subevent_code != 0){
         hci_event_buffer[pos++] = event->subevent_code;
+        btstack_assert(*format == '1');
+        format++;
     }
     
-    const char *format = event->format;
     uint16_t word;
     uint32_t longword;
     uint8_t * ptr;
@@ -194,5 +197,10 @@ const hci_event_t hci_event_number_of_completed_packets_1 = {
 /* LE Subevents */
 
 const hci_event_t hci_subevent_le_connection_complete = {
-    HCI_EVENT_LE_META, HCI_SUBEVENT_LE_CONNECTION_COMPLETE, "1H11B2221"
+    HCI_EVENT_LE_META, HCI_SUBEVENT_LE_CONNECTION_COMPLETE, "11H11B2221"
+};
+
+/* GAP Subevents */
+const hci_event_t gap_subevent_bonding_deleted = {
+    HCI_EVENT_META_GAP, GAP_SUBEVENT_BONDING_DELETED, "11B1H"
 };

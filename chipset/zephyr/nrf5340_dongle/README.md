@@ -26,7 +26,7 @@ For nRF5340 Audio DK (ADK)
 
 ```sh
 cd  ${NCS_ROOT}/zephyr/samples/bluetooth/hci_uart/
-west build --pristine -b nrf5340dk/nrf5340/cpuapp -- -DDTC_OVERLAY_FILE=usb.overlay -DOVERLAY_CONFIG=overlay-usb.conf
+west build --pristine -b nrf5340_audio_dk/nrf5340/cpuapp -- -DDTC_OVERLAY_FILE=usb.overlay -DOVERLAY_CONFIG=overlay-usb.conf
 west flash
 ```
 

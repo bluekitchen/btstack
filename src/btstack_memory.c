@@ -53,11 +53,21 @@
 #include "btstack_memory_pool.h"
 #include "btstack_debug.h"
 
+#include <stddef.h>
 #include <stdlib.h>
 
 #ifdef ENABLE_MALLOC_TEST
-void * test_malloc(size_t size);
-#define malloc test_malloc
+static bool mock_out_of_memory = false;
+void btstack_memory_simulate_malloc_failure(bool out_of_memory) {
+    mock_out_of_memory = out_of_memory;
+}
+static void *btstack_memory_mock_malloc(size_t size) {
+    if(mock_out_of_memory) {
+        return NULL;
+    }
+    return malloc(size);
+}
+#define malloc btstack_memory_mock_malloc
 #endif
 
 #ifdef HAVE_MALLOC
@@ -166,8 +176,9 @@ hci_connection_t * btstack_memory_hci_connection_get(void){
 }
 void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hci_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hci_connection_t *buffer = (btstack_memory_hci_connection_t *)
+        ((uint8_t *)hci_connection - offsetof(btstack_memory_hci_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -224,8 +235,9 @@ l2cap_service_t * btstack_memory_l2cap_service_get(void){
 }
 void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) l2cap_service)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_l2cap_service_t *buffer = (btstack_memory_l2cap_service_t *)
+        ((uint8_t *)l2cap_service - offsetof(btstack_memory_l2cap_service_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -281,8 +293,9 @@ l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
 }
 void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) l2cap_channel)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_l2cap_channel_t *buffer = (btstack_memory_l2cap_channel_t *)
+        ((uint8_t *)l2cap_channel - offsetof(btstack_memory_l2cap_channel_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -340,8 +353,9 @@ rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
 }
 void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) rfcomm_multiplexer)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_rfcomm_multiplexer_t *buffer = (btstack_memory_rfcomm_multiplexer_t *)
+        ((uint8_t *)rfcomm_multiplexer - offsetof(btstack_memory_rfcomm_multiplexer_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -397,8 +411,9 @@ rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
 }
 void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) rfcomm_service)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_rfcomm_service_t *buffer = (btstack_memory_rfcomm_service_t *)
+        ((uint8_t *)rfcomm_service - offsetof(btstack_memory_rfcomm_service_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -454,8 +469,9 @@ rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
 }
 void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) rfcomm_channel)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_rfcomm_channel_t *buffer = (btstack_memory_rfcomm_channel_t *)
+        ((uint8_t *)rfcomm_channel - offsetof(btstack_memory_rfcomm_channel_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -512,8 +528,9 @@ btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_e
 }
 void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) btstack_link_key_db_memory_entry)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_btstack_link_key_db_memory_entry_t *buffer = (btstack_memory_btstack_link_key_db_memory_entry_t *)
+        ((uint8_t *)btstack_link_key_db_memory_entry - offsetof(btstack_memory_btstack_link_key_db_memory_entry_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -570,8 +587,9 @@ bnep_service_t * btstack_memory_bnep_service_get(void){
 }
 void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) bnep_service)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_bnep_service_t *buffer = (btstack_memory_bnep_service_t *)
+        ((uint8_t *)bnep_service - offsetof(btstack_memory_bnep_service_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -627,8 +645,9 @@ bnep_channel_t * btstack_memory_bnep_channel_get(void){
 }
 void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) bnep_channel)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_bnep_channel_t *buffer = (btstack_memory_bnep_channel_t *)
+        ((uint8_t *)bnep_channel - offsetof(btstack_memory_bnep_channel_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -685,8 +704,9 @@ goep_server_service_t * btstack_memory_goep_server_service_get(void){
 }
 void btstack_memory_goep_server_service_free(goep_server_service_t *goep_server_service){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) goep_server_service)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_goep_server_service_t *buffer = (btstack_memory_goep_server_service_t *)
+        ((uint8_t *)goep_server_service - offsetof(btstack_memory_goep_server_service_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -742,8 +762,9 @@ goep_server_connection_t * btstack_memory_goep_server_connection_get(void){
 }
 void btstack_memory_goep_server_connection_free(goep_server_connection_t *goep_server_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) goep_server_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_goep_server_connection_t *buffer = (btstack_memory_goep_server_connection_t *)
+        ((uint8_t *)goep_server_connection - offsetof(btstack_memory_goep_server_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -800,8 +821,9 @@ hfp_connection_t * btstack_memory_hfp_connection_get(void){
 }
 void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hfp_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hfp_connection_t *buffer = (btstack_memory_hfp_connection_t *)
+        ((uint8_t *)hfp_connection - offsetof(btstack_memory_hfp_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -858,8 +880,9 @@ hid_host_connection_t * btstack_memory_hid_host_connection_get(void){
 }
 void btstack_memory_hid_host_connection_free(hid_host_connection_t *hid_host_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hid_host_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hid_host_connection_t *buffer = (btstack_memory_hid_host_connection_t *)
+        ((uint8_t *)hid_host_connection - offsetof(btstack_memory_hid_host_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -916,8 +939,9 @@ service_record_item_t * btstack_memory_service_record_item_get(void){
 }
 void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) service_record_item)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_service_record_item_t *buffer = (btstack_memory_service_record_item_t *)
+        ((uint8_t *)service_record_item - offsetof(btstack_memory_service_record_item_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -974,8 +998,9 @@ avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
 }
 void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) avdtp_stream_endpoint)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avdtp_stream_endpoint_t *buffer = (btstack_memory_avdtp_stream_endpoint_t *)
+        ((uint8_t *)avdtp_stream_endpoint - offsetof(btstack_memory_avdtp_stream_endpoint_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1032,8 +1057,9 @@ avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
 }
 void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) avdtp_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avdtp_connection_t *buffer = (btstack_memory_avdtp_connection_t *)
+        ((uint8_t *)avdtp_connection - offsetof(btstack_memory_avdtp_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1090,8 +1116,9 @@ avrcp_connection_t * btstack_memory_avrcp_connection_get(void){
 }
 void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) avrcp_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avrcp_connection_t *buffer = (btstack_memory_avrcp_connection_t *)
+        ((uint8_t *)avrcp_connection - offsetof(btstack_memory_avrcp_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1148,8 +1175,9 @@ avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void)
 }
 void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) avrcp_browsing_connection)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avrcp_browsing_connection_t *buffer = (btstack_memory_avrcp_browsing_connection_t *)
+        ((uint8_t *)avrcp_browsing_connection - offsetof(btstack_memory_avrcp_browsing_connection_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1208,8 +1236,9 @@ battery_service_client_t * btstack_memory_battery_service_client_get(void){
 }
 void btstack_memory_battery_service_client_free(battery_service_client_t *battery_service_client){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) battery_service_client)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_battery_service_client_t *buffer = (btstack_memory_battery_service_client_t *)
+        ((uint8_t *)battery_service_client - offsetof(btstack_memory_battery_service_client_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1265,65 +1294,67 @@ gatt_client_t * btstack_memory_gatt_client_get(void){
 }
 void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) gatt_client)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_gatt_client_t *buffer = (btstack_memory_gatt_client_t *)
+        ((uint8_t *)gatt_client - offsetof(btstack_memory_gatt_client_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
 
 
-// MARK: hids_client_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HIDS_CLIENTS)
-    #if defined(MAX_NO_HIDS_CLIENTS)
-        #error "Deprecated MAX_NO_HIDS_CLIENTS defined instead of MAX_NR_HIDS_CLIENTS. Please update your btstack_config.h to use MAX_NR_HIDS_CLIENTS."
+// MARK: hids_host_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HIDS_HOSTS)
+    #if defined(MAX_NO_HIDS_HOSTS)
+        #error "Deprecated MAX_NO_HIDS_HOSTS defined instead of MAX_NR_HIDS_HOSTS. Please update your btstack_config.h to use MAX_NR_HIDS_HOSTS."
     #else
-        #define MAX_NR_HIDS_CLIENTS 0
+        #define MAX_NR_HIDS_HOSTS 0
     #endif
 #endif
 
-#ifdef MAX_NR_HIDS_CLIENTS
-#if MAX_NR_HIDS_CLIENTS > 0
-static hids_client_t hids_client_storage[MAX_NR_HIDS_CLIENTS];
-static btstack_memory_pool_t hids_client_pool;
-hids_client_t * btstack_memory_hids_client_get(void){
-    void * buffer = btstack_memory_pool_get(&hids_client_pool);
+#ifdef MAX_NR_HIDS_HOSTS
+#if MAX_NR_HIDS_HOSTS > 0
+static hids_host_t hids_host_storage[MAX_NR_HIDS_HOSTS];
+static btstack_memory_pool_t hids_host_pool;
+hids_host_t * btstack_memory_hids_host_get(void){
+    void * buffer = btstack_memory_pool_get(&hids_host_pool);
     if (buffer){
-        memset(buffer, 0, sizeof(hids_client_t));
+        memset(buffer, 0, sizeof(hids_host_t));
     }
-    return (hids_client_t *) buffer;
+    return (hids_host_t *) buffer;
 }
-void btstack_memory_hids_client_free(hids_client_t *hids_client){
-    btstack_memory_pool_free(&hids_client_pool, hids_client);
+void btstack_memory_hids_host_free(hids_host_t *hids_host){
+    btstack_memory_pool_free(&hids_host_pool, hids_host);
 }
 #else
-hids_client_t * btstack_memory_hids_client_get(void){
+hids_host_t * btstack_memory_hids_host_get(void){
     return NULL;
 }
-void btstack_memory_hids_client_free(hids_client_t *hids_client){
-    UNUSED(hids_client);
+void btstack_memory_hids_host_free(hids_host_t *hids_host){
+    UNUSED(hids_host);
 }
 #endif
 #elif defined(HAVE_MALLOC)
 
 typedef struct {
     btstack_memory_buffer_t tracking;
-    hids_client_t data;
-} btstack_memory_hids_client_t;
+    hids_host_t data;
+} btstack_memory_hids_host_t;
 
-hids_client_t * btstack_memory_hids_client_get(void){
-    btstack_memory_hids_client_t * buffer = (btstack_memory_hids_client_t *) malloc(sizeof(btstack_memory_hids_client_t));
+hids_host_t * btstack_memory_hids_host_get(void){
+    btstack_memory_hids_host_t * buffer = (btstack_memory_hids_host_t *) malloc(sizeof(btstack_memory_hids_host_t));
     if (buffer){
-        memset(buffer, 0, sizeof(btstack_memory_hids_client_t));
+        memset(buffer, 0, sizeof(btstack_memory_hids_host_t));
         btstack_memory_tracking_add(&buffer->tracking);
         return &buffer->data;
     } else {
         return NULL;
     }
 }
-void btstack_memory_hids_client_free(hids_client_t *hids_client){
+void btstack_memory_hids_host_free(hids_host_t *hids_host){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hids_client)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hids_host_t *buffer = (btstack_memory_hids_host_t *)
+        ((uint8_t *)hids_host - offsetof(btstack_memory_hids_host_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1379,8 +1410,9 @@ sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
 }
 void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) sm_lookup_entry)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_sm_lookup_entry_t *buffer = (btstack_memory_sm_lookup_entry_t *)
+        ((uint8_t *)sm_lookup_entry - offsetof(btstack_memory_sm_lookup_entry_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1436,8 +1468,9 @@ whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
 }
 void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) whitelist_entry)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_whitelist_entry_t *buffer = (btstack_memory_whitelist_entry_t *)
+        ((uint8_t *)whitelist_entry - offsetof(btstack_memory_whitelist_entry_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1493,8 +1526,9 @@ periodic_advertiser_list_entry_t * btstack_memory_periodic_advertiser_list_entry
 }
 void btstack_memory_periodic_advertiser_list_entry_free(periodic_advertiser_list_entry_t *periodic_advertiser_list_entry){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) periodic_advertiser_list_entry)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_periodic_advertiser_list_entry_t *buffer = (btstack_memory_periodic_advertiser_list_entry_t *)
+        ((uint8_t *)periodic_advertiser_list_entry - offsetof(btstack_memory_periodic_advertiser_list_entry_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1553,8 +1587,9 @@ mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
 }
 void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_network_pdu)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_network_pdu_t *buffer = (btstack_memory_mesh_network_pdu_t *)
+        ((uint8_t *)mesh_network_pdu - offsetof(btstack_memory_mesh_network_pdu_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1610,8 +1645,9 @@ mesh_segmented_pdu_t * btstack_memory_mesh_segmented_pdu_get(void){
 }
 void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented_pdu){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_segmented_pdu)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_segmented_pdu_t *buffer = (btstack_memory_mesh_segmented_pdu_t *)
+        ((uint8_t *)mesh_segmented_pdu - offsetof(btstack_memory_mesh_segmented_pdu_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1667,8 +1703,9 @@ mesh_upper_transport_pdu_t * btstack_memory_mesh_upper_transport_pdu_get(void){
 }
 void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *mesh_upper_transport_pdu){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_upper_transport_pdu)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_upper_transport_pdu_t *buffer = (btstack_memory_mesh_upper_transport_pdu_t *)
+        ((uint8_t *)mesh_upper_transport_pdu - offsetof(btstack_memory_mesh_upper_transport_pdu_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1724,8 +1761,9 @@ mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
 }
 void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_network_key)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_network_key_t *buffer = (btstack_memory_mesh_network_key_t *)
+        ((uint8_t *)mesh_network_key - offsetof(btstack_memory_mesh_network_key_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1781,8 +1819,9 @@ mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
 }
 void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_transport_key)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_transport_key_t *buffer = (btstack_memory_mesh_transport_key_t *)
+        ((uint8_t *)mesh_transport_key - offsetof(btstack_memory_mesh_transport_key_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1838,8 +1877,9 @@ mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
 }
 void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_virtual_address)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_virtual_address_t *buffer = (btstack_memory_mesh_virtual_address_t *)
+        ((uint8_t *)mesh_virtual_address - offsetof(btstack_memory_mesh_virtual_address_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1895,8 +1935,9 @@ mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
 }
 void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) mesh_subnet)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_subnet_t *buffer = (btstack_memory_mesh_subnet_t *)
+        ((uint8_t *)mesh_subnet - offsetof(btstack_memory_mesh_subnet_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1955,8 +1996,9 @@ hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void){
 }
 void btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream){
     // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hci_iso_stream)[-1];
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hci_iso_stream_t *buffer = (btstack_memory_hci_iso_stream_t *)
+        ((uint8_t *)hci_iso_stream - offsetof(btstack_memory_hci_iso_stream_t, data));
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -2047,8 +2089,8 @@ void btstack_memory_init(void){
 #if MAX_NR_GATT_CLIENTS > 0
     btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
 #endif
-#if MAX_NR_HIDS_CLIENTS > 0
-    btstack_memory_pool_create(&hids_client_pool, hids_client_storage, MAX_NR_HIDS_CLIENTS, sizeof(hids_client_t));
+#if MAX_NR_HIDS_HOSTS > 0
+    btstack_memory_pool_create(&hids_host_pool, hids_host_storage, MAX_NR_HIDS_HOSTS, sizeof(hids_host_t));
 #endif
 #if MAX_NR_SM_LOOKUP_ENTRIES > 0
     btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));

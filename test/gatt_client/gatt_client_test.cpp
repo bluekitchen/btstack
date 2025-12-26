@@ -21,6 +21,8 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "ble/gatt_client.h"
+
+#include "bluetooth_gatt.h"
 #include "ble/att_db.h"
 #include "profile.h"
 #include "expected_results.h"
@@ -30,6 +32,7 @@ extern "C" void l2cap_set_can_send_fixed_channel_packet_now(bool value);
 
 static uint16_t gatt_client_handle = 0x40;
 static int gatt_query_complete = 0;
+static uint8_t gatt_query_complete_status = 0;
 
 
 typedef enum {
@@ -154,11 +157,8 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 	gatt_client_characteristic_descriptor_t descriptor;
 	switch (packet[0]){
 		case GATT_EVENT_QUERY_COMPLETE:
-			status = gatt_event_query_complete_get_att_status(packet);
+			gatt_query_complete_status = gatt_event_query_complete_get_att_status(packet);
             gatt_query_complete = 1;
-            if (status){
-                gatt_query_complete = 0;
-            }
             break;
 		case GATT_EVENT_SERVICE_QUERY_RESULT:
             gatt_event_service_query_result_get_service(packet, &service);
@@ -595,16 +595,37 @@ TEST(GATTClient, TestWriteClientCharacteristicConfigurationNone){
 
 TEST(GATTClient, TestWriteNonexistingClientCharacteristicConfiguration){
 	test = WRITE_NONEXISTING_CLIENT_CHARACTERISTIC_CONFIGURATION;
+
+	// write to invalid characteristic
 	reset_query_state();
-	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	characteristics->properties = ATT_PROPERTY_INDICATE;
+	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(ATT_ERROR_INVALID_HANDLE, gatt_query_complete_status);
+
+	// get remote GAP Service
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, ORG_BLUETOOTH_SERVICE_GENERIC_ACCESS);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
+	// get remote characteristics for GAP Service
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], ORG_BLUETOOTH_CHARACTERISTIC_GAP_DEVICE_NAME);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(ATT_ERROR_SUCCESS, gatt_query_complete_status);
+	CHECK_EQUAL(1, result_counter);
+
+	// try write CCCD for GAP Name (does not support notify in our database)
 	reset_query_state();
 	characteristics->properties = ATT_PROPERTY_INDICATE;
 	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
- 	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(ATT_ERROR_ATTRIBUTE_NOT_FOUND, gatt_query_complete_status);
 }
 
 TEST(GATTClient, TestReadCharacteristicDescriptor){

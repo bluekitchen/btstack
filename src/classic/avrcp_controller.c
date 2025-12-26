@@ -227,13 +227,19 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
         }
         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:{
             uint16_t offset = 0;
-            uint8_t event[6];
+            uint8_t event[14];
             event[offset++] = HCI_EVENT_AVRCP_META;
             event[offset++] = sizeof(event) - 2;
             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED;
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
+            if (size >= 8){
+                memcpy(&event[offset], &payload[0], 8);
+            } else {
+                memset(&event[offset], 0, 8);
+            }
+            offset += 8;
             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
@@ -258,6 +264,25 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+            break;
+        }
+        case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:{
+            if (size < 4) break;
+            uint16_t player_id = big_endian_read_16(payload, 0);
+            uint16_t uid_counter = big_endian_read_16(payload, 2);
+            uint16_t offset = 0;
+            uint8_t event[10];
+            event[offset++] = HCI_EVENT_AVRCP_META;
+            event[offset++] = sizeof(event) - 2;
+            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED;
+            little_endian_store_16(event, offset, avrcp_cid);
+            offset += 2;
+            event[offset++] = ctype;
+            little_endian_store_16(event, offset, player_id);
+            offset += 2;
+            little_endian_store_16(event, offset, uid_counter);
+            offset += 2;
             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
@@ -346,7 +371,27 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
 
-        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
+        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:{
+            if (size < 1) break;
+            uint16_t pos = 0;
+            uint16_t num_attributes = payload[pos++];
+            if (size < 2 * num_attributes + 1) break;
+            uint16_t offset = 0;
+            uint8_t event[8];
+            event[offset++] = HCI_EVENT_AVRCP_META;
+            event[offset++] = sizeof(event) - 2;
+            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED;
+            little_endian_store_16(event, offset, avrcp_cid);
+            offset += 2;
+            event[offset++] = ctype;
+            for (int i = 0; i < num_attributes; i++) {
+                event[offset] = payload[pos++];
+                event[offset + 1] = payload[pos++];
+                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset + 1);
+            }
+            break;
+        }
+
         default:
             log_info("avrcp: not implemented");
             break;
@@ -690,6 +735,8 @@ static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer)
     btstack_run_loop_set_timer(&connection->controller_press_and_hold_cmd_timer, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&connection->controller_press_and_hold_cmd_timer);
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
+    // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+    connection->data_offset = 0;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -709,6 +756,8 @@ static void avrcp_press_and_hold_timer_stop(avrcp_connection_t * connection){
 
 static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+    // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+    connection->data_offset = 0;
     if (connection->controller_press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_stop(connection);
     }
@@ -1383,12 +1432,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     // trigger release for simple command:
                     if (!connection->controller_press_and_hold_cmd_active){
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                        // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+                        connection->data_offset = 0;
                         break;
                     }
                     // for press and hold, send release if it just has been requested, otherwise, wait for next repeat
                     if (connection->controller_press_and_hold_cmd_release){
                         connection->controller_press_and_hold_cmd_release = false;
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                        // while data stays the same, the last send has increased the data_offset which we need to reset to send again
+                        connection->data_offset = 0;
                     } else {
                         connection->state = AVCTP_W4_STOP;
                     }
@@ -1455,10 +1508,11 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             return;
         case AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST:
-            // build command in local buffer
-            pos = 0;
+            // build command in local buffer - local buffer is copied in avrcp_send_cmd_with_avctp_fragmentation
+            // cppcheck-suppress autoVariables
             connection->data = get_element_attributes_command;
             // write identifier
+            pos = 0;
             memset(connection->data, 0, 8);
             pos += 8;
             num_attributes_index = pos;

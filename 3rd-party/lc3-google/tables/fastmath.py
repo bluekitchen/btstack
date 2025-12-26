@@ -102,11 +102,11 @@ def approx_log2():
 
 def table_db_q16():
 
-    k = 10 * np.log10(2);
+    k = 10 * np.log10(2)
 
     for i in range(32):
-        a = k * np.log2(np.ldexp(32 + i  , -5)) - (i // 16) * (k/2);
-        b = k * np.log2(np.ldexp(32 + i+1, -5)) - (i // 16) * (k/2);
+        a = k * np.log2(np.ldexp(32 + i  , -5)) - (i // 16) * (k/2)
+        b = k * np.log2(np.ldexp(32 + i+1, -5)) - (i // 16) * (k/2)
 
         an = np.ldexp(a, 15) + 0.5
         bn = np.ldexp(b - a, 15) + 0.5

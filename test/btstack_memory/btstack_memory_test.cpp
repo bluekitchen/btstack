@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -40,14 +40,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// malloc hook
-static int simulate_no_memory;
-extern "C" void * test_malloc(size_t size);
-void * test_malloc(size_t size){
-    if (simulate_no_memory) return NULL;
-    return malloc(size);
-}
 
 #include "btstack_config.h"
 
@@ -62,7 +54,9 @@ void * test_malloc(size_t size){
 TEST_GROUP(btstack_memory){
     void setup(void){
         btstack_memory_init();
-        simulate_no_memory = 0;
+#ifdef HAVE_MALLOC
+        btstack_memory_simulate_malloc_failure(false);
+#endif
     }
 };
 
@@ -109,7 +103,7 @@ TEST(btstack_memory, hci_connection_GetAndFree){
 TEST(btstack_memory, hci_connection_NotEnoughBuffers){
     hci_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_HCI_CONNECTIONS
     int i;
@@ -152,7 +146,7 @@ TEST(btstack_memory, l2cap_service_GetAndFree){
 TEST(btstack_memory, l2cap_service_NotEnoughBuffers){
     l2cap_service_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_L2CAP_SERVICES
     int i;
@@ -194,7 +188,7 @@ TEST(btstack_memory, l2cap_channel_GetAndFree){
 TEST(btstack_memory, l2cap_channel_NotEnoughBuffers){
     l2cap_channel_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_L2CAP_CHANNELS
     int i;
@@ -238,7 +232,7 @@ TEST(btstack_memory, rfcomm_multiplexer_GetAndFree){
 TEST(btstack_memory, rfcomm_multiplexer_NotEnoughBuffers){
     rfcomm_multiplexer_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_RFCOMM_MULTIPLEXERS
     int i;
@@ -280,7 +274,7 @@ TEST(btstack_memory, rfcomm_service_GetAndFree){
 TEST(btstack_memory, rfcomm_service_NotEnoughBuffers){
     rfcomm_service_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_RFCOMM_SERVICES
     int i;
@@ -322,7 +316,7 @@ TEST(btstack_memory, rfcomm_channel_GetAndFree){
 TEST(btstack_memory, rfcomm_channel_NotEnoughBuffers){
     rfcomm_channel_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_RFCOMM_CHANNELS
     int i;
@@ -365,7 +359,7 @@ TEST(btstack_memory, btstack_link_key_db_memory_entry_GetAndFree){
 TEST(btstack_memory, btstack_link_key_db_memory_entry_NotEnoughBuffers){
     btstack_link_key_db_memory_entry_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES
     int i;
@@ -408,7 +402,7 @@ TEST(btstack_memory, bnep_service_GetAndFree){
 TEST(btstack_memory, bnep_service_NotEnoughBuffers){
     bnep_service_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_BNEP_SERVICES
     int i;
@@ -450,7 +444,7 @@ TEST(btstack_memory, bnep_channel_GetAndFree){
 TEST(btstack_memory, bnep_channel_NotEnoughBuffers){
     bnep_channel_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_BNEP_CHANNELS
     int i;
@@ -493,7 +487,7 @@ TEST(btstack_memory, goep_server_service_GetAndFree){
 TEST(btstack_memory, goep_server_service_NotEnoughBuffers){
     goep_server_service_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_GOEP_SERVER_SERVICES
     int i;
@@ -535,7 +529,7 @@ TEST(btstack_memory, goep_server_connection_GetAndFree){
 TEST(btstack_memory, goep_server_connection_NotEnoughBuffers){
     goep_server_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_GOEP_SERVER_CONNECTIONS
     int i;
@@ -578,7 +572,7 @@ TEST(btstack_memory, hfp_connection_GetAndFree){
 TEST(btstack_memory, hfp_connection_NotEnoughBuffers){
     hfp_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_HFP_CONNECTIONS
     int i;
@@ -621,7 +615,7 @@ TEST(btstack_memory, hid_host_connection_GetAndFree){
 TEST(btstack_memory, hid_host_connection_NotEnoughBuffers){
     hid_host_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_HID_HOST_CONNECTIONS
     int i;
@@ -664,7 +658,7 @@ TEST(btstack_memory, service_record_item_GetAndFree){
 TEST(btstack_memory, service_record_item_NotEnoughBuffers){
     service_record_item_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_SERVICE_RECORD_ITEMS
     int i;
@@ -707,7 +701,7 @@ TEST(btstack_memory, avdtp_stream_endpoint_GetAndFree){
 TEST(btstack_memory, avdtp_stream_endpoint_NotEnoughBuffers){
     avdtp_stream_endpoint_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_AVDTP_STREAM_ENDPOINTS
     int i;
@@ -750,7 +744,7 @@ TEST(btstack_memory, avdtp_connection_GetAndFree){
 TEST(btstack_memory, avdtp_connection_NotEnoughBuffers){
     avdtp_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_AVDTP_CONNECTIONS
     int i;
@@ -793,7 +787,7 @@ TEST(btstack_memory, avrcp_connection_GetAndFree){
 TEST(btstack_memory, avrcp_connection_NotEnoughBuffers){
     avrcp_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_AVRCP_CONNECTIONS
     int i;
@@ -836,7 +830,7 @@ TEST(btstack_memory, avrcp_browsing_connection_GetAndFree){
 TEST(btstack_memory, avrcp_browsing_connection_NotEnoughBuffers){
     avrcp_browsing_connection_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_AVRCP_BROWSING_CONNECTIONS
     int i;
@@ -881,7 +875,7 @@ TEST(btstack_memory, battery_service_client_GetAndFree){
 TEST(btstack_memory, battery_service_client_NotEnoughBuffers){
     battery_service_client_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_BATTERY_SERVICE_CLIENTS
     int i;
@@ -923,7 +917,7 @@ TEST(btstack_memory, gatt_client_GetAndFree){
 TEST(btstack_memory, gatt_client_NotEnoughBuffers){
     gatt_client_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_GATT_CLIENTS
     int i;
@@ -941,43 +935,43 @@ TEST(btstack_memory, gatt_client_NotEnoughBuffers){
 
 
 
-TEST(btstack_memory, hids_client_GetAndFree){
-    hids_client_t * context;
+TEST(btstack_memory, hids_host_GetAndFree){
+    hids_host_t * context;
 #ifdef HAVE_MALLOC
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context != NULL);
-    btstack_memory_hids_client_free(context);
+    btstack_memory_hids_host_free(context);
 #else
-#ifdef MAX_NR_HIDS_CLIENTS
+#ifdef MAX_NR_HIDS_HOSTS
     // single
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context != NULL);
-    btstack_memory_hids_client_free(context);
+    btstack_memory_hids_host_free(context);
 #else
     // none
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context == NULL);
-    btstack_memory_hids_client_free(context);
+    btstack_memory_hids_host_free(context);
 #endif
 #endif
 }
 
-TEST(btstack_memory, hids_client_NotEnoughBuffers){
-    hids_client_t * context;
+TEST(btstack_memory, hids_host_NotEnoughBuffers){
+    hids_host_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
-#ifdef MAX_NR_HIDS_CLIENTS
+#ifdef MAX_NR_HIDS_HOSTS
     int i;
     // alloc all static buffers
-    for (i = 0; i < MAX_NR_HIDS_CLIENTS; i++){
-        context = btstack_memory_hids_client_get();
+    for (i = 0; i < MAX_NR_HIDS_HOSTS; i++){
+        context = btstack_memory_hids_host_get();
         CHECK(context != NULL);
     }
 #endif
 #endif
     // get one more
-    context = btstack_memory_hids_client_get();
+    context = btstack_memory_hids_host_get();
     CHECK(context == NULL);
 }
 
@@ -1007,7 +1001,7 @@ TEST(btstack_memory, sm_lookup_entry_GetAndFree){
 TEST(btstack_memory, sm_lookup_entry_NotEnoughBuffers){
     sm_lookup_entry_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_SM_LOOKUP_ENTRIES
     int i;
@@ -1049,7 +1043,7 @@ TEST(btstack_memory, whitelist_entry_GetAndFree){
 TEST(btstack_memory, whitelist_entry_NotEnoughBuffers){
     whitelist_entry_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_WHITELIST_ENTRIES
     int i;
@@ -1091,7 +1085,7 @@ TEST(btstack_memory, periodic_advertiser_list_entry_GetAndFree){
 TEST(btstack_memory, periodic_advertiser_list_entry_NotEnoughBuffers){
     periodic_advertiser_list_entry_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES
     int i;
@@ -1136,7 +1130,7 @@ TEST(btstack_memory, mesh_network_pdu_GetAndFree){
 TEST(btstack_memory, mesh_network_pdu_NotEnoughBuffers){
     mesh_network_pdu_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_NETWORK_PDUS
     int i;
@@ -1178,7 +1172,7 @@ TEST(btstack_memory, mesh_segmented_pdu_GetAndFree){
 TEST(btstack_memory, mesh_segmented_pdu_NotEnoughBuffers){
     mesh_segmented_pdu_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_SEGMENTED_PDUS
     int i;
@@ -1220,7 +1214,7 @@ TEST(btstack_memory, mesh_upper_transport_pdu_GetAndFree){
 TEST(btstack_memory, mesh_upper_transport_pdu_NotEnoughBuffers){
     mesh_upper_transport_pdu_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_UPPER_TRANSPORT_PDUS
     int i;
@@ -1262,7 +1256,7 @@ TEST(btstack_memory, mesh_network_key_GetAndFree){
 TEST(btstack_memory, mesh_network_key_NotEnoughBuffers){
     mesh_network_key_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_NETWORK_KEYS
     int i;
@@ -1304,7 +1298,7 @@ TEST(btstack_memory, mesh_transport_key_GetAndFree){
 TEST(btstack_memory, mesh_transport_key_NotEnoughBuffers){
     mesh_transport_key_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_TRANSPORT_KEYS
     int i;
@@ -1346,7 +1340,7 @@ TEST(btstack_memory, mesh_virtual_address_GetAndFree){
 TEST(btstack_memory, mesh_virtual_address_NotEnoughBuffers){
     mesh_virtual_address_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_VIRTUAL_ADDRESSS
     int i;
@@ -1388,7 +1382,7 @@ TEST(btstack_memory, mesh_subnet_GetAndFree){
 TEST(btstack_memory, mesh_subnet_NotEnoughBuffers){
     mesh_subnet_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_MESH_SUBNETS
     int i;
@@ -1433,7 +1427,7 @@ TEST(btstack_memory, hci_iso_stream_GetAndFree){
 TEST(btstack_memory, hci_iso_stream_NotEnoughBuffers){
     hci_iso_stream_t * context;
 #ifdef HAVE_MALLOC
-    simulate_no_memory = 1;
+    btstack_memory_simulate_malloc_failure(true);
 #else
 #ifdef MAX_NR_HCI_ISO_STREAMS
     int i;
@@ -1455,4 +1449,3 @@ TEST(btstack_memory, hci_iso_stream_NotEnoughBuffers){
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
-

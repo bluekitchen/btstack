@@ -380,6 +380,7 @@ static int sco_in_addr;
 static int sco_out_addr;
 
 // device info
+static uint8_t usb_bus;
 static int usb_path_len;
 static uint8_t usb_path[USB_MAX_PATH_LEN];
 static uint16_t usb_vendor_id;
@@ -389,14 +390,15 @@ static uint16_t usb_product_id;
 static int usb_transport_open;
 
 static void hci_transport_h2_libusb_emit_usb_info(void) {
-    uint8_t event[7 + USB_MAX_PATH_LEN];
+    uint8_t event[8 + USB_MAX_PATH_LEN];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_TRANSPORT_USB_INFO;
-    event[pos++] = 5 + usb_path_len;
+    event[pos++] = 6 + usb_path_len;
     little_endian_store_16(event, pos, usb_vendor_id);
     pos+=2;
     little_endian_store_16(event, pos, usb_product_id);
     pos+=2;
+    event[pos++] = usb_bus;
     event[pos++] = usb_path_len;
     memcpy(&event[pos], usb_path, usb_path_len);
     pos += usb_path_len;
@@ -419,6 +421,11 @@ void hci_transport_usb_set_path(int len, uint8_t * port_numbers){
     }
     usb_path_len = len;
     memcpy(usb_path, port_numbers, len);
+}
+
+void hci_transport_usb_set_bus_and_path(uint8_t bus, int len, uint8_t* port_numbers) {
+    hci_transport_usb_set_path(len, port_numbers);
+    usb_bus = bus;
 }
 
 LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
@@ -670,7 +677,7 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
     usb_process_ds((struct btstack_data_source *) NULL, DATA_SOURCE_CALLBACK_READ);
 
     // Get the amount of time until next event is due
-    long msec = ASYNC_POLLING_INTERVAL_MS;
+    uint32_t msec = ASYNC_POLLING_INTERVAL_MS;
 
     // Activate timer
     btstack_run_loop_set_timer(&usb_timer, msec);
@@ -1087,7 +1094,9 @@ static int usb_open(void){
         int i;
         for (i=0;i<num_devices;i++){
             uint8_t port_numbers[USB_MAX_PATH_LEN];
+            uint8_t device_usb_bus = libusb_get_bus_number(devs[i]);
             int len = libusb_get_port_numbers(devs[i], port_numbers, USB_MAX_PATH_LEN);
+            if (usb_bus != 0 && device_usb_bus != usb_bus) continue;
             if (len != usb_path_len) continue;
             if (memcmp(usb_path, port_numbers, len) == 0){
                 log_info("USB device found at specified path");

@@ -51,19 +51,19 @@
 static const hci_event_t avrcp_cover_art_client_connected = {
     .event_code = HCI_EVENT_AVRCP_META,
     .subevent_code = AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED,
-    .format = "1B22"
+    .format = "11B22"
 };
 
 static const hci_event_t avrcp_cover_art_client_disconnected = {
     .event_code = HCI_EVENT_AVRCP_META,
     .subevent_code = AVRCP_SUBEVENT_COVER_ART_CONNECTION_RELEASED,
-    .format = "2"
+    .format = "12"
 };
 
 static const hci_event_t avrcp_cover_art_client_operation_complete = {
         .event_code = HCI_EVENT_AVRCP_META,
         .subevent_code = AVRCP_SUBEVENT_COVER_ART_OPERATION_COMPLETE,
-        .format = "21"
+        .format = "121"
 };
 
 // 7163DD54-4A7E-11E2-B47C-0050C2490048

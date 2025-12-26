@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <zephyr/storage/flash_map.h>
+
 // Nordic NDK
 #if defined(CONFIG_HAS_NORDIC_DRIVERS)
 #include "nrf.h"
@@ -41,8 +43,12 @@
 #include "hci_transport_zephyr.h"
 #include "btstack_run_loop_zephyr.h"
 
+#include "hal_flash_bank_zephyr.h"
+#include "btstack_tlv_flash_bank.h"
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static bd_addr_t static_addr = { 0 };
 static bd_addr_t local_addr = { 0 };
 
 void nrf_get_static_random_addr( bd_addr_t addr ) {
@@ -83,8 +89,6 @@ static void local_version_information_handler(uint8_t * packet){
             break;
         default:
             printf("Unknown manufacturer.\n");
-            nrf_get_static_random_addr( local_addr );
-            gap_random_address_set( local_addr );
             break;
     }
 }
@@ -96,6 +100,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
+                    if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_addr) ) {
+                        memcpy(local_addr, static_addr, sizeof(bd_addr_t));
+                    }
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     break;
                 case HCI_STATE_OFF:
@@ -124,8 +131,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         break;
                     if(size < 13)
                         break;
-                    reverse_48(&params[2], local_addr);
-                    gap_random_address_set(local_addr);
+                    printf("Use static random address stored in nRF5 SoC.\n");
+                    reverse_48(&params[2], static_addr);
+                    gap_random_address_set(static_addr);
                     break;
                 default:
                     break;
@@ -146,6 +154,9 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
     }
 }
 #endif /* CONFIG_BT_CTLR_ASSERT_HANDLER */
+
+static hal_flash_bank_zephyr_t  hal_flash_bank_context;
+static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
 int main(void)
 {
@@ -170,12 +181,41 @@ int main(void)
 #endif
 #endif
 
+#if defined(CONFIG_FLASH) && \
+    DT_HAS_CHOSEN(zephyr_code_partition) && \
+    FIXED_PARTITION_EXISTS(storage_partition)
+
+    uint32_t bank_size = FIXED_PARTITION_SIZE(storage_partition)/2;
+    uint32_t bank_0_addr = FIXED_PARTITION_OFFSET(storage_partition);
+    uint32_t bank_1_addr = bank_0_addr+bank_size;
+    printf("configure persistent TLV storage:\n");
+    printf("    bank_size:   %8d\n", bank_size);
+    printf("    bank_0_addr: %08x\n", bank_0_addr);
+    printf("    bank_1_addr: %08x\n", bank_1_addr);
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_zephyr_init_instance(
+            &hal_flash_bank_context,
+            bank_size,
+            16,
+            bank_0_addr,
+            bank_1_addr);
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
+            &btstack_tlv_flash_bank_context,
+            hal_flash_bank_impl,
+            &hal_flash_bank_context);
+#else
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
+#endif
+
     // setup global tlv
-    btstack_tlv_set_instance(btstack_tlv_impl, NULL);
+    btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+/*
+    // setup Link Key DB using TLV
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+    hci_set_link_key_db(btstack_link_key_db);
+*/
 
     // setup LE Device DB using TLV
-    le_device_db_tlv_configure(btstack_tlv_impl, NULL);
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
     // init HCI
     hci_init(hci_transport_zephyr_get_instance(), NULL);

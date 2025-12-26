@@ -16,6 +16,8 @@ GLOBAL_INCLUDES += \
 	../../chipset/bcm \
 	../../3rd-party/bluedroid/decoder/include \
 	../../3rd-party/bluedroid/encoder/include \
+	../../3rd-party/hxcmod-player \
+	../../3rd-party/hxcmod-player/mods \
 	../../3rd-party/micro-ecc \
 	../../3rd-party/rijndael \
 	../../3rd-party/yxml \
@@ -58,6 +60,7 @@ $(NAME)_SOURCES += \
 	../../src/btstack_util.c              \
 	../../src/hci.c                       \
 	../../src/hci_cmd.c                   \
+	../../src/hci_event.c                 \
 	../../src/hci_dump.c                  \
 	../../src/hci_transport_h4.c          \
 	../../src/l2cap.c                     \

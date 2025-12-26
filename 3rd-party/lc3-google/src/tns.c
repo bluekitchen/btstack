@@ -134,7 +134,7 @@ LC3_HOT static void compute_lpc_coeffs(
             xs = xe, xe = x + *(++sub);
 
             for (int k = 0; k <= maxorder; k++)
-                c[k][s] = dot(xs, xs + k, (xe - xs) - k);
+                c[k][s] = dot(xs, xs + k, (int)((xe - xs) - k));
         }
 
         r[f][0] = nsubdivisions;

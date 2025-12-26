@@ -86,6 +86,11 @@ typedef uint8_t sm_key_t[16];
  * @brief 128 bit UUID
  */
 typedef uint8_t uuid128_t[16];
+/**
+ * @brief 32-bit microsecond timestamp used for audio api
+ * @note time wraps around every 71.6 minutes
+ */
+typedef uint32_t btstack_time_us_t;
 
 // provide ssize_t on windows
 #ifdef _MSC_VER
@@ -1138,9 +1143,10 @@ typedef SSIZE_T ssize_t;
 
 /**
  * @brief Transport USB Bluetooth Controller info
- * @format 22JV
+ * @format 221JV
  * @param vendor_id
  * @param product_id
+ * @param bus
  * @param path_len
  * @param path
  */
@@ -1175,7 +1181,8 @@ typedef SSIZE_T ssize_t;
 #define HCI_EVENT_CIS_CAN_SEND_NOW                         0x6Cu
 
 /**
- * @format
+ * @format H
+ * @param handle
  */
 #define HCI_EVENT_SCO_CAN_SEND_NOW                         0x6Fu
 
@@ -1680,7 +1687,16 @@ typedef SSIZE_T ssize_t;
  */
  #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4u
 
- /**
+/**
+ * @format H1B1
+ * @param handle
+ * @param addr_type
+ * @param address
+ * @param auth_req
+ */
+#define SM_EVENT_SECURITY_REQUEST                                0xC7u
+
+/**
   * @format H1B1
   * @param handle
   * @param addr_type
@@ -1809,12 +1825,13 @@ typedef SSIZE_T ssize_t;
   *        ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION  -> disconnect
   *        ERROR_CODE_AUTHENTICATION_FAILURE             -> SM protocol error, see reason field with SM_REASON_* from bluetooth.h
   *
-  * @format H1B11
+  * @format H1B111
   * @param handle
   * @param addr_type
   * @param address
   * @param status
   * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
+  * @param ctkd_active
   */
 #define SM_EVENT_PAIRING_COMPLETE                                0xD5u
 
@@ -1844,9 +1861,10 @@ typedef SSIZE_T ssize_t;
 // GAP
 
 /**
- * @format H1
+ * @format H11
  * @param handle
  * @param security_level
+ * @param status
  */
 #define GAP_EVENT_SECURITY_LEVEL                                 0xD8u
 
@@ -2077,6 +2095,18 @@ typedef SSIZE_T ssize_t;
  * @param sync_handle        - 0xffff if not set
  */
 #define GAP_SUBEVENT_LE_CONNECTION_COMPLETE                     0x08u
+
+/**
+ * @brief Inform higher layer that bonding for remote device has been deleted
+ *
+ * @format 11B1H
+ * @param subevent_code
+ * @param addr_type
+ * @param address
+ * @param index used by le_device_db and att_server
+ * @param handle or HCI_CON_HANDLE_INVALID
+ */
+#define GAP_SUBEVENT_BONDING_DELETED                            0x09u
 
 /** HSP Subevent */
 
@@ -3275,10 +3305,11 @@ typedef SSIZE_T ssize_t;
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED                         0x01u
 
 /**
- * @format 121
+ * @format 121D
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
+ * @param identifier
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                                   0x02u
 
@@ -3325,8 +3356,14 @@ typedef SSIZE_T ssize_t;
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED                     0x07u
 
-
-// Recquires 1 byte for num_attributes, followed by num_attributes tuples [attribute_id(1), value_id(1)], see avrcp_player_application_setting_attribute_id_t
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param attribute_id  see avrcp_player_application_setting_attribute_id_t
+ * @param value_id  see avrcp_shuffle_mode_t, avrcp_repeat_mode_t
+ */
 #define AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED        0x08u
 
 /**
@@ -3345,7 +3382,15 @@ typedef SSIZE_T ssize_t;
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED                       0x0Au
 
-// AVRCP_SUBEVENT_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0bu,           -- The Addressed Player has been changed, see 6.9.2.
+/**
+ * @format 12122
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param player_id
+ * @param uid_counter
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED                        0x0Bu
 
 /**
  * @format 1212
@@ -4355,14 +4400,14 @@ typedef SSIZE_T ssize_t;
  * @param status
  * @param protocol_mode
  * @param num_instances
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x17u
 
 /**
  * @format 12
  * @param subevent_code
  * @param hids_cid
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_DISCONNECTED                     0x18u
 
 /**
@@ -4373,7 +4418,7 @@ typedef SSIZE_T ssize_t;
  * @param report_id
  * @param report_len
  * @param report
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x19u
 
 /**
@@ -4385,7 +4430,7 @@ typedef SSIZE_T ssize_t;
  * @param country_code              Country HID Device hardware is localized for (not localized: 0x00)
  * @param remote_wake               Indicates whether HID Device is capable of sending a wake-signal to a HID Host
  * @param normally_connectable      Indicates whether HID Device will be advertising when bonded but not connected.
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x1Au
 
 /**
@@ -4394,7 +4439,7 @@ typedef SSIZE_T ssize_t;
  * @param hids_cid
  * @param service_index
  * @param protocol_mode    see hid_protocol_mode_t in btstack_hid.h
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x1Bu
 
 /**
@@ -4402,7 +4447,7 @@ typedef SSIZE_T ssize_t;
  * @param subevent_code
  * @param hids_cid
  * @param configuration
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x1Cu
 
 /**
@@ -4411,7 +4456,7 @@ typedef SSIZE_T ssize_t;
  * @param hids_cid
  * @param service_index
  * @param report_id
-*/
+ */
 #define GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN                           0x1Du
 
 /**
@@ -4433,10 +4478,11 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED                          0x1Fu
 
 /**
- * @format 1HK
+ * @format 1HK2
  * @param subevent_code
  * @param con_handle
  * @param database_hash
+ * @param database_version valid if != 0
  */
 #define GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH                            0x20u
 
@@ -4447,15 +4493,16 @@ typedef SSIZE_T ssize_t;
  * @param cid
  * @param num_included_services
  * @param status
-*/
+ */
 #define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                              0x21u
 
 /**
- * @format 1H2
+ * @format 1H21
  * @param subevent_code
  * @param con_handle
  * @param cid
-*/
+ * @param status
+ */
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                           0x22u
 
 /**
@@ -4464,14 +4511,14 @@ typedef SSIZE_T ssize_t;
  * @param con_handle
  * @param lls_cid
  * @param status
-*/
+ */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED                          0x23u
 
 /**
  * @format 12
  * @param subevent_code
  * @param lls_cid
-*/
+ */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED                       0x24u
 
 /**

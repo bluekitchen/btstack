@@ -1666,13 +1666,22 @@ static inline uint16_t hci_event_transport_usb_info_get_product_id(const uint8_t
     return little_endian_read_16(event, 4);
 }
 /**
+ * @brief Get field bus from event HCI_EVENT_TRANSPORT_USB_INFO
+ * @param event packet
+ * @return bus
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_transport_usb_info_get_bus(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field path_len from event HCI_EVENT_TRANSPORT_USB_INFO
  * @param event packet
  * @return path_len
  * @note: btstack_type J
  */
 static inline uint8_t hci_event_transport_usb_info_get_path_len(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field path from event HCI_EVENT_TRANSPORT_USB_INFO
@@ -1681,7 +1690,7 @@ static inline uint8_t hci_event_transport_usb_info_get_path_len(const uint8_t * 
  * @note: btstack_type V
  */
 static inline const uint8_t * hci_event_transport_usb_info_get_path(const uint8_t * event){
-    return &event[7];
+    return &event[8];
 }
 
 /**
@@ -1758,6 +1767,15 @@ static inline uint8_t hci_event_cis_can_send_now_get_group_complete(const uint8_
     return event[7];
 }
 
+/**
+ * @brief Get field handle from event HCI_EVENT_SCO_CAN_SEND_NOW
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_event_sco_can_send_now_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
 
 /**
  * @brief Get field status from event L2CAP_EVENT_CHANNEL_OPENED
@@ -3673,6 +3691,45 @@ static inline void bnep_event_can_send_now_get_remote_address(const uint8_t * ev
 
 #ifdef ENABLE_BLE
 /**
+ * @brief Get field handle from event SM_EVENT_SECURITY_REQUEST
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_security_request_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field addr_type from event SM_EVENT_SECURITY_REQUEST
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_security_request_get_addr_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event SM_EVENT_SECURITY_REQUEST
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void sm_event_security_request_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[5], address, 6);
+}
+/**
+ * @brief Get field auth_req from event SM_EVENT_SECURITY_REQUEST
+ * @param event packet
+ * @return auth_req
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_security_request_get_auth_req(const uint8_t * event){
+    return event[11];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
  * @brief Get field handle from event SM_EVENT_JUST_WORKS_REQUEST
  * @param event packet
  * @return handle
@@ -4215,6 +4272,15 @@ static inline uint8_t sm_event_pairing_complete_get_status(const uint8_t * event
 static inline uint8_t sm_event_pairing_complete_get_reason(const uint8_t * event){
     return event[12];
 }
+/**
+ * @brief Get field ctkd_active from event SM_EVENT_PAIRING_COMPLETE
+ * @param event packet
+ * @return ctkd_active
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_pairing_complete_get_ctkd_active(const uint8_t * event){
+    return event[13];
+}
 #endif
 
 #ifdef ENABLE_BLE
@@ -4303,6 +4369,15 @@ static inline hci_con_handle_t gap_event_security_level_get_handle(const uint8_t
  */
 static inline uint8_t gap_event_security_level_get_security_level(const uint8_t * event){
     return event[4];
+}
+/**
+ * @brief Get field status from event GAP_EVENT_SECURITY_LEVEL
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_security_level_get_status(const uint8_t * event){
+    return event[5];
 }
 
 /**
@@ -6576,6 +6651,43 @@ static inline uint8_t gap_subevent_le_connection_complete_get_advertising_handle
  */
 static inline hci_con_handle_t gap_subevent_le_connection_complete_get_sync_handle(const uint8_t * event){
     return little_endian_read_16(event, 34);
+}
+
+/**
+ * @brief Get field addr_type from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_bonding_deleted_get_addr_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field address from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void gap_subevent_bonding_deleted_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[4], address, 6);
+}
+/**
+ * @brief Get field index from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_bonding_deleted_get_index(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field handle from event GAP_SUBEVENT_BONDING_DELETED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gap_subevent_bonding_deleted_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
 }
 
 /**
@@ -11053,6 +11165,15 @@ static inline uint16_t avrcp_subevent_notification_track_changed_get_avrcp_cid(c
 static inline uint8_t avrcp_subevent_notification_track_changed_get_command_type(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field identifier from event AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED
+ * @param event packet
+ * @return identifier
+ * @note: btstack_type D
+ */
+static inline const uint8_t * avrcp_subevent_notification_track_changed_get_identifier(const uint8_t * event){
+    return (const uint8_t *) &event[6];
+}
 
 /**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END
@@ -11177,6 +11298,43 @@ static inline uint8_t avrcp_subevent_notification_event_system_status_changed_ge
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_event_player_application_setting_changed_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_event_player_application_setting_changed_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_event_player_application_setting_changed_get_attribute_id(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value_id from event AVRCP_SUBEVENT_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED
+ * @param event packet
+ * @return value_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_event_player_application_setting_changed_get_value_id(const uint8_t * event){
+    return event[7];
+}
+
+/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED
  * @param event packet
  * @return avrcp_cid
@@ -11212,6 +11370,43 @@ static inline uint16_t avrcp_subevent_notification_available_players_changed_get
  */
 static inline uint8_t avrcp_subevent_notification_available_players_changed_get_command_type(const uint8_t * event){
     return event[5];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_addressed_player_changed_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_addressed_player_changed_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field player_id from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return player_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_addressed_player_changed_get_player_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field uid_counter from event AVRCP_SUBEVENT_NOTIFICATION_ADDRESSED_PLAYER_CHANGED
+ * @param event packet
+ * @return uid_counter
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_addressed_player_changed_get_uid_counter(const uint8_t * event){
+    return little_endian_read_16(event, 8);
 }
 
 /**
@@ -14715,6 +14910,15 @@ static inline hci_con_handle_t gattservice_subevent_gatt_database_hash_get_con_h
 static inline void gattservice_subevent_gatt_database_hash_get_database_hash(const uint8_t * event, uint8_t * database_hash){
     reverse_bytes(&event[5], database_hash, 16);
 }
+/**
+ * @brief Get field database_version from event GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH
+ * @param event packet
+ * @return database_version
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_gatt_database_hash_get_database_version(const uint8_t * event){
+    return little_endian_read_16(event, 21);
+}
 
 /**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
@@ -14770,6 +14974,15 @@ static inline hci_con_handle_t gattservice_subevent_client_disconnected_get_con_
  */
 static inline uint16_t gattservice_subevent_client_disconnected_get_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_client_disconnected_get_status(const uint8_t * event){
+    return event[7];
 }
 
 /**

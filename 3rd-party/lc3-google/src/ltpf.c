@@ -189,7 +189,7 @@ LC3_HOT static inline int32_t filter_hp50(
     const int32_t a1 = -2110217691, a2 = 1037111617;
     const int32_t b1 = -2110535566, b2 = 1055267782;
 
-    yn       = (hp50->s1 + (int64_t)xn * b2) >> 30;
+    yn       = (int32_t)((hp50->s1 + (int64_t)xn * b2) >> 30);
     hp50->s1 = (hp50->s2 + (int64_t)xn * b1 - (int64_t)yn * a1);
     hp50->s2 = (           (int64_t)xn * b2 - (int64_t)yn * a2);
 

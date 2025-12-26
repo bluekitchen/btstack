@@ -39,17 +39,6 @@ static const char * set2_public_b_string = \
     "0201d048bcbbd899eeefc424164e33c201c2b010ca6b4d43a8a155cad8ecb279";
 static const char * set2_dh_key_string    = "ab85843a2f6d883f62e5684b38e307335fe6e1945ecd19604105c6f23221eb69";
 
-uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
-    return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
-}
-
-void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
-    buffer[pos++] = value >> 24;
-    buffer[pos++] = value >> 16;
-    buffer[pos++] = value >> 8;
-    buffer[pos++] = value;
-}
-
 static void hexdump_key(void *data, int size){
     if (size <= 0) return;
     int i;

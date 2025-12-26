@@ -1,16 +1,12 @@
-# Requirements: cpputest.github.io
 
-BTSTACK_ROOT =  ../..
+include ../common.make
 
-# CppuTest from pkg-config
-CFLAGS  += ${shell pkg-config --cflags CppuTest}
-LDFLAGS += ${shell pkg-config --libs   CppuTest}
+DEFINES  := -DUNIT_TEST
+INCLUDES := -I${BTSTACK_ROOT}/src
+INCLUDES += -I..
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
-CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I..
-
-LDFLAGS += -lCppUTest -lCppUTestExt 
+CFLAGS += ${INCLUDES} ${DEFINES}
+CXXFLAGS += ${INCLUDES} ${DEFINES}
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
@@ -54,42 +50,15 @@ COMMON = \
 	pan.c \
 	sdp_util.c \
 	spp_server.c \
-	btstack_hid_parser.c \
-	
-CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
-
-LDFLAGS += -lCppUTest -lCppUTestExt
-LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
-LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
+	btstack_hid_parser.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-
 all: build-coverage/sdp_record_builder build-asan/sdp_record_builder
 
-build-%:
-	mkdir -p $@
-
-build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-coverage/%.o: %.cpp | build-coverage
-	${CXX} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-asan/%.o: %.c | build-asan
-	${CC} -c $(CFLAGS_ASAN) $< -o $@
-
-build-asan/%.o: %.cpp | build-asan
-	${CXX} -c $(CFLAGS_ASAN) $< -o $@
-
-build-coverage/sdp_record_builder: ${COMMON_OBJ_COVERAGE} build-coverage/sdp_record_builder.o | build-coverage
-	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
-
-build-asan/sdp_record_builder: ${COMMON_OBJ_ASAN} build-asan/sdp_record_builder.o | build-asan
-	${CXX} $^ ${LDFLAGS_ASAN} -o $@
-
+build-coverage/sdp_record_builder: ${COMMON_OBJ_COVERAGE}
+build-asan/sdp_record_builder: ${COMMON_OBJ_ASAN}
 
 test: all
 	build-asan/sdp_record_builder

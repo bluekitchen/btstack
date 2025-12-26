@@ -333,12 +333,16 @@ TEST(BTstackUtil, btstack_virtual_memcpy){
     uint16_t field_offset = 0;
 
     uint8_t   buffer[100];
-    
+
     btstack_virtual_memcpy(field_data, field_len, 0, buffer, sizeof(buffer), 0);
     MEMCMP_EQUAL(buffer, field_data, field_len);
 
     btstack_virtual_memcpy(field_data, field_len, 3, buffer, sizeof(buffer), 0);
     MEMCMP_EQUAL(buffer, field_data, field_len - 3);
+
+    memset( buffer, 0, sizeof(buffer) );
+    btstack_virtual_memcpy(field_data, field_len, 0, buffer, sizeof(buffer), 3);
+    MEMCMP_EQUAL(buffer, field_data+3, field_len-3 );
 
     // bail before buffer
     bytes_copied = btstack_virtual_memcpy(field_data, field_len, 0, buffer, sizeof(buffer), sizeof(buffer));

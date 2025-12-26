@@ -287,12 +287,12 @@ void btstack_network_process_packet(const uint8_t * packet, uint16_t size){
     if (tap_fd < 0) return;
     // Write out the ethernet frame to the tap device 
 
-    int rc = write(tap_fd, packet, size);
+    ssize_t rc = write(tap_fd, packet, size);
     if (rc < 0) {
         log_error("TAP: Could not write to TAP device: %s", strerror(errno));
     } else 
     if (rc != size) {
-        log_error("TAP: Package written only partially %d of %d bytes", rc, size);
+        log_error("TAP: Package written only partially %zd of %d bytes", rc, size);
     }
 }
 

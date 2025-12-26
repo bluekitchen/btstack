@@ -185,8 +185,8 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
             return BOND_MANAGEMENT_OPERATION_FAILED;
         }
         
-        uint32_t requested_feature_mask_without_auth = 1UL << (2*(remote_cmd-1));
-        uint32_t requested_feature_mask_with_auth    = 1UL << (2*(remote_cmd-1) + 1);
+        uint32_t requested_feature_mask_without_auth = 1U << (2*(remote_cmd-1));
+        uint32_t requested_feature_mask_with_auth    = 1U << (2*(remote_cmd-1) + 1);
         bool locally_supported_with_auth    = (bm_supported_features & requested_feature_mask_with_auth) != 0;
         bool locally_supported_without_auth = (bm_supported_features & requested_feature_mask_without_auth) != 0;
 

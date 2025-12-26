@@ -27,14 +27,17 @@
 
 static uint32_t bond_management_features = 0xFFFFFF;
 static uint8_t  request[550];
-    
+
 // mocks
 void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
+    UNUSED(address_type);
+    UNUSED(address);
     // traack call if needed
 }
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
     // traack call if needed
 }
+#ifdef ENABLE_CLASSIC
 int gap_link_key_iterator_init(btstack_link_key_iterator_t * it){
     return 1;
 }
@@ -44,6 +47,8 @@ int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t b
 }
 void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
 }
+#endif
+
 static hci_connection_t test_connection;
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
     memset(test_connection.address, 0x33, 6);
@@ -180,7 +185,7 @@ TEST(BOND_MANAGEMENT_SERVICE_SERVER, write_bm_control_point_0){
     CHECK_EQUAL(response, BOND_MANAGEMENT_OPERATION_FAILED);
 }
 
-
+#ifdef ENABLE_CLASSIC
 // locally no (string empty), remote no (string empty) ->  OK
 TEST(BOND_MANAGEMENT_SERVICE_SERVER, write_control_point_ln_empty_rn_empty){
     validate_write_control_point(BMF_DELETE_ACTIVE_BOND_CLASSIC_AND_LE, NULL, 
@@ -248,6 +253,7 @@ TEST(BOND_MANAGEMENT_SERVICE_SERVER, write_control_point_ly_empty_ry_exists){
         BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_CLASSIC_AND_LE, "remote",  
         ATT_ERROR_INSUFFICIENT_AUTHORIZATION);
 }
+#endif
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

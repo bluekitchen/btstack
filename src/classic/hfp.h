@@ -842,11 +842,6 @@ void hfp_set_hf_callback(btstack_packet_handler_t callback);
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
 void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators);
 
-void hfp_set_hf_sco_established(void (*callback)(hfp_connection_t * hfp_connection));
-void hfp_set_hf_sco_released(void (*callback)(hfp_connection_t * hfp_connection));
-void hfp_set_ag_sco_established(void (*callback)(hfp_connection_t * hfp_connection));
-void hfp_set_ag_sco_released(void (*callback)(hfp_connection_t * hfp_connection));
-
 void hfp_init(void);
 void hfp_deinit(void);
 
@@ -854,34 +849,12 @@ void hfp_register_custom_ag_command(hfp_custom_at_command_t * at_command);
 void hfp_register_custom_hf_command(hfp_custom_at_command_t * at_command);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
-void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value);
-void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype);
-void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
-void hfp_emit_slc_connection_event(hfp_role_t local_role, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
-
-/**
- * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event
- * @param hfp_connection
- * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
- * @param evra_supported
- */
-void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported);
-
-/**
- * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event
- * @param hfp_connection
- * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
- */
-void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status);
-
-void hfp_emit_enhanced_voice_recognition_activated(hfp_connection_t * hfp_connection, uint8_t status);
-void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);
-hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hfp_role_t hfp_role);
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
 hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hfp_role_t hfp_role);
 
 btstack_linked_list_t * hfp_get_connections(void);

@@ -231,7 +231,7 @@ static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
         case SM_EVENT_PAIRING_COMPLETE:
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
-                    printf("Pairing complete, success\n");
+                    printf("Pairing complete, success. CTKD active %u\n", sm_event_pairing_complete_get_ctkd_active(packet));
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
                     printf("Pairing failed, timeout\n");

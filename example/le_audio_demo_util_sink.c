@@ -200,7 +200,8 @@ static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHAN
 #endif
 static void * decoder_contexts[MAX_CHANNELS];
 
-static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
+static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
+    UNUSED(context);
     // called from lower-layer but guaranteed to be on main thread
     log_info("Playback: need %u, have %" PRIu32 "", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
 

@@ -113,6 +113,8 @@ typedef struct lc3_spec_analysis {
 } lc3_spec_analysis_t;
 
 struct lc3_encoder {
+    bool ltpf_bypass;
+
     enum lc3_dt dt;
     enum lc3_srate sr, sr_pcm;
 

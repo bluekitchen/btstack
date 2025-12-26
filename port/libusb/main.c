@@ -139,10 +139,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             // print device path
             product_id = hci_event_transport_usb_info_get_product_id(packet);
             vendor_id = hci_event_transport_usb_info_get_vendor_id(packet);
-            printf("USB device 0x%04x/0x%04x, path: ", vendor_id, product_id);
+            printf("USB device 0x%04x/0x%04x, path: %u:",
+                vendor_id, product_id, hci_event_transport_usb_info_get_bus(packet));
             for (i=0;i<usb_path_len;i++){
-                if (i) printf("-");
-                printf("%02x", usb_path[i]);
+                if (i) printf(".");
+                printf("%u", usb_path[i]);
             }
             printf("\n");
 
@@ -234,7 +235,7 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-static char short_options[] = "hu:l:r";
+static char short_options[] = "hu:l:r:b:";
 
 static struct option long_options[] = {
     {"help",        no_argument,        NULL,   'h'},
@@ -248,7 +249,7 @@ static char *help_options[] = {
     "print (this) help.",
     "set file to store debug output and HCI trace.",
     "reset bonding information stored in TLV.",
-    "set USB path to Bluetooth Controller.",
+    "set USB path, format BUS:PORT-PORT-PORT, e.g. 1:1.2.3 of Bluetooth Controller.",
 };
 
 static char *option_arg_name[] = {
@@ -271,13 +272,14 @@ static void usage(const char *name){
 int main(int argc, const char * argv[]){
 
     uint8_t usb_path[USB_MAX_PATH_LEN];
+    uint8_t usb_bus = 0;
     int usb_path_len = 0;
     const char * usb_path_string = NULL;
     const char * log_file_path = NULL;
 
     // parse command line parameters
     while(true){
-        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        int c = getopt_long(argc, (char* const*)argv, short_options, long_options, NULL);
         if (c < 0) {
             break;
         }
@@ -302,16 +304,27 @@ int main(int argc, const char * argv[]){
     }
 
     if (usb_path_string != NULL){
-        // parse command line options for "-u 11:22:33"
-        printf("Specified USB Path: ");
+        // parse command line options for "-u 1:1-2-3"
+        printf("Specified USB ");
+        bool have_bus = false;
         while (1){
             char * delimiter;
-            int port = strtol(usb_path_string, &delimiter, 16);
-            usb_path[usb_path_len] = port;
+            int number = (int) strtol(usb_path_string, &delimiter, 16);
+            if (have_bus == false && *delimiter == ':') {
+                usb_bus = number;
+                have_bus = true;
+                printf("Bus %u and ", usb_bus);
+                usb_path_string = delimiter+1;
+                continue;
+            }
+            if (usb_path_len == 0) {
+                printf("Path ");
+            }
+            usb_path[usb_path_len] = number;
             usb_path_len++;
-            printf("%02x ", port);
+            printf("%u ", number);
             if (!delimiter) break;
-            if (*delimiter != ':' && *delimiter != '-') break;
+            if ((*delimiter != '-') && (*delimiter != '.')) break;
             usb_path_string = delimiter+1;
         }
         printf("\n");
@@ -322,7 +335,9 @@ int main(int argc, const char * argv[]){
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
     if (usb_path_len){
-        hci_transport_usb_set_path(usb_path_len, usb_path);
+        // Note: if usb_bus was not set, has the same effect as calling 
+        // hci_transport_usb_set_bus.
+        hci_transport_usb_set_bus_and_path(usb_bus, usb_path_len, usb_path);
     }
 
     // log into file using HCI_DUMP_PACKETLOGGER format
