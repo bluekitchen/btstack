@@ -155,7 +155,7 @@ foreach(EXAMPLE ${EXAMPLES})
     # Your sources
     message("Building example: ${EXAMPLE}")
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
         target_gatt(${EXAMPLE} ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt)
     endif()
     set(IS_GENERAL_EXAMPLE "false")
