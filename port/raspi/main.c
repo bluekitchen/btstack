@@ -266,7 +266,10 @@ static int raspi_get_bd_addr(bd_addr_t addr){
 
 // see https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
 // on UART_INVALID errno is set
-static uart_type_t raspi_get_bluetooth_uart_type(void){
+static uart_type_t raspi_get_bluetooth_uart_type(const int model){
+    if (model == MODEL_4B) {
+        return UART_HARDWARE_FLOW;
+    }
 
     uint8_t deviceUart0[21] = { 0 };
     FILE *fd = fopen( "/proc/device-tree/aliases/uart0", "r" );
@@ -328,7 +331,8 @@ int main(int argc, const char * argv[]){
     // set UART config based on raspi Bluetooth UART type
     int bt_reg_en_pin = -1;
     bool power_cycle = true;
-    switch (raspi_get_bluetooth_uart_type()){
+    int model = raspi_get_model();
+    switch (raspi_get_bluetooth_uart_type(model)) {
         case UART_SOFTWARE_NO_FLOW:
             // ??
             bt_reg_en_pin = 128;
@@ -348,10 +352,12 @@ int main(int argc, const char * argv[]){
             // Raspberry Pi 3A+ vgpio 129 but WLAN + BL
             // Raspberry Pi 3B+ vgpio 129 but WLAN + BL
             transport_config.flowcontrol = 1;
-            int model = raspi_get_model();
             if (model == MODEL_ZERO_W){
                 bt_reg_en_pin =  45;
                 transport_config.baudrate_main =  921600;
+            } else if (model == MODEL_4B) {
+                bt_reg_en_pin = 129;
+                transport_config.baudrate_main = 921600;
             } else {
                 bt_reg_en_pin = 129;
                 transport_config.baudrate_main = 3000000;
@@ -361,7 +367,7 @@ int main(int argc, const char * argv[]){
             power_cycle = false;
 #else
             // warn about power cycle on devices with shared reg_en pins
-            if (model == MODEL_3APLUS || model == MODEL_3BPLUS){
+            if (model == MODEL_3APLUS || model == MODEL_3BPLUS || model == MODEL_4B){
                 printf("Wifi and Bluetooth share a single RESET line and BTstack needs to reset Bluetooth -> SSH over Wifi will fail\n");
                 printf("Please add ENABLE_CONTROLLER_WARM_BOOT to btstack_config.h to enable startup without RESET\n");
             }
@@ -411,7 +417,7 @@ int main(int argc, const char * argv[]){
 
     main_argc = argc;
     main_argv = argv;
-
+    
     // power cycle Bluetooth controller on older models without flowcontrol
     if (power_cycle){
         btstack_control_raspi_set_bt_reg_en_pin(bt_reg_en_pin);

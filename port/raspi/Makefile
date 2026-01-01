@@ -24,8 +24,11 @@ CORE += \
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
-# use (cross)compiler for Raspi
+# for Raspberry PI 3 and Zero W
 CC = arm-linux-gnueabihf-gcc
+
+# for Raspberry PI 4
+# CC = aarch64-linux-gnu-gcc
 
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/embedded \
