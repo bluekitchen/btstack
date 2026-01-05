@@ -1407,7 +1407,7 @@ uint8_t hid_host_send_set_protocol_mode(uint16_t hid_cid, hid_protocol_mode_t pr
 }
 
 
-uint8_t hid_host_send_report(uint16_t hid_cid, uint16_t report_id, const uint8_t * report, uint8_t report_len){
+uint8_t hid_host_send_report(uint16_t hid_cid, uint16_t report_id, const uint8_t * report, uint16_t report_len){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
     if (!connection || !connection->control_cid || !connection->interrupt_cid) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

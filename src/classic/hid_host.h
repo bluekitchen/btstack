@@ -264,7 +264,7 @@ uint8_t hid_host_send_get_report(uint16_t hid_cid, hid_report_type_t report_type
  * @param report_len
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
-uint8_t hid_host_send_report(uint16_t hid_cid, uint16_t report_id, const uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_report(uint16_t hid_cid, uint16_t report_id, const uint8_t * report, uint16_t report_len);
 
 /**
  * @brief Get descriptor data

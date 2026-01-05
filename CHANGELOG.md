@@ -8,8 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 ### Fixed
+- HID Host: support reports longer than 255 bytes
+
 ### Changed
+
 
 ## Release v1.8
 
