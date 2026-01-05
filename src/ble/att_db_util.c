@@ -245,7 +245,11 @@ uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, ui
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0091)
-	uint16_t flags_to_store = (flags & 0x1f391u) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
+	uint16_t flags_to_store = (flags & 0x1f391u) |
+		ATT_PROPERTY_READ |
+		ATT_PROPERTY_WRITE |
+		ATT_PROPERTY_WRITE_WITHOUT_RESPONSE |
+		ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags_to_store, buffer, 2);
 }
