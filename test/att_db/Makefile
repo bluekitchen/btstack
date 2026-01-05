@@ -30,9 +30,15 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
 all: build-coverage/att_db_util_test build-coverage/att_db_test build-asan/att_db_util_test build-asan/att_db_test
 
+# att_db_util_test.o depends on att_db_util_test.h
+build-coverage/att_db_util_test.o: att_db_util_test.h
+
 build-coverage/att_db_util_test: ${COMMON_OBJ_COVERAGE}
 
 build-coverage/att_db_test: build-coverage/att_db.o build-coverage/btstack_util.o build-coverage/hci_dump.o build-coverage/att_db_util.o
+
+# att_db_util_test.o depends on att_db_util_test.h
+build-asan/att_db_util_test.o: att_db_util_test.h
 
 build-asan/att_db_util_test: ${COMMON_OBJ_ASAN}
 
