@@ -158,9 +158,9 @@ static void bass_client_emit_connection_established(bass_client_connection_t * c
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED;
-    little_endian_store_16(event, pos, connection->con_handle);
+    little_endian_store_16(event, pos, connection->basic_connection.con_handle);
     pos += 2;
-    little_endian_store_16(event, pos, connection->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = status;
     (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -173,7 +173,7 @@ static void bass_client_emit_scan_operation_complete(bass_client_connection_t * 
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE;
-    little_endian_store_16(event, pos, connection->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = (uint8_t)opcode;
@@ -187,7 +187,7 @@ static void bass_client_emit_source_operation_complete(bass_client_connection_t 
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE;
-    little_endian_store_16(event, pos, connection->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = (uint8_t)opcode;
@@ -202,7 +202,7 @@ static void bass_client_emit_receive_state(bass_client_connection_t * connection
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE;
-    little_endian_store_16(event, pos, connection->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = source_id;
     (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -305,7 +305,7 @@ static uint16_t bass_client_prepare_add_source_buffer(bass_client_connection_t *
 
     uint16_t  buffer_offset = connection->long_write_buffer_offset;
     uint8_t * buffer        = connection->long_write_buffer;
-    uint16_t  buffer_size   = btstack_min(sizeof(connection->long_write_buffer), connection->mtu);
+    uint16_t  buffer_size   = btstack_min(sizeof(connection->long_write_buffer), gatt_service_client_get_mtu(&connection->basic_connection));
 
     btstack_assert(buffer_offset == 0);
 
@@ -344,7 +344,7 @@ static uint16_t bass_client_prepare_modify_source_buffer(bass_client_connection_
 
     uint16_t  buffer_offset = connection->long_write_buffer_offset;
     uint8_t * buffer        = connection->long_write_buffer;
-    uint16_t  buffer_size   = btstack_min(sizeof(connection->long_write_buffer), connection->mtu);
+    uint16_t  buffer_size   = btstack_min(sizeof(connection->long_write_buffer), gatt_service_client_get_mtu(&connection->basic_connection));
 
     btstack_assert(buffer_offset == 0);
 
@@ -415,7 +415,7 @@ static void bass_client_run_for_connection(void * context){
             value[0] = BASS_OPCODE_REMOTE_SCAN_STARTED;
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             status = gatt_client_write_value_of_characteristic_with_context(
-                    &bass_client_handle_gatt_client_event, connection->con_handle,
+                    &bass_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     control_point_value_handle, 1, &value[0],
                     bass_client.service_id, connection_id);
             UNUSED(status);
@@ -430,7 +430,7 @@ static void bass_client_run_for_connection(void * context){
             value[0] = BASS_OPCODE_REMOTE_SCAN_STOPPED;
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             status = gatt_client_write_value_of_characteristic_with_context(
-                    &bass_client_handle_gatt_client_event, connection->con_handle,
+                    &bass_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     control_point_value_handle, 1, &value[0],
                     bass_client.service_id, connection_id);
             UNUSED(status);
@@ -445,7 +445,7 @@ static void bass_client_run_for_connection(void * context){
             stored_bytes = bass_client_prepare_add_source_buffer(connection);
             connection->long_write_buffer_offset += stored_bytes;
 
-            status = gatt_client_write_long_value_of_characteristic_with_context(&bass_client_handle_gatt_client_event, connection->con_handle,
+            status = gatt_client_write_long_value_of_characteristic_with_context(&bass_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                                                            control_point_value_handle, stored_bytes, connection->long_write_buffer,
                                                            bass_client.service_id, connection_id);
             UNUSED(status);
@@ -459,7 +459,7 @@ static void bass_client_run_for_connection(void * context){
             stored_bytes = bass_client_prepare_modify_source_buffer(connection);
             connection->long_write_buffer_offset += stored_bytes;
 
-            status = gatt_client_write_long_value_of_characteristic_with_context(&bass_client_handle_gatt_client_event, connection->con_handle,
+            status = gatt_client_write_long_value_of_characteristic_with_context(&bass_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                                                            control_point_value_handle, stored_bytes, connection->long_write_buffer,
                                                            bass_client.service_id, connection_id);
             UNUSED(status);
@@ -474,7 +474,7 @@ static void bass_client_run_for_connection(void * context){
             value[1] = connection->control_point_operation_source_id;
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             status = gatt_client_write_value_of_characteristic_with_context(
-                    &bass_client_handle_gatt_client_event, connection->con_handle,
+                    &bass_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     control_point_value_handle, 2, &value[0],
                     bass_client.service_id, connection_id);
             UNUSED(status);
@@ -491,7 +491,7 @@ static void bass_client_run_for_connection(void * context){
 
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             status = gatt_client_write_value_of_characteristic_with_context(
-                    &bass_client_handle_gatt_client_event, connection->con_handle,
+                    &bass_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     control_point_value_handle, 18, &value[0],
                     bass_client.service_id, connection_id);
             UNUSED(status);

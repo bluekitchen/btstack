@@ -120,9 +120,6 @@ typedef struct {
     bass_client_source_t receive_states[MAX_NR_BASS_RECEIVE_STATES];
     btstack_context_callback_registration_t gatt_query_can_send_now;
 
-    hci_con_handle_t  con_handle;
-    uint16_t          cid;
-    uint16_t          mtu;
     
     // service
     uint16_t start_handle;
