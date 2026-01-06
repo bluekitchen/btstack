@@ -120,18 +120,6 @@ typedef struct {
     bass_client_source_t receive_states[MAX_NR_BASS_RECEIVE_STATES];
     btstack_context_callback_registration_t gatt_query_can_send_now;
 
-    
-    // service
-    uint16_t start_handle;
-    uint16_t end_handle;
-    
-    // used for memory capacity checking
-    uint8_t  service_instances_num;
-    // used for notification registration
-    uint8_t  receive_states_index;
-    
-    uint8_t max_receive_states_num;
-
     // used for write segmentation
     uint8_t  long_write_buffer[MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER];
     uint16_t long_write_buffer_offset;
