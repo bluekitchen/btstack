@@ -106,19 +106,34 @@ static bass_client_connection_t * bass_client_get_connection_for_cid(uint16_t ci
     return NULL;
 }
 
-static bass_client_source_t * bass_client_get_receive_state_for_value_handle(bass_client_connection_t * connection, uint16_t value_handle){
-    uint8_t i;
-    for (i = 0; i < connection->receive_states_instances_num; i++){
-        if (connection->receive_states[i].receive_state_value_handle == value_handle){
-            return &connection->receive_states[i];
-        }
+static uint8_t bass_client_get_source_index_for_characteristic_index(bass_client_characteristic_index_t characteristic_index){
+    if (characteristic_index == BASS_CHARACTERISTIC_INDEX_BROADCAST_AUDIO_SCAN_CONTROL_POINT){
+        return GATT_SERVICE_CLIENT_INVALID_INDEX;
     }
-    return NULL;
+    if (characteristic_index >= BASS_CHARACTERISTIC_INDEX_RFU){
+        return GATT_SERVICE_CLIENT_INVALID_INDEX;
+    }
+    return (uint8_t)characteristic_index - 1;
+
 }
+
+static bass_client_source_t * bass_client_get_source_for_characteristic_index(bass_client_connection_t * connection, bass_client_characteristic_index_t characteristic_index){
+    uint8_t source_index = bass_client_get_source_index_for_characteristic_index(characteristic_index);
+    if (source_index == GATT_SERVICE_CLIENT_INVALID_INDEX){
+        return NULL;
+    }
+    return &connection->receive_states[source_index];
+}
+
+static bass_client_source_t * bass_client_get_source_for_value_handle(bass_client_connection_t * connection, uint16_t value_handle){
+    uint16_t characteristic_index = gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle);
+    return bass_client_get_source_for_characteristic_index(connection, (bass_client_characteristic_index_t)characteristic_index);
+}
+
 
 static bass_client_source_t * bass_client_get_source_for_source_id(bass_client_connection_t * connection, uint8_t source_id){
     uint8_t i;
-    for (i = 0; i < connection->receive_states_instances_num; i++){
+    for (i = 0; i < MAX_NR_BASS_RECEIVE_STATES; i++){
         if (connection->receive_states[i].source_id == source_id){
             return &connection->receive_states[i];
         }
@@ -266,7 +281,7 @@ static bool bass_client_remote_broadcast_receive_state_buffer_valid(const uint8_
 
 static void bass_client_handle_gatt_server_notification(bass_client_connection_t * connection, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     if (bass_client_remote_broadcast_receive_state_buffer_valid(value, value_length)){
-        bass_client_source_t * source = bass_client_get_receive_state_for_value_handle(connection, value_handle);
+        bass_client_source_t * source = bass_client_get_source_for_value_handle(connection, value_handle);
         if (source == NULL){
             return;
         }

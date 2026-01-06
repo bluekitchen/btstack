@@ -108,12 +108,6 @@ typedef struct {
     uint8_t source_id;
     le_audio_big_encryption_t big_encryption;
     uint8_t  bad_code[16];
-
-    // characteristic
-    uint16_t receive_state_value_handle;
-    uint16_t receive_state_ccc_handle;
-    uint16_t receive_state_properties;
-    uint16_t receive_state_end_handle;
 } bass_client_source_t;
 
 typedef struct {
@@ -125,11 +119,6 @@ typedef struct {
     gatt_service_client_characteristic_t characteristics_storage[BASS_CLIENT_CHARACTERISTICS_MAX_COUNT];
     bass_client_source_t receive_states[MAX_NR_BASS_RECEIVE_STATES];
     btstack_context_callback_registration_t gatt_query_can_send_now;
-
-    // used for queries
-    uint8_t  characteristic_index;
-
-    uint8_t  receive_states_instances_num;
 
     hci_con_handle_t  con_handle;
     uint16_t          cid;
