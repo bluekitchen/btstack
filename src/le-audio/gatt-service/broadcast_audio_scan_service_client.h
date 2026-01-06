@@ -48,6 +48,7 @@
 #include "btstack_defines.h"
 #include "le-audio/le_audio.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_util.h"
+#include "ble/gatt_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -57,20 +58,22 @@ extern "C" {
 #define MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER             512
 #endif
 
+#define BASS_CHARACTERISTICS_MAX_COUNT 2
+
+#ifndef MAX_NR_BASS_RECEIVE_STATES
+#define MAX_NR_BASS_RECEIVE_STATES                                      3
+#endif
+
+#define BASS_CLIENT_FIXED_CHARACTERISTICS_COUNT                         1
+#define BASS_CLIENT_CHARACTERISTICS_MAX_COUNT (BASS_CLIENT_FIXED_CHARACTERISTICS_COUNT + MAX_NR_BASS_RECEIVE_STATES)
+
+
 /* API_START */
 
 typedef enum {
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_IDLE = 0,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_CONNECTION,
 
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
-
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY,
 
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
@@ -115,25 +118,33 @@ typedef struct {
 
 typedef struct {
     btstack_linked_item_t item;
-    
+    gatt_service_client_connection_t basic_connection;
+    btstack_packet_handler_t packet_handler;
+    broadcast_audio_scan_service_client_state_t  state;
+
+    gatt_service_client_characteristic_t characteristics_storage[BASS_CLIENT_CHARACTERISTICS_MAX_COUNT];
+    bass_client_source_t receive_states[MAX_NR_BASS_RECEIVE_STATES];
+    btstack_context_callback_registration_t gatt_query_can_send_now;
+
+    // used for queries
+    uint8_t  characteristic_index;
+
+    uint8_t  receive_states_instances_num;
+
     hci_con_handle_t  con_handle;
     uint16_t          cid;
     uint16_t          mtu;
-    broadcast_audio_scan_service_client_state_t  state;
     
     // service
     uint16_t start_handle;
     uint16_t end_handle;
-    uint16_t control_point_value_handle; 
     
     // used for memory capacity checking
     uint8_t  service_instances_num;
-    uint8_t  receive_states_instances_num;
     // used for notification registration
     uint8_t  receive_states_index;
     
     uint8_t max_receive_states_num;
-    bass_client_source_t * receive_states;
 
     // used for write segmentation
     uint8_t  long_write_buffer[MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER];
@@ -161,15 +172,13 @@ void broadcast_audio_scan_service_client_init(void);
  * @param con_handle to connect to
  * @param packet_handler
  * @param connection struct provided by user, needs to stay valid until disconnect event is received
- * @param sources buffer to store information on Broadcast Sources on the service
- * @param num_sources
  * @param bass_cid connection id for this connection for other functions
  * @return status
  */
 uint8_t broadcast_audio_scan_service_client_connect(
         hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler,
         bass_client_connection_t * connection,
-        bass_client_source_t * sources, uint8_t num_sources, uint16_t * bass_cid);
+        uint16_t * bass_cid);
 
 /**
  * @brief Notify BASS Service that scanning has started
