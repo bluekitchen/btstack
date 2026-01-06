@@ -92,10 +92,7 @@ typedef enum {
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_SET_BROADCAST_CODE,
     
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_REMOVE_SOURCE,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_REMOVE_SOURCE,
-
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_READE_RECEIVE_STATE,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_READE_RECEIVE_STATE,
+    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_REMOVE_SOURCE
 
 } broadcast_audio_scan_service_client_state_t;
 
@@ -153,27 +150,26 @@ typedef struct {
 } bass_client_connection_t;
 
 /**
- * @brief Init Broadcast Audio Scan Service Client. Register packet handler to receive events:
- * - LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED
- * - LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED
- * - LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE
- * - LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
- * - LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE
+ * @brief Init Broadcast Audio Scan Service Client.
  * @param packet_handler for events
  */
-void broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
+void broadcast_audio_scan_service_client_init(void);
 
 /**
- * @brief Connect to BASS Service on remote device
+ * @brief Connect to BASS Service on remote device.
  * @note LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED will be emitted
+ * @param con_handle to connect to
+ * @param packet_handler
  * @param connection struct provided by user, needs to stay valid until disconnect event is received
  * @param sources buffer to store information on Broadcast Sources on the service
  * @param num_sources
- * @param con_handle to connect to
  * @param bass_cid connection id for this connection for other functions
  * @return status
  */
-uint8_t broadcast_audio_scan_service_client_connect(bass_client_connection_t * connection, bass_client_source_t * sources, uint8_t num_sources, hci_con_handle_t con_handle, uint16_t * bass_cid);
+uint8_t broadcast_audio_scan_service_client_connect(
+        hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler,
+        bass_client_connection_t * connection,
+        bass_client_source_t * sources, uint8_t num_sources, uint16_t * bass_cid);
 
 /**
  * @brief Notify BASS Service that scanning has started

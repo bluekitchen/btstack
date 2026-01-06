@@ -809,21 +809,24 @@ static void bass_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     }
 }
 
-void broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler){
-    btstack_assert(packet_handler != NULL);
-    bass_client_event_callback = packet_handler;
+void broadcast_audio_scan_service_client_init(void){
+
 }
 
-uint8_t broadcast_audio_scan_service_client_connect(bass_client_connection_t * connection, 
-    bass_client_source_t * receive_states, uint8_t receive_states_num, 
-    hci_con_handle_t con_handle, uint16_t * bass_cid){
+uint8_t broadcast_audio_scan_service_client_connect(
+        hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler,
+        bass_client_connection_t * connection,
+        bass_client_source_t * receive_states, uint8_t receive_states_num, uint16_t * bass_cid){
 
+    btstack_assert(packet_handler != NULL);
     btstack_assert(receive_states != NULL);
     btstack_assert(receive_states_num > 0);
     
     if (bass_client_get_connection_for_con_handle(con_handle) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
+    bass_client_event_callback = packet_handler;
 
     uint16_t cid = bass_client_get_next_cid();
     if (bass_cid != NULL) {
