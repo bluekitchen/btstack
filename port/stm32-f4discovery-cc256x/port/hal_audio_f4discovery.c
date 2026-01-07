@@ -218,7 +218,7 @@ void hal_audio_sink_init(uint8_t channels,
 		return;
 	}
 
-	sink_volume = 100;
+	sink_volume = 50;
 
 	audio_played_handler = buffer_played_callback;
 	sink_sample_rate = sample_rate;
@@ -273,7 +273,10 @@ void hal_audio_sink_start(void){
 	sink_playback_buffer_duration_us = 0;
 #endif
 
-	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sink_sample_rate);
+	// 0..127 -> 0..100
+	uint8_t codec_volume = sink_volume * 100 / 127;
+
+	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, codec_volume, sink_sample_rate);
 
 	BSP_AUDIO_OUT_SetVolume(sink_volume);
 
