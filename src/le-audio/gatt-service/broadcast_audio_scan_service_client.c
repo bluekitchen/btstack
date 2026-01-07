@@ -58,8 +58,6 @@
 static gatt_service_client_t bass_client;
 static btstack_linked_list_t bass_client_connections;
 
-static btstack_packet_handler_t bass_client_event_callback;
-
 static void bass_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 typedef enum {
@@ -151,7 +149,8 @@ static void bass_client_reset_source(bass_client_source_t * source){
 }
 
 static void bass_client_emit_connection_established(bass_client_connection_t * connection, uint8_t status){
-    btstack_assert(bass_client_event_callback != NULL);
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->packet_handler != NULL);
 
     uint8_t event[8];
     uint16_t pos = 0;
@@ -163,11 +162,13 @@ static void bass_client_emit_connection_established(bass_client_connection_t * c
     little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = status;
-    (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void bass_client_emit_scan_operation_complete(bass_client_connection_t * connection, uint8_t status, bass_opcode_t opcode){
-    btstack_assert(bass_client_event_callback != NULL);
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->packet_handler != NULL);
+
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
@@ -177,11 +178,13 @@ static void bass_client_emit_scan_operation_complete(bass_client_connection_t * 
     pos += 2;
     event[pos++] = status;
     event[pos++] = (uint8_t)opcode;
-    (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void bass_client_emit_source_operation_complete(bass_client_connection_t * connection, uint8_t status, bass_opcode_t opcode, uint8_t source_id){
-    btstack_assert(bass_client_event_callback != NULL);
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->packet_handler != NULL);
+
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
@@ -192,11 +195,13 @@ static void bass_client_emit_source_operation_complete(bass_client_connection_t 
     event[pos++] = status;
     event[pos++] = (uint8_t)opcode;
     event[pos++] = source_id;
-    (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void bass_client_emit_receive_state(bass_client_connection_t * connection, uint8_t source_id){
-    btstack_assert(bass_client_event_callback != NULL);
+    btstack_assert(connection != NULL);
+    btstack_assert(connection->packet_handler != NULL);
+
     uint8_t pos = 0;
     uint8_t event[7];
     event[pos++] = HCI_EVENT_LEAUDIO_META;
@@ -205,7 +210,7 @@ static void bass_client_emit_receive_state(bass_client_connection_t * connection
     little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = source_id;
-    (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static bool bass_client_remote_broadcast_receive_state_buffer_valid(const uint8_t *buffer, uint16_t buffer_size){
@@ -652,11 +657,7 @@ uint8_t broadcast_audio_scan_service_client_connect(
                                                                              &connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE,
                                                                              connection->characteristics_storage,
-                                                                             BASS_CHARACTERISTICS_MAX_COUNT);
-
-    // TODO remove
-    bass_client_event_callback = packet_handler;
-
+                                                                             BASS_CLIENT_CHARACTERISTICS_MAX_COUNT);
     if (status == ERROR_CODE_SUCCESS){
         btstack_linked_list_add(&bass_client_connections, (btstack_linked_item_t*) connection);
         *bass_cid = connection->basic_connection.cid;
@@ -799,7 +800,6 @@ uint8_t broadcast_audio_scan_service_client_get_encryption_state(uint16_t bass_c
 }
 
 void broadcast_audio_scan_service_client_deinit(uint16_t bass_cid){
-    bass_client_event_callback = NULL;
     bass_client_connection_t * connection = bass_client_get_connection_for_cid(bass_cid);
     if (connection == NULL){
         return;

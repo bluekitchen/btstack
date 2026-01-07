@@ -58,8 +58,6 @@ extern "C" {
 #define MAX_SIZE_BASS_CLIENT_LONG_WRITE_BUFFER             512
 #endif
 
-#define BASS_CHARACTERISTICS_MAX_COUNT 2
-
 #ifndef MAX_NR_BASS_RECEIVE_STATES
 #define MAX_NR_BASS_RECEIVE_STATES                                      3
 #endif
