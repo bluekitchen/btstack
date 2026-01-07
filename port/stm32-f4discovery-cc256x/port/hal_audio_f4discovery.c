@@ -37,11 +37,14 @@
 
 #define BTSTACK_FILE__ "hal_audio_f4_discovery.c"
 
-#include <stdio.h>
+#include <inttypes.h>
 #include <string.h>
 #include <time.h>
 
+#include "main.h"
+
 #include "hal_audio.h"
+#include "btstack_config.h"
 #include "btstack_debug.h"
 #include "stm32f4_discovery_audio.h"
 
@@ -60,13 +63,17 @@ static uint8_t  sink_volume;
 // our storage
 static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * NUM_OUTPUT_CHANNELS];   // stereo
 
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 // record the time playback started for each buffer
 static volatile uint32_t sink_playback_time_us[NUM_OUTPUT_BUFFERS];
 static volatile uint8_t  sink_playback_last_buffer;
 static uint32_t			 sink_playback_buffer_duration_us;
+#endif
 
 // context array
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 static btstack_audio_context_t sink_playback_audio_contexts[NUM_OUTPUT_BUFFERS];
+#endif
 
 // record the time of the external trigger
 static uint32_t external_trigger_us;
@@ -97,10 +104,7 @@ static int source_pdm_samples_total;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 
-#include "main.h"
-#include <inttypes.h>
-
-
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 	uint32_t time_capture_us;
 
@@ -124,6 +128,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			break;
 	}
 }
+#endif
 
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 
@@ -136,9 +141,13 @@ void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 #endif
 
 	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
-	if (sink_playback_buffer_duration_us != 0) {
-		(*audio_played_handler)(0);
-	}
+
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
+	// wait until we can provide timeinfo
+	if (sink_playback_buffer_duration_us == 0) return;
+#endif
+
+	(*audio_played_handler)(0);
 }
 
 void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
@@ -156,20 +165,24 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 
 	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
 
-	if (sink_playback_buffer_duration_us != 0) {
-		(*audio_played_handler)(1);
-	}
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
+	// wait until we can provide timeinfo
+	if (sink_playback_buffer_duration_us == 0) return;
+#endif
+
+	(*audio_played_handler)(1);
 }
 
-
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 const btstack_audio_context_t * hal_audio_sink_get_buffer_context(uint8_t buffer_index) {
 	btstack_assert(buffer_index < NUM_OUTPUT_BUFFERS);
 	sink_playback_audio_contexts[buffer_index].timestamp = sink_playback_time_us[buffer_index] + sink_playback_buffer_duration_us;
 	return &sink_playback_audio_contexts[buffer_index];
 }
-
+#endif
 
 static void hal_audio_timer_init(void){
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
  	static bool initialized = false;
   	if (initialized == false){
    		initialized = true;
@@ -183,6 +196,7 @@ static void hal_audio_timer_init(void){
   		HAL_TIM_Base_Start(&htim3);
   		HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
     }
+#endif
 }
 
 /**
@@ -251,11 +265,13 @@ void hal_audio_sink_start(void){
 	// played once and we have measured the playback time
 	memset(output_buffer, 0, sizeof(output_buffer));
 
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 	// configure I2S Bit Clock counter to overrun on next tick
 	uint16_t num_ticks_per_block = OUTPUT_BUFFER_NUM_SAMPLES * 16;
 	__HAL_TIM_SET_COUNTER(&htim3, num_ticks_per_block-1);
 	__HAL_TIM_SET_AUTORELOAD(&htim3, num_ticks_per_block-1);
 	sink_playback_buffer_duration_us = 0;
+#endif
 
 	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sink_sample_rate);
 
