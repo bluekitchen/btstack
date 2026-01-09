@@ -12,24 +12,22 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
-	btstack_util.c				\
+	btstack_util.c			\
 	hci_dump.c				\
-	ad_parser.c				\
+	ad_parser.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/ad_parser_test build-asan/ad_parser_test
+all: coverage test
 
 build-coverage/ad_parser_test: $(COMMON_OBJ_COVERAGE)
 build-asan/ad_parser_test: $(COMMON_OBJ_ASAN)
 
-test: all
-	build-asan/ad_parser_test
+test: build-asan/ad_parser_test
+	$<
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/ad_parser_test
+coverage: build-coverage/ad_parser_test.info
 
 clean:
 	rm -rf build-coverage

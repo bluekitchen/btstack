@@ -17,33 +17,29 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/test/mock
 
-COMMON = 										\
-	ad_parser.c                 				\
-	att_db.c 				 	    			\
+COMMON =										\
+	ad_parser.c									\
+	att_db.c									\
 	btstack_hid_parser.c						\
-	battery_service_server.c 					\
-	btstack_linked_list.c       				\
-	btstack_memory.c            				\
-	btstack_memory_pool.c       				\
-	btstack_util.c              				\
-	cycling_speed_and_cadence_service_server.c 	\
-	device_information_service_server.c 		\
-	hci_dump.c                  				\
-	heart_rate_service_server.c 				\
-	hids_device.c 								\
-	mock_att_server.c           				\
-	nordic_spp_service_server.c 				\
-	tx_power_service_server.c 					\
+	battery_service_server.c					\
+	btstack_linked_list.c						\
+	btstack_memory.c							\
+	btstack_memory_pool.c						\
+	btstack_util.c								\
+	cycling_speed_and_cadence_service_server.c	\
+	device_information_service_server.c			\
+	hci_dump.c									\
+	heart_rate_service_server.c					\
+	hids_device.c								\
+	mock_att_server.c							\
+	nordic_spp_service_server.c					\
+	tx_power_service_server.c					\
 	ublox_spp_service_server.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/battery_service_server_test 			build-asan/battery_service_server_test 				\
-	 build-coverage/device_information_service_server_test 	build-asan/device_information_service_server_test 	\
-	 build-coverage/tx_power_service_server_test 			build-asan/tx_power_service_server_test 			\
-	 build-coverage/bond_management_service_server_test 	build-asan/bond_management_service_server_test 		\
-	 build-coverage/heart_rate_service_server_test 			build-asan/heart_rate_service_server_test 			\
+all: coverage test
 
 build-coverage/battery_service_server_test.o: build-coverage/battery_service_server_test.h
 build-coverage/battery_service_server_test: ${COMMON_OBJ_COVERAGE}
@@ -81,20 +77,22 @@ build-coverage/heart_rate_service_server_test: ${COMMON_OBJ_COVERAGE} build-cove
 build-asan/heart_rate_service_server_test.o: build-asan/heart_rate_service_server_test.h 
 build-asan/heart_rate_service_server_test: ${COMMON_OBJ_ASAN} build-asan/heart_rate_service_server.o
 
-test: all
+test: build-asan/battery_service_server_test \
+	  build-asan/device_information_service_server_test \
+	  build-asan/tx_power_service_server_test \
+	  build-asan/bond_management_service_server_test \
+	  build-asan/heart_rate_service_server_test
 	build-asan/battery_service_server_test
 	build-asan/device_information_service_server_test
 	build-asan/tx_power_service_server_test
 	build-asan/bond_management_service_server_test
 	build-asan/heart_rate_service_server_test
 		
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/battery_service_server_test
-	build-coverage/device_information_service_server_test
-	build-coverage/tx_power_service_server_test
-	build-coverage/bond_management_service_server_test
-	build-coverage/heart_rate_service_server_test
+coverage: build-coverage/battery_service_server_test.info \
+		  build-coverage/device_information_service_server_test.info \
+		  build-coverage/tx_power_service_server_test.info \
+		  build-coverage/bond_management_service_server_test.info \
+		  build-coverage/heart_rate_service_server_test.info
 
 clean:
 	rm -rf build-coverage build-asan

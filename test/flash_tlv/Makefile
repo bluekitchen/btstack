@@ -26,7 +26,7 @@ CXXFLAGS += ${INCLUDES} ${DEFINES}
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/tlv_test build-asan/tlv_test build-asan/tlv_test_write_once build-asan/tlv_test_delete_field
+all: coverage test
 
 # write once sets ENABLE_TLV_FLASH_WRITE_ONCE
 build-asan/%_write_once.o: %.c | build-asan
@@ -51,14 +51,12 @@ build-asan/tlv_test_write_once: ${COMMON_OBJ_ASAN} build-asan/btstack_tlv_flash_
 
 build-asan/tlv_test_delete_field: ${COMMON_OBJ_ASAN} build-asan/btstack_tlv_flash_bank_delete_field.o
 
-test: all
+test: build-asan/tlv_test build-asan/tlv_test_write_once build-asan/tlv_test_delete_field
 	build-asan/tlv_test
 	build-asan/tlv_test_write_once
 	build-asan/tlv_test_delete_field
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/tlv_test
+coverage: build-coverage/tlv_test.info
 
 clean:
 	rm -rf build-coverage build-asan

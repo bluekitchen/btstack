@@ -1,7 +1,13 @@
-BTSTACK_ROOT =  ../..
-PYTHON = python3
+CC                 = clang
+CXX                = clang++
+LLVM_PROFDATA     ?= llvm-profdata
+LLVM_COV          ?= llvm-cov
+LLVM_PROFILE_FILE ?= default.profraw
 
-GENERIC_FLAGS    := -g -Wall -Wextra
+BTSTACK_ROOT       =  ../..
+PYTHON             = python3
+
+GENERIC_FLAGS    := -O2 -g -Wall -Wextra
 CPPUTEST_CFLAGS  := ${shell pkg-config --cflags cpputest}
 CPPUTEST_LDFLAGS := ${shell pkg-config --libs   cpputest}
 
@@ -15,9 +21,9 @@ CFLAGS   += ${GENERIC_FLAGS} -std=gnu11
 CXXFLAGS += ${GENERIC_FLAGS} -std=gnu++17
 
 # Coverage
-CFLAGS_COVERAGE   = ${CFLAGS} -Ibuild-coverage -fprofile-arcs -ftest-coverage
-CXXFLAGS_COVERAGE = ${CXXFLAGS} -Ibuild-coverage -fprofile-arcs -ftest-coverage
-LDFLAGS_COVERAGE  = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_COVERAGE   = ${CFLAGS} -Ibuild-coverage -fprofile-instr-generate -fcoverage-mapping
+CXXFLAGS_COVERAGE = ${CXXFLAGS} -Ibuild-coverage -fprofile-instr-generate -fcoverage-mapping
+LDFLAGS_COVERAGE  = ${LDFLAGS} -fprofile-instr-generate
 
 # Address sanitiser
 CFLAGS_ASAN     = ${CFLAGS} -Ibuild-asan -fsanitize=address -DHAVE_ASSERT
@@ -53,3 +59,11 @@ build-coverage/%: build-coverage/%.o | build-coverage
 build-asan/%: build-asan/%.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
+%.info: %
+	./$<
+	${LLVM_PROFDATA} merge -o $<.profdata $$(find -type f -iname "*.profraw")
+	find -type f -iname "*.profraw" -delete
+	${LLVM_COV} export $< -format=lcov -instr-profile=$<.profdata > $<.info
+	rm $<.profdata
+
+.NOTPARALLEL: coverage

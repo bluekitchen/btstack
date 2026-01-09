@@ -1,4 +1,3 @@
-
 include ../common.make
 
 INCLUDES = -I${BTSTACK_ROOT}/src
@@ -28,7 +27,7 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/att_db_util_test build-coverage/att_db_test build-asan/att_db_util_test build-asan/att_db_test
+all: coverage test
 
 # att_db_util_test.o depends on att_db_util_test.h
 build-coverage/att_db_util_test.o: att_db_util_test.h
@@ -44,14 +43,11 @@ build-asan/att_db_util_test: ${COMMON_OBJ_ASAN}
 
 build-asan/att_db_test: build-asan/att_db.o build-asan/btstack_util.o build-asan/hci_dump.o build-asan/att_db_util.o
 
-test: all
+test: build-asan/att_db_util_test build-asan/att_db_test
 	build-asan/att_db_util_test
 	build-asan/att_db_test
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/att_db_util_test
-	build-coverage/att_db_test
+coverage: build-coverage/att_db_util_test.info build-coverage/att_db_test.info
 
 clean:
 	rm -rf build-coverage build-asan

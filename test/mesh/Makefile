@@ -10,9 +10,9 @@ CXXFLAGS += ${CFLAGS}
 include ../common.make
 
 ATT  += \
-	att_dispatch.c       	    \
-	att_db.c 				 	\
-	att_server.c        	    \
+	att_dispatch.c			    \
+	att_db.c					\
+	att_server.c			    \
 	gatt_bearer.c               \
 	mesh_proxy_service_server.c \
 
@@ -75,7 +75,6 @@ TESTS_SRCS = mesh_message_test provisioning_device_test provisioning_provisioner
 EXAMPLES =   mesh_pts provisioner sniffer
 
 all:   $(addprefix build-asan/,$(EXAMPLES))
-tests: $(addprefix build-asan/,$(TESTS_SRCS))
 
 build-asan/mesh_pts: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${GATT_SERVER_OBJ_ASAN} ${SM_OBJ_ASAN} ${MESH_OBJ_ASAN} build-asan/main.o
 
@@ -91,16 +90,14 @@ build-asan/provisioning_provisioner_test:  $(addprefix build-asan/, uECC.o mesh_
 
 build-asan/mesh_configuration_composition_data_message_test: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${MESH_OBJ_ASAN}
 
-test: tests
+test: $(addprefix build-asan/,$(TESTS_SRCS))
 	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
 	ASAN_OPTIONS=detect_leaks=0 build-asan/mesh_message_test
 	build-asan/provisioning_device_test
 	build-asan/provisioning_provisioner_test
 	build-asan/mesh_configuration_composition_data_message_test
 
-coverage: tests
-	rm -f build-coverage/*.gcda
-	@echo "no coverage here"
+coverage:
 
 clean:
 	rm -rf build-coverage build-asan

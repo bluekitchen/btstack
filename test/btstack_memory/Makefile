@@ -13,8 +13,8 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
 	btstack_util.c		    \
-	hci_dump.c    			\
-	btstack_memory_pool.c 	\
+	hci_dump.c				\
+	btstack_memory_pool.c	\
 	btstack_memory.c
 
 COMMON_OBJ_COVERAGE_NONE   = $(addprefix build-coverage/,$(COMMON:.c=_none.o))
@@ -22,12 +22,7 @@ COMMON_OBJ_COVERAGE_SINGLE = $(addprefix build-coverage/,$(COMMON:.c=_single.o))
 COMMON_OBJ_COVERAGE_MALLOC = $(addprefix build-coverage/,$(COMMON:.c=_malloc.o))
 COMMON_OBJ_ASAN            = $(addprefix build-asan/,    $(COMMON:.c=_single.o))
 
-all: build-coverage/btstack_memory_pool_test_single \
-	 build-coverage/btstack_memory_test_single \
-	 build-coverage/btstack_memory_test_none \
-	 build-coverage/btstack_memory_test_malloc \
-	 build-asan/btstack_memory_pool_test_single \
-	 build-asan/btstack_memory_test_single
+all: coverage test
 
 build-coverage/%_none.o: %.c | build-coverage
 	${CC} -c $(CFLAGS_COVERAGE) -I config_none $< -o $@
@@ -58,16 +53,15 @@ build-coverage/btstack_memory_test_malloc: ${COMMON_OBJ_COVERAGE_MALLOC}
 build-asan/btstack_memory_pool_test_single: ${COMMON_OBJ_ASAN}
 build-asan/btstack_memory_test_single: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/btstack_memory_pool_test_single \
+      build-asan/btstack_memory_test_single
 	build-asan/btstack_memory_pool_test_single
 	build-asan/btstack_memory_test_single
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/btstack_memory_pool_test_single
-	build-coverage/btstack_memory_test_none
-	build-coverage/btstack_memory_test_single
-	build-coverage/btstack_memory_test_malloc
+coverage: build-coverage/btstack_memory_pool_test_single.info \
+          build-coverage/btstack_memory_test_single.info \
+          build-coverage/btstack_memory_test_none.info \
+          build-coverage/btstack_memory_test_malloc.info
 
 clean:
 	rm -rf build-*

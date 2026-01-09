@@ -20,12 +20,12 @@ VPATH += ${BTSTACK_ROOT}/platform/freertos
 
 COMMON = \
     btstack_linked_list.c  \
-	btstack_memory.c 	\
-	btstack_run_loop.c 	\
+	btstack_memory.c	\
+	btstack_run_loop.c	\
     btstack_util.c		\
-    hci_dump.c    		\
+    hci_dump.c			\
     l2cap_signaling.c   \
-    hci_cmd.c 			\
+    hci_cmd.c			\
     hci_event.c         \
     
 FREERTOS = btstack_run_loop_freertos.c
@@ -36,14 +36,7 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 FREERTOS_OBJ_COVERAGE = $(addprefix build-coverage/,$(FREERTOS:.c=.o))
 FREERTOS_OBJ_ASAN     = $(addprefix build-asan/,    $(FREERTOS:.c=.o))
 
-all: build-coverage/embedded_test build-asan/embedded_test \
-	 build-coverage/run_loop_base_test build-asan/run_loop_base_test \
-	 build-coverage/btstack_util_test build-asan/btstack_util_test \
-	 build-coverage/l2cap_le_signaling_test build-asan/l2cap_le_signaling_test \
-	 build-coverage/hci_cmd_test build-asan/hci_cmd_test \
-	 build-coverage/hci_dump_test build-asan/hci_dump_test \
-	 build-coverage/hci_event_test build-asan/hci_event_test \
-	 build-coverage/freertos_test build-asan/freertos_test
+all: coverage test
 
 build-coverage/embedded_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_run_loop_embedded.o
 
@@ -77,7 +70,14 @@ build-coverage/hci_event_test: ${COMMON_OBJ_COVERAGE}
 
 build-asan/hci_event_test: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/embedded_test \
+	  build-asan/run_loop_base_test \
+	  build-asan/btstack_util_test \
+	  build-asan/l2cap_le_signaling_test \
+	  build-asan/hci_cmd_test \
+	  build-asan/hci_dump_test \
+	  build-asan/hci_event_test \
+	  build-asan/freertos_test
 	build-asan/embedded_test
 	build-asan/freertos_test
 	build-asan/run_loop_base_test
@@ -87,16 +87,14 @@ test: all
 	build-asan/hci_dump_test
 	build-asan/hci_event_test
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/embedded_test
-	build-coverage/freertos_test
-	build-coverage/run_loop_base_test
-	build-coverage/btstack_util_test
-	build-coverage/l2cap_le_signaling_test
-	build-coverage/hci_cmd_test
-	build-coverage/hci_dump_test
-	build-coverage/hci_event_test
+coverage: build-coverage/embedded_test.info \
+		  build-coverage/run_loop_base_test.info \
+		  build-coverage/btstack_util_test.info \
+		  build-coverage/l2cap_le_signaling_test.info \
+		  build-coverage/hci_cmd_test.info \
+		  build-coverage/hci_dump_test.info \
+		  build-coverage/hci_event_test.info \
+		  build-coverage/freertos_test.info
 
 clean:
 	rm -rf build-coverage build-asan *.dSYM

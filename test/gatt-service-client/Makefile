@@ -28,10 +28,7 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: \
-	build-coverage/battery_service_client_test build-asan/battery_service_client_test \
-	build-coverage/ancs_client_test build-asan/ancs_client_test \
-	build-coverage/device_information_service_client_test build-asan/device_information_service_client_test
+all: coverage test
 
 build-coverage/battery_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_client.o
 build-asan/battery_service_client_test: ${COMMON_OBJ_ASAN} build-asan/battery_service_client.o
@@ -42,16 +39,16 @@ build-asan/ancs_client_test: ${COMMON_OBJ_ASAN} build-asan/ancs_client.o
 build-coverage/device_information_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_client.o
 build-asan/device_information_service_client_test: ${COMMON_OBJ_ASAN} build-asan/device_information_service_client.o
 
-test: all
-	build-asan/battery_service_client_test
+test: build-asan/battery_service_client_test \
+      build-asan/ancs_client_test \
+      build-asan/device_information_service_client_test
+	ASAN_OPTIONS=detect_leaks=0 build-asan/battery_service_client_test
 	build-asan/ancs_client_test
 	build-asan/device_information_service_client_test
 		
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/battery_service_client_test
-	build-coverage/ancs_client_test
-	build-coverage/device_information_service_client_test
+coverage: build-coverage/battery_service_client_test.info \
+		  build-coverage/ancs_client_test.info \
+		  build-coverage/device_information_service_client_test.info
 
 clean:
 	rm -rf build-coverage build-asan

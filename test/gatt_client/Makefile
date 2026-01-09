@@ -33,23 +33,22 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/gatt_client_test build-coverage/le_central build-asan/gatt_client_test build-asan/le_central
+all: coverage test
 
 build-coverage/gatt_client_test.o: build-coverage/profile.h
 build-coverage/gatt_client_test: ${COMMON_OBJ_COVERAGE}
+
+build-asan/gatt_client_test.o: build-asan/profile.h
 build-asan/gatt_client_test: ${COMMON_OBJ_ASAN}
 
 build-coverage/le_central: ${COMMON_OBJ_COVERAGE}
 build-asan/le_central: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/gatt_client_test build-asan/le_central
 	build-asan/gatt_client_test
 	build-asan/le_central
 		
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/gatt_client_test
-	build-coverage/le_central
+coverage: build-coverage/gatt_client_test.info build-coverage/le_central.info
 
 clean:
 	rm -rf build-coverage build-asan

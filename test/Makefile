@@ -1,7 +1,9 @@
+LLVM_PROFDATA ?= llvm-profdata
+LCOV ?= lcov
 
 # Makefile to build and run all tests
 
-SUBDIRS =  \
+SUBDIRS :=  \
 	ad_parser \
 	att_db \
 	avdtp \
@@ -33,7 +35,7 @@ SUBDIRS =  \
 	sdp \
 	sdp_client \
 	security_manager \
-	tlv_posix \
+	tlv_posix
 
 # not testing anything in source tree
 #	maths \
@@ -46,7 +48,7 @@ SUBDIRS =  \
 # hangs on buildbot (no output for 20 minutes -> abort)
 #	security_manager_sc
 
-SUBDIRS_BLE = \
+SUBDIRS_BLE := \
 	ad_parser \
 	att_db \
 	ble_client \
@@ -64,7 +66,7 @@ SUBDIRS_BLE = \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
-	security_manager \
+	security_manager
 
 # test fails
 
@@ -74,75 +76,31 @@ SUBDIRS_BLE = \
 # sbc \
 #	gatt_server \
 
-.PHONY: coverage coverage-sm-sc.info
+SUBDIRS_UNIQ := $(sort $(SUBDIRS) $(SUBDIRS_BLE))
+test coverage-all clean: $(SUBDIRS_UNIQ)
 
-subdirs:
-	echo Building all tests
-	@set -e; \
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir; \
-	done
+test-ble: MAKECMDGOALS = test
+test-ble: $(SUBDIRS_BLE)
+
+coverage-ble: MAKECMDGOALS = coverage
+coverage-ble: $(SUBDIRS_BLE)
+
+$(SUBDIRS_UNIQ):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+
+.PHONY: $(SUBDIRS_UNIQ)
+.SUFFIXES:
+
+coverage%: export LLVM_PROFILE_FILE=coverage-%m-%p.profraw
+
+coverage%:
+	LCOV_INFO=$$(find */ -iname "*.info") &&\
+	${LCOV} $$(printf -- '-a %s ' $$LCOV_INFO) --ignore-errors unused --ignore-errors inconsistent --rc branch_coverage=1 --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" -o $@.info
+	genhtml $@.info --ignore-errors inconsistent --branch-coverage --demangle-cpp --config-file lcovrc --output-directory $@
+
+coverage: coverage-all
 
 clean:
-	echo Clean all test
-	@set -e; \
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir clean; \
-	done
 	rm -f *.info
-	rm -rf coverage coverage-unit-ble
-	find . -name "*.gcda" -delete
-	find . -name "*.gcno" -delete
+	rm -rf coverage-all coverage-ble
 
-subdirs-coverage:
-	echo Run all tests for coverage
-	@set -e; \
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir coverage; \
-	done
-
-subdirs-coverage-ble:
-	echo Run all BLE tests for coverage
-	@set -e; \
-	for dir in $(SUBDIRS_BLE); do \
-	  $(MAKE) -C $$dir coverage; \
-	done
-
-
-coverage-unit.info: subdirs-coverage
-	# collect traces
-	lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
-
-coverage-unit-ble.info: subdirs-coverage-ble
-	# run tests
-	$(MAKE) subdirs-coverage-ble
-	# collect trace for BLE tests
-	for dir in $(SUBDIRS_BLE); do \
-		lcov --capture --ignore-errors inconsistent --ignore-errors unused --rc branch_coverage=1 --directory "$$dir" --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file "coverage-unit-ble-$$dir.info"; \
-	done
-	lcov -a "coverage-unit-ble*.info" --ignore-errors inconsistent --rc branch_coverage=1  -o coverage-unit-ble.info
-
-coverage-all: coverage-unit.info
-	# generate html output
-	genhtml coverage-unit.info --ignore-errors inconsistent --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
-
-coverage-unit-ble: coverage-unit-ble.info
-	# generate html output
-	genhtml coverage-unit-ble.info --ignore-errors inconsistent --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit-ble
-
-
-coverage: coverage-all coverage-unit-ble
-
-test:
-	echo Run all tests with ASAN
-	@set -e; \
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir test; \
-	done
-
-test-ble:
-	echo Run all BLE tests with ASAN
-	@set -e; \
-	for dir in $(SUBDIRS_BLE); do \
-	  $(MAKE) -C $$dir test; \
-	done

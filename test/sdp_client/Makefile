@@ -24,8 +24,7 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all:  $(addprefix build-coverage/, sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query) \
-	  $(addprefix build-asan/,     sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query)
+all: coverage test
 
 build-coverage/sdp_rfcomm_query: ${COMMON_OBJ_COVERAGE} build-coverage/sdp_client_rfcomm.o
 
@@ -44,18 +43,19 @@ build-asan/service_attribute_search_query: ${COMMON_OBJ_ASAN}
 build-asan/service_search_query: ${COMMON_OBJ_ASAN}
 
 
-test: all
+test: build-asan/sdp_rfcomm_query \
+	  build-asan/general_sdp_query \
+	  build-asan/service_attribute_search_query \
+	  build-asan/service_search_query
 	ASAN_OPTIONS=detect_leaks=0 build-asan/sdp_rfcomm_query
 	build-asan/general_sdp_query
 	build-asan/service_attribute_search_query
 	build-asan/service_search_query
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	ASAN_OPTIONS=detect_leaks=0 build-coverage/sdp_rfcomm_query
-	build-coverage/general_sdp_query
-	build-coverage/service_attribute_search_query
-	build-coverage/service_search_query
+coverage: build-coverage/sdp_rfcomm_query.info \
+		  build-coverage/general_sdp_query.info \
+		  build-coverage/service_attribute_search_query.info \
+		  build-coverage/service_search_query.info
 	
 clean:
 	rm -rf build-coverage build-asan
