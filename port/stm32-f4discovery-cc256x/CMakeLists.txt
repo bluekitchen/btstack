@@ -113,12 +113,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 
     # Create Ozone Project
     set(OZONE_PROJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug)
-    add_custom_command(
-            OUTPUT ${OZONE_PROJECT_FILE}
-            DEPENDS ozone.jdebug
-            COMMAND ${Python_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/replace_string.py ${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE} "EXAMPLE" ${EXAMPLE}
-    )
+    configure_file(${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE})
     list(APPEND SOURCES_EXAMPLE ${OZONE_PROJECT_FILE})
 
     # Create an executable target for the example

@@ -22,7 +22,7 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
-  File.Open ("$(ProjectDir)/EXAMPLE.elf");
+  File.Open ("$(ProjectDir)/${EXAMPLE}.elf");
 }
 
 /*********************************************************************
