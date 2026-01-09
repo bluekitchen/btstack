@@ -190,7 +190,7 @@ TEST_GROUP(DEVICE_INFORMATION_SERVICE_CLIENT){
     }
 
     void setup_service(bool add_characteristic){
-        uint8_t buffer[] = {0x01, 0x02};
+        static uint8_t buffer[] = {0x01, 0x02};
         service = mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION);
         
         if (!add_characteristic) return;
