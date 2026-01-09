@@ -101,8 +101,10 @@ static int source_pdm_bytes_per_ms;
 static int source_pcm_samples_per_irq;
 static int source_pdm_samples_total;
 
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+#endif
 
 #ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
@@ -140,9 +142,9 @@ void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 	}
 #endif
 
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
 
-#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
 	// wait until we can provide timeinfo
 	if (sink_playback_buffer_duration_us == 0) return;
 #endif
@@ -163,9 +165,10 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 	stream_samples++;
 #endif
 
-	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
 
 #ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
+	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
+
 	// wait until we can provide timeinfo
 	if (sink_playback_buffer_duration_us == 0) return;
 #endif
