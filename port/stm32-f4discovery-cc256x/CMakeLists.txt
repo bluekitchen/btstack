@@ -97,6 +97,11 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
     endif()
 
+    # add Audio Player Demo Util
+    if ("audio_player" MATCHES ${EXAMPLE})
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/audio_player_demo_util.c)
+    endif()
+
     # add GATT DB creation
     if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
