@@ -21,7 +21,6 @@ endif()
 # Generate .h from .gatt files
 find_package(Python3 COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-message ("Python: ${Python_EXECUTABLE}")
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
 include_directories(.)
@@ -118,7 +117,7 @@ foreach(EXAMPLE ${EXAMPLES})
         add_custom_command(
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
    DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-   COMMAND ${Python_EXECUTABLE}
+   COMMAND ${Python3_EXECUTABLE}
    ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
   )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
