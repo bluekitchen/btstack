@@ -3258,6 +3258,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                             while (btstack_linked_list_iterator_has_next(&it)) {
                                 hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                 if ((iso_stream->group_id == cig->cig_id) && (iso_stream->stream_id == cis_id)){
+                                    iso_stream->state = HCI_ISO_STREAM_STATE_ACTIVE;
                                     hci_cis_handle_created(iso_stream, status);
                                 }
                             }
@@ -10781,8 +10782,14 @@ static void hci_iso_notify_can_send_now(void){
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_cigs);
     while (btstack_linked_list_iterator_has_next(&it)) {
         le_audio_cig_t * cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
+        // CIG becomes active after all ISO paths have been set-up
+        if (cig->state != LE_AUDIO_CIG_STATE_ACTIVE) continue;
+
         for (uint8_t i=0;i<cig->num_cis;i++){
             hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+            // ignore already closed connections
+            if (iso_stream->state != HCI_ISO_STREAM_STATE_ACTIVE) continue;
+
             if (iso_stream->can_send_now_requested) {
                 if ((iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)) {
                     iso_stream->can_send_now_requested = false;
@@ -10949,7 +10956,7 @@ uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
     if (iso_stream == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if ((iso_stream->iso_type != HCI_ISO_TYPE_CIS) && (iso_stream->state != HCI_ISO_STREAM_STATE_ESTABLISHED)) {
+    if ((iso_stream->iso_type != HCI_ISO_TYPE_CIS) && (iso_stream->state != HCI_ISO_STREAM_STATE_ACTIVE)) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     // get CIG
@@ -10957,10 +10964,14 @@ uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
     if (cig == NULL) {
         iso_stream->can_send_now_requested = true;
     } else {
-        for (uint8_t i = 0; i<cig->num_cis;i++) {
-            if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
-                hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
-                cis->can_send_now_requested = true;
+        if (cig->state == LE_AUDIO_CIG_STATE_ACTIVE) {
+            for (uint8_t i = 0; i<cig->num_cis;i++) {
+                if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
+                    hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+                    if (cis->state == HCI_ISO_STREAM_STATE_ACTIVE) {
+                        cis->can_send_now_requested = true;
+                    }
+                }
             }
         }
     }
