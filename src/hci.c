@@ -4436,7 +4436,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // finalize iso stream for CIS handle
             iso_stream = hci_iso_stream_for_con_handle(handle);
             if (iso_stream != NULL){
-                hci_iso_stream_finalize(iso_stream);
+                if (iso_stream->role == HCI_ROLE_MASTER) {
+                    // Central: reset state, it's freed by gap_cig_remove
+                    iso_stream->state = HCI_ISO_STREAM_STATE_IDLE;
+                } else {
+                    // Peripheral: remove iso stream
+                   hci_iso_stream_finalize(iso_stream);
+                }
                 break;
             }
 #endif
