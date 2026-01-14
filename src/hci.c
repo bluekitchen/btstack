@@ -10693,6 +10693,8 @@ static void hci_iso_notify_can_send_now(void){
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
     while (btstack_linked_list_iterator_has_next(&it)){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        // BIG becomes active after all ISO paths have been set-up
+        if (big->state != LE_AUDIO_BIG_STATE_ACTIVE) continue;
 
 #ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
         // track number completed packet timestamps
@@ -10726,7 +10728,7 @@ static void hci_iso_notify_can_send_now(void){
             uint8_t num_iso_queued_minimum = 0;
             for (i=0;i<big->num_bis;i++){
                 hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
-                if (iso_stream == NULL) continue;
+
                 // handle case where individual ISO packet was sent too late:
                 // for each additionally queued packet, a new one needs to get skipped
                 if (i==0){
@@ -10758,11 +10760,14 @@ static void hci_iso_notify_can_send_now(void){
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
     while (btstack_linked_list_iterator_has_next(&it)){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+        // BIG becomes active after all ISO paths have been set-up
+        if (big->state != LE_AUDIO_BIG_STATE_ACTIVE) continue;
+
         // report bis ready
         uint8_t i;
         for (i=0;i<big->num_bis;i++){
             hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(big->bis_con_handles[i]);
-            if ((iso_stream != NULL) && iso_stream->emit_ready_to_send){
+            if (iso_stream->emit_ready_to_send){
                 iso_stream->emit_ready_to_send = false;
                 hci_emit_bis_can_send_now(big, i);
                 if (hci_stack->hci_packet_buffer_reserved) return;
