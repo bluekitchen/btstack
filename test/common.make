@@ -61,9 +61,10 @@ build-asan/%: build-asan/%.o | build-asan
 
 %.info: %
 	./$<
-	${LLVM_PROFDATA} merge -o $<.profdata $$(find -type f -iname "*.profraw")
-	find -type f -iname "*.profraw" -delete
-	${LLVM_COV} export $< -format=lcov -instr-profile=$<.profdata > $<.info
-	rm $<.profdata
+	${LLVM_PROFDATA} merge -o $<.profdata $$(find . -type f -iname "*.profraw")
+	find . -type f -iname "*.profraw" -delete
+	${LLVM_COV} export $< -ignore-filename-regex="*/test/*" -format=lcov -instr-profile=$<.profdata > $<.temp
+	../flatten_info.py $<.temp -o $<.info
+	rm $<.profdata $<.temp
 
 .NOTPARALLEL: coverage
