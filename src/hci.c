@@ -9334,8 +9334,7 @@ void hci_le_random_address_set(const bd_addr_t random_address){
 uint8_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn){
-        hci_emit_disconnection_complete(handle, 0);
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (conn->state){
