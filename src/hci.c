@@ -5124,6 +5124,9 @@ static void hci_state_reset(void){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
     hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
+    hci_stack->le_audio_cigs = NULL;
+    hci_stack->le_audio_big_syncs = NULL;
+    hci_stack->le_audio_bigs = NULL;
 #endif
 #ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND
     hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
