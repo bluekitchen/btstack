@@ -7399,6 +7399,7 @@ static bool hci_run_iso_tasks(void){
                     }
                 }
                 cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
+                hci_iso_notify_can_send_now();
                 break;
             case LE_AUDIO_CIG_STATE_REMOVE:
                 // check if CIG Active
