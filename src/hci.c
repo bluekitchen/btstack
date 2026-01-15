@@ -10964,14 +10964,10 @@ uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
     if (cig == NULL) {
         iso_stream->can_send_now_requested = true;
     } else {
-        if (cig->state == LE_AUDIO_CIG_STATE_ACTIVE) {
-            for (uint8_t i = 0; i<cig->num_cis;i++) {
-                if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
-                    hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
-                    if (cis->state == HCI_ISO_STREAM_STATE_ACTIVE) {
-                        cis->can_send_now_requested = true;
-                    }
-                }
+        for (uint8_t i = 0; i<cig->num_cis;i++) {
+            if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
+                hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+                cis->can_send_now_requested = true;
             }
         }
     }
