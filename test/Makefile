@@ -101,7 +101,7 @@ coverage%: export LLVM_PROFILE_FILE=coverage-%m-%p.profraw
 coverage%:
 	LCOV_INFO=$$(find */ -iname "*.info") &&\
 	${LCOV} $$(printf -- '-a %s ' $$LCOV_INFO) -j $(JOBS) --demangle-cpp --ignore-errors unused --ignore-errors inconsistent --rc branch_coverage=1 --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" -o $@.info
-	genhtml $@.info --ignore-errors inconsistent -j $(JOBS) --show-navigation --hierarchical --branch-coverage --demangle-cpp --config-file lcovrc --output-directory $@
+	${GENHTML} $@.info --ignore-errors inconsistent -j $(JOBS) --show-navigation --hierarchical --branch-coverage --demangle-cpp --config-file lcovrc --output-directory $@
 
 coverage: coverage-all
 

@@ -4,8 +4,9 @@ LLVM_PROFDATA     ?= llvm-profdata
 LLVM_COV          ?= llvm-cov
 LLVM_PROFILE_FILE ?= default.profraw
 
-BTSTACK_ROOT       =  ../..
+BTSTACK_ROOT      ?=  ../..
 PYTHON             = python3
+LCOV_UTIL          = ${BTSTACK_ROOT}/tool/lcov_util.py
 
 GENERIC_FLAGS    := -O2 -g -Wall -Wextra
 CPPUTEST_CFLAGS  := ${shell pkg-config --cflags cpputest}
@@ -38,7 +39,7 @@ build-%:
 build-asan/%.h: %.gatt | build-asan
 	${PYTHON} ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-build-coverage/%.h: %.gatt| build-coverage
+build-coverage/%.h: %.gatt | build-coverage
 	${PYTHON} ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
@@ -64,7 +65,7 @@ build-asan/%: build-asan/%.o | build-asan
 	${LLVM_PROFDATA} merge -o $<.profdata $$(find . -type f -iname "*.profraw")
 	find . -type f -iname "*.profraw" -delete
 	${LLVM_COV} export $< -ignore-filename-regex="*/test/*" -format=lcov -instr-profile=$<.profdata > $<.temp
-	../flatten_info.py $<.temp -o $<.info
+	${LCOV_UTIL} $<.temp -o $<.info
 	rm $<.profdata $<.temp
 
 .NOTPARALLEL: coverage
