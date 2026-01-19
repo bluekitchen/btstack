@@ -6,6 +6,13 @@ from pathlib import Path
 
 demangle_cpp = 'llvm-cxxfilt'
 whitelist = set()
+use_external_demangle = False
+
+try:
+    import cxxfilt
+    have_cxxfilt = True
+except ImportError:
+    have_cxxfilt = False
 
 def ingest_whitelist(file):
     with open(file, 'r') as fd:
@@ -21,10 +28,14 @@ def in_whitelist(name):
     return False
 
 def demangle(names):
-    print( names )
-    result = subprocess.run( [demangle_cpp, '-p', names], capture_output = True, text = True )
+    if use_external_demangle or not have_cxxfilt:
+        result = subprocess.run( [demangle_cpp, '-p', names], capture_output = True, text = True )
+        return result.stdout.strip()
 
-    return result.stdout.strip()
+    try:
+        return cxxfilt.demangle(names, external_only=False)
+    except (cxxfilt.InvalidName, TypeError, ValueError):
+        return names
 
 parser = argparse.ArgumentParser(prog=sys.argv[0], usage='%(prog)s [options]')
 parser.add_argument('-o', '--output', help='output goes to file')
@@ -36,6 +47,7 @@ args = parser.parse_args()
 
 if args.demangle_cpp:
     demangle_cpp = args.demangle_cpp
+    use_external_demangle = True
 
 if args.whitelist:
     ingest_whitelist(args.whitelist)
@@ -82,4 +94,3 @@ for file in args.files:
                 output.write(f"{command}:{','.join(arguments)}\n")
             else:
                 output.write(f"{line}\n")
-
