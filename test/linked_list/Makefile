@@ -32,5 +32,4 @@ test: build-asan/btstack_linked_list_test
 	
 coverage: build-coverage/btstack_linked_list_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

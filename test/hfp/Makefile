@@ -128,6 +128,5 @@ pklg-test: build-asan/pklg_cvsd_test
 	build-asan/pklg_cvsd_test pklg/test4
 	build-asan/pklg_cvsd_test pklg/test5
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	rm -rf *.wav results pklg/*.wav

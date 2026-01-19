@@ -20,6 +20,5 @@ coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/sqrt_test
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

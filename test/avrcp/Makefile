@@ -96,6 +96,6 @@ test: ${AVRCP_TESTS}
 
 coverage:
 
-clean:
+clean: clean-common
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc 
 	rm -f *.gcno *.gcda

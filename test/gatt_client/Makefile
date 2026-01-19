@@ -50,6 +50,5 @@ test: build-asan/gatt_client_test build-asan/le_central
 		
 coverage: build-coverage/gatt_client_test.info build-coverage/le_central.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

@@ -29,6 +29,5 @@ test: build-asan/hid_parser_test
 	
 coverage: build-coverage/hid_parser_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

@@ -29,6 +29,5 @@ test: build-asan/ad_parser_test
 
 coverage: build-coverage/ad_parser_test.info
 
-clean:
-	rm -rf build-coverage
-	rm -rf build-asan
+clean: clean-common
+

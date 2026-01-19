@@ -46,6 +46,5 @@ test: build-asan/test_le_scan build-asan/hci_test
 
 coverage: build-coverage/test_le_scan.info build-coverage/hci_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

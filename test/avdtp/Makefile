@@ -112,6 +112,6 @@ test:
 
 coverage:
 
-clean:
+clean: clean-common
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o
 	rm -f *.gcno *.gcda

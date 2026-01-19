@@ -28,6 +28,4 @@ test: build-asan/btstack_util_test
 
 coverage: build-coverage/btstack_util_test.info
 
-clean:
-	rm -rf build-coverage
-	rm -rf build-asan
+clean: clean-common

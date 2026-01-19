@@ -61,6 +61,5 @@ test: build-asan/gatt_server_test
 		
 coverage: build-coverage/gatt_server_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

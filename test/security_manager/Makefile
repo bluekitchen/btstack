@@ -50,5 +50,4 @@ test: build-asan/security_manager
 	
 coverage: build-coverage/security_manager.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

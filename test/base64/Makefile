@@ -28,5 +28,4 @@ test: build-asan/base64_decoder_test
 	
 coverage: build-coverage/base64_decoder_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

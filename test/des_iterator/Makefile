@@ -31,6 +31,5 @@ test: build-asan/des_iterator_test
 
 coverage: build-coverage/des_iterator_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

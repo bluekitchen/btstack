@@ -50,6 +50,5 @@ coverage: build-coverage/battery_service_client_test.info \
 		  build-coverage/ancs_client_test.info \
 		  build-coverage/device_information_service_client_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

@@ -69,3 +69,8 @@ build-asan/%: build-asan/%.o | build-asan
 	rm $<.profdata $<.temp
 
 .NOTPARALLEL: coverage
+
+.PHONY: clean-common
+clean-common:
+	rm -rf build-coverage build-asan
+	rm -rf *.gcno *.gcda *.profraw

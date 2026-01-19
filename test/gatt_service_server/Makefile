@@ -94,6 +94,5 @@ coverage: build-coverage/battery_service_server_test.info \
 		  build-coverage/bond_management_service_server_test.info \
 		  build-coverage/heart_rate_service_server_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

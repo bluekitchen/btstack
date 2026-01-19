@@ -33,6 +33,5 @@ test: build-asan/avdtp_util_test
 
 coverage: build-coverage/avdtp_util_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

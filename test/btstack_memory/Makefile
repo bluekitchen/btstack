@@ -63,5 +63,5 @@ coverage: build-coverage/btstack_memory_pool_test_single.info \
           build-coverage/btstack_memory_test_none.info \
           build-coverage/btstack_memory_test_malloc.info
 
-clean:
+clean: clean-common
 	rm -rf build-*

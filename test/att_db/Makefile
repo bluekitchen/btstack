@@ -49,6 +49,5 @@ test: build-asan/att_db_util_test build-asan/att_db_test
 
 coverage: build-coverage/att_db_util_test.info build-coverage/att_db_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

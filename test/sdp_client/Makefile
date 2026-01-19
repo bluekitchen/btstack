@@ -57,5 +57,4 @@ coverage: build-coverage/sdp_rfcomm_query.info \
 		  build-coverage/service_attribute_search_query.info \
 		  build-coverage/service_search_query.info
 	
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

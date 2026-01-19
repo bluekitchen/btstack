@@ -58,5 +58,4 @@ test: build-asan/tlv_test build-asan/tlv_test_write_once build-asan/tlv_test_del
 
 coverage: build-coverage/tlv_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

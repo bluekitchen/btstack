@@ -34,5 +34,4 @@ test: build-asan/tlv_test
 
 coverage: build-coverage/tlv_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

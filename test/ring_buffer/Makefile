@@ -24,6 +24,5 @@ test: build-asan/btstack_ring_buffer_test
 	
 coverage: build-coverage/btstack_ring_buffer_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

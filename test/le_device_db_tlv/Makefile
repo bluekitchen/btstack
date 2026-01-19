@@ -41,5 +41,4 @@ test: build-asan/le_device_db_tlv_test
 		
 coverage: build-coverage/le_device_db_tlv_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

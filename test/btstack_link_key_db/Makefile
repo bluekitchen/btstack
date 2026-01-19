@@ -52,6 +52,5 @@ test: build-asan/btstack_link_key_db_memory_test \
 coverage: build-coverage/btstack_link_key_db_memory_test.info \
 		  build-coverage/btstack_link_key_db_fs_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

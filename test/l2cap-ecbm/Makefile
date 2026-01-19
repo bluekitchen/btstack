@@ -44,6 +44,5 @@ test: build-asan/l2cap_ecbm_test
 
 coverage: build-coverage/l2cap_ecbm_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

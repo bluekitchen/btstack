@@ -99,5 +99,4 @@ test: $(addprefix build-asan/,$(TESTS_SRCS))
 
 coverage:
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

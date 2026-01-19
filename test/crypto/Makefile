@@ -56,6 +56,5 @@ coverage: build-coverage/aes_ccm_test.info \
 		  build-coverage/aes_cmac_test.info \
 		  build-coverage/aes_cmac_test2.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

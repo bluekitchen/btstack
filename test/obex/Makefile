@@ -35,6 +35,5 @@ test: build-asan/obex_message_builder_test build-asan/obex_parser_test
 
 coverage: build-coverage/obex_message_builder_test.info build-coverage/obex_parser_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

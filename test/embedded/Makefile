@@ -96,5 +96,4 @@ coverage: build-coverage/embedded_test.info \
 		  build-coverage/hci_event_test.info \
 		  build-coverage/freertos_test.info
 
-clean:
-	rm -rf build-coverage build-asan *.dSYM
+clean: clean-common

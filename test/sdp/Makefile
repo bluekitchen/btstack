@@ -65,6 +65,5 @@ test: build-asan/sdp_record_builder
 
 coverage: build-coverage/sdp_record_builder.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	
