@@ -106,6 +106,7 @@ coverage%:
 coverage: coverage-all
 
 clean:
-	rm -f *.info
 	rm -rf coverage-all coverage-ble
-
+	find . -name "*.gcda" -delete
+	find . -name "*.gcno" -delete
+	find . -name "*.info" -delete
