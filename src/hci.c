@@ -7407,9 +7407,16 @@ static bool hci_run_iso_tasks(void){
                 for (i = 0; i < cig->num_cis; i++) {
                     if (cig->cis_con_handles[i] != HCI_CON_HANDLE_INVALID){
                         hci_iso_stream_t * stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
-                        if (stream != NULL){
-                            cig_active = true;
-                            break;
+                        switch (stream->state) {
+                            case HCI_ISO_STREAM_STATE_IDLE:
+                                // Either never established or already disconnected, discard
+                                cig->cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
+                                hci_iso_stream_finalize(stream);
+                                break;
+                            default:
+                                // assume active otherwise
+                                cig_active = true;
+                                break;
                         }
                     }
                 }
