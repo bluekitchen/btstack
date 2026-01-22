@@ -477,7 +477,7 @@ static void avctp_send_reject_cmd_wrong_pid(avrcp_connection_t * connection){
     // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     packet[0] = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 1;
-    big_endian_store_16(packet, 1, connection->message_body[0]);
+    big_endian_store_16(packet, 1, connection->target_invalid_pid);
     l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
 }
 
@@ -1039,9 +1039,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
     if (pid != BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL){
         log_info("Invalid pid 0x%02x, expected 0x%02x", pid, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL);
+        connection->state = AVCTP_W2_SEND_RESPONSE;
         connection->target_reject_transport_header = true;
         connection->target_invalid_pid = pid;
-        connection->state = AVCTP_W2_SEND_RESPONSE;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
         return;
     }
