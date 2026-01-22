@@ -7402,7 +7402,7 @@ static bool hci_run_iso_tasks(void){
                 hci_iso_notify_can_send_now();
                 break;
             case LE_AUDIO_CIG_STATE_REMOVE:
-                // check if CIG Active
+                // close CIS, before removing CIG
                 cig_active = false;
                 for (i = 0; i < cig->num_cis; i++) {
                     if (cig->cis_con_handles[i] != HCI_CON_HANDLE_INVALID){
@@ -7413,8 +7413,16 @@ static bool hci_run_iso_tasks(void){
                                 cig->cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
                                 hci_iso_stream_finalize(stream);
                                 break;
+                            case HCI_ISO_STREAM_STATE_ESTABLISHED:
+                            case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_INPUT:
+                            case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT:
+                            case HCI_ISO_STREAM_STATE_ACTIVE:
+                                // CIS exists, trigger close CIS
+                                stream->state = HCI_ISO_STREAM_STATE_W2_CLOSE;
+                                cig_active = true;
+                                break;
                             default:
-                                // assume active otherwise
+                                // otherwise assume CIS is stil active
                                 cig_active = true;
                                 break;
                         }
@@ -11039,16 +11047,8 @@ uint8_t gap_cig_remove(uint8_t cig_id){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    // close active CIS
-    uint8_t i;
-    for (i=0;i<cig->num_cis;i++){
-        hci_iso_stream_t * stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
-        if (stream != NULL){
-            stream->state = HCI_ISO_STREAM_STATE_W2_CLOSE;
-        }
-    }
+    // trigger CIG shutdown
     cig->state = LE_AUDIO_CIG_STATE_REMOVE;
-
     hci_run();
 
     return ERROR_CODE_SUCCESS;
