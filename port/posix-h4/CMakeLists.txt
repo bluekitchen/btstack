@@ -17,14 +17,13 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 endif()
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    add_compile_options(
-      -fsanitize=undefined -fsanitize=address
-  )
-    add_link_options(
-      -fsanitize=undefined -fsanitize=address
-  )
-endif()
+# Enable undefined and address sanitizers
+#  add_compile_options(
+#      -fsanitize=undefined -fsanitize=address
+#  )
+#  add_link_options(
+#      -fsanitize=undefined -fsanitize=address
+#  )
 
 # to generate .h from .gatt files
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
