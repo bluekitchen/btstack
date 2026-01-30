@@ -350,6 +350,20 @@ typedef enum {
     HCI_OPCODE_HCI_LE_SET_PERIODIC_SYNC_SUBEVENT = HCI_OPCODE (OGF_LE_CONTROLLER, 0x84),
     HCI_OPCODE_HCI_LE_READ_ALL_LOCAL_SUPPORTED_FEATURES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x87),
     HCI_OPCODE_HCI_LE_READ_ALL_REMOTE_FEATURES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x88),
+    HCI_OPCODE_HCI_LE_CS_READ_LOCAL_SUPPORTED_CAPABILITIES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x89),
+    HCI_OPCODE_HCI_LE_CS_READ_REMOTE_SUPPORTED_CAPABILITIES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8A),
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_SUPPORTED_CAPABILITIES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8B),
+    HCI_OPCODE_HCI_LE_CS_SECURITY_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8C),
+    HCI_OPCODE_HCI_LE_CS_SET_DEFAULT_SETTINGS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8D),
+    HCI_OPCODE_HCI_LE_CS_READ_REMOTE_FAE_TABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8E),
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_FAE_TABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8F),
+    HCI_OPCODE_HCI_LE_CS_CREATE_CONFIG = HCI_OPCODE (OGF_LE_CONTROLLER, 0x90),
+    HCI_OPCODE_HCI_LE_CS_REMOVE_CONFIG = HCI_OPCODE (OGF_LE_CONTROLLER, 0x91),
+    HCI_OPCODE_HCI_LE_CS_SET_CHANNEL_CLASSIFICATION = HCI_OPCODE (OGF_LE_CONTROLLER, 0x92),
+    HCI_OPCODE_HCI_LE_CS_SET_PROCEDURE_PARAMETERS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x93),
+    HCI_OPCODE_HCI_LE_CS_SET_PROCEDURE_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x94),
+    HCI_OPCODE_HCI_LE_CS_TEST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x95),
+    HCI_OPCODE_HCI_LE_CS_TEST_END = HCI_OPCODE (OGF_LE_CONTROLLER, 0x96),
     HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_MONITORED_ADVERTISERS_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x98),
     HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_MONITORED_ADVERTISERS_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x99),
     HCI_OPCODE_HCI_LE_CLEAR_MONITORED_ADVERTISERS_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x9A),
@@ -530,6 +544,20 @@ extern const hci_cmd_t hci_le_create_big_test;
 extern const hci_cmd_t hci_le_create_cis;
 extern const hci_cmd_t hci_le_create_connection;
 extern const hci_cmd_t hci_le_create_connection_cancel;
+extern const hci_cmd_t hci_le_cs_create_config;
+extern const hci_cmd_t hci_le_cs_read_local_supported_capabilities;
+extern const hci_cmd_t hci_le_cs_read_remote_fae_table;
+extern const hci_cmd_t hci_le_cs_read_remote_supported_capabilities;
+extern const hci_cmd_t hci_le_cs_remove_config;
+extern const hci_cmd_t hci_le_cs_security_enable;
+extern const hci_cmd_t hci_le_cs_set_channel_classification;
+extern const hci_cmd_t hci_le_cs_set_default_settings;
+extern const hci_cmd_t hci_le_cs_set_procedure_enable;
+extern const hci_cmd_t hci_le_cs_set_procedure_parameters;
+extern const hci_cmd_t hci_le_cs_test;
+extern const hci_cmd_t hci_le_cs_test_end;
+extern const hci_cmd_t hci_le_cs_write_cached_remote_fae_table;
+extern const hci_cmd_t hci_le_cs_write_cached_remote_supported_capabilities;
 extern const hci_cmd_t hci_le_encrypt;
 extern const hci_cmd_t hci_le_enhanced_read_transmit_power_level;
 extern const hci_cmd_t hci_le_enable_monitoring_advertisers;

@@ -2649,6 +2649,211 @@ const hci_cmd_t hci_le_read_minimum_supported_connection_interval = {
     HCI_OPCODE_HCI_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL, ""
 };
 
+/**
+ * LE Channel Sounding Commands (Core Spec v6.2, Vol 4, Part E, Sections 7.8.130-7.8.143)
+ */
+
+/**
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.130
+ */
+const hci_cmd_t hci_le_cs_read_local_supported_capabilities = {
+    HCI_OPCODE_HCI_LE_CS_READ_LOCAL_SUPPORTED_CAPABILITIES, ""
+};
+
+/**
+ * @param connection_handle
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.131
+ */
+const hci_cmd_t hci_le_cs_read_remote_supported_capabilities = {
+    HCI_OPCODE_HCI_LE_CS_READ_REMOTE_SUPPORTED_CAPABILITIES, "H"
+};
+
+/**
+ * @param connection_handle
+ * @param num_config_supported
+ * @param max_consecutive_procedures_supported
+ * @param num_antennas_supported
+ * @param max_antenna_paths_supported
+ * @param roles_supported
+ * @param modes_supported
+ * @param rtt_capability
+ * @param rtt_aa_only_n
+ * @param rtt_sounding_n
+ * @param rtt_random_payload_n
+ * @param nadm_sounding_capability
+ * @param nadm_random_capability
+ * @param cs_sync_phys_supported
+ * @param subfeatures_supported
+ * @param t_ip1_times_supported
+ * @param t_ip2_times_supported
+ * @param t_fcs_times_supported
+ * @param t_pm_times_supported
+ * @param t_sw_time_supported
+ * @param tx_snr_capability
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.132
+ */
+const hci_cmd_t hci_le_cs_write_cached_remote_supported_capabilities = {
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_SUPPORTED_CAPABILITIES, "H1211111111221222221"
+};
+
+/**
+ * @param connection_handle
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.133
+ */
+const hci_cmd_t hci_le_cs_security_enable = {
+    HCI_OPCODE_HCI_LE_CS_SECURITY_ENABLE, "H"
+};
+
+/**
+ * @param connection_handle
+ * @param role_enable
+ * @param cs_sync_ant_sel
+ * @param max_tx_power
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.134
+ */
+const hci_cmd_t hci_le_cs_set_default_settings = {
+    HCI_OPCODE_HCI_LE_CS_SET_DEFAULT_SETTINGS, "H111"
+};
+
+/**
+ * @param connection_handle
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.135
+ */
+const hci_cmd_t hci_le_cs_read_remote_fae_table = {
+    HCI_OPCODE_HCI_LE_CS_READ_REMOTE_FAE_TABLE, "H"
+};
+
+/**
+ * @param connection_handle
+ * @param remote_fae_table_0 (16 bytes)
+ * @param remote_fae_table_1 (16 bytes)
+ * @param remote_fae_table_2 (16 bytes)
+ * @param remote_fae_table_3 (16 bytes)
+ * @param remote_fae_table_4 (8 bytes)
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.136
+ */
+const hci_cmd_t hci_le_cs_write_cached_remote_fae_table = {
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_FAE_TABLE, "HPPPPD"
+};
+
+/**
+ * @param connection_handle
+ * @param config_id
+ * @param create_context
+ * @param main_mode_type
+ * @param sub_mode_type
+ * @param min_main_mode_steps
+ * @param max_main_mode_steps
+ * @param main_mode_repetition
+ * @param mode_0_steps
+ * @param role
+ * @param rtt_type
+ * @param cs_sync_phy
+ * @param channel_map_0_3
+ * @param channel_map_4_7
+ * @param channel_map_8_9
+ * @param channel_map_repetition
+ * @param channel_selection_type
+ * @param ch3c_shape
+ * @param ch3c_jump
+ * @param reserved
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.137
+ */
+const hci_cmd_t hci_le_cs_create_config = {
+    HCI_OPCODE_HCI_LE_CS_CREATE_CONFIG, "H1111111111144211111"
+};
+
+/**
+ * @param connection_handle
+ * @param config_id
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.138
+ */
+const hci_cmd_t hci_le_cs_remove_config = {
+    HCI_OPCODE_HCI_LE_CS_REMOVE_CONFIG, "H1"
+};
+
+/**
+ * @param ch_classification_0_3
+ * @param ch_classification_4_7
+ * @param ch_classification_8_9
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.139
+ */
+const hci_cmd_t hci_le_cs_set_channel_classification = {
+    HCI_OPCODE_HCI_LE_CS_SET_CHANNEL_CLASSIFICATION, "442"
+};
+
+/**
+ * @param connection_handle
+ * @param config_id
+ * @param max_procedure_len
+ * @param min_procedure_interval
+ * @param max_procedure_interval
+ * @param max_procedure_count
+ * @param min_subevent_len (3 bytes)
+ * @param max_subevent_len (3 bytes)
+ * @param tone_antenna_config_selection
+ * @param phy
+ * @param tx_power_delta
+ * @param preferred_peer_antenna
+ * @param snr_control_initiator
+ * @param snr_control_reflector
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.140
+ */
+const hci_cmd_t hci_le_cs_set_procedure_parameters = {
+    HCI_OPCODE_HCI_LE_CS_SET_PROCEDURE_PARAMETERS, "H1222233111111"
+};
+
+/**
+ * @param connection_handle
+ * @param config_id
+ * @param enable
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.141
+ */
+const hci_cmd_t hci_le_cs_set_procedure_enable = {
+    HCI_OPCODE_HCI_LE_CS_SET_PROCEDURE_ENABLE, "H11"
+};
+
+/**
+ * @param main_mode_type
+ * @param sub_mode_type
+ * @param main_mode_repetition
+ * @param mode_0_steps
+ * @param role
+ * @param rtt_type
+ * @param cs_sync_phy
+ * @param cs_sync_antenna_selection
+ * @param subevent_len (3 bytes)
+ * @param subevent_interval
+ * @param max_num_subevents
+ * @param transmit_power_level
+ * @param t_ip1_time
+ * @param t_ip2_time
+ * @param t_fcs_time
+ * @param t_pm_time
+ * @param t_sw_time
+ * @param tone_antenna_config_selection
+ * @param reserved
+ * @param snr_control_initiator
+ * @param snr_control_reflector
+ * @param drbg_nonce
+ * @param channel_map_repetition
+ * @param override_config
+ * @param override_parameters_length
+ * @param override_parameters_data
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.142
+ */
+const hci_cmd_t hci_le_cs_test = {
+    HCI_OPCODE_HCI_LE_CS_TEST, "111111113211111111111212JV"
+};
+
+/**
+ * Core Spec v6.2, Vol 4, Part E, Section 7.8.143
+ */
+const hci_cmd_t hci_le_cs_test_end = {
+    HCI_OPCODE_HCI_LE_CS_TEST_END, ""
+};
+
+
 #endif
 
 // Broadcom / Cypress specific HCI commands
