@@ -1310,11 +1310,6 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    if (stream_endpoint->l2cap_media_cid == 0){
-        log_error("avdtp_abort_stream: no media connection for stream_endpoint with seid %d found", local_seid);
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
     if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->abort_stream){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
