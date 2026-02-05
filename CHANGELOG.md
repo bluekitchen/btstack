@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SDP Server: return Invalid Continuation State if needed
 
 ### Changed
+- HCI: emit HCI_EVENT_CIS_CAN_SEND_NOW and HCI_EVENT_BIS_CAN_SEND_NOW via registered ISO packet handler
 - GAP: gap_disconnect returns ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER instead of emitting HCI Disconnected Event
 - ADVTP Initiator: handle fragmented Get(All)Capabilities response
 - HID Device: add hid_device_accept_truncated_hid_reports to optionally accept shorter HID reports

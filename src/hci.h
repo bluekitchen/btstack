@@ -1484,12 +1484,14 @@ void hci_remove_event_handler(btstack_packet_callback_registration_t * callback_
 void hci_register_acl_packet_handler(btstack_packet_handler_t handler);
 
 /**
- * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
+ * @brief Registers a packet handler for SCO data. Used by HSP and HFP profiles.
+ * Receives HCI_EVENT_SCO_CAN_SEND_NOW
  */
 void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
 /**
- * @brief Registers a packet handler for ISO data. Used for LE Audio profiles
+ * @brief Registers a packet handler for ISO data. Used by LE Audio profiles
+ * Receives HCI_EVENT_CIS_CAN_SEND_NOW and HCI_EVENT_BIS_CAN_SEND_NOW
  */
 void hci_register_iso_packet_handler(btstack_packet_handler_t handler);
 
