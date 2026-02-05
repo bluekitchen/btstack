@@ -10648,7 +10648,6 @@ static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_ind
     event[pos++] = big->big_handle;
     event[pos++] = bis_index;
     little_endian_store_16(event, pos, big->bis_con_handles[bis_index]);
-    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
     hci_stack->iso_packet_handler(HCI_EVENT_PACKET, big->bis_con_handles[bis_index], &event[0], pos);
 }
 
