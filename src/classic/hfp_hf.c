@@ -1624,9 +1624,9 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
 
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         if (strcmp(hfp_connection->ag_indicators[i].name, "callsetup") == 0){
-            hfp_callsetup_status_t new_hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
             bool ringing_old = hfp_is_ringing(hfp_connection->hf_callsetup_status);
-            bool ringing_new = hfp_is_ringing(new_hf_callsetup_status);
+            hfp_connection->hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
+            bool ringing_new = hfp_is_ringing(hfp_connection->hf_callsetup_status);
             if (ringing_old != ringing_new){
                 if (ringing_new){
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
@@ -1634,21 +1634,21 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
                 }
             }
-            hfp_connection->hf_callsetup_status = new_hf_callsetup_status;
         } else if (strcmp(hfp_connection->ag_indicators[i].name, "callheld") == 0){
             hfp_connection->hf_callheld_status = (hfp_callheld_status_t) hfp_connection->ag_indicators[i].status;
             // avoid set but not used warning
             (void) hfp_connection->hf_callheld_status;
         } else if (strcmp(hfp_connection->ag_indicators[i].name, "call") == 0){
-            hfp_call_status_t new_hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
-            if (hfp_connection->hf_call_status != new_hf_call_status){
-                if (new_hf_call_status == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
+            hfp_call_status_t call_status_old = hfp_connection->hf_call_status;
+            hfp_connection->hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
+            hfp_call_status_t call_status_new = hfp_connection->hf_call_status;
+            if (call_status_old != call_status_new){
+                if (call_status_new == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
                 } else {
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
                 }
             }
-            hfp_connection->hf_call_status = new_hf_call_status;
         }
     }
 }
