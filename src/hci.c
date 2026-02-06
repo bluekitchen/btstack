@@ -3569,6 +3569,12 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 #endif
 	}
 
+    // At least with Nordic SoftDevice, we might get a Public Identity Address for an outgoing connection with a Public Address
+    // In that case, the BD_ADDR is the same. Check if there's already an HCI connection for this
+    if ((conn == NULL) && (addr_type == BD_ADDR_TYPE_LE_PUBLIC_IDENTITY)) {
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC);
+    }
+
 	// LE connections are auto-accepted, so just create a connection if there isn't one already
 	if (!conn){
 		conn = create_connection_for_bd_addr_and_type(addr, addr_type, role);
