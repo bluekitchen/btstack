@@ -52,7 +52,7 @@
 #include <unistd.h>
 #include <hci_dump_posix_stdout.h>
 
-#include "btstack_config.h"
+#include <btstack_config.h>
 
 #include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
