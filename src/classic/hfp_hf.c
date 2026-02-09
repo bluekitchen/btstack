@@ -1007,24 +1007,32 @@ static bool call_setup_state_machine(hfp_connection_t * hfp_connection){
     return false;
 }
 
-static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
+static bool hfp_hf_hci_command_ready(hfp_connection_t * hfp_connection) {
 
-	btstack_assert(hfp_connection != NULL);
-	btstack_assert(hfp_connection->local_role == HFP_ROLE_HF);
+    bool ready = false;
 
-	// during SDP query, RFCOMM CID is not set
-	if (hfp_connection->rfcomm_cid == 0) return;
-
-#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
-    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
-        hfp_finalize_connection_context(hfp_connection);
-        return;
-    }
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    ready |= hfp_connection->cc256x_send_wbs_disassociate;
+    ready |= hfp_connection->cc256x_send_write_codec_config;
+    ready |= hfp_connection->cc256x_send_wbs_associate;
 #endif
+#ifdef ENABLE_BCM_PCM_WBS
+    ready |= hfp_connection->bcm_send_enable_wbs);
+    ready |= hfp_connection->bcm_send_write_i2spcm_interface_param;
+    ready |= hfp_connection->bcm_send_disable_wbs);
+#endif
+#ifdef ENABLE_RTK_PCM_WBS
+   ready |= hfp_connection->rtk_send_sco_config;
+#endif
+#ifdef ENABLE_NXP_PCM_WBS
+    ready |= hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID;
+    ready |= hfp_connection->nxp_stop_audio_handle != HCI_CON_HANDLE_INVALID;
+#endif
+    ready |= hfp_connection->accept_sco && (hfp_sco_setup_active() == false);
+    return ready;
+}
 
-	// assert command could be sent
-	if (hci_can_send_command_packet_now() == 0) return;
-
+static void hfp_hf_hci_command_send(hfp_connection_t * hfp_connection) {
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     // WBS Disassociate
     if (hfp_connection->cc256x_send_wbs_disassociate){
@@ -1103,6 +1111,35 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 
+    btstack_unreachable();
+}
+
+static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
+
+	btstack_assert(hfp_connection != NULL);
+	btstack_assert(hfp_connection->local_role == HFP_ROLE_HF);
+
+	// during SDP query, RFCOMM CID is not set
+	if (hfp_connection->rfcomm_cid == 0) return;
+
+#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
+    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
+        hfp_finalize_connection_context(hfp_connection);
+        return;
+    }
+#endif
+
+    // check if we need to send command
+    if (hfp_hf_hci_command_ready(hfp_connection)) {
+        if (hci_can_send_command_packet_now()) {
+            hfp_hf_hci_command_send(hfp_connection);
+        } else {
+            // trigger events
+            hfp_set_hf_hci_command_pending();
+        }
+    }
+
+    // make sure we could send an RFCOMM packet if needed
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;
