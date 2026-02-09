@@ -2483,6 +2483,13 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         return;
     }
 
+#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
+    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
+        hfp_finalize_connection_context(hfp_connection);
+        return;
+    }
+#endif
+
     // configure NBS/WBS if needed using vendor-specific HCI commands
     if (hci_can_send_command_packet_now()) {
 #ifdef ENABLE_CC256X_ASSISTED_HFP
@@ -2554,13 +2561,6 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         }
 #endif
     }
-
-#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
-    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
-        hfp_finalize_connection_context(hfp_connection);
-        return;
-    }
-#endif
 
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
