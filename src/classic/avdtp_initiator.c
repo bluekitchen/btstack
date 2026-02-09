@@ -457,8 +457,6 @@ void avdtp_initiator_stream_config_subsm_handle_can_send_now_signaling(avdtp_con
     if (stream_endpoint->abort_stream){
         stream_endpoint->abort_stream = 0;
 		stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W4_ANSWER;
-        connection->initiator_local_seid = stream_endpoint->sep.seid;
-        connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
         connection->initiator_transaction_label = avdtp_get_next_transaction_label();
         avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label, connection->initiator_remote_seid);
         return;
