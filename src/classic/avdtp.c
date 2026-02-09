@@ -1325,6 +1325,30 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avdtp_abort_stream_with_remote_seid(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid) {
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    if (!stream_endpoint) {
+        log_error("avdtp_abort_stream: no stream_endpoint with seid %d found", local_seid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (stream_endpoint->abort_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    stream_endpoint->abort_stream = 1;
+    connection->initiator_local_seid = local_seid;
+    connection->initiator_remote_seid = remote_seid;
+    avdtp_request_can_send_now_initiator(connection);
+    return ERROR_CODE_SUCCESS;
+
+}
+
 uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){

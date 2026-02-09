@@ -711,6 +711,9 @@ uint8_t avdtp_stop_stream (uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
+// required to send ABORT in IDLE state, which is allowed by spec but useless
+uint8_t avdtp_abort_stream_with_remote_seid(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid);
+
 uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid);
 uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_role_t role);
