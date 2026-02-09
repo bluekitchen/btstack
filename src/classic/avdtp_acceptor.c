@@ -423,16 +423,28 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     }
                     break;
                 case AVDTP_SI_ABORT:
-                     switch (stream_endpoint->state){
+                    // AVDTP Spec v1.3, 9.9 Abort Stream
+                    switch (stream_endpoint->state){
                         case AVDTP_STREAM_ENDPOINT_CONFIGURED:
                         case AVDTP_STREAM_ENDPOINT_CLOSING:
                         case AVDTP_STREAM_ENDPOINT_OPENED:
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            // Figure 9.16 and Figure 9.17 depict the state transition, from ACP and INT point of views,
+                            // when the state is CONFIGURED, OPEN, STREAMING or CLOSING
                             log_info("W2_ANSWER_ABORT_STREAM");
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_ABORT_STREAM;
                             break;
-                        default:
+                        case AVDTP_STREAM_ENDPOINT_IDLE:
+                             // However, AVDTP_ABORT_CMD can be sent or received in IDLE state.
+                             // In the event that an AVDTP_ABORT_CMD is received in IDLE state, ACP or INT shall reply
+                             // with an AVDTP_ABORT_RSP, no state change is required. As there should be no Transport
+                             // Channels established no actions have to be taken to release the Transport Channels.
+                             log_info("W2_ANSWER_ABORT_STREAM (idle)");
+                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_ABORT_STREAM;
+                             break;
+                    default:
+                            // Reject command in other states
                             log_info("AVDTP_SI_ABORT, bad state %d ", stream_endpoint->state);
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                             connection->error_code = AVDTP_ERROR_CODE_BAD_STATE;
