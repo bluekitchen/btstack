@@ -2471,7 +2471,7 @@ static bool hfp_ag_hci_command_ready(hfp_connection_t * hfp_connection) {
 }
 
 static void hfp_ag_hci_command_send(hfp_connection_t * hfp_connection) {
-    return hfp_hci_command_send(hfp_connection);
+    hfp_hci_command_send(hfp_connection);
 }
 
 static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
