@@ -389,13 +389,15 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
         packet     += 2;
         to_process -= 2;
 
+        if (avdtp_unpack_service_capabilities_has_errors(connection, signal_identifier, category, cap_len) > 0){
+            return 0;
+        }
+
         if (cap_len > to_process){
             connection->reject_service_category = category;
             connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
             return 0;
         }
-
-        if (avdtp_unpack_service_capabilities_has_errors(connection, signal_identifier, category, cap_len)) return 0;
 
         int category_valid = 1;
 
