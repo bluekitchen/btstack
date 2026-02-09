@@ -908,6 +908,9 @@ const char * hfp_enhanced_call_status2str(uint16_t index);
 const char * hfp_enhanced_call_mode2str(uint16_t index);
 const char * hfp_enhanced_call_mpty2str(uint16_t index);
 
+void hfp_set_hf_hci_command_pending(void);
+void hfp_set_ag_hci_command_pending(void);
+
 /**
  * @brief Prepare for immediate SCO connection.
  *        Triggers sending of vendor-specific commands to enable mSBC Codec in Controller

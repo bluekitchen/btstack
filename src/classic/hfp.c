@@ -87,6 +87,9 @@ static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 static uint8_t          hfp_hf_indicators_nr;
 static const uint16_t * hfp_hf_indicators;
 
+static bool hfp_hf_hci_command_pending;
+static bool hfp_ag_hci_command_pending;
+
 static uint16_t hfp_allowed_sco_packet_types;
 static hfp_connection_t * hfp_sco_establishment_active;
 
@@ -848,7 +851,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     hfp_connection_t * hfp_connection = NULL;
     uint8_t status;
 
-    bool forward_event_to_all = false;
+    bool forward_if_pending = false;
 
     log_debug("HFP HCI event handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
@@ -885,9 +888,14 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }            
             break;
 
+        case HCI_EVENT_TRANSPORT_PACKET_SENT:
+            // to allow sending HCI Commands
+            forward_if_pending = true;
+            break;
+
         case HCI_EVENT_COMMAND_COMPLETE:
             // to allow sending HCI Commands
-            forward_event_to_all = true;
+            forward_if_pending = true;
             break;
 
         case HCI_EVENT_COMMAND_STATUS:
@@ -911,7 +919,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                                     hfp_connection->negotiated_codec, 0, 0);
             }
             // to allow sending HCI Commands
-            forward_event_to_all = true;
+            forward_if_pending = true;
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
@@ -1036,11 +1044,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
     }
 
-    if (forward_event_to_all) {
-        if (hfp_ag_callback != NULL) {
+    if (forward_if_pending) {
+        if (hfp_ag_hci_command_pending) {
+            hfp_ag_hci_command_pending = false;
+            btstack_assert(hfp_ag_callback != NULL);
             (*hfp_ag_callback)(packet_type, channel, packet, size);
         }
-        if (hfp_hf_callback != NULL) {
+        else if (hfp_hf_hci_command_pending) {
+            hfp_hf_hci_command_pending = false;
+            btstack_assert(hfp_hf_callback != NULL);
             (*hfp_hf_callback)(packet_type, channel, packet, size);
         }
     }
@@ -2416,6 +2428,13 @@ void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command)
 
 void hfp_register_custom_hf_command(hfp_custom_at_command_t * custom_at_command){
     btstack_linked_list_add(&hfp_custom_commands_hf, (btstack_linked_item_t *) custom_at_command);
+}
+
+void hfp_set_hf_hci_command_pending(void) {
+    hfp_hf_hci_command_pending = true;
+}
+void hfp_set_ag_hci_command_pending(void) {
+    hfp_ag_hci_command_pending = true;
 }
 
 // HFP H2 Synchronization - might get moved into a hfp_h2.c
