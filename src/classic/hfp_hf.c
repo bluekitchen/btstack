@@ -1015,6 +1015,13 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
 
+#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
+    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
+        hfp_finalize_connection_context(hfp_connection);
+        return;
+    }
+#endif
+
 	// assert command could be sent
 	if (hci_can_send_command_packet_now() == 0) return;
 
@@ -1082,12 +1089,6 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         hci_con_handle_t sco_handle = hfp_connection->nxp_stop_audio_handle;
         hfp_connection->nxp_stop_audio_handle = HCI_CON_HANDLE_INVALID;
         hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 1, 0, sco_handle, 0);
-        return;
-    }
-#endif
-#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
-    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
-        hfp_finalize_connection_context(hfp_connection);
         return;
     }
 #endif
