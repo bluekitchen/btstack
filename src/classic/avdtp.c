@@ -598,7 +598,7 @@ handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection
             }
             break;
         default:
-                offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
+            offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
             if (offset > 0) {
                 avdtp_initiator_stream_config_subsm(connection, packet, size, offset);
             }

@@ -300,10 +300,17 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
     connection->error_code = 0;
     
     if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || (category > AVDTP_DELAY_REPORTING)){
-        log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
-        connection->reject_service_category = category;
-        connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;
-        return 1;
+        switch (signal_identifier){
+            case AVDTP_SI_GET_CAPABILITIES:
+            case AVDTP_SI_GET_ALL_CAPABILITIES:
+                // ignore capabilities with reserved ID
+                return 0;
+            default:
+                log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
+                connection->reject_service_category = category;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;
+                return 1;
+        }
     }
 
     if (signal_identifier == AVDTP_SI_RECONFIGURE){
