@@ -2315,16 +2315,16 @@ bool hfp_hci_command_ready(hfp_connection_t * hfp_connection) {
     ready |= hfp_connection->cc256x_send_wbs_associate;
 #endif
 #ifdef ENABLE_BCM_PCM_WBS
-    ready |= hfp_connection->bcm_send_enable_wbs);
+    ready |= hfp_connection->bcm_send_enable_wbs;
     ready |= hfp_connection->bcm_send_write_i2spcm_interface_param;
-    ready |= hfp_connection->bcm_send_disable_wbs);
+    ready |= hfp_connection->bcm_send_disable_wbs;
 #endif
 #ifdef ENABLE_RTK_PCM_WBS
     ready |= hfp_connection->rtk_send_sco_config;
 #endif
 #ifdef ENABLE_NXP_PCM_WBS
     ready |= hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID;
-    ready |= hfp_connection->nxp_stop_audio_handle != HCI_CON_HANDLE_INVALID;
+    ready |= hfp_connection->nxp_stop_audio_handle  != HCI_CON_HANDLE_INVALID;
 #endif
     return ready;
 }
