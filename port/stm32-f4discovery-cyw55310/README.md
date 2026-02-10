@@ -17,28 +17,28 @@ STCubeMX was used to provide the HAL, initialize the device, and create an initi
 
 ### Setup
 
-- Make sure the mini dip switches on the IF310 development kit are set as below. Next to each each switch is a signal multiplexer IC with an easy to read/find silkscreen symbol.
+- Make sure the mini dip switches on the IF310 development kit are set as below. 
 
-| Switch                 | IC   | Position |
-|------------------------|------|----------|
-| FTDI 3V3 Level Shifter | U8   | OFF / EN |
-| FTDI vs RP2040 Switch  | U9   | ON / L   |
-| Ext. TDM vs. SMARC     | U6   | OFF / H  |
-| TDM1 vs. RP2040        | U20  | OFF / H  |
+| Switch | Name                   | Position | Label       |
+| ------ | ---------------------- | -------- | ----------- |
+| S15    | FTDI 3V3 Level Shifter | OFF      | ON          |
+| S12    | FTDI vs RP2040 Switch  | ON       | FTDI        |
+| S11    | Ext. TDM vs. SMARC     | OFF      | IF310       |
+| S10    | TDM1 vs. RP2040        | OFF      | RP2040_TDM1 |
 
 - Connect F4 Discovery board with the IF310 Development Kit using Female-to-Female Dupont Wires.
 
-| STM32            | PIN  | Vela IF310 DK   | CYW55310    | Comment    | Color  |
-|------------------|------|-----------------|-------------|------------|--------|
-| GND              | GND  | BT_REG_ON_3V3-GND | GND         | Right pin  | Gray   |
-| VDD              | VDD  | BT_REG_ON_3V3-3V3 | VDD         | Left pin   | Purple |
-| USART2_TX        | PA2  |                 | N.C.        | Console TX |        |
-| USART2_RX        | PA3  |                 | N.C         | Console RX |        |
-| Bluetooth Enable | PE14 | BT_REG_ON_3V3-REG_ON | BT_REG_ON   | Middle pin | Yellow |
-| USART3_TX        | PD8  | FTDI_3.3-TX     | BT_UART_RX  |            | Black  |
-| USART3_RX        | PD9  | FTDI_3.3-RX     | BT_UART_TX  |            | Brown  |
-| USART3_CTS       | PD11 | FTDI_3.3-CTS    | BT_UART_RTS |            | Red    | 
-| USART3_RTS       | PD12 | FTDI_3.3-RTS    | BT_UART_CTS |            | Orange |
+| STM32            | PIN  | Vela IF310 DK        | PIN   | CYW55310    | Comment    | Color  |
+| ---------------- | ---- | -------------------- | ----- | ----------- | ---------- | ------ |
+| GND              | GND  | FTDI-GND             | J16-1 | GND         | Right pin  | Gray   |
+| VDD              | VDD  | BT_REG_ON_3V3-3V3    | J24-1 | VDD         | Left pin   | Purple |
+| USART2_TX        | PA2  |                      |       | N.C.        | Console TX |        |
+| USART2_RX        | PA3  |                      |       | N.C         | Console RX |        |
+| Bluetooth Enable | PE14 | BT_REG_ON_3V3-REG_ON | J24-2 | BT_REG_ON   | Middle pin | Yellow |
+| USART3_TX        | PD8  | FTDI_3.3-TX          | J16-4 | BT_UART_RX  |            | Black  |
+| USART3_RX        | PD9  | FTDI_3.3-RX          | J16-5 | BT_UART_TX  |            | Brown  |
+| USART3_CTS       | PD11 | FTDI_3.3-CTS         | J16-2 | BT_UART_RTS |            | Red    |
+| USART3_RTS       | PD12 | FTDI_3.3-RTS         | J16-6 | BT_UART_CTS |            | Orange |
 
 - Connect the F4 Discovery board to your desktop via the USB Mini connector.
 - If you don't use SEGGER RTT for the console, connect USART2 of the STM32 via pins PA2 & PA3 to an USB-to-UART adapter that is connected to your desktop.
