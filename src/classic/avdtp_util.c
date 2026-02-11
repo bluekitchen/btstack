@@ -980,6 +980,42 @@ static void avdtp_signaling_emit_media_codec_capability(uint16_t avdtp_cid, uint
     }
 }
 
+void avdtp_signaling_emit_capabilities_of_service_category(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
+                                       avdtp_service_category_t service_category) {
+    switch (service_category) {
+        case AVDTP_MEDIA_CODEC:
+            avdtp_signaling_emit_media_codec_capability(avdtp_cid, remote_seid, capabilities->media_codec);
+            break;
+        case AVDTP_MEDIA_TRANSPORT:
+            avdtp_signaling_emit_media_transport_capability(avdtp_cid, remote_seid);
+            break;
+        case AVDTP_REPORTING:
+            avdtp_signaling_emit_reporting_capability(avdtp_cid, remote_seid);
+            break;
+        case AVDTP_RECOVERY:
+            avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->content_protection);
+            break;
+        case AVDTP_CONTENT_PROTECTION:
+            avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->content_protection);
+            break;
+        case AVDTP_HEADER_COMPRESSION:
+            avdtp_signaling_emit_header_compression_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->header_compression);
+            break;
+        case AVDTP_MULTIPLEXING:
+            avdtp_signaling_emit_content_multiplexing_capability(avdtp_cid, remote_seid,
+                                                                 &capabilities->multiplexing_mode);
+            break;
+        case AVDTP_DELAY_REPORTING:
+            avdtp_signaling_emit_delay_reporting_capability(avdtp_cid, remote_seid);
+            break;
+        default:
+            break;
+    }
+}
+
 // emit events for all capabilities incl. final done event
 void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
 									   uint16_t registered_service_categories) {
