@@ -79,23 +79,26 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
     avdtp_stream_endpoint_t * stream_endpoint_for_event = NULL;
 
     avdtp_sep_t sep;
-    if (connection->initiator_connection_state == AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER) {
-        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-    } else {
-		stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
-		if (stream_endpoint == NULL) {
-			log_debug("no stream endpoint for local seid %u", connection->initiator_local_seid);
-			return;
-		}
-		log_debug("using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
+    switch (connection->initiator_connection_state){
+        case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
+            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+            break;
+        default:
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
+            if (stream_endpoint == NULL) {
+                log_debug("no stream endpoint for local seid %u", connection->initiator_local_seid);
+                return;
+            }
+            log_debug("using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
 
-        sep.seid = connection->initiator_remote_seid;
-        
-        if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
-            log_error("initiator_config_state is in wrong state %d, expected %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER);
-            return;
-        }
-        stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
+            sep.seid = connection->initiator_remote_seid;
+
+            if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
+                log_error("initiator_config_state is in wrong state %d, expected %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER);
+                return;
+            }
+            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
+            break;
     }
     
     switch (connection->initiator_signaling_packet.message_type){
