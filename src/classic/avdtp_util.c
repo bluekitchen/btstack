@@ -212,9 +212,10 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
     signaling_header->packet_type = (avdtp_packet_type_t)((packet[pos] >> 2) & 0x03);
     signaling_header->message_type = (avdtp_message_type_t) (packet[pos] & 0x03);
     pos++;
-    memset(signaling_header->command, 0, sizeof(signaling_header->command));
+    
     switch (signaling_header->packet_type){
         case AVDTP_SINGLE_PACKET:
+            memset(signaling_header->command, 0, sizeof(signaling_header->command));
             signaling_header->num_packets = 0;
             signaling_header->offset = 0;
             signaling_header->size = 0;
@@ -223,6 +224,7 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             signaling_header->num_packets = 0;
             break;
         case AVDTP_START_PACKET:
+            memset(signaling_header->command, 0, sizeof(signaling_header->command));
             signaling_header->num_packets = packet[pos++];
             if (pos < 3) return 0;
             signaling_header->size = 0;
