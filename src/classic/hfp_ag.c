@@ -2475,19 +2475,19 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
 
-    if ((hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) && hfp_connection->release_audio_connection){
-        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
-        hfp_connection->release_audio_connection = 0;
-        gap_disconnect(hfp_connection->sco_handle);
-        return;
-    }
-
 #if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
     if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
         hfp_finalize_connection_context(hfp_connection);
         return;
     }
 #endif
+
+    if (hfp_connection->release_audio_connection){
+        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
+        hfp_connection->release_audio_connection = 0;
+        gap_disconnect(hfp_connection->sco_handle);
+        return;
+    }
 
     // check if we need to send command
     if (hfp_ag_hci_command_ready(hfp_connection)) {
