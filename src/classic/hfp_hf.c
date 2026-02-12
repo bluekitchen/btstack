@@ -970,13 +970,6 @@ static bool hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if ((hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) ||
         (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return false;
 
-    if (hfp_connection->release_audio_connection){
-        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
-        hfp_connection->release_audio_connection = 0;
-        gap_disconnect(hfp_connection->sco_handle);
-        return true;
-    }
-
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return false;
 
     // run codecs exchange
@@ -1041,6 +1034,13 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 #endif
+
+    if (hfp_connection->release_audio_connection){
+        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
+        hfp_connection->release_audio_connection = 0;
+        gap_disconnect(hfp_connection->sco_handle);
+        return;
+    }
 
     // check if we need to send command
     if (hfp_hf_hci_command_ready(hfp_connection)) {
