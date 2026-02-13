@@ -17,7 +17,8 @@ COMMON = \
 	btstack_util.c		  \
 	btstack_linked_list.c \
 	hci_dump.c			  \
-    avdtp_util.c
+    avdtp_util.c         \
+    avdtp_initiator.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))

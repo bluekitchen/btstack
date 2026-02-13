@@ -52,17 +52,29 @@
 
 #include "classic/avdtp_util.h"
 #include "classic/avdtp.h"
+#include "classic/avdtp_initiator.h"
 #include "classic/avdtp_util.h"
+#include "btstack_event.h"
 
 
 // mock start
+static uint8_t emitted_events[16][64];
+static uint16_t emitted_event_sizes[16];
+static uint16_t emitted_events_count;
+
 extern "C" uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     UNUSED(local_cid);
     return 1024;
 }
 extern "C" void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size){
-    UNUSED(packet);
-    UNUSED(size);
+    if (emitted_events_count >= 16) return;
+    uint16_t copy_size = size;
+    if (copy_size > sizeof(emitted_events[0])){
+        copy_size = sizeof(emitted_events[0]);
+    }
+    memcpy(emitted_events[emitted_events_count], packet, copy_size);
+    emitted_event_sizes[emitted_events_count] = copy_size;
+    emitted_events_count++;
 }
 extern "C" void avdtp_emit_source(uint8_t * packet, uint16_t size){
     UNUSED(packet);
@@ -75,6 +87,48 @@ extern "C" uint8_t l2cap_request_can_send_now_event(uint16_t local_cid){
 extern "C" btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t * stream_endpoint){
     UNUSED(stream_endpoint);
     return NULL;
+}
+extern "C" uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
+    UNUSED(local_cid);
+    UNUSED(data);
+    UNUSED(len);
+    return ERROR_CODE_SUCCESS;
+}
+extern "C" uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
+    UNUSED(packet_handler);
+    UNUSED(address);
+    UNUSED(psm);
+    UNUSED(mtu);
+    UNUSED(out_local_cid);
+    return ERROR_CODE_SUCCESS;
+}
+extern "C" uint8_t l2cap_disconnect(uint16_t local_cid){
+    UNUSED(local_cid);
+    return ERROR_CODE_SUCCESS;
+}
+extern "C" void l2cap_reserve_packet_buffer(void){
+}
+extern "C" uint8_t * l2cap_get_outgoing_buffer(void){
+    static uint8_t buffer[128];
+    return buffer;
+}
+extern "C" uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
+    UNUSED(local_cid);
+    UNUSED(len);
+    return ERROR_CODE_SUCCESS;
+}
+extern "C" avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid){
+    UNUSED(seid);
+    return NULL;
+}
+extern "C" uint8_t avdtp_get_next_transaction_label(void){
+    return 1;
+}
+extern "C" void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
 }
 // mock end
 
@@ -98,6 +152,10 @@ TEST_GROUP(AvdtpUtil){
     avdtp_signaling_packet_t signaling_packet;
 
     void setup(){
+        emitted_events_count = 0;
+        memset(emitted_events, 0, sizeof(emitted_events));
+        memset(emitted_event_sizes, 0, sizeof(emitted_event_sizes));
+
         caps.recovery.recovery_type = 0x01;                  // 0x01 = RFC2733
         caps.recovery.maximum_recovery_window_size = 0x01;   // 0x01 to 0x18, for a Transport Packet
         caps.recovery.maximum_number_media_packets = 0x01;
@@ -230,6 +288,66 @@ TEST(AvdtpUtil, avdtp_unpack_service_capabilities_test){
     MEMCMP_EQUAL(sbc_codec_capabilities, capabilities.media_codec.media_codec_information, 4);
 
     
+}
+
+TEST(AvdtpUtil, avdtp_initiator_get_capabilities_reassembly){
+    avdtp_connection_t reassembly_connection;
+    memset(&reassembly_connection, 0, sizeof(reassembly_connection));
+    reassembly_connection.avdtp_cid = 0x1234;
+    reassembly_connection.initiator_remote_seid = 0x07;
+    reassembly_connection.initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER;
+    reassembly_connection.initiator_signaling_packet.message_type = AVDTP_RESPONSE_ACCEPT_MSG;
+    reassembly_connection.initiator_signaling_packet.signal_identifier = AVDTP_SI_GET_CAPABILITIES;
+    reassembly_connection.initiator_signaling_packet.num_packets = 3;
+
+    // categories: MEDIA_TRANSPORT (len 0), REPORTING (len 0), DELAY_REPORTING (len 0)
+    uint8_t part_1[] = { 0x01, 0x00 };
+    uint8_t part_2[] = { 0x02, 0x00 };
+    uint8_t part_3[] = { 0x08, 0x00 };
+
+    reassembly_connection.initiator_signaling_packet.packet_type = AVDTP_START_PACKET;
+    avdtp_initiator_stream_config_subsm(&reassembly_connection, part_1, sizeof(part_1), 0);
+
+    reassembly_connection.initiator_signaling_packet.packet_type = AVDTP_CONTINUE_PACKET;
+    avdtp_initiator_stream_config_subsm(&reassembly_connection, part_2, sizeof(part_2), 0);
+
+    reassembly_connection.initiator_signaling_packet.packet_type = AVDTP_END_PACKET;
+    avdtp_initiator_stream_config_subsm(&reassembly_connection, part_3, sizeof(part_3), 0);
+
+    uint8_t filtered_subevents[8];
+    uint16_t filtered_indices[8];
+    uint16_t filtered_count = 0;
+    for (uint16_t i = 0; i < emitted_events_count; i++){
+        uint8_t subevent_code = emitted_events[i][2];
+        if (subevent_code == AVDTP_SUBEVENT_SIGNALING_ACCEPT){
+            continue;
+        }
+        filtered_subevents[filtered_count] = subevent_code;
+        filtered_indices[filtered_count] = i;
+        filtered_count++;
+    }
+
+    CHECK_EQUAL(4, filtered_count);
+    CHECK_EQUAL(AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, filtered_subevents[0]);
+    CHECK_EQUAL(AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, filtered_subevents[1]);
+    CHECK_EQUAL(AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, filtered_subevents[2]);
+    CHECK_EQUAL(AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE, filtered_subevents[3]);
+
+    CHECK_EQUAL(HCI_EVENT_AVDTP_META, emitted_events[filtered_indices[0]][0]);
+    CHECK_EQUAL(0x1234, avdtp_subevent_signaling_media_transport_capability_get_avdtp_cid(emitted_events[filtered_indices[0]]));
+    CHECK_EQUAL(0x07, avdtp_subevent_signaling_media_transport_capability_get_remote_seid(emitted_events[filtered_indices[0]]));
+
+    CHECK_EQUAL(HCI_EVENT_AVDTP_META, emitted_events[filtered_indices[1]][0]);
+    CHECK_EQUAL(0x1234, avdtp_subevent_signaling_reporting_capability_get_avdtp_cid(emitted_events[filtered_indices[1]]));
+    CHECK_EQUAL(0x07, avdtp_subevent_signaling_reporting_capability_get_remote_seid(emitted_events[filtered_indices[1]]));
+
+    CHECK_EQUAL(HCI_EVENT_AVDTP_META, emitted_events[filtered_indices[2]][0]);
+    CHECK_EQUAL(0x1234, avdtp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(emitted_events[filtered_indices[2]]));
+    CHECK_EQUAL(0x07, avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(emitted_events[filtered_indices[2]]));
+
+    CHECK_EQUAL(HCI_EVENT_AVDTP_META, emitted_events[filtered_indices[3]][0]);
+    CHECK_EQUAL(0x1234, avdtp_subevent_signaling_capabilities_done_get_avdtp_cid(emitted_events[filtered_indices[3]]));
+    CHECK_EQUAL(0x07, avdtp_subevent_signaling_capabilities_done_get_remote_seid(emitted_events[filtered_indices[3]]));
 }
 
 int main (int argc, const char * argv[]){
