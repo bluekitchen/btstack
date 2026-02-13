@@ -554,6 +554,13 @@ typedef struct {
     struct avdtp_stream_endpoint * local_stream_endpoint;
 } a2dp_config_process_t;
 
+typedef enum {
+    AVDTP_PARSER_GET_SERVICE_CATEGORY = 0,
+    AVDTP_PARSER_GET_CAPABILITIES_VALUE_LEN,
+    AVDTP_PARSER_GET_CAPABILITIES_VALUE,
+    AVDTP_PARSER_IGNORE_REST_OF_CAPABILITY_VALUE
+} avdtp_capability_parser_state_t;
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
@@ -579,6 +586,8 @@ typedef struct {
 
     // used to prepare outgoing signaling packets
     avdtp_signaling_packet_t initiator_signaling_packet;
+    avdtp_capability_parser_state_t capability_parser_state;
+    avdtp_service_category_t  parser_service_category_id;
 
     uint8_t initiator_local_seid;
     uint8_t initiator_remote_seid;

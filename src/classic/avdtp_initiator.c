@@ -73,17 +73,106 @@ static int avdtp_initiator_send_signaling_cmd_delay_report(uint16_t cid, uint8_t
     return l2cap_send(cid, command, sizeof(command));
 }
 
+static void avdtp_signaling_emit_capability_done(uint16_t avdtp_cid, uint8_t remote_seid) {
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = remote_seid;
+    avdtp_emit_sink_and_source(event, pos);
+}
+
+
+static void avdtp_initiator_parser_reset(avdtp_connection_t * connection){
+    memset(connection->initiator_signaling_packet.command, 0, sizeof(connection->initiator_signaling_packet.command));
+    connection->initiator_signaling_packet.offset = 0;
+    connection->initiator_signaling_packet.size = 0;
+    connection->capability_parser_state = AVDTP_PARSER_GET_SERVICE_CATEGORY;
+    connection->parser_service_category_id = AVDTP_SERVICE_CATEGORY_INVALID_FF;
+}
+
+static void avdtp_initiator_parser_handle_service_category_complete(avdtp_connection_t *connection) {
+    avdtp_capabilities_t capabilities;
+    avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &capabilities, connection->initiator_signaling_packet.command, connection->initiator_signaling_packet.offset);
+    if (connection->error_code == ERROR_CODE_SUCCESS){
+        avdtp_signaling_emit_capabilities_of_service_category(connection->avdtp_cid, connection->initiator_remote_seid, &capabilities, connection->parser_service_category_id);
+    }
+    avdtp_initiator_parser_reset(connection);
+}
+
+static void avdtp_initiator_parser_process_byte(uint8_t byte, avdtp_connection_t * connection){
+    switch(connection->capability_parser_state){
+        case AVDTP_PARSER_GET_SERVICE_CATEGORY:
+            connection->parser_service_category_id = byte;
+            connection->initiator_signaling_packet.command[connection->initiator_signaling_packet.offset++] = byte;
+            connection->capability_parser_state = AVDTP_PARSER_GET_CAPABILITIES_VALUE_LEN;
+            return;
+
+        case AVDTP_PARSER_GET_CAPABILITIES_VALUE_LEN:
+            connection->initiator_signaling_packet.size = byte;
+            connection->initiator_signaling_packet.command[connection->initiator_signaling_packet.offset++] = byte;
+
+            if (connection->initiator_signaling_packet.size == 0){
+                avdtp_initiator_parser_handle_service_category_complete(connection);
+            } else {
+                connection->capability_parser_state = AVDTP_PARSER_GET_CAPABILITIES_VALUE;
+            }
+            break;
+
+        case AVDTP_PARSER_GET_CAPABILITIES_VALUE:
+            if (connection->initiator_signaling_packet.offset >= sizeof(connection->initiator_signaling_packet.command)){
+                connection->capability_parser_state = AVDTP_PARSER_IGNORE_REST_OF_CAPABILITY_VALUE;
+                connection->parser_service_category_id = AVDTP_SERVICE_CATEGORY_INVALID_FF;
+                break;
+            }
+            connection->initiator_signaling_packet.command[connection->initiator_signaling_packet.offset++] = byte;
+
+            if (connection->initiator_signaling_packet.offset < connection->initiator_signaling_packet.size){
+                break;
+            }
+            avdtp_initiator_parser_handle_service_category_complete(connection);
+            break;
+
+        case AVDTP_PARSER_IGNORE_REST_OF_CAPABILITY_VALUE:
+            // wait for next capability
+            if (connection->initiator_signaling_packet.offset == connection->initiator_signaling_packet.size) {
+                avdtp_initiator_parser_reset(connection);
+            };
+            break;
+        default:
+            break;
+    }
+}
+
+static void avdtp_initiator_parser_process_packet(avdtp_connection_t * connection, uint8_t * packet, uint16_t num_bytes_to_read){
+    int i;
+    for (i=0;i<num_bytes_to_read;i++){
+        avdtp_initiator_parser_process_byte(packet[i], connection);
+    }
+}
+
 void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
     // int status = 0;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_stream_endpoint_t * stream_endpoint_for_event = NULL;
 
     avdtp_sep_t sep;
+    avdtp_signaling_packet_t * signaling_header = &connection->initiator_signaling_packet;
+
     switch (connection->initiator_connection_state){
+        case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES:
+        case AVDTP_INITIATOR_STREAM_CONFIG_IDLE:
+            return;
+
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
             break;
+
         default:
+            // W2 cases
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
             if (stream_endpoint == NULL) {
                 log_debug("no stream endpoint for local seid %u", connection->initiator_local_seid);
@@ -136,10 +225,41 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
-					avdtp_signaling_emit_capabilities(connection->avdtp_cid,
-													  connection->initiator_remote_seid, &sep.capabilities,
-													  sep.registered_service_categories);
+                    signaling_header->size = size - offset;
+                    if (signaling_header->size == 0){
+                        log_info("    ERROR: 0 bytes fragmented packet\n");
+                        break;
+                    }
+                    signaling_header->offset = 0;
+
+                    if ((signaling_header->packet_type != AVDTP_SINGLE_PACKET) && (signaling_header->num_packets == 0)) {
+                        log_info("    ERROR: wrong num fragmented packets\n");
+                        break;
+                    }
+
+                    switch (signaling_header->packet_type){
+                        case AVDTP_START_PACKET:
+                            avdtp_initiator_parser_reset(connection);
+                            avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
+                            break;
+
+                        case AVDTP_CONTINUE_PACKET:
+                            avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
+                            break;
+
+                        case AVDTP_END_PACKET:
+                            avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
+                            avdtp_initiator_parser_reset(connection);
+                            avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);
+                            break;
+
+                        default: // single packet
+                            sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
+                            avdtp_signaling_emit_capabilities(connection->avdtp_cid,
+                                                              connection->initiator_remote_seid, &sep.capabilities,
+                                                              sep.registered_service_categories);
+                            break;
+                    }
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
