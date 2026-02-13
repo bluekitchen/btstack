@@ -165,10 +165,27 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES:
         case AVDTP_INITIATOR_STREAM_CONFIG_IDLE:
+            // no pending request, so we ignore packets here
             return;
 
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
-            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+            switch (signaling_header->packet_type){
+                case AVDTP_START_PACKET:
+                case AVDTP_CONTINUE_PACKET:
+                    switch (connection->initiator_signaling_packet.signal_identifier) {
+                        case AVDTP_SI_GET_CAPABILITIES:
+                        case AVDTP_SI_GET_ALL_CAPABILITIES:
+                            // hold AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER state
+                            break;
+                        default:
+                            log_info("Fragmentation not handled for signal identifier %d", connection->initiator_signaling_packet.signal_identifier);
+                            return;
+                    }
+                    break;
+                default: // single/end packet
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    break;
+            }
             break;
 
         default:
