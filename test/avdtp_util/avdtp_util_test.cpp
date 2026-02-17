@@ -216,7 +216,6 @@ TEST_GROUP(AvdtpUtil){
     }
 };
 
-
 TEST(AvdtpUtil, avdtp_pack_service_capabilities_test){
     uint8_t packet[200];
     {
@@ -567,6 +566,7 @@ TEST(AvdtpUtil, avdtp_initiator_get_all_capabilities_reassembly_all_categories_s
                 saw_delay_reporting = true;
                 break;
             case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
+                saw_sbc_codec = true;
                 CHECK_EQUAL(0x1234, avdtp_subevent_signaling_media_codec_sbc_capability_get_avdtp_cid(emitted_events[i]));
                 CHECK_EQUAL(0x07, avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(emitted_events[i]));
                 CHECK_EQUAL(AVDTP_AUDIO, avdtp_subevent_signaling_media_codec_sbc_capability_get_media_type(emitted_events[i]));
