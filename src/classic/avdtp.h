@@ -588,6 +588,7 @@ typedef struct {
     avdtp_signaling_packet_t initiator_signaling_packet;
     avdtp_capability_parser_state_t capability_parser_state;
     avdtp_service_category_t  parser_service_category_id;
+    uint8_t parser_value_offset;
 
     uint8_t initiator_local_seid;
     uint8_t initiator_remote_seid;
