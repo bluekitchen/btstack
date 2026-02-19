@@ -589,6 +589,7 @@ typedef struct {
     avdtp_capability_parser_state_t capability_parser_state;
     avdtp_service_category_t  parser_service_category_id;
     uint8_t parser_value_offset;
+    uint8_t parser_value_size;
 
     uint8_t initiator_local_seid;
     uint8_t initiator_remote_seid;
