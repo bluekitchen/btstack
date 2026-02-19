@@ -88,8 +88,8 @@ static void avdtp_signaling_emit_capability_done(uint16_t avdtp_cid, uint8_t rem
 
 static void avdtp_initiator_parser_reset(avdtp_connection_t * connection){
     memset(connection->initiator_signaling_packet.command, 0, sizeof(connection->initiator_signaling_packet.command));
-    connection->initiator_signaling_packet.offset = 0;
-    connection->initiator_signaling_packet.size = 0;
+    connection->parser_value_offset = 0;
+    connection->parser_value_size = 0;
     connection->capability_parser_state = AVDTP_PARSER_GET_SERVICE_CATEGORY;
     connection->parser_service_category_id = AVDTP_SERVICE_CATEGORY_INVALID_FF;
 }
@@ -105,22 +105,25 @@ static void avdtp_initiator_parser_handle_service_category_complete(avdtp_connec
 static void avdtp_initiator_parser_process_byte(uint8_t byte, avdtp_connection_t * connection){
     switch(connection->capability_parser_state){
         case AVDTP_PARSER_GET_SERVICE_CATEGORY:
-            connection->initiator_signaling_packet.offset = 0;
-            connection->parser_value_offset = 0;
-            connection->parser_value_size = 0;
-
             connection->parser_service_category_id = byte;
-            connection->initiator_signaling_packet.command[connection->initiator_signaling_packet.offset++] = byte;
+            connection->initiator_signaling_packet.command[0] = byte;
             connection->capability_parser_state = AVDTP_PARSER_GET_CAPABILITIES_VALUE_LEN;
             return;
 
         case AVDTP_PARSER_GET_CAPABILITIES_VALUE_LEN:
             connection->parser_value_offset = 0;
             connection->parser_value_size = byte;
-            // printf("[%02d] category 0%02x, size %d\n", connection->initiator_signaling_packet.offset, connection->parser_service_category_id, connection->initiator_signaling_packet.size);
-            connection->initiator_signaling_packet.command[connection->initiator_signaling_packet.offset++] = byte;
+            connection->initiator_signaling_packet.command[1] = byte;
 
-            // TODO: too big to fit
+            // if the capability value does not fit into buffer, ignore the value
+            if (connection->parser_value_size > (AVDTP_MAX_DATA_BUFFER_SIZE - 2)){
+                connection->capability_parser_state = AVDTP_PARSER_IGNORE_REST_OF_CAPABILITY_VALUE;
+                log_info("Capability 0x%02X value length %u exceeds the buffer size %u",
+                         connection->initiator_signaling_packet.command[0],
+                         connection->parser_value_size,
+                         AVDTP_MAX_DATA_BUFFER_SIZE - 2);
+                break;
+            }
 
             if (connection->parser_value_size == 0){
                 avdtp_initiator_parser_handle_service_category_complete(connection);
@@ -134,7 +137,6 @@ static void avdtp_initiator_parser_process_byte(uint8_t byte, avdtp_connection_t
         case AVDTP_PARSER_GET_CAPABILITIES_VALUE:
             connection->initiator_signaling_packet.command[connection->parser_value_offset + 2] = byte;
             connection->parser_value_offset++;
-            connection->initiator_signaling_packet.offset++;
 
             if (connection->parser_value_offset == connection->parser_value_size) {
                 // done, emit value
@@ -142,13 +144,13 @@ static void avdtp_initiator_parser_process_byte(uint8_t byte, avdtp_connection_t
                 connection->capability_parser_state = AVDTP_PARSER_GET_SERVICE_CATEGORY;
                 connection->parser_service_category_id = AVDTP_SERVICE_CATEGORY_INVALID_FF;
             }
-
             break;
+
         case AVDTP_PARSER_IGNORE_REST_OF_CAPABILITY_VALUE:
             connection->parser_value_offset++;
 
             if (connection->parser_value_offset == connection->parser_value_size) {
-                // done
+                // done, don't emit the capability
                 connection->capability_parser_state = AVDTP_PARSER_GET_SERVICE_CATEGORY;
                 connection->parser_service_category_id = AVDTP_SERVICE_CATEGORY_INVALID_FF;
             }
@@ -158,11 +160,8 @@ static void avdtp_initiator_parser_process_byte(uint8_t byte, avdtp_connection_t
     }
 }
 
-static void avdtp_initiator_parser_process_packet(avdtp_connection_t * connection, uint8_t * packet, uint16_t num_bytes_to_read){
-    connection->initiator_signaling_packet.size = num_bytes_to_read;
-    connection->initiator_signaling_packet.offset = 0;
-    int i;
-    for (i=0;i<num_bytes_to_read;i++){
+static void avdtp_initiator_parser_process_packet(avdtp_connection_t * connection, uint8_t * packet, uint16_t packet_size){
+    for (int i=0; i < packet_size; i++){
         avdtp_initiator_parser_process_byte(packet[i], connection);
     }
 }
