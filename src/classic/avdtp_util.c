@@ -425,8 +425,15 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 caps->recovery.maximum_number_media_packets = data[pos++];
                 break;
             case AVDTP_CONTENT_PROTECTION:
-                caps->content_protection.cp_type = big_endian_read_16(data, 0);
+                caps->content_protection.cp_type = big_endian_read_16(data, pos);
+                pos += 2;
                 caps->content_protection.cp_type_value_len = cap_len - 2;
+                memset(caps->content_protection.cp_type_value, 0, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
+                if (caps->content_protection.cp_type_value_len <= AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN){
+                    memcpy(caps->content_protection.cp_type_value, data + pos, caps->content_protection.cp_type_value_len);
+                }
+                pos += caps->content_protection.cp_type_value_len;
+
                 // connection->reject_service_category = category;
                 // connection->error_code = UNSUPPORTED_CONFIGURATION;
                 // support for content protection goes here
@@ -1005,8 +1012,8 @@ void avdtp_signaling_emit_capabilities_of_service_category(uint16_t avdtp_cid, u
             avdtp_signaling_emit_reporting_capability(avdtp_cid, remote_seid);
             break;
         case AVDTP_RECOVERY:
-            avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
-                                                               &capabilities->content_protection);
+            avdtp_signaling_emit_recovery_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->recovery);
             break;
         case AVDTP_CONTENT_PROTECTION:
             avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
