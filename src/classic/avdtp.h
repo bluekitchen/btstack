@@ -62,6 +62,7 @@ extern "C" {
 #define AVDTP_MAX_NUM_SEPS 10
 #define AVDTP_MAX_CSRC_NUM 15
 #define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
+#define AVDTP_MAX_DATA_BUFFER_SIZE                  200
 
 // Supported Features
 #define AVDTP_SOURCE_FEATURE_MASK_PLAYER        0x0001u
@@ -503,7 +504,7 @@ typedef enum {
 } avdtp_initiator_connection_state_t;
 
 typedef struct {
-    uint8_t  command[200];
+    uint8_t  command[AVDTP_MAX_DATA_BUFFER_SIZE];
     uint16_t size;
     uint16_t offset;
     uint8_t  acp_seid;
