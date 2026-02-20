@@ -1468,6 +1468,7 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
 
     connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION;
+    connection->initiator_signaling_packet.signal_identifier = AVDTP_SI_GET_CAPABILITIES;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection);
 }

@@ -181,6 +181,28 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             return;
 
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
+            if (signaling_header->packet_type != AVDTP_SINGLE_PACKET) {
+                if (connection->initiator_signaling_packet.num_packets == 0) {
+                    log_info("received fragmented packet of size 0, bail out");
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    switch (connection->initiator_signaling_packet.message_type){
+                        case AVDTP_RESPONSE_ACCEPT_MSG:
+                            switch (connection->initiator_signaling_packet.signal_identifier){
+                                case AVDTP_SI_GET_CAPABILITIES:
+                                case AVDTP_SI_GET_ALL_CAPABILITIES:
+                                    avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                        }
+                    return;
+                }
+            }
+
             switch (signaling_header->packet_type){
                 case AVDTP_START_PACKET:
                 case AVDTP_CONTINUE_PACKET:
