@@ -1026,7 +1026,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             } else if (hfp_connection->release_slc_connection == 1){
                 hfp_connection->release_slc_connection = 0;
                 hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                rfcomm_disconnect(hfp_connection->acl_handle);
+                rfcomm_disconnect(hfp_connection->rfcomm_cid);
             }
 
             if (hfp_connection->state == HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN){

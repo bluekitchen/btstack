@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP Initiator: Allow abort operation in any state
 - HID Host: support reports longer than 255 bytes
 - HFP HF: allow to answer call from HFP_SUBEVENT_START_RINGING
+- HFP: Service Level Disconnect with active SCO connection
 
 ### Changed
 - GAP: gap_disconnect returns ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER instead of emitting HCI Disconnected Event
