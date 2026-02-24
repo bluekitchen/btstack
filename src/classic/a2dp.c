@@ -643,6 +643,13 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                                                         packet,
                                                         size);
             break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY:
+            cid = avdtp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_avdtp_cid(packet);
+            a2dp_config_process_handle_media_capability(role, cid, AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY,
+                                                        packet,
+                                                        size);
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
             a2dp_config_process_handle_media_capability(role, cid, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY,
