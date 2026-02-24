@@ -274,11 +274,27 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
         case AVDTP_DELAY_REPORTING:
             break;
         case AVDTP_RECOVERY:
+            if (size < (3 + pos)){
+                log_error("recovery capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = caps.recovery.recovery_type; // 0x01=RFC2733
             buffer[pos++] = caps.recovery.maximum_recovery_window_size;
             buffer[pos++] = caps.recovery.maximum_number_media_packets;
             break;
         case AVDTP_CONTENT_PROTECTION:
+            if (size < (3 + pos)){
+                log_error("recovery capability does not fit the buffer\n");
+                break;
+            }
+            if (caps.content_protection.cp_type_value_len > sizeof(caps.content_protection.cp_type_value)){
+                log_error("copy protection capability not configured\n");
+                break;
+            }
+            if (caps.content_protection.cp_type_value_len > (size - (pos + 3))){
+                log_error("copy protection capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = caps.content_protection.cp_type_value_len + 2;
             big_endian_store_16(buffer, pos, caps.content_protection.cp_type);
             pos += 2;
@@ -287,9 +303,21 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
             pos += caps.content_protection.cp_type_value_len;
             break;
         case AVDTP_HEADER_COMPRESSION:
+            if (size < (1 + pos)){
+                log_error("header compression capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
             break;
         case AVDTP_MULTIPLEXING:
+            if (size < (1 + caps.multiplexing_mode.transport_identifiers_num * 2)){
+                log_error("multiplexing capability does not fit the buffer\n");
+                break;
+            }
+            if (caps.multiplexing_mode.transport_identifiers_num > sizeof(caps.multiplexing_mode.transport_session_identifiers)){
+                log_error("multiplexing capability not configured\n");
+                break;
+            }
             buffer[pos++] = caps.multiplexing_mode.fragmentation << 7;
             for (i=0; i<caps.multiplexing_mode.transport_identifiers_num; i++){
                 buffer[pos++] = caps.multiplexing_mode.transport_session_identifiers[i] << 7;
@@ -298,6 +326,10 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
             }
             break;
         case AVDTP_MEDIA_CODEC:
+            if (size < (2 + caps.media_codec.media_codec_information_len)){
+                log_error("media codec capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = ((uint8_t)caps.media_codec.media_type) << 4;
             buffer[pos++] = (uint8_t)caps.media_codec.media_codec_type;
             for (i = 0; i<caps.media_codec.media_codec_information_len; i++){
