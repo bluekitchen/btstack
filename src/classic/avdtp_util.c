@@ -224,7 +224,7 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             break;
 
         case AVDTP_START_PACKET:
-            if (pos < 3) return 0;
+            if (size < 3) return 0;
             signaling_header->num_packets = packet[pos++];
             signaling_header->signal_identifier = (avdtp_signal_identifier_t)(packet[pos++] & 0x3f);
 
@@ -235,7 +235,7 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             break;
 
         case AVDTP_CONTINUE_PACKET:
-            if (signaling_header->num_packets == 0) {
+            if (signaling_header->num_packets < 3) {
                 log_info("Continue packet: %d packets", signaling_header->num_packets);
                 break;
             }
@@ -243,10 +243,11 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             break;
 
         case AVDTP_END_PACKET:
-            if (signaling_header->num_packets != 0) {
+            if (signaling_header->num_packets != 2) {
                 log_info("END packet: %d packets", signaling_header->num_packets);
                 break;
             }
+            signaling_header->num_packets--;
             break;
 
         default:
