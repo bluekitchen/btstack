@@ -174,7 +174,7 @@ bool avdtp_initiator_num_packets_valid(const avdtp_connection_t *connection, con
         case AVDTP_END_PACKET:
             return connection->initiator_signaling_packet.num_packets == 1;
         default:
-            return connection->initiator_signaling_packet.num_packets == 0;
+            return true;
     }
 }
 
@@ -194,7 +194,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     if (!avdtp_initiator_num_packets_valid(connection, signaling_header)) {
                         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
                         avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);
-                        break;
+                        return;
                     }
                     if ((signaling_header->packet_type == AVDTP_END_PACKET) ||
                         (signaling_header->packet_type == AVDTP_SINGLE_PACKET)) {
@@ -291,11 +291,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                             break;
 
                         default: // single packet
-                            sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
                             avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
-                            avdtp_signaling_emit_capabilities(connection->avdtp_cid,
-                                                              connection->initiator_remote_seid, &sep.capabilities,
-                                                              sep.registered_service_categories);
+                            avdtp_initiator_parser_reset(connection);
+                            avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
+                            avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);
                             break;
                     }
                     break;
