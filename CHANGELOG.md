@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- A2DP Source: emit capabilities for MPEC-D USAC codec
 
 ### Fixed
 - AVDTP Initiator: Allow abort operation in any state
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - GAP: gap_disconnect returns ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER instead of emitting HCI Disconnected Event
 - Daemon: emit hci command complete for failed gap_disconnect
+- ADVTP Initiator: handle fragmented Get(All)Capabilities response
 
 ## Release v1.8
 
