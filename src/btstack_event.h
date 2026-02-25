@@ -10989,6 +10989,79 @@ static inline uint16_t a2dp_subevent_signaling_media_codec_atrac_capability_get_
 }
 
 /**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field remote_seid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return remote_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_remote_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field media_type from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return media_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_media_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field object_type from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return object_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_object_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field sampling_frequency_bitmap from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return sampling_frequency_bitmap
+ * @note: btstack_type 4
+ */
+static inline uint32_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_sampling_frequency_bitmap(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field channels_bitmap from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return channels_bitmap
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_channels_bitmap(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field vbr from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return vbr
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_vbr(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field bit_rate_index_bitmap from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY
+ * @param event packet
+ * @return bit_rate_index_bitmap
+ * @note: btstack_type 3
+ */
+static inline uint32_t a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_bit_rate_index_bitmap(const uint8_t * event){
+    return little_endian_read_24(event, 14);
+}
+
+/**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
  * @param event packet
  * @return a2dp_cid

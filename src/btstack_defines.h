@@ -3248,6 +3248,20 @@ typedef SSIZE_T ssize_t;
 #define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x16u
 
 /**
+ * @format 121114113
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param object_type
+ * @param sampling_frequency_bitmap
+ * @param channels_bitmap
+ * @param vbr
+ * @param bit_rate_index_bitmap
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY    0x17u
+
+/**
  * @format 12112LV
  * @param subevent_code
  * @param a2dp_cid
@@ -3257,7 +3271,7 @@ typedef SSIZE_T ssize_t;
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x17u
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x18u
 
 /**
  * @format 121
@@ -3265,7 +3279,7 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param remote_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x18u
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x19u
 
 
 /**
@@ -3275,7 +3289,7 @@ typedef SSIZE_T ssize_t;
  * @param local_seid
  * @param delay_100us
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x19u
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x1Au
 
 /**
  * @format 121
@@ -3283,14 +3297,14 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param remote_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x1Au
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x1Bu
 
 /**
  * @format 12
  * @param subevent_code
  * @param a2dp_cid
  */
-#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE                0x1Bu
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE                0x1Cu
 
 
 /** AVRCP Subevent */
