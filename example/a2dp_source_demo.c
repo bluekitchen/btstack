@@ -69,6 +69,18 @@
 #include "btstack.h"
 #include "mods/mod.h"
 
+#define A2DP_CODEC_VENDOR_ID_SONY 0x12d
+#define A2DP_SONY_CODEC_LDAC 0xaa
+
+#define A2DP_CODEC_VENDOR_ID_APT_LTD 0x4f
+#define A2DP_APT_LTD_CODEC_APTX 0x1
+
+#define A2DP_CODEC_VENDOR_ID_QUALCOMM 0xd7
+#define A2DP_QUALCOMM_CODEC_APTX_HD 0x24
+
+#define A2DP_CODEC_VENDOR_ID_FRAUNHOFER 0x08A9
+#define A2DP_FRAUNHOFER_CODEC_LC3PLUS 0x0001
+
 // logarithmic volume reduction, samples are divided by 2^x
 // #define VOLUME_REDUCTION 3
 
@@ -533,6 +545,22 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
+static uint32_t get_vendor_id(const uint8_t *codec_info) {
+    uint32_t vendor_id = 0;
+    vendor_id |= codec_info[0];
+    vendor_id |= codec_info[1] << 8;
+    vendor_id |= codec_info[2] << 16;
+    vendor_id |= codec_info[3] << 24;
+    return vendor_id;
+}
+
+static uint16_t get_codec_id(const uint8_t *codec_info) {
+    uint16_t codec_id = 0;
+    codec_id |= codec_info[4];
+    codec_id |= codec_info[5] << 8;
+    return codec_id;
+}
+
 static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -565,7 +593,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-            cid  = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
+            cid  = a2dp_subevent_signaling_media_codec_sbc_configuration_get_a2dp_cid(packet);
             if (cid != media_tracker.a2dp_cid) return;
 
             media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet);
@@ -617,19 +645,58 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                                             sbc_configuration.channel_mode);
             break;
 
-        case A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
-            printf("A2DP Source: remote supports delay report, remote seid %d\n", 
-                avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(packet));
-            break;
-        case A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
-            printf("A2DP Source: All capabilities reported, remote seid %d\n", 
-                avdtp_subevent_signaling_capabilities_done_get_remote_seid(packet));
+        case A2DP_SUBEVENT_SIGNALING_DELAY_REPORT:
+            printf("DELAY_REPORT received: %d.%0d ms, local seid %d\n",
+                   a2dp_subevent_signaling_delay_report_get_delay_100us(packet)/10, a2dp_subevent_signaling_delay_report_get_delay_100us(packet)%10,
+                   a2dp_subevent_signaling_delay_report_get_local_seid(packet));
             break;
 
-        case A2DP_SUBEVENT_SIGNALING_DELAY_REPORT:
-            printf("A2DP Source: Received delay report of %d.%0d ms, local seid %d\n", 
-                avdtp_subevent_signaling_delay_report_get_delay_100us(packet)/10, avdtp_subevent_signaling_delay_report_get_delay_100us(packet)%10,
-                avdtp_subevent_signaling_delay_report_get_local_seid(packet));
+        case A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            printf("A2DP Source: remote supports delay report, remote seid %d\n",
+                   a2dp_subevent_signaling_delay_reporting_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: SBC, remote seid %u\n", a2dp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: MPEG AUDIO, remote seid %u\n", a2dp_subevent_signaling_media_codec_mpeg_audio_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: MPEG AAC, remote seid %u\n", a2dp_subevent_signaling_media_codec_mpeg_aac_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: ATRAC, remote seid %u\n", a2dp_subevent_signaling_media_codec_atrac_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: MPEG_D_USAC, remote seid %u\n", a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:{
+            uint8_t remote_seid = a2dp_subevent_signaling_media_codec_other_capability_get_remote_seid(packet);
+            const uint8_t *media_info = avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information(packet);
+            uint32_t vendor_id = get_vendor_id(media_info);
+            uint16_t codec_id = get_codec_id(media_info);
+
+            if (vendor_id == A2DP_CODEC_VENDOR_ID_SONY && codec_id == A2DP_SONY_CODEC_LDAC)
+                printf("CAPABILITY - LDAC, remote seid %u\n", remote_seid);
+            else if (vendor_id == A2DP_CODEC_VENDOR_ID_APT_LTD && codec_id == A2DP_APT_LTD_CODEC_APTX)
+                printf("CAPABILITY - APTX, remote seid %u\n", remote_seid);
+            else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD)
+                printf("CAPABILITY - APTX HD, remote seid %u\n", remote_seid);
+            else if (vendor_id == A2DP_CODEC_VENDOR_ID_FRAUNHOFER && codec_id == A2DP_FRAUNHOFER_CODEC_LC3PLUS) {
+                printf("CAPABILITY - LC3plus, remote seid %u\n", remote_seid);
+            } else {
+                printf("CAPABILITY - MEDIA_CODEC: OTHER, remote seid %u\n", remote_seid);
+            }
+            break;
+        }
+        case A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE:
+            printf("A2DP Source: All streamendpoints capabilities queried\n\n");
             break;
        
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
