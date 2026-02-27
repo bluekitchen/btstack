@@ -425,9 +425,18 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     // continuation state contains: byte offset into this service record
     uint16_t continuation_service_index = 0;
     uint16_t continuation_offset = 0;
-    if (continuationState[0] == 4){
-        continuation_service_index = big_endian_read_16(continuationState, 1);
-        continuation_offset = big_endian_read_16(continuationState, 3);
+    switch (continuationState[0]) {
+        case 0:
+            // initial request
+            break;
+        case 4:
+            // get continuation state
+            continuation_service_index = big_endian_read_16(continuationState, 1);
+            continuation_offset = big_endian_read_16(continuationState, 3);
+            break;
+        default:
+            // invalidate continuation state
+            return sdp_create_error_response(transaction_id, 0x0005); /// invalid continnuation state
     }
 
     // log_info("--> sdp_handle_service_search_attribute_request, cont %u/%u, max %u", continuation_service_index, continuation_offset, maximumAttributeByteCount);
@@ -494,7 +503,12 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     }
     
     uint16_t attributeListsByteCount = pos - 7;
-    
+
+    // avoid emptry response (most likely invalid continuation state)
+    if (attributeListsByteCount < 2) {
+        return sdp_create_error_response(transaction_id, 0x0005); /// invalid continnuation state
+    }
+
     // Continuation State
     if (continuation){
         sdp_response_buffer[pos++] = 4;
