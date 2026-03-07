@@ -15,6 +15,7 @@ SUBDIRS :=  \
 	avdtp_util \
 	base64 \
 	ble_client \
+	btstack-event \
 	btstack_link_key_db \
 	btstack_util \
 	btstack_memory \
@@ -57,6 +58,8 @@ SUBDIRS_BLE := \
 	ad_parser \
 	att_db \
 	ble_client \
+	btstack-event \
+	btstack-event-extra \
 	btstack_memory \
 	btstack_util \
 	crypto \

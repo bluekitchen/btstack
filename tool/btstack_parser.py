@@ -70,15 +70,27 @@ def my_parse_events(path):
     params = []
     event_types = set()
     format = None
+    format_pattern = re.compile(r'^\s*\*\s*@format\s*([a-zA-Z0-9_' + re.escape(open_bracket) + re.escape(closing_bracket) + r']*)\s*.*$')
+    param_pattern  = re.compile(r'^\s*\*\s*@param\s*(\w*)\s*')
+    array_pattern  = re.compile(r'^\s*\*\s*@array\s*(\w*)\s*')
+    field_pattern  = re.compile(r'^\s*\*\s*@field\s*(\w*)\s*')
     with open (path, 'rt') as fin:
         for line in fin:
-            parts = re.match(r'.*@format\s*([a-zA-Z0-9_' + re.escape(open_bracket) + re.escape(closing_bracket) + r']*)\s*', line)
+            parts = format_pattern.match(line)
             if parts and len(parts.groups()) == 1:
                 format = parts.groups()[0]
-            parts = re.match(r'.*@param\s*(\w*)\s*', line)
+            parts = param_pattern.match(line)
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
                 params.append(param)
+            parts = array_pattern.match(line)
+            if parts and len(parts.groups()) == 1:
+                array = parts.groups()[0]
+                params.append(array)
+            parts = field_pattern.match(line)
+            if parts and len(parts.groups()) == 1:
+                field = parts.groups()[0]
+                params.append(field)
             parts = re.match(r'\s*#define\s+(\w+)\s+(\w*)[u]',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
@@ -131,12 +143,13 @@ def parse_opcodes(camel_case=True):
 
 def my_parse_commands(infile, opcodes, convert_to_camel_case):
     commands = []
+    param_pattern = re.compile(r'^\s*\*\s*@param\s*(\w*)\s*')
     with open (infile, 'rt') as fin:
 
         params = []
         for line in fin:
 
-            parts = re.match(r'.*@param\s*(\w*)\s*', line)
+            parts = param_pattern.match(line)
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
                 if convert_to_camel_case:
@@ -196,5 +209,3 @@ def print_opcode_enum(commands):
         (name, ogf, ocf, format, params) = command
         print("    DAEMON_OPCODE_%s = HCI_OPCODE (%s, %s)," % (name.upper(), ogf, ocf))
     print("} daemon_opcode_t;")
-
-

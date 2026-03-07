@@ -64,6 +64,7 @@ static inline bool hci_event_can_store(uint16_t pos, uint16_t size, uint16_t to_
  *
  * Format:
  *   1,2,3,4: one to four byte value
+ *   a,b: signed 8/16 bit value
  *   H: HCI connection handle
  *   B: Bluetooth Baseband Address (BD_ADDR)
  *   D: 8 byte data block
@@ -97,11 +98,13 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
     while (*format != 0) {
         switch(*format) {
             case '1': //  8 bit value
+            case 'a': // signed 8 bit value
                 if (!hci_event_can_store(pos, buffer_size, 1, &overrun)) break;
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 hci_event_buffer[pos++] = word & 0xff;
                 break;
             case '2': // 16 bit value
+            case 'b': // signed 16 bit value
             case 'H': // hci_handle
                 if (!hci_event_can_store(pos, buffer_size, 2, &overrun)) break;
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs

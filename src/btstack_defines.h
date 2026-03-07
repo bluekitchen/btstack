@@ -39,6 +39,45 @@
  *
  * BTstack definitions, events, and error codes 
  *
+ * Event annotation format (consumed by tool/btstack_event_generator.py):
+ * - Each event is defined by @format and annotation tags describing each format token.
+ *
+ * - @format contains a compact type string, similar to the printf format string
+ * - @param appears once per format token outside arrays, in the same order and provides the name for the parameter.
+ * - @array appears for the array-open token '[' and provides the list name.
+ * - @field appears once per array item format token, in the same order and provides the name for the array field.
+ * - The array close token ']' has no @param/@array/@field entry.
+ * - @array defines the name of the array
+ * - @item appears once per format token in the array, similar to @param
+ *
+ * Format tokens currently used in this file:
+ * - 1: uint8_t
+ * - a: int8_t
+ * - 2: uint16_t
+ * - b: int16_t
+ * - 3: uint24_t (returned as uint32_t)
+ * - 4: uint32_t
+ * - H: hci_con_handle_t (16-bit little endian)
+ * - B: bd_addr_t (6 bytes, big endian)
+ * - J: uint8_t length/value (used for variable-sized fields/lists)
+ * - L: uint16_t
+ * - R: pointer to remaining event payload; parsing stops at this field
+ * - N: pointer to zero-terminated string, e.g. used for device name
+ * - P: pointer to 16-byte value, e.g. used for PIN
+ * - T: pointer to text payload; parsing stops at this field
+ * - D: pointer to 8-byte value in big endian
+ * - K: pointer to 16-byte value in big endian, e.g. for cryptographic keys
+ * - Q: pointer to 32-byte value in big endian, e.g. for public key
+ * - V: pointer to variable-length data (length from preceding J when present)
+ * - X: pointer to gatt_client_service_t
+ * - Y: pointer to gatt_client_characteristic_t
+ * - Z: pointer to gatt_client_characteristic_descriptor_t
+ * - C: uint16_t array element accessor (index-based getter)
+ * - [ and ]: array begin/end for array iterator
+ *
+ * Array notation:
+ * - The @array defines the name of the array
+ * - The name or the array fields are defined by @field tags
  */
 
 #ifndef BTSTACK_DEFINES_H
@@ -524,7 +563,7 @@ typedef SSIZE_T ssize_t;
 #define HCI_EVENT_FLOW_SPECIFICATION_COMPLETE              0x21u
 
 /**
- * @format 1B11321
+ * @format 1B1132a
  * @param num_responses
  * @param bd_addr
  * @param page_scan_repetition_mode
@@ -578,7 +617,7 @@ typedef SSIZE_T ssize_t;
 // TODO: serialize extended_inquiry_response and provide parser
 
 /**
- * @format 1B11321
+ * @format 1B1132a
  * @param num_responses
  * @param bd_addr
  * @param page_scan_repetition_mode
@@ -822,7 +861,7 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT 0x0Eu
 
 /**
- * @format 1H1111JV
+ * @format 1Haa11JV
  * @param subevent_code
  * @param sync_handle
  * @param tx_power
@@ -968,7 +1007,7 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_REQUEST_PEER_SCA_COMPLETE                0x1Fu
 
 /**
- * @format 11H11111
+ * @format 11H11a1a
  * @param subevent_code
  * @param status
  * @param connection_handle
@@ -1039,6 +1078,152 @@ typedef SSIZE_T ssize_t;
  */
 #define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2           0x29u
 
+/**
+ * @format 11H12111111112212222211
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param num_config_supported
+ * @param max_consecutive_procedures_supported
+ * @param num_antennae_supported
+ * @param max_antenna_paths_supported
+ * @param roles_supported
+ * @param modes_supported
+ * @param rtt_capability
+ * @param rtt_aa_only_n
+ * @param rtt_sounding_n
+ * @param rtt_random_sequence_n
+ * @param nadm_sounding_capability
+ * @param nadm_random_capability
+ * @param cs_sync_phys_supported
+ * @param subfeatures_supported
+ * @param t_ip1_times_supported
+ * @param t_ip2_times_supported
+ * @param t_fcs_times_supported
+ * @param t_pm_times_supported
+ * @param t_sw_time_supported
+ * @param tx_snr_capability
+ */
+#define HCI_SUBEVENT_LE_CS_READ_REMOTE_SUPPORTED_CAPABILITIES_COMPLETE 0x2Cu
+
+/**
+ * @format 11HPPPPD
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param remote_fae_table_0
+ * @param remote_fae_table_1
+ * @param remote_fae_table_2
+ * @param remote_fae_table_3
+ * @param remote_fae_table_4
+ */
+#define HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE         0x2Du
+
+/**
+ * @format 11H
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ */
+#define HCI_SUBEVENT_LE_CS_SECURITY_ENABLE_COMPLETE               0x2Eu
+
+/**
+ * @format 11H11111111111442111111111
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param config_id
+ * @param action
+ * @param main_mode_type
+ * @param sub_mode_type
+ * @param min_main_mode_steps
+ * @param max_main_mode_steps
+ * @param main_mode_repetition
+ * @param mode_0_steps
+ * @param role
+ * @param rtt_type
+ * @param cs_sync_phy
+ * @param channel_map_0_3
+ * @param channel_map_4_7
+ * @param channel_map_8_9
+ * @param channel_map_repetition
+ * @param channel_selection_type
+ * @param ch3c_shape
+ * @param ch3c_jump
+ * @param reserved
+ * @param t_ip1_time
+ * @param t_ip2_time
+ * @param t_fcs_time
+ * @param t_pm_time
+ */
+#define HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE                        0x2Fu
+
+/**
+ * @format 11H111a3122222
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param config_id
+ * @param state
+ * @param tone_antenna_config_selection
+ * @param selected_tx_power
+ * @param subevent_len
+ * @param subevents_per_event
+ * @param subevent_interval
+ * @param event_interval
+ * @param procedure_interval
+ * @param procedure_count
+ * @param max_procedure_len
+ */
+#define HCI_SUBEVENT_LE_CS_PROCEDURE_ENABLE_COMPLETE              0x30u
+
+/**
+ * @format 1H122ba11111[11JV]
+ * @param subevent_code
+ * @param connection_handle
+ * @param config_id
+ * @param start_acl_conn_event_counter
+ * @param procedure_counter
+ * @param frequency_compensation
+ * @param reference_power_level
+ * @param procedure_done_status
+ * @param subevent_done_status
+ * @param abort_reason
+ * @param num_antenna_paths
+ * @param num_steps_reported
+ * @array steps
+ * @field step_mode[]
+ * @field step_channel[]
+ * @field step_data_length[]
+ * @field step_data[]
+ */
+#define HCI_SUBEVENT_LE_CS_SUBEVENT_RESULT                        0x31u
+
+/**
+ * @format 1H111111[11JV]
+ * @param subevent_code
+ * @param connection_handle
+ * @param config_id
+ * @param procedure_done_status
+ * @param subevent_done_status
+ * @param abort_reason
+ * @param num_antenna_paths
+ * @param num_steps_reported
+ * @array steps
+ * @field step_mode[]
+ * @field step_channel[]
+ * @field step_data_length[]
+ * @field step_data[]
+ */
+#define HCI_SUBEVENT_LE_CS_SUBEVENT_RESULT_CONTINUE               0x32u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status
+ */
+#define HCI_SUBEVENT_LE_CS_TEST_END_COMPLETE                      0x33u
+
 /** Internal BTstack events */
 #define BTSTACK_EVENT_FIRST                               BTSTACK_EVENT_STATE
 
@@ -1072,7 +1257,7 @@ typedef SSIZE_T ssize_t;
  * @format 112
  * @param major
  * @param minor
- @ @param revision
+ * @param revision
  */
 #define DAEMON_EVENT_VERSION                               0x63u
 
@@ -1876,7 +2061,7 @@ typedef SSIZE_T ssize_t;
 #define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xD9u
 
 /**
- * @format 11B1JV
+ * @format 11BaJV
  * @param advertising_event_type
  * @param address_type
  * @param address
@@ -1887,7 +2072,7 @@ typedef SSIZE_T ssize_t;
 #define GAP_EVENT_ADVERTISING_REPORT                             0xDAu
 
 /**
- * @format 21B1111121BJV
+ * @format 21B111aa21BJV
  * @param advertising_event_type
  * @param address_type
  * @param address
@@ -1905,7 +2090,7 @@ typedef SSIZE_T ssize_t;
 #define GAP_EVENT_EXTENDED_ADVERTISING_REPORT                    0xDBu
 
  /**
- * @format B13211122221JV
+ * @format B1321a122221JV
  * @param bd_addr
  * @param page_scan_repetition_mode
  * @param class_of_device
