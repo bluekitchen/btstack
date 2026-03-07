@@ -19,9 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GAP: gap_disconnect returns ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER instead of emitting HCI Disconnected Event
-- Daemon: emit hci command complete for failed gap_disconnect
 - ADVTP Initiator: handle fragmented Get(All)Capabilities response
+- HID Device: add hid_device_accept_truncated_hid_reports to optionally accept shorter HID reports
 - Chipset BCM: select lexicographically latest matching .hcd file
+- Daemon: emit hci command complete for failed gap_disconnect
 
 ## Release v1.8
 

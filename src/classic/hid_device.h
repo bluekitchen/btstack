@@ -155,6 +155,13 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
 int hid_device_in_boot_protocol_mode(uint16_t hid_cid);
 
 /**
+ * @brief Configure if HID reports shorter than descriptor-defined size are accepted
+ * @note: The HID Test Specification requires to reject HID reports with incorrect size
+ * @param accept_truncated if true, reports shorter than expected are accepted
+ */
+void hid_device_accept_truncated_hid_reports(bool accept_truncated);
+
+/**
  * @brief De-Init HID Device
  */
 void hid_device_deinit(void);
