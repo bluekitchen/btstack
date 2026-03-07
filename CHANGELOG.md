@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_disconnect returns ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER instead of emitting HCI Disconnected Event
 - Daemon: emit hci command complete for failed gap_disconnect
 - ADVTP Initiator: handle fragmented Get(All)Capabilities response
+- Chipset BCM: select lexicographically latest matching .hcd file
 
 ## Release v1.8
 
@@ -1410,5 +1411,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: fix default remote MTU as 672 instead of 48 (Minimal MTU)
 - HCI: avoid double free during halting
 - SM: fixed reconnect using legacy pairing in slave role
-
 
