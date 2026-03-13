@@ -415,6 +415,13 @@ void a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *conne
     uint8_t remote_seid = config_process->local_stream_endpoint->set_config_remote_seid;
     log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x",
              local_seid, remote_seid);
+    switch (config_process->state){
+        case A2DP_DISCOVERY_DONE:
+        case A2DP_W2_SET_CONFIGURATION:
+            break;
+        default:
+            return;
+    }
     config_process->state = A2DP_W4_SET_CONFIGURATION;
     avdtp_set_configuration(connection->avdtp_cid,
                             local_seid,
@@ -822,7 +829,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     return;
 
                 case A2DP_W2_SET_CONFIGURATION:
-                    config_process->state = A2DP_W4_SET_CONFIGURATION;
                     a2dp_config_process_set_config(role, connection);
                     return;
 
