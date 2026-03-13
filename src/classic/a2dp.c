@@ -570,7 +570,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             if (config_process->state != A2DP_DISCOVER_SEPS) break;
 
             if (a2dp_config_process_sep_discovery_count > 0){
-                config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
+                config_process->state = A2DP_W2_GET_ALL_CAPABILITIES;
                 a2dp_config_process_sep_discovery_index = 0;
                 config_process->have_config = false;
             } else {
@@ -809,7 +809,8 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
 
             switch (config_process->state){
-                case A2DP_W4_GET_ALL_CAPABILITIES:
+                case A2DP_W2_GET_ALL_CAPABILITIES:
+                    config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
                     remote_seid = a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
                     avdtp_get_all_capabilities(cid, remote_seid, role);
