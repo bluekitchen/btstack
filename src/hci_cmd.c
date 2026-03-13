@@ -2494,6 +2494,159 @@ const hci_cmd_t hci_le_subrate_request = {
         HCI_OPCODE_HCI_LE_SUBRATE_REQUEST, "H22222"
 };
 
+/**
+ * @param advertising_handle
+ * @param decision_type_flags
+ * @param decision_data_length
+ * @param decision_data
+ */
+const hci_cmd_t hci_le_set_decision_data = {
+    HCI_OPCODE_HCI_LE_SET_DECISION_DATA, "111JV"
+};
+
+/**
+ * @param num_tests
+ * @param tests_length
+ * @param tests packed as Num_Tests entries: Test_Flags (1), Test_Field (1), Test_Parameters (16)
+ */
+const hci_cmd_t hci_le_set_decision_instructions = {
+    HCI_OPCODE_HCI_LE_SET_DECISION_INSTRUCTIONS, "1JV"
+};
+
+/**
+ * @param advertising_handle
+ * @param num_subevents_with_data
+ * @param subevent_data_length
+ * @param subevent_data packed as Num_Subevents_With_Data entries: Subevent (1), Response_Slot_Start (1),
+ *                      Response_Slot_Count (1), Subevent_Data_Length (1), Subevent_Data (variable)
+ */
+const hci_cmd_t hci_le_set_periodic_advertising_subevent_data = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_SUBEVENT_DATA, "11JV"
+};
+
+/**
+ * @param sync_handle
+ * @param request_event
+ * @param request_subevent
+ * @param response_subevent
+ * @param response_slot
+ * @param response_data_length
+ * @param response_data
+ */
+const hci_cmd_t hci_le_set_periodic_advertising_response_data = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_RESPONSE_DATA, "H2111JV"
+};
+
+/**
+ * @param sync_handle
+ * @param periodic_advertising_properties
+ * @param num_subevents_to_sync
+ * @param subevent[i]
+ */
+const hci_cmd_t hci_le_set_periodic_sync_subevent = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_SYNC_SUBEVENT, "H21a[1]"
+};
+
+const hci_cmd_t hci_le_read_all_local_supported_features = {
+    HCI_OPCODE_HCI_LE_READ_ALL_LOCAL_SUPPORTED_FEATURES, ""
+};
+
+/**
+ * @param connection_handle
+ * @param pages_requested
+ */
+const hci_cmd_t hci_le_read_all_remote_features = {
+    HCI_OPCODE_HCI_LE_READ_ALL_REMOTE_FEATURES, "H1"
+};
+
+/**
+ * @param address_type
+ * @param address
+ * @param rssi_low_threshold
+ * @param rssi_high_threshold
+ * @param timeout
+ */
+const hci_cmd_t hci_le_add_device_to_monitored_advertisers_list = {
+    HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_MONITORED_ADVERTISERS_LIST, "1B111"
+};
+
+/**
+ * @param address_type
+ * @param address
+ */
+const hci_cmd_t hci_le_remove_device_from_monitored_advertisers_list = {
+    HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_MONITORED_ADVERTISERS_LIST, "1B"
+};
+
+const hci_cmd_t hci_le_clear_monitored_advertisers_list = {
+    HCI_OPCODE_HCI_LE_CLEAR_MONITORED_ADVERTISERS_LIST, ""
+};
+
+const hci_cmd_t hci_le_read_monitored_advertisers_list_size = {
+    HCI_OPCODE_HCI_LE_READ_MONITORED_ADVERTISERS_LIST_SIZE, ""
+};
+
+/**
+ * @param enable
+ */
+const hci_cmd_t hci_le_enable_monitoring_advertisers = {
+    HCI_OPCODE_HCI_LE_ENABLE_MONITORING_ADVERTISERS, "1"
+};
+
+/**
+ * @param connection_handle
+ * @param frame_space_min
+ * @param frame_space_max
+ * @param phys
+ * @param spacing_types
+ */
+const hci_cmd_t hci_le_frame_space_update = {
+    HCI_OPCODE_HCI_LE_FRAME_SPACE_UPDATE, "H2211"
+};
+
+/**
+ * @param utp_data_length
+ * @param utp_data
+ */
+const hci_cmd_t hci_le_utp_send = {
+    HCI_OPCODE_HCI_LE_UTP_SEND, "JV"
+};
+
+/**
+ * @param connection_handle
+ * @param connection_interval_min
+ * @param connection_interval_max
+ * @param subrate_min
+ * @param subrate_max
+ * @param max_latency
+ * @param continuation_number
+ * @param supervision_timeout
+ * @param min_ce_length
+ * @param max_ce_length
+ */
+const hci_cmd_t hci_le_connection_rate_request = {
+    HCI_OPCODE_HCI_LE_CONNECTION_RATE_REQUEST, "H222222222"
+};
+
+/**
+ * @param connection_interval_min
+ * @param connection_interval_max
+ * @param subrate_min
+ * @param subrate_max
+ * @param max_latency
+ * @param continuation_number
+ * @param supervision_timeout
+ * @param min_ce_length
+ * @param max_ce_length
+ */
+const hci_cmd_t hci_le_set_default_rate_parameters = {
+    HCI_OPCODE_HCI_LE_SET_DEFAULT_RATE_PARAMETERS, "222222222"
+};
+
+const hci_cmd_t hci_le_read_minimum_supported_connection_interval = {
+    HCI_OPCODE_HCI_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL, ""
+};
+
 #endif
 
 // Broadcom / Cypress specific HCI commands

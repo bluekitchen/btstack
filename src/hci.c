@@ -8154,9 +8154,12 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
         case HCI_OPCODE_HCI_LE_LONG_TERM_KEY_NEGATIVE_REPLY:
         case HCI_OPCODE_HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY:
         case HCI_OPCODE_HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_LE_READ_ALL_REMOTE_FEATURES:
         case HCI_OPCODE_HCI_LE_SET_DATA_LENGTH:
+        case HCI_OPCODE_HCI_LE_FRAME_SPACE_UPDATE:
         case HCI_OPCODE_HCI_LE_READ_PHY:
         case HCI_OPCODE_HCI_LE_SET_PHY:
+        case HCI_OPCODE_HCI_LE_CONNECTION_RATE_REQUEST:
             // conection handle is first command parameter
             hci_stack->hci_command_con_handle = little_endian_read_16(packet, 3);
             break;
