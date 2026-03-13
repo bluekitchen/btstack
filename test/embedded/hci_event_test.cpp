@@ -6,7 +6,9 @@
 
 uint8_t hci_event_buffer[257];
 hci_event_t event_1 = { 1, 0, "1"};
+hci_event_t event_a = { 1, 0, "a"};
 hci_event_t event_2 = { 1, 0, "2"};
+hci_event_t event_b = { 1, 0, "b"};
 hci_event_t event_3 = { 1, 0, "3"};
 hci_event_t event_4 = { 1, 0, "4"};
 
@@ -37,6 +39,22 @@ TEST(hci_event, format_2){
     const uint8_t expected_buffer[] = { 0x34, 0x12 };
     uint16_t value = 0x1234;
     uint16_t size = create_hci_event(&event_2, value);
+    CHECK_EQUAL(sizeof(expected_buffer), size);
+    MEMCMP_EQUAL(expected_buffer, &hci_event_buffer[2], sizeof(expected_buffer));
+}
+
+TEST(hci_event, format_a){
+    const uint8_t expected_buffer[] = { 0xfb };
+    int8_t value = -5;
+    uint16_t size = create_hci_event(&event_a, value);
+    CHECK_EQUAL(sizeof(expected_buffer), size);
+    MEMCMP_EQUAL(expected_buffer, &hci_event_buffer[2], sizeof(expected_buffer));
+}
+
+TEST(hci_event, format_b){
+    const uint8_t expected_buffer[] = { 0xcc, 0xed };
+    int16_t value = -4660;
+    uint16_t size = create_hci_event(&event_b, value);
     CHECK_EQUAL(sizeof(expected_buffer), size);
     MEMCMP_EQUAL(expected_buffer, &hci_event_buffer[2], sizeof(expected_buffer));
 }
