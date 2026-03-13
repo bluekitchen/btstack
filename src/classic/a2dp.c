@@ -721,15 +721,17 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
                 // we didn't find a suitable SBC stream endpoint, sorry.
                 if (config_process->outgoing_active){
+                    config_process->state = A2DP_IDLE;
                     config_process->outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
                     a2dp_emit_streaming_connection_failed_for_role(role, connection,
                                                                  ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
+                } else {
+                    config_process->state = A2DP_CONNECTED;
+                    a2dp_config_process_sep_discovery_cid = 0;
+                    a2dp_config_process_discover_seps_with_next_waiting_connection();
                 }
-                config_process->state = A2DP_CONNECTED;
-                a2dp_config_process_sep_discovery_cid = 0;
-                a2dp_config_process_discover_seps_with_next_waiting_connection();
             }
             break;
 
