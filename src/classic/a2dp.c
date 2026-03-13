@@ -439,7 +439,9 @@ uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *c
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
     switch (config_process->state){
         case A2DP_DISCOVERY_DONE:
-        case A2DP_W4_GET_ALL_CAPABILITIES:
+#ifndef ENABLE_A2DP_EXPLICIT_CONFIG
+        case A2DP_W4_GET_ALL_CAPABILITIES: // allow pre-selection of stream endpoint, during capabilities reading
+#endif
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
@@ -688,6 +690,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             config_process = a2dp_config_process_for_role(role, connection);
 
             if (config_process->state != A2DP_W4_GET_ALL_CAPABILITIES) break;
+            config_process->state = A2DP_DISCOVERY_DONE;
 
             // forward capabilities done for endpoint
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
