@@ -840,9 +840,9 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x",
                              avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                              config_process->local_stream_endpoint->remote_sep.seid);
+                    config_process->state = A2DP_STREAMING_OPENED;
                     a2dp_emit_stream_reconfigured_role(role, cid, avdtp_stream_endpoint_seid(
                             config_process->local_stream_endpoint), ERROR_CODE_SUCCESS);
-                    config_process->state = A2DP_STREAMING_OPENED;
                     break;
 
                 case A2DP_STREAMING_OPENED:
