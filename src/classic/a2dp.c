@@ -711,7 +711,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
                 // do we have a valid config?
                 if (config_process->have_config){
-                    config_process->state = A2DP_SET_CONFIGURATION;
+                    config_process->state = A2DP_W2_SET_CONFIGURATION;
                     config_process->have_config = false;
                     break;
                 }
@@ -821,7 +821,8 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     avdtp_get_all_capabilities(cid, remote_seid, role);
                     return;
 
-                case A2DP_SET_CONFIGURATION:
+                case A2DP_W2_SET_CONFIGURATION:
+                    config_process->state = A2DP_W4_SET_CONFIGURATION;
                     a2dp_config_process_set_config(role, connection);
                     return;
 
