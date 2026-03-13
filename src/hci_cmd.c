@@ -2516,12 +2516,14 @@ const hci_cmd_t hci_le_set_decision_instructions = {
 /**
  * @param advertising_handle
  * @param num_subevents_with_data
- * @param subevent_data_length
- * @param subevent_data packed as Num_Subevents_With_Data entries: Subevent (1), Response_Slot_Start (1),
- *                      Response_Slot_Count (1), Subevent_Data_Length (1), Subevent_Data (variable)
+ * @param subevent[i]
+ * @param response_slot_start[i]
+ * @param response_slot_count[i]
+ * @param subevent_data_length[i]
+ * @param subevent_data[i]
  */
 const hci_cmd_t hci_le_set_periodic_advertising_subevent_data = {
-    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_SUBEVENT_DATA, "11JV"
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_SUBEVENT_DATA, "11[[111JV]"
 };
 
 /**
