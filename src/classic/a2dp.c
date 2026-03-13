@@ -396,8 +396,8 @@ static void a2dp_config_process_handle_media_configuration(avdtp_role_t role, co
             config_process->state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             break;
         case A2DP_DISCOVER_SEPS:
-        case A2DP_GET_CAPABILITIES:
         case A2DP_W2_GET_ALL_CAPABILITIES:
+        case A2DP_W4_GET_ALL_CAPABILITIES:
         case A2DP_DISCOVERY_DONE:
         case A2DP_W4_GET_CONFIGURATION:
             // incoming: wait for stream open
@@ -428,7 +428,7 @@ a2dp_config_process_handle_media_capability(avdtp_role_t role, uint16_t cid, uin
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(cid);
     btstack_assert(connection != NULL);
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
-    if (config_process->state != A2DP_GET_CAPABILITIES) return;
+    if (config_process->state != A2DP_W4_GET_ALL_CAPABILITIES) return;
     a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, a2dp_subevent_id);
 }
 
@@ -439,7 +439,7 @@ uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *c
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
     switch (config_process->state){
         case A2DP_DISCOVERY_DONE:
-        case A2DP_GET_CAPABILITIES:
+        case A2DP_W4_GET_ALL_CAPABILITIES:
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
@@ -570,7 +570,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             if (config_process->state != A2DP_DISCOVER_SEPS) break;
 
             if (a2dp_config_process_sep_discovery_count > 0){
-                config_process->state = A2DP_GET_CAPABILITIES;
+                config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
                 a2dp_config_process_sep_discovery_index = 0;
                 config_process->have_config = false;
             } else {
@@ -594,7 +594,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
 
-            if (config_process->state != A2DP_GET_CAPABILITIES) break;
+            if (config_process->state != A2DP_W4_GET_ALL_CAPABILITIES) break;
 
             // forward codec capability
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
@@ -673,7 +673,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             config_process = a2dp_config_process_for_role(role, connection);
             log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, config_process->state);
 
-            if (config_process->state != A2DP_GET_CAPABILITIES) break;
+            if (config_process->state != A2DP_W4_GET_ALL_CAPABILITIES) break;
 
             // store delay reporting capability
             a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].registered_service_categories |= 1 << AVDTP_DELAY_REPORTING;
@@ -687,7 +687,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
 
-            if (config_process->state != A2DP_GET_CAPABILITIES) break;
+            if (config_process->state != A2DP_W4_GET_ALL_CAPABILITIES) break;
 
             // forward capabilities done for endpoint
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
@@ -809,7 +809,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
 
             switch (config_process->state){
-                case A2DP_GET_CAPABILITIES:
+                case A2DP_W4_GET_ALL_CAPABILITIES:
                     remote_seid = a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
                     avdtp_get_all_capabilities(cid, remote_seid, role);
