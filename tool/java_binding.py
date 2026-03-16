@@ -330,6 +330,9 @@ def event_supported(event_name):
     # skip gap subevents
     if event_name.startswith("GAP_SUBEVENT"):
         return False
+    # skip HCI LE CS events
+    if event_name.startswith("HCI_SUBEVENT_LE_CS"):
+        return False
     return parts[0] in ['ATT', 'BTSTACK', 'DAEMON', 'L2CAP', 'RFCOMM', 'SDP', 'GATT', 'GAP', 'HCI', 'SM', 'BNEP']
         
 def class_name_for_event(event_name):
