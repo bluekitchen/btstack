@@ -11,6 +11,7 @@
 // BTstack features that can be enabled
 #define ENABLE_CLASSIC
 #define ENABLE_PRINTF_TO_LOG
+#define HAVE_BTSTACK_STDIN
 
 #define ENABLE_BTSTACK_ASSERT
 
@@ -57,28 +58,28 @@
 #define ENABLE_SCO_OVER_HCI
 
 /// Ensure that BK doesn't start implicitly discoverable and connectable mode
-#define ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
-
-/// Emit dedicated bonding complete, don't disconnect
-#define ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
-
-/// Add support of BT classic OOB pairing
-#define ENABLE_CLASSIC_PAIRING_OOB
-
-/// Handle IOCAP by application
-#define ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+//#define ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
+//
+///// Emit dedicated bonding complete, don't disconnect
+//#define ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
+//
+///// Add support of BT classic OOB pairing
+//#define ENABLE_CLASSIC_PAIRING_OOB
+//
+///// Handle IOCAP by application
+//#define ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
 
 /// Enable A2DP codec config
 #define ENABLE_A2DP_EXPLICIT_CONFIG
 
-/// Let app delay stream configurartion
-#define ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
-
-/// Allow defer of LINK Key Reply
-#define ENABLE_EXPLICIT_LINK_KEY_REPLY
-
-///  Trigger L2CAP Information Requests to get supported fixed channels
-#define ENABLE_L2CAP_INFORMATION_REQUESTS_ON_CONNECT
+///// Let app delay stream configurartion
+//#define ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+//
+///// Allow defer of LINK Key Reply
+//#define ENABLE_EXPLICIT_LINK_KEY_REPLY
+//
+/////  Trigger L2CAP Information Requests to get supported fixed channels
+//#define ENABLE_L2CAP_INFORMATION_REQUESTS_ON_CONNECT
 
 #define ENABLE_GOEP_L2CAP
 #define ENABLE_HFP_WIDE_BAND_SPEECH
