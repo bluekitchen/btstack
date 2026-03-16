@@ -166,7 +166,7 @@ static void avdtp_initiator_parser_process_packet(avdtp_connection_t * connectio
     }
 }
 
-bool avdtp_initiator_num_packets_valid(const avdtp_connection_t *connection, const avdtp_signaling_packet_t *signaling_header) {
+static bool avdtp_initiator_num_packets_valid(const avdtp_connection_t *connection, const avdtp_signaling_packet_t *signaling_header) {
     switch (signaling_header->packet_type) {
         case AVDTP_START_PACKET:
         case AVDTP_CONTINUE_PACKET:
