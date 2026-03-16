@@ -1107,15 +1107,13 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_CS_READ_REMOTE_SUPPORTED_CAPABILITIES_COMPLETE 0x2Cu
 
 /**
- * @format 11HPPPPD
+ * @format 11HQQD
  * @param subevent_code
  * @param status
  * @param connection_handle
  * @param remote_fae_table_0
  * @param remote_fae_table_1
  * @param remote_fae_table_2
- * @param remote_fae_table_3
- * @param remote_fae_table_4
  */
 #define HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE         0x2Du
 

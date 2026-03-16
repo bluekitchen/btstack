@@ -6488,46 +6488,28 @@ static inline hci_con_handle_t hci_subevent_le_cs_read_remote_fae_table_complete
 /**
  * @brief Get field remote_fae_table_0 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
  * @param event packet
- * @return remote_fae_table_0
- * @note: btstack_type P
+ * @param Pointer to storage for remote_fae_table_0
+ * @note: btstack_type Q
  */
-static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_0(const uint8_t * event){
-    return (const uint8_t *) &event[6];
+static inline void hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_0(const uint8_t * event, uint8_t * remote_fae_table_0){
+    reverse_bytes(&event[6], remote_fae_table_0, 32);
 }
 /**
  * @brief Get field remote_fae_table_1 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
  * @param event packet
- * @return remote_fae_table_1
- * @note: btstack_type P
+ * @param Pointer to storage for remote_fae_table_1
+ * @note: btstack_type Q
  */
-static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_1(const uint8_t * event){
-    return (const uint8_t *) &event[22];
+static inline void hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_1(const uint8_t * event, uint8_t * remote_fae_table_1){
+    reverse_bytes(&event[38], remote_fae_table_1, 32);
 }
 /**
  * @brief Get field remote_fae_table_2 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
  * @param event packet
  * @return remote_fae_table_2
- * @note: btstack_type P
- */
-static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_2(const uint8_t * event){
-    return (const uint8_t *) &event[38];
-}
-/**
- * @brief Get field remote_fae_table_3 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
- * @param event packet
- * @return remote_fae_table_3
- * @note: btstack_type P
- */
-static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_3(const uint8_t * event){
-    return (const uint8_t *) &event[54];
-}
-/**
- * @brief Get field remote_fae_table_4 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
- * @param event packet
- * @return remote_fae_table_4
  * @note: btstack_type D
  */
-static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_4(const uint8_t * event){
+static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_2(const uint8_t * event){
     return (const uint8_t *) &event[70];
 }
 
