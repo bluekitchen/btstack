@@ -59,7 +59,6 @@ SUBDIRS_BLE := \
 	att_db \
 	ble_client \
 	btstack-event \
-	btstack-event-extra \
 	btstack_memory \
 	btstack_util \
 	crypto \
