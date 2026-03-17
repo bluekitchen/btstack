@@ -5886,6 +5886,34 @@ static inline uint8_t hci_subevent_le_request_peer_sca_complete_get_peer_clock_a
 }
 
 /**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_PATH_LOSS_THRESHOLD
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_path_loss_threshold_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field current_path_loss from event HCI_SUBEVENT_LE_PATH_LOSS_THRESHOLD
+ * @param event packet
+ * @return current_path_loss
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_path_loss_threshold_get_current_path_loss(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field zone_entered from event HCI_SUBEVENT_LE_PATH_LOSS_THRESHOLD
+ * @param event packet
+ * @return zone_entered
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_path_loss_threshold_get_zone_entered(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_TRANSMIT_POWER_REPORTING
  * @param event packet
  * @return status
@@ -6151,6 +6179,142 @@ static inline uint8_t hci_subevent_le_periodic_advertising_data_request_get_sube
 }
 
 /**
+ * @brief Get field advertising_handle from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return advertising_handle
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_advertising_handle(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field subevent from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return subevent
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_subevent(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field tx_status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return tx_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_tx_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field num_responses from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return num_responses
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_num_responses(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Initialize iterator for list responses of hci_subevent_le_periodic_advertising_response_report
+ * @param iterator
+ * @param event packet
+ * @note: btstack_type [
+ */
+static inline void hci_subevent_le_periodic_advertising_response_report_responses_init(btstack_event_iterator_t * iter, const uint8_t * event){
+    iter->event = event;
+    iter->event_len = 2 + (int16_t) event[1];
+    iter->pos = (7);
+    iter->item_length = 0;
+}
+
+/**
+ * @brief Get element of list field tx_power from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return tx_power
+ * @note: btstack_type a
+ */
+static inline int8_t hci_subevent_le_periodic_advertising_response_report_get_responses_item_tx_power(btstack_event_iterator_t * iter){
+    return (int8_t) iter->event[iter->pos + 0];
+}
+/**
+ * @brief Get element of list field rssi from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return rssi
+ * @note: btstack_type a
+ */
+static inline int8_t hci_subevent_le_periodic_advertising_response_report_get_responses_item_rssi(btstack_event_iterator_t * iter){
+    return (int8_t) iter->event[iter->pos + 1];
+}
+/**
+ * @brief Get element of list field cte_type from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return cte_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_responses_item_cte_type(btstack_event_iterator_t * iter){
+    return iter->event[iter->pos + 2];
+}
+/**
+ * @brief Get element of list field response_slot from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return response_slot
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_responses_item_response_slot(btstack_event_iterator_t * iter){
+    return iter->event[iter->pos + 3];
+}
+/**
+ * @brief Get element of list field data_status from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return data_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_responses_item_data_status(btstack_event_iterator_t * iter){
+    return iter->event[iter->pos + 4];
+}
+/**
+ * @brief Get element of list field data_length from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return data_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hci_subevent_le_periodic_advertising_response_report_get_responses_item_data_length(btstack_event_iterator_t * iter){
+    return iter->event[iter->pos + 5];
+}
+/**
+ * @brief Get element of list field data from event HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT
+ * @param event packet
+ * @return data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hci_subevent_le_periodic_advertising_response_report_get_responses_item_data(btstack_event_iterator_t * iter){
+    return &(iter->event[iter->pos + 6]);
+}
+/**
+ * @brief Returns true if iterator of list responses of hci_subevent_le_periodic_advertising_response_report has more elements, false otherwise.
+ * @param iterator
+ * @return
+ * @note: btstack_type ]
+ */
+static inline bool hci_subevent_le_periodic_advertising_response_report_responses_has_next(btstack_event_iterator_t * iter){
+    if (iter->pos >= iter->event_len){
+        return false;
+    }
+    iter->item_length = 5 + 1 + (int16_t) iter->event[iter->pos + 5];
+    return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
+}
+
+/**
+ * @brief Advances the iterator to the next element
+ * @param event packet
+ * @note: btstack_type ]
+ */
+static inline void hci_subevent_le_periodic_advertising_response_report_responses_next(btstack_event_iterator_t * iter){
+    iter->pos = iter->pos + iter->item_length;
+}
+
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
  * @param event packet
  * @return status
@@ -6266,6 +6430,52 @@ static inline uint8_t hci_subevent_le_enhanced_connection_complete_v2_get_advert
  */
 static inline hci_con_handle_t hci_subevent_le_enhanced_connection_complete_v2_get_sync_handle(const uint8_t * event){
     return little_endian_read_16(event, 34);
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_READ_ALL_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_read_all_remote_features_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_ALL_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_read_all_remote_features_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field max_remote_page from event HCI_SUBEVENT_LE_READ_ALL_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return max_remote_page
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_read_all_remote_features_complete_get_max_remote_page(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field max_valid_page from event HCI_SUBEVENT_LE_READ_ALL_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return max_valid_page
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_read_all_remote_features_complete_get_max_valid_page(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field le_features from event HCI_SUBEVENT_LE_READ_ALL_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return le_features
+ * @note: btstack_type R
+ */
+static inline const uint8_t * hci_subevent_le_read_all_remote_features_complete_get_le_features(const uint8_t * event){
+    return &event[8];
 }
 
 /**
@@ -7192,6 +7402,172 @@ static inline void hci_subevent_le_cs_subevent_result_continue_steps_next(btstac
  */
 static inline uint8_t hci_subevent_le_cs_test_end_complete_get_status(const uint8_t * event){
     return event[3];
+}
+
+/**
+ * @brief Get field address_type from event HCI_SUBEVENT_LE_MONITORED_ADVERTISERS_REPORT
+ * @param event packet
+ * @return address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_monitored_advertisers_report_get_address_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field address from event HCI_SUBEVENT_LE_MONITORED_ADVERTISERS_REPORT
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void hci_subevent_le_monitored_advertisers_report_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[4], address, 6);
+}
+/**
+ * @brief Get field condition from event HCI_SUBEVENT_LE_MONITORED_ADVERTISERS_REPORT
+ * @param event packet
+ * @return condition
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_monitored_advertisers_report_get_condition(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_frame_space_update_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_frame_space_update_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field initiator from event HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE
+ * @param event packet
+ * @return initiator
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_frame_space_update_complete_get_initiator(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field frame_space from event HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE
+ * @param event packet
+ * @return frame_space
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_frame_space_update_complete_get_frame_space(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+/**
+ * @brief Get field phys from event HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE
+ * @param event packet
+ * @return phys
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_frame_space_update_complete_get_phys(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field spacing_types from event HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE
+ * @param event packet
+ * @return spacing_types
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_frame_space_update_complete_get_spacing_types(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+
+/**
+ * @brief Get field utp_data_length from event HCI_SUBEVENT_LE_UTP_RECEIVE
+ * @param event packet
+ * @return utp_data_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hci_subevent_le_utp_receive_get_utp_data_length(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field utp_data from event HCI_SUBEVENT_LE_UTP_RECEIVE
+ * @param event packet
+ * @return utp_data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hci_subevent_le_utp_receive_get_utp_data(const uint8_t * event){
+    return &event[4];
+}
+
+/**
+ * @brief Get field status from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_connection_rate_change_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hci_subevent_le_connection_rate_change_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_interval from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return connection_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_rate_change_get_connection_interval(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field subrate_factor from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return subrate_factor
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_rate_change_get_subrate_factor(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field peripheral_latency from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return peripheral_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_rate_change_get_peripheral_latency(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field continuation_number from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return continuation_number
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_rate_change_get_continuation_number(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field supervision_timeout from event HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE
+ * @param event packet
+ * @return supervision_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_subevent_le_connection_rate_change_get_supervision_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 14);
 }
 
 /**

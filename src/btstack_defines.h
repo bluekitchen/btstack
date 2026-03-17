@@ -1007,6 +1007,15 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_REQUEST_PEER_SCA_COMPLETE                0x1Fu
 
 /**
+ * @format 1H11
+ * @param subevent_code
+ * @param connection_handle
+ * @param current_path_loss
+ * @param zone_entered
+ */
+#define HCI_SUBEVENT_LE_PATH_LOSS_THRESHOLD                      0x20u
+
+/**
  * @format 11H11a1a
  * @param subevent_code
  * @param status
@@ -1050,6 +1059,8 @@ typedef SSIZE_T ssize_t;
  */
 #define HCI_SUBEVENT_LE_SUBRATE_CHANGE                            0x23u
 
+// 0x24..0x26 not defined
+
 /**
  * @format 1111
  * @param subevent_code
@@ -1058,6 +1069,24 @@ typedef SSIZE_T ssize_t;
  * @param subevent_data_count
  */
 #define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_DATA_REQUEST         0x27u
+
+/**
+ * @format 11111[aa111JV]
+ * @param subevent_code
+ * @param advertising_handle
+ * @param subevent
+ * @param tx_status
+ * @param num_responses
+ * @array responses
+ * @field tx_power[]
+ * @field rssi[]
+ * @field cte_type[]
+ * @field response_slot[]
+ * @field data_status[]
+ * @field data_length[]
+ * @field data[]
+ */
+#define HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT      0x28u
 
 /**
  * @format 11H11BBB22211H
@@ -1077,6 +1106,19 @@ typedef SSIZE_T ssize_t;
  * @param sync_handle
  */
 #define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2           0x29u
+
+// 0x2a not defined
+
+/**
+ * @format 11H11R
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param max_remote_page
+ * @param max_valid_page
+ * @param le_features
+ */
+#define HCI_SUBEVENT_LE_READ_ALL_REMOTE_FEATURES_COMPLETE         0x2Bu
 
 /**
  * @format 11H12111111112212222211
@@ -1221,6 +1263,48 @@ typedef SSIZE_T ssize_t;
  * @param status
  */
 #define HCI_SUBEVENT_LE_CS_TEST_END_COMPLETE                      0x33u
+
+/**
+ * @format 11B1
+ * @param subevent_code
+ * @param address_type
+ * @param address
+ * @param condition
+ */
+#define HCI_SUBEVENT_LE_MONITORED_ADVERTISERS_REPORT              0x34u
+
+/**
+ * @format 11H1212
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param initiator
+ * @param frame_space
+ * @param phys
+ * @param spacing_types
+ */
+#define HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE               0x35u
+
+/**
+ * @format 1JV
+ * @param subevent_code
+ * @param utp_data_length
+ * @param utp_data
+ */
+#define HCI_SUBEVENT_LE_UTP_RECEIVE                               0x36u
+
+/**
+ * @format 11H22222
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param connection_interval
+ * @param subrate_factor
+ * @param peripheral_latency
+ * @param continuation_number
+ * @param supervision_timeout
+ */
+#define HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE                    0x37u
 
 /** Internal BTstack events */
 #define BTSTACK_EVENT_FIRST                               BTSTACK_EVENT_STATE
