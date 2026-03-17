@@ -2457,6 +2457,14 @@ static void hci_initializing_run(void){
             /* fall through */
 
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+        case HCI_INIT_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS:
+            if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
+                hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS;
+                hci_send_cmd(&hci_le_set_host_feature, 73, 1);
+                break;
+            }
+            /* fall through */
+
         case HCI_INIT_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_READM_MINIMUM_SUPPORTED_CONNECTION_INTERVAL)) {
                 hci_stack->substate = HCI_INIT_W4_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL;
@@ -2465,6 +2473,7 @@ static void hci_initializing_run(void){
             }
             break;
 #endif
+            /* fall through */
 
         case HCI_INIT_DONE:
             hci_stack->substate = HCI_INIT_DONE;
