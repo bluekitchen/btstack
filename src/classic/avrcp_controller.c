@@ -993,6 +993,10 @@ static void avrcp_check_response_timer(avrcp_connection_t * connection, avrcp_co
     }
 }
 
+static bool avrcp_controller_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes_needed){
+    return (pos <= end) && (bytes_needed <= (uint16_t)(end - pos));
+}
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 1) return;
     uint8_t  pdu_id;
@@ -1053,6 +1057,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             connection->state = AVCTP_CONNECTION_OPENED;
 
 #ifdef ENABLE_LOG_INFO
+            if (!avrcp_controller_have_bytes(pos, size, 2u)) break;
             // page, extension code (1)
             pos++;
             uint8_t unit_type = packet[pos] >> 3;
@@ -1067,6 +1072,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             connection->state = AVCTP_CONNECTION_OPENED;
 
 #ifdef ENABLE_LOG_INFO
+            if (!avrcp_controller_have_bytes(pos, size, 5u)) break;
             // byte value 7 (1)
             pos++;
             uint8_t unit_type = packet[pos] >> 3;
@@ -1078,7 +1084,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 #endif
             break;
         }
-        case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+        case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:{
             if ((size - pos) < 7){
                 return;
             }
@@ -1097,10 +1103,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             if ((size - pos) < param_length) {
                 return;
             }
+            uint16_t payload_end = pos + param_length;
 
             // handle asynchronous notifications, without changing state
             if (pdu_id == AVRCP_PDU_ID_REGISTER_NOTIFICATION){
-                avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
+                avrcp_controller_handle_notification(connection, ctype, packet + pos, param_length);
                 break;
             }
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
@@ -1109,10 +1116,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             log_info("VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
             switch (pdu_id){
                 case AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE:{
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
                     uint8_t num_attributes = packet[pos++];
                     int i;
                     avrcp_repeat_mode_t  repeat_mode =  AVRCP_REPEAT_MODE_INVALID;
                     avrcp_shuffle_mode_t shuffle_mode = AVRCP_SHUFFLE_MODE_INVALID;
+                    if (!avrcp_controller_have_bytes(pos, payload_end, (uint16_t)(2u * num_attributes))) return;
                     for (i = 0; i < num_attributes; i++){
                         avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
                         uint8_t value = packet[pos++];
@@ -1132,7 +1141,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_ATTRIBUTES:{
-                    uint8_t num_attributes = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU);
+                    uint8_t num_attributes_raw;
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
+                    num_attributes_raw = packet[pos++];
+                    if (!avrcp_controller_have_bytes(pos, payload_end, num_attributes_raw)) return;
+                    uint8_t num_attributes = (uint8_t)btstack_min(num_attributes_raw, AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU);
 
                     uint16_t offset = 0;
                     uint8_t event[5 + 1 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU];
@@ -1152,7 +1165,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_VALUES:{
-                    uint8_t num_setting_values = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES);
+                    uint8_t num_setting_values_raw;
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
+                    num_setting_values_raw = packet[pos++];
+                    if (!avrcp_controller_have_bytes(pos, payload_end, num_setting_values_raw)) return;
+                    uint8_t num_setting_values = (uint8_t)btstack_min(num_setting_values_raw, AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES);
                     uint16_t offset = 0;
                     uint8_t event[5 + 2 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES];
 
@@ -1172,7 +1189,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_ATTRIBUTE_TEXT:{
-                    uint8_t num_attributes = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU);
+                    uint8_t num_attributes = 0;
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
+                    num_attributes = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU);
                     uint16_t offset = 0;
                     uint8_t event[6 + 5 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE];
 
@@ -1186,16 +1205,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint8_t offset_reset_value = offset;
                     uint8_t i;
                     for (i = 0; i < num_attributes; i++){
+                        uint8_t value_len;
+                        uint8_t value_len_raw;
+                        if (!avrcp_controller_have_bytes(pos, payload_end, 4u)) return;
                         offset = offset_reset_value;
                         event[offset++] = i;                     // attribute index
                         event[offset++] = packet[pos++];         // attribute ID
                         memcpy(&event[offset], &packet[pos], 2); // character_set_id
                         pos += 2;
                         offset += 2;
-                        uint8_t value_len = (uint8_t) btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE);       // attribute string length
+                        value_len_raw = packet[pos++];
+                        if (!avrcp_controller_have_bytes(pos, payload_end, value_len_raw)) return;
+                        value_len = (uint8_t) btstack_min(value_len_raw, AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE);
                         event[offset++] = value_len;
                         memcpy(&event[offset], &packet[pos], value_len);
-                        pos += value_len;
+                        pos += value_len_raw;
                         offset += value_len;
                         (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                     }
@@ -1203,7 +1227,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_VALUE_TEXT:{
-                    uint8_t num_setting_values = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES);
+                    uint8_t num_setting_values = 0;
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
+                    num_setting_values = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES);
                     uint16_t offset = 0;
                     uint8_t event[5 + 2 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE];
 
@@ -1218,16 +1244,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint8_t offset_reset_value = offset;
                     uint8_t i;
                     for (i = 0; i < num_setting_values; i++){
+                        uint8_t value_len;
+                        uint8_t value_len_raw;
+                        if (!avrcp_controller_have_bytes(pos, payload_end, 4u)) return;
                         offset = offset_reset_value;
                         event[offset++] = i;                     // value index
                         event[offset++] = packet[pos++];         // value ID
                         memcpy(&event[offset], &packet[pos], 2); // character_set_id
                         pos += 2;
                         offset += 2;
-                        uint8_t value_len = (uint8_t) btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE);       // value string length
+                        value_len_raw = packet[pos++];
+                        if (!avrcp_controller_have_bytes(pos, payload_end, value_len_raw)) return;
+                        value_len = (uint8_t) btstack_min(value_len_raw, AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE);
                         event[offset++] = value_len;
                         memcpy(&event[offset], &packet[pos], value_len);
-                        pos += value_len;
+                        pos += value_len_raw;
                         offset += value_len;
                         (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                     }
@@ -1252,6 +1283,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:{
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
                     uint16_t offset = 0;
                     uint8_t event[7];
                     event[offset++] = HCI_EVENT_AVRCP_META;
@@ -1266,9 +1298,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos++];
                     uint8_t capability_count = 0;
-                    if (param_length > 1){
+                    if (avrcp_controller_have_bytes(pos, payload_end, 1u)){
                         capability_count = packet[pos++];
                     }
                     uint16_t i;
@@ -1278,7 +1311,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (capability_id){
 
                         case AVRCP_CAPABILITY_ID_COMPANY:
-                            for (i = 0; (i < capability_count) && ((size - pos) >= 3); i++){
+                            for (i = 0; (i < capability_count) && avrcp_controller_have_bytes(pos, payload_end, 3u); i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
                                 log_info("  0x%06" PRIx32 ", ", company_id);
@@ -1308,7 +1341,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
 
                         case AVRCP_CAPABILITY_ID_EVENT:
-                            for (i = 0; (i < capability_count) && ((size - pos) >= 1); i++){
+                            for (i = 0; (i < capability_count) && avrcp_controller_have_bytes(pos, payload_end, 1u); i++){
                                 uint8_t event_id = packet[pos++];
                                 connection->notifications_supported_by_target |= (1 << event_id);
                             }
@@ -1345,6 +1378,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_PLAY_STATUS:{
+                    if (!avrcp_controller_have_bytes(pos, payload_end, 9u)) return;
                     uint32_t song_length = big_endian_read_32(packet, pos);
                     pos += 4;
                     uint32_t song_position = big_endian_read_32(packet, pos);
@@ -1375,6 +1409,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             avrcp_parser_reset(connection);
                             connection->list_size = param_length;
                             // num_attributes
+                            if (!avrcp_controller_have_bytes(pos, payload_end, 1u)) return;
                             pos++;
                             break;
 
@@ -1387,7 +1422,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
 
                     connection->controller_num_received_fragments++;
-                    avrcp_controller_parse_and_emit_element_attrs(packet + pos, size - pos, connection, ctype);
+                    avrcp_controller_parse_and_emit_element_attrs(packet + pos, payload_end - pos, connection, ctype);
 
                     switch (vendor_dependent_avrcp_packet_type) {
                         case AVRCP_START_PACKET:
@@ -1426,6 +1461,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
             }
             break;
+        }
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
             if ((size - pos) < 1) return;
             uint8_t operation_id = packet[pos++];
