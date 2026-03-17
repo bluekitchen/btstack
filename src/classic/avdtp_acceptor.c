@@ -295,7 +295,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     log_info("W2_ANSWER_DELAY_REPORT, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_DELAY_REPORT;
                     avdtp_signaling_emit_delay(connection->avdtp_cid, connection->acceptor_local_seid,
-                                               big_endian_read_16(packet, offset));
+                                               big_endian_read_16(connection->acceptor_signaling_packet.command, offset));
                     break;
                 
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
