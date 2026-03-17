@@ -49,6 +49,10 @@
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_initiator.h"
 
+static bool avdtp_initiator_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes_needed){
+    return (pos <= end) && (bytes_needed <= (uint16_t)(end - pos));
+}
+
 static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_CMD_MSG);
@@ -252,6 +256,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     
                     int i;
                     for (i = offset; i < size; i += 2){
+                        if (!avdtp_initiator_have_bytes((uint16_t)i, size, 2u)) break;
                         sep.seid = packet[i] >> 2;
                         offset++;
                         if ((sep.seid < 0x01) || (sep.seid > 0x3E)){
