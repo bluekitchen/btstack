@@ -112,10 +112,10 @@ static void avrcp_browsing_target_emit_get_folder_items(btstack_packet_handler_t
 static void avrcp_browsing_target_emit_search(btstack_packet_handler_t callback, uint16_t browsing_cid, avrcp_browsing_connection_t * connection){
     btstack_assert(callback != NULL);
 
-    uint8_t event[11 + AVRCP_SEARCH_STRING_MAX_LENGTH];
+    uint8_t event[11 + AVRCP_SEARCH_STRING_MAX_LENGTH + 1];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
-    event[pos++] = sizeof(event) - 2;
+    pos++;
     event[pos++] = AVRCP_SUBEVENT_BROWSING_SEARCH;
     little_endian_store_16(event, pos, browsing_cid);
     pos += 2;
@@ -123,14 +123,15 @@ static void avrcp_browsing_target_emit_search(btstack_packet_handler_t callback,
     pos += 2;
     little_endian_store_16(event, pos, connection->target_search_str_len);
     pos += 2;
-    uint16_t target_search_str_len = btstack_min(AVRCP_SEARCH_STRING_MAX_LENGTH, (uint16_t) strlen(connection->target_search_str));
+    uint16_t target_search_str_len = btstack_min(AVRCP_SEARCH_STRING_MAX_LENGTH, connection->target_search_str_len);
     little_endian_store_16(event, pos, target_search_str_len);
     pos += 2;
     if (target_search_str_len > 0){
         memcpy(&event[pos], connection->target_search_str, target_search_str_len);
-        connection->target_search_str[target_search_str_len - 1] = 0;
         pos += target_search_str_len;
     }
+    event[pos++] = 0;
+    event[1] = pos - 2;
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
