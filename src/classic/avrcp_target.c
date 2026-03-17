@@ -1081,9 +1081,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             operation_id = (avrcp_operation_id_t) (packet[6] & 0x7f);
             operation_data_field_length = packet[7];
 
-            operand = NULL;
-            if ((operation_data_field_length > 0u) && (size >= 9u)){
-                operand = &packet[8];
+            if ((8u + operation_data_field_length) > size) {
+                log_error("PASS_THROUGH cmd vendor dependent information shorter than expected");
+                avrcp_target_pass_through_response(connection->avrcp_cid, AVRCP_CTYPE_RESPONSE_REJECTED, (avrcp_operation_id_t) packet[6], 0, NULL);
+                break;
             }
 
             if (operation_data_field_length > sizeof(connection->message_body)){
@@ -1091,6 +1092,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 avrcp_target_pass_through_response(connection->avrcp_cid, AVRCP_CTYPE_RESPONSE_REJECTED, (avrcp_operation_id_t) packet[6], 0, NULL);
                 break;
             }
+
+            operand = &packet[8];
 
             if (avcrp_operation_id_is_valid(operation_id)){
                 bool button_pressed = (packet[6] & 0x80) == 0u;
