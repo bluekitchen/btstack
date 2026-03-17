@@ -294,6 +294,14 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                     printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
                     printf("Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
+
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+                    printf("Use 2M-PHY, Shorter Frame Space and Connection Interval\n");
+                    gap_le_set_phy(connection_handle, 0, 2, 2, 0 );
+                    gap_request_frame_space_update( connection_handle, 0, 150, 2,  3);
+                    gap_request_connection_rate_update( connection_handle, 6, 8, 1, 1, 5, 0, 400, 0x0001,  0x7CFF);
+#endif
+
                     // initialize gatt client context with handle, and add it to the list of active clients
                     // query primary services
                     printf("Search for LE Streamer service .\n");
@@ -326,6 +334,22 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     printf("- LE Connection 0x%04x: PHY update - using LE %s PHY now\n", con_handle,
                            phy_names[hci_subevent_le_phy_update_complete_get_tx_phy(packet) - 1]);
                     break;
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+                case HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE:
+                    con_handle = hci_subevent_le_connection_rate_change_get_connection_handle(packet);
+                    printf("- LE Connection 0x%04x: connection rate change - status 0x%02x, connection interval %u us\n",
+                        con_handle,
+                        hci_subevent_le_connection_rate_change_get_status(packet),
+                        hci_subevent_le_connection_rate_change_get_connection_interval(packet) * 125);
+                    break;
+                case HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE:
+                    con_handle = hci_subevent_le_frame_space_update_complete_get_connection_handle(packet);
+                    printf("- LE Connection 0x%04x: frame space update - status 0x%02x, frame space %u us\n",
+                    con_handle,
+                    hci_subevent_le_frame_space_update_complete_get_status(packet),
+                    hci_subevent_le_frame_space_update_complete_get_frame_space(packet));
+                    break;
+#endif
                 default:
                     break;
             }
