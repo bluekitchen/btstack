@@ -290,7 +290,10 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             while (attr_count){
                                 uint32_t attr_id = big_endian_read_32(packet, pos);
                                 pos += 4;
-                                browsing_connection->attr_bitmap |= (1 << attr_id);
+                                // only store first 32 attribute ids
+                                if (attr_id < 32) {
+                                    browsing_connection->attr_bitmap |= (1 << attr_id);
+                                }
                                 attr_count--;
                             }
                             avrcp_browsing_target_emit_get_folder_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
