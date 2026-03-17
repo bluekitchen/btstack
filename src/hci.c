@@ -2895,9 +2895,48 @@ static void hci_store_local_supported_commands(const uint8_t * packet){
     log_info("Local supported commands summary %08" PRIx32, hci_stack->local_supported_commands);
 }
 
-static void handle_command_complete_event(uint8_t * packet, uint16_t size){
-    UNUSED(size);
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+static void hci_init_report_minimum_supported_connection_interval(const uint8_t * packet, uint16_t size){
+    if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1u)){
+        return;
+    }
 
+    uint8_t status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+    if (status != ERROR_CODE_SUCCESS){
+        log_info("hci_le_read_minimum_supported_connection_interval failed, status 0x%02x", status);
+        return;
+    }
+
+    if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u)){
+        log_info("hci_le_read_minimum_supported_connection_interval: malformed response, size %u", size);
+        return;
+    }
+
+    uint8_t minimum_supported_connection_interval = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1u];
+    uint8_t num_groups = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 2u];
+    log_info("hci_le_read_minimum_supported_connection_interval: min 0x%02x (%" PRIu32 " us), num groups %u",
+             minimum_supported_connection_interval, ((uint32_t) minimum_supported_connection_interval) * 125u, num_groups);
+
+    uint16_t offset = OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u;
+    uint8_t i;
+    for (i = 0; i < num_groups; i++){
+        if (size < (offset + 6u)){
+            log_info("hci_le_read_minimum_supported_connection_interval: truncated group list at group %u/%u", i, num_groups);
+            break;
+        }
+        uint16_t group_min = little_endian_read_16(packet, offset);
+        uint16_t group_max = little_endian_read_16(packet, offset + 2u);
+        uint16_t group_stride = little_endian_read_16(packet, offset + 4u);
+        log_info("hci_le_read_minimum_supported_connection_interval: group %u min 0x%04x (%" PRIu32 " us), max 0x%04x (%" PRIu32 " us), stride 0x%04x (%" PRIu32 " us)",
+                 i, group_min, ((uint32_t) group_min) * 125u,
+                 group_max, ((uint32_t) group_max) * 125u,
+                 group_stride, ((uint32_t) group_stride) * 125u);
+        offset += 6u;
+    }
+}
+#endif
+
+static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     uint8_t status = 0;
     if( size > OFFSET_OF_DATA_IN_COMMAND_COMPLETE ) {
         status = hci_event_command_complete_get_return_parameters(packet)[0];
@@ -2972,6 +3011,11 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             }
             log_info("hci_le_read_buffer_size: acl size %u, acl count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             break;
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+        case HCI_OPCODE_HCI_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL:
+            hci_init_report_minimum_supported_connection_interval(packet, size);
+            break;
+#endif
 #endif
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH:
