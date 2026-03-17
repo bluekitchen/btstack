@@ -47,6 +47,9 @@
 #include "btstack_util.h"
 #include "l2cap.h"
 
+static bool avdtp_acceptor_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes_needed){
+    return (pos <= end) && (bytes_needed <= (uint16_t)(end - pos));
+}
 
 static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){
     uint8_t command[2];
@@ -217,6 +220,13 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
         case AVDTP_SI_OPEN:
         case AVDTP_SI_RECONFIGURE:
         case AVDTP_SI_DELAYREPORT:
+            if (!avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
             connection->acceptor_local_seid  = packet[offset++] >> 2;
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
@@ -294,6 +304,12 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 case AVDTP_SI_DELAYREPORT:
                     log_info("W2_ANSWER_DELAY_REPORT, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_DELAY_REPORT;
+                    if (!avdtp_acceptor_have_bytes((uint16_t)offset, packet_size, 2u)) {
+                        connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                        break;
+                    }
                     avdtp_signaling_emit_delay(connection->avdtp_cid, connection->acceptor_local_seid,
                                                big_endian_read_16(connection->acceptor_signaling_packet.command, offset));
                     break;
