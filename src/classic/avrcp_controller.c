@@ -994,7 +994,7 @@ static void avrcp_check_response_timer(avrcp_connection_t * connection, avrcp_co
 }
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
-    if (size < 6u) return;
+    if (size < 1) return;
     uint8_t  pdu_id;
     avrcp_packet_type_t  vendor_dependent_avrcp_packet_type;
 
@@ -1027,6 +1027,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         default:
             return;
     }
+
+    // Transaction|PacketTyp..(1), PID(2), CommandType(1), Subunit(1), Opcode (1)
+    if (size < 6u) return;
 
     pos += 2; // PID
 
