@@ -376,9 +376,9 @@ def create_iterator( event_name, field_name, field_type, offset, offset_is_numbe
         if list_length_field_offset < last_length_field_offset:
             # Dynamic element size: size(bytes before J) + J byte + variable payload.
             j_offset = last_length_field_offset - list_base
-            item_length_code = '(uint16_t)({0}) + 1u + (uint16_t) iter->event[iter->pos + {0}]'.format(j_offset)
+            item_length_code = '{0} + 1 + (int16_t) iter->event[iter->pos + {0}]'.format(j_offset)
         else:
-            item_length_code = '(uint16_t)({0})'.format(list_static_size)
+            item_length_code = '{0}'.format(list_static_size)
         generated_has_next = c_prototype_iterator_has_next.format(
             item_length_code=item_length_code,
             format=field_type, scope=list_name_scope, event=event_name, field=list_name_scope)

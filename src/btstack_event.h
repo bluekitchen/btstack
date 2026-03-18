@@ -7034,7 +7034,7 @@ static inline bool hci_subevent_le_cs_subevent_result_steps_has_next(btstack_eve
     if (iter->pos >= iter->event_len){
         return false;
     }
-    iter->item_length = (uint16_t)(2) + 1u + (uint16_t) iter->event[iter->pos + 2];
+    iter->item_length = 2 + 1 + (int16_t) iter->event[iter->pos + 2];
     return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
 }
 
@@ -7170,7 +7170,7 @@ static inline bool hci_subevent_le_cs_subevent_result_continue_steps_has_next(bt
     if (iter->pos >= iter->event_len){
         return false;
     }
-    iter->item_length = (uint16_t)(2) + 1u + (uint16_t) iter->event[iter->pos + 2];
+    iter->item_length = 2 + 1 + (int16_t) iter->event[iter->pos + 2];
     return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
 }
 
