@@ -70,9 +70,9 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
 
 typedef struct {
     const uint8_t * event;
-    uint16_t event_len;
-    uint16_t pos;
-    uint16_t item_length;
+    int16_t event_len;
+    int16_t pos;
+    int16_t item_length;
 } btstack_event_iterator_t;
 
 /***
@@ -6983,9 +6983,9 @@ static inline uint8_t hci_subevent_le_cs_subevent_result_get_num_steps_reported(
  */
 static inline void hci_subevent_le_cs_subevent_result_steps_init(btstack_event_iterator_t * iter, const uint8_t * event){
     iter->event = event;
-    iter->event_len = (uint16_t) event[1] + 2u;
-    iter->pos = (uint16_t) (18);
-    iter->item_length = 0u;
+    iter->event_len = 2 + (int16_t) event[1];
+    iter->pos = (18);
+    iter->item_length = 0;
 }
 
 /**
@@ -7035,7 +7035,7 @@ static inline bool hci_subevent_le_cs_subevent_result_steps_has_next(btstack_eve
         return false;
     }
     iter->item_length = (uint16_t)(2) + 1u + (uint16_t) iter->event[iter->pos + 2];
-    return (iter->item_length > 0u) && ((uint16_t)(iter->pos + iter->item_length) <= iter->event_len);
+    return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
 }
 
 /**
@@ -7044,7 +7044,7 @@ static inline bool hci_subevent_le_cs_subevent_result_steps_has_next(btstack_eve
  * @note: btstack_type ]
  */
 static inline void hci_subevent_le_cs_subevent_result_steps_next(btstack_event_iterator_t * iter){
-    iter->pos = (uint16_t) (iter->pos + iter->item_length);
+    iter->pos = iter->pos + iter->item_length;
 }
 
 
@@ -7119,9 +7119,9 @@ static inline uint8_t hci_subevent_le_cs_subevent_result_continue_get_num_steps_
  */
 static inline void hci_subevent_le_cs_subevent_result_continue_steps_init(btstack_event_iterator_t * iter, const uint8_t * event){
     iter->event = event;
-    iter->event_len = (uint16_t) event[1] + 2u;
-    iter->pos = (uint16_t) (11);
-    iter->item_length = 0u;
+    iter->event_len = 2 + (int16_t) event[1];
+    iter->pos = (11);
+    iter->item_length = 0;
 }
 
 /**
@@ -7171,7 +7171,7 @@ static inline bool hci_subevent_le_cs_subevent_result_continue_steps_has_next(bt
         return false;
     }
     iter->item_length = (uint16_t)(2) + 1u + (uint16_t) iter->event[iter->pos + 2];
-    return (iter->item_length > 0u) && ((uint16_t)(iter->pos + iter->item_length) <= iter->event_len);
+    return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
 }
 
 /**
@@ -7180,7 +7180,7 @@ static inline bool hci_subevent_le_cs_subevent_result_continue_steps_has_next(bt
  * @note: btstack_type ]
  */
 static inline void hci_subevent_le_cs_subevent_result_continue_steps_next(btstack_event_iterator_t * iter){
-    iter->pos = (uint16_t) (iter->pos + iter->item_length);
+    iter->pos = iter->pos + iter->item_length;
 }
 
 

@@ -124,9 +124,9 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
 
 typedef struct {
     const uint8_t * event;
-    uint16_t event_len;
-    uint16_t pos;
-    uint16_t item_length;
+    int16_t event_len;
+    int16_t pos;
+    int16_t item_length;
 } btstack_event_iterator_t;
 
 """
@@ -172,9 +172,9 @@ c_prototype_iterator_init = '''/**
  */
 static inline void {event}_{field}_init(btstack_event_iterator_t * iter, const uint8_t * event){{
     iter->event = event;
-    iter->event_len = (uint16_t) event[1] + 2u;
-    iter->pos = (uint16_t) ({list_field});
-    iter->item_length = 0u;
+    iter->event_len = 2 + (int16_t) event[1];
+    iter->pos = ({list_field});
+    iter->item_length = 0;
 }}
 
 '''
@@ -190,7 +190,7 @@ static inline bool {event}_{field}_has_next(btstack_event_iterator_t * iter){{
         return false;
     }}
     iter->item_length = {item_length_code};
-    return (iter->item_length > 0u) && ((uint16_t)(iter->pos + iter->item_length) <= iter->event_len);
+    return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
 }}
 
 '''
@@ -201,7 +201,7 @@ c_prototype_iterator_next = '''/**
  * @note: btstack_type {format}
  */
 static inline void {event}_{scope}_next(btstack_event_iterator_t * iter){{
-    iter->pos = (uint16_t) (iter->pos + iter->item_length);
+    iter->pos = iter->pos + iter->item_length;
 }}
 
 '''
