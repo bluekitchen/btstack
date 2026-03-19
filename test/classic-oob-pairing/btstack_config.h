@@ -81,6 +81,9 @@
 /////  Trigger L2CAP Information Requests to get supported fixed channels
 //#define ENABLE_L2CAP_INFORMATION_REQUESTS_ON_CONNECT
 
+// Allow third-party LE Host stack to reserve Classic/Generic ACL packets
+#define ENABLE_HCI_ACL_PACKET_RESERVATION
+
 #define ENABLE_GOEP_L2CAP
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
