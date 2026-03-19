@@ -668,6 +668,11 @@ uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_ty
             num_packets_sent_classic += connection->num_packets_sent;
         }
     }
+#ifdef ENABLE_HCI_ACL_PACKET_RESERVATION
+    // assume reserved packets have been sent to the Controller
+    num_packets_sent_classic += hci_stack->acl_packets_reserved;
+#endif
+
     btstack_assert(hci_stack->acl_packets_total_num  >= num_packets_sent_classic);
     int free_slots_classic = hci_stack->acl_packets_total_num - num_packets_sent_classic;
     int free_slots_le = 0;
