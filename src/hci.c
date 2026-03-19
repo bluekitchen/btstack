@@ -853,6 +853,9 @@ void hci_acl_reserve_packets(uint8_t num_packets) {
 void hci_acl_release_packets(uint8_t num_packets) {
     btstack_assert(hci_stack->acl_packets_reserved >= num_packets);
     hci_stack->acl_packets_reserved -= num_packets;
+
+    // execute main loop
+    hci_run();
 }
 #endif
 
