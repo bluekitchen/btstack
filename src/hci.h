@@ -237,6 +237,9 @@ typedef enum {
 #define GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT     0x0002u
 #define GAP_CONNECTION_TASK_READ_RSSI                     0x0004u
 #define GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES       0x0008u
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+#define GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST    0x0010u
+#endif
 
 /**
  * Connection State 
@@ -685,6 +688,19 @@ typedef struct {
     uint16_t le_subrate_max_latency;
     uint16_t le_subrate_continuation_number;
     uint16_t le_subrate_supervision_timeout;
+
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+    // LE Connection Rate Request
+    uint16_t le_connection_rate_interval_min_us;
+    uint16_t le_connection_rate_interval_max_us;
+    uint16_t le_connection_rate_subrate_min;
+    uint16_t le_connection_rate_subrate_max;
+    uint16_t le_connection_rate_max_latency;
+    uint16_t le_connection_rate_continuation_number;
+    uint16_t le_connection_rate_supervision_timeout;
+    uint16_t le_connection_rate_min_ce_length;
+    uint16_t le_connection_rate_max_ce_length;
+#endif
 
     // LE Security Manager
     sm_connection_t sm_connection;

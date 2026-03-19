@@ -1044,6 +1044,26 @@ uint8_t gap_request_connection_subrating(hci_con_handle_t con_handle, uint16_t s
                                      uint16_t max_latency, uint16_t continuation_number, uint16_t supervision_timeout);
 
 /**
+ * @brief Request a connection rate update for a given LE connection
+ * @param con_handle
+ * @param connection_interval_min_us (unit: us)
+ * @param connection_interval_max (unit: us)
+ * @param subrate_min
+ * @param subrate_max
+ * @param max_latency (in units of subrated connection events)
+ * @param continuation_number (Minimum number of underlying connection events to remain active after a packet containing a Link Layer PDU with a non-zero Length field is sent or received)
+ * @param supervision_timeout (unit: 10ms) range: 10..3200 (100 ms to 32 s)
+ * @param min_ce_length (unit: 0.625 ms)
+ * @param max_ce_length (unit: 0.625 ms)
+ * @return status
+ */
+uint8_t gap_request_connection_rate_update(hci_con_handle_t con_handle, uint16_t connection_interval_min,
+                                           uint16_t connection_interval_max, uint16_t subrate_min,
+                                           uint16_t subrate_max, uint16_t max_latency,
+                                           uint16_t continuation_number, uint16_t supervision_timeout,
+                                           uint16_t min_ce_length, uint16_t max_ce_length);
+
+/**
  * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)
  * @note: default: 1
  * @param max_peripheral_connections

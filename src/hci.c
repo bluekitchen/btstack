@@ -7881,6 +7881,18 @@ static bool hci_run_general_pending_commands(void){
                 hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
                 return true;
             }
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
+                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                hci_send_cmd(&hci_le_connection_rate_request, connection->con_handle,
+                             connection->le_connection_rate_interval_min_us, connection->le_connection_rate_interval_max_us,
+                             connection->le_connection_rate_subrate_min, connection->le_connection_rate_subrate_max,
+                             connection->le_connection_rate_max_latency, connection->le_connection_rate_continuation_number,
+                             connection->le_connection_rate_supervision_timeout, connection->le_connection_rate_min_ce_length,
+                             connection->le_connection_rate_max_ce_length);
+                return true;
+            }
+#endif
 #endif
         }
 
@@ -9102,6 +9114,30 @@ uint8_t gap_request_connection_subrating(hci_con_handle_t con_handle, uint16_t s
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+uint8_t gap_request_connection_rate_update(hci_con_handle_t con_handle, uint16_t connection_interval_min_us,
+                                           uint16_t connection_interval_max_us, uint16_t subrate_min,
+                                           uint16_t subrate_max, uint16_t max_latency,
+                                           uint16_t continuation_number, uint16_t supervision_timeout,
+                                           uint16_t min_ce_length, uint16_t max_ce_length){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    connection->le_connection_rate_interval_min_us = connection_interval_min_us;
+    connection->le_connection_rate_interval_max_us = connection_interval_max_us;
+    connection->le_connection_rate_subrate_min = subrate_min;
+    connection->le_connection_rate_subrate_max = subrate_max;
+    connection->le_connection_rate_max_latency = max_latency;
+    connection->le_connection_rate_continuation_number = continuation_number;
+    connection->le_connection_rate_supervision_timeout = supervision_timeout;
+    connection->le_connection_rate_min_ce_length = min_ce_length;
+    connection->le_connection_rate_max_ce_length = max_ce_length;
+    connection->gap_connection_tasks |= GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+#endif
 
 #ifdef ENABLE_LE_PERIPHERAL
 
