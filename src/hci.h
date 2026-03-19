@@ -1164,6 +1164,10 @@ typedef struct {
     uint8_t  sco_waiting_for_can_send_now;
     bool     sco_can_send_now;
 
+#ifdef ENABLE_HCI_ACL_PACKET_RESERVATION
+    uint8_t  acl_packets_reserved;
+#endif
+
     /* local supported features */
     uint8_t local_supported_features[8];
 
@@ -1934,6 +1938,12 @@ void hci_disable_l2cap_timeout_check(void);
 
 // called from test/ble_client/advertising_data_parser.c
 void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size);
+
+#ifdef ENABLE_HCI_ACL_PACKET_RESERVATION
+// used by third-party LE Host stack
+void hci_acl_reserve_packets(uint8_t num_packets);
+void hci_acl_release_packets(uint8_t num_packets);
+#endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 // setup test connections, used for fuzzing

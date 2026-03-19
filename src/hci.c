@@ -839,6 +839,18 @@ void hci_request_sco_can_send_now_event_for_con_handle(hci_con_handle_t con_hand
 
 #endif
 
+#ifdef ENABLE_HCI_ACL_PACKET_RESERVATION
+void hci_acl_reserve_packets(uint8_t num_packets) {
+    btstack_assert(hci_stack->acl_packets_reserved + num_packets <= hci_stack->acl_packets_total_num);
+    hci_stack->acl_packets_reserved += num_packets;
+}
+
+void hci_acl_release_packets(uint8_t num_packets) {
+    btstack_assert(hci_stack->acl_packets_reserved >= num_packets);
+    hci_stack->acl_packets_reserved -= num_packets;
+}
+#endif
+
 // used for internal checks in l2cap.c
 bool hci_is_packet_buffer_reserved(void){
     return hci_stack->hci_packet_buffer_reserved;
