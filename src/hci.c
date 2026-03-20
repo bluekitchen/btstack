@@ -7857,6 +7857,15 @@ static bool hci_run_general_pending_commands(void){
         }
 #endif
 
+#ifdef ENABLE_BLE
+        if (connection->le_phy_update_all_phys != 0xffu){
+            uint8_t all_phys = connection->le_phy_update_all_phys;
+            connection->le_phy_update_all_phys = 0xff;
+            hci_send_cmd(&hci_le_set_phy, connection->con_handle, all_phys, connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
+            return true;
+        }
+#endif
+
         if (connection->gap_connection_tasks != 0){
 #ifdef ENABLE_CLASSIC
             if ((connection->gap_connection_tasks & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
@@ -7925,12 +7934,6 @@ static bool hci_run_general_pending_commands(void){
                 return true;
             default:
                 break;
-        }
-        if (connection->le_phy_update_all_phys != 0xffu){
-            uint8_t all_phys = connection->le_phy_update_all_phys;
-            connection->le_phy_update_all_phys = 0xff;
-            hci_send_cmd(&hci_le_set_phy, connection->con_handle, all_phys, connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
-            return true;
         }
         if (connection->le_subrate_min > 0){
             uint16_t subrate_min = connection->le_subrate_min;
