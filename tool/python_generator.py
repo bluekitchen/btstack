@@ -340,6 +340,9 @@ def create_events(fout, events):
     for event_type, event_name, format, args in events:
         if not event_supported(event_name):
             continue
+        # skip events that contain arrays for now
+        if '[' in format:
+            continue
         class_name = class_name_for_event(event_name)
         create_event(fout, class_name, format, args)
 
