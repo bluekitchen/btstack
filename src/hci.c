@@ -2447,6 +2447,7 @@ static void hci_initializing_run(void){
 
 #ifdef ENABLE_BLE
             /* fall through */
+
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING;
@@ -2454,9 +2455,10 @@ static void hci_initializing_run(void){
                 break;
             }
 #endif
-            /* fall through */
 
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+            /* fall through */
+
         case HCI_INIT_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS;
