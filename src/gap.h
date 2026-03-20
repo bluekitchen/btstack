@@ -1043,11 +1043,12 @@ int gap_connection_parameter_range_included(le_connection_parameter_range_t * ex
 uint8_t gap_request_connection_subrating(hci_con_handle_t con_handle, uint16_t subrate_min, uint16_t subrate_max,
                                      uint16_t max_latency, uint16_t continuation_number, uint16_t supervision_timeout);
 
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
 /**
  * @brief Request a connection rate update for a given LE connection
  * @param con_handle
  * @param connection_interval_min_us (unit: us)
- * @param connection_interval_max (unit: us)
+ * @param connection_interval_max_us (unit: us)
  * @param subrate_min
  * @param subrate_max
  * @param max_latency (in units of subrated connection events)
@@ -1057,11 +1058,24 @@ uint8_t gap_request_connection_subrating(hci_con_handle_t con_handle, uint16_t s
  * @param max_ce_length (unit: 0.625 ms)
  * @return status
  */
-uint8_t gap_request_connection_rate_update(hci_con_handle_t con_handle, uint16_t connection_interval_min,
-                                           uint16_t connection_interval_max, uint16_t subrate_min,
+uint8_t gap_request_connection_rate_update(hci_con_handle_t con_handle, uint16_t connection_interval_min_us,
+                                           uint16_t connection_interval_max_us, uint16_t subrate_min,
                                            uint16_t subrate_max, uint16_t max_latency,
                                            uint16_t continuation_number, uint16_t supervision_timeout,
                                            uint16_t min_ce_length, uint16_t max_ce_length);
+
+/**
+ * @brief Request a frame space update for a given LE connection
+ * @param con_handle
+ * @param frame_space_min_us (unit: us)
+ * @param frame_space_max_us (unit: us)
+ * @param phys bitmask: 1 = LE 1M PHY, 2 = LE 2M PHY, 4 = LE Coded PHY
+ * @param spacing_types bitmask: 1 = T_IFS_ACL_CP, 2 = T_IFS_ACL_PC, 4 = T_MCES, 8 = T_IFS_CIS, 16 = T_MSS_CIS
+ * @return status
+ */
+uint8_t gap_request_frame_space_update(hci_con_handle_t con_handle, uint16_t frame_space_min_us,
+                                 uint16_t frame_space_max_us, uint8_t phys, uint16_t spacing_types);
+#endif
 
 /**
  * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)

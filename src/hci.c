@@ -7882,6 +7882,13 @@ static bool hci_run_general_pending_commands(void){
                 return true;
             }
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE){
+                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                hci_send_cmd(&hci_le_frame_space_update, connection->con_handle,
+                             connection->le_frame_space_min_us, connection->le_frame_space_max_us,
+                             connection->le_frame_space_phys, connection->le_frame_space_spacing_types);
+                return true;
+            }
             if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
                 connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
                 hci_send_cmd(&hci_le_connection_rate_request, connection->con_handle,
@@ -9116,6 +9123,20 @@ uint8_t gap_request_connection_subrating(hci_con_handle_t con_handle, uint16_t s
 }
 
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+uint8_t gap_request_frame_space_update(hci_con_handle_t con_handle, uint16_t frame_space_min_us,
+                                 uint16_t frame_space_max_us, uint8_t phys, uint16_t spacing_types){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    connection->le_frame_space_min_us = frame_space_min_us;
+    connection->le_frame_space_max_us = frame_space_max_us;
+    connection->le_frame_space_phys = phys;
+    connection->le_frame_space_spacing_types = spacing_types;
+    connection->gap_connection_tasks |= GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gap_request_connection_rate_update(hci_con_handle_t con_handle, uint16_t connection_interval_min_us,
                                            uint16_t connection_interval_max_us, uint16_t subrate_min,
                                            uint16_t subrate_max, uint16_t max_latency,

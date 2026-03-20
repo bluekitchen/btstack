@@ -239,6 +239,7 @@ typedef enum {
 #define GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES       0x0008u
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
 #define GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST    0x0010u
+#define GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE         0x0020u
 #endif
 
 /**
@@ -690,6 +691,12 @@ typedef struct {
     uint16_t le_subrate_supervision_timeout;
 
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+    // LE Frame Space Update
+    uint16_t le_frame_space_min_us;
+    uint16_t le_frame_space_max_us;
+    uint8_t  le_frame_space_phys;
+    uint16_t le_frame_space_spacing_types;
+
     // LE Connection Rate Request
     uint16_t le_connection_rate_interval_min_us;
     uint16_t le_connection_rate_interval_max_us;
