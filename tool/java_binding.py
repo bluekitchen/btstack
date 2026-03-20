@@ -333,6 +333,10 @@ def event_supported(event_name):
     # skip HCI LE CS events
     if event_name.startswith("HCI_SUBEVENT_LE_CS"):
         return False
+    # skip array events
+    if event_name in ["HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT",
+                      "HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT"]:
+        return False
     return parts[0] in ['ATT', 'BTSTACK', 'DAEMON', 'L2CAP', 'RFCOMM', 'SDP', 'GATT', 'GAP', 'HCI', 'SM', 'BNEP']
         
 def class_name_for_event(event_name):
@@ -346,9 +350,7 @@ def create_events(events):
     for event_type, event_name, format, args in events:
         if not event_supported(event_name):
             continue
-        # skip events that contain arrays for now
-        if '[' in format:
-            continue
+        print(event_name, format)
         class_name = class_name_for_event(event_name)
         create_event(class_name, format, args)
 
