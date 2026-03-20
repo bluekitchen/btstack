@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - A2DP Source: emit capabilities for MPEC-D USAC codec
+- GAP: ENABLE_LE_SHORTER_CONNECTION_INTERVALS provides:
+  - gap_request_connection_rate_update
+  - gap_request_frame_space_update
 
 ### Fixed
 - AVDTP Initiator: Allow abort operation in any state
