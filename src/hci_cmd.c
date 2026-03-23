@@ -2610,7 +2610,7 @@ const hci_cmd_t hci_le_cs_read_remote_supported_capabilities = {
  * Core Spec v6.2, Vol 4, Part E, Section 7.8.132
  */
 const hci_cmd_t hci_le_cs_write_cached_remote_supported_capabilities = {
-    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_SUPPORTED_CAPABILITIES, "H1211111111221222221"
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_SUPPORTED_CAPABILITIES, "H12111111112212222211"
 };
 
 /**
