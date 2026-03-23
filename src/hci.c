@@ -2473,7 +2473,6 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_le_read_minimum_supported_connection_interval);
                 break;
             }
-            break;
 #endif
             /* fall through */
 
@@ -2723,7 +2722,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             hci_stack->substate = HCI_INIT_DONE;
             return;
 
-        default:
+            default:
             break;
     }
     hci_initializing_next_state();
