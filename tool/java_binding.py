@@ -140,7 +140,7 @@ defines = dict()
 defines_used = set()
 
 def java_type_for_btstack_type(type):
-    param_types = { '1' : 'int', '2' : 'int', '3' : 'int', '4' : 'long', 'H' : 'int', 'B' : 'BD_ADDR',
+    param_types = { '1' : 'int', 'a' : 'int', '2' : 'int', 'b' : 'int', '3' : 'int', '4' : 'long', 'H' : 'int', 'B' : 'BD_ADDR',
                     'D' : 'byte []', 'E' : 'byte [] ', 'N' : 'String' , 'P' : 'byte []', 'A' : 'byte []',
                     'R' : 'byte []', 'S' : 'byte []', 'Q' : 'byte []', 'K' : 'byte []',
                     'J' : 'int', 'L' : 'int', 'V' : 'byte []', 'U' : 'BT_UUID',
@@ -149,7 +149,7 @@ def java_type_for_btstack_type(type):
     return param_types[type]
 
 def size_for_type(type):
-    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16,
+    param_sizes = { '1' : 1, 'a' : 1, '2' : 2, 'b' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16,
                     'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'Q' : 32, 'K' : 16, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
     return param_sizes[type]
 
@@ -270,8 +270,10 @@ def create_event(event_name, format, args):
 
     param_read = {
      '1' : 'return Util.readByte(data, %u);',
+     'a' : 'return (byte) Util.readByte(data, %u);',
      'J' : 'return Util.readByte(data, %u);',
      '2' : 'return Util.readBt16(data, %u);',
+     'b' : 'return (short) Util.readBt16(data, %u);',
      'H' : 'return Util.readBt16(data, %u);',
      'L' : 'return Util.readBt16(data, %u);',
      '3' : 'return Util.readBt24(data, %u);',
@@ -328,6 +330,13 @@ def event_supported(event_name):
     # skip gap subevents
     if event_name.startswith("GAP_SUBEVENT"):
         return False
+    # skip HCI LE CS events
+    if event_name.startswith("HCI_SUBEVENT_LE_CS"):
+        return False
+    # skip array events
+    if event_name in ["HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT",
+                      "HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_RESPONSE_REPORT"]:
+        return False
     return parts[0] in ['ATT', 'BTSTACK', 'DAEMON', 'L2CAP', 'RFCOMM', 'SDP', 'GATT', 'GAP', 'HCI', 'SM', 'BNEP']
         
 def class_name_for_event(event_name):
@@ -341,6 +350,7 @@ def create_events(events):
     for event_type, event_name, format, args in events:
         if not event_supported(event_name):
             continue
+        print(event_name, format)
         class_name = class_name_for_event(event_name)
         create_event(class_name, format, args)
 

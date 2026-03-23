@@ -145,7 +145,7 @@ defines = dict()
 defines_used = set()
 
 def size_for_type(type):
-    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'C' : 2,
+    param_sizes = { '1' : 1, 'a' : 1, '2' : 2, 'b' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'C' : 2,
                     'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'Q' : 32, 'K' : 16, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
     return param_sizes[type]
 
@@ -258,8 +258,10 @@ def create_event(fout, event_name, format, args):
 
     param_read = {
      '1' : 'return self.payload[{offset}]',
+     'a' : 'return struct.unpack("<b", self.payload[{offset} : {offset}+1])[0]',
      'J' : 'return self.payload[{offset}]',
      '2' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])[0]',
+     'b' : 'return struct.unpack("<h", self.payload[{offset} : {offset}+2])[0]',
      'H' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])[0]',
      'L' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])[0]',
      '3' : 'return btstack.btstack_types.unpack24(self.payload[{offset}:3])',
@@ -337,6 +339,9 @@ def create_events(fout, events):
 
     for event_type, event_name, format, args in events:
         if not event_supported(event_name):
+            continue
+        # skip events that contain arrays for now
+        if '[' in format:
             continue
         class_name = class_name_for_event(event_name)
         create_event(fout, class_name, format, args)

@@ -72,7 +72,7 @@ Part 1.
 | Infineon CYW207xx                     | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | 
 | Infineon CYW208xx                     | Dual mode        | H4, H5, USB    | Don't know   | Partially (2)    | Yes        | Yes                   | 
 | Infineon CYW43xxx                     | Dual mode + Wifi | H4, H5         | Don't know   | Partially (2)    | Don't know | On newer versions     | 
-| Infineon CYW5310                      | Dual mode        | H4             | Don't know   | Yes              | Yes        | Yes                   | 
+| Infineon CYW55310                     | Dual mode        | H4             | Mostly       | Yes              | Yes        | Yes                   | 
 | Infineon CYW5551x, CYW5557x           | Dual mode + Wifi | H4, H5         | Mostly       | Yes              | Yes        | Yes                   | 
 | Cypress PSoC 4                        | LE               | H4             | Don't know   | n.a.             | Yes        | Don't know            | 
 | Dialog DA14531                        | LE               | H4             | No           | n.a.             | Yes        | Yes                   | 

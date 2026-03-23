@@ -17,17 +17,16 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 endif()
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    add_compile_options(
-      -fsanitize=undefined -fsanitize=address
-  )
-    add_link_options(
-      -fsanitize=undefined -fsanitize=address
-  )
-endif()
+# Enable undefined and address sanitizers
+#  add_compile_options(
+#      -fsanitize=undefined -fsanitize=address
+#  )
+#  add_link_options(
+#      -fsanitize=undefined -fsanitize=address
+#  )
 
 # to generate .h from .gatt files
-find_package(Python REQUIRED COMPONENTS Interpreter)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
@@ -209,7 +208,7 @@ foreach(EXAMPLE ${EXAMPLES})
         add_custom_command(
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
    DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-   COMMAND ${Python_EXECUTABLE}
+   COMMAND ${Python3_EXECUTABLE}
    ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
   )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)

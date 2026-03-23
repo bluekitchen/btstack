@@ -33,6 +33,9 @@ project(${CMAKE_PROJECT_NAME})
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
+# Set STM32F4Cube path
+set(STM32F4CUBE_PATH "${CMAKE_SOURCE_DIR}/../../3rd-party/STM32CubeF4/")
+
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
@@ -94,13 +97,18 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
     endif()
 
+    # add Audio Player Demo Util
+    if ("audio_player" MATCHES ${EXAMPLE})
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/audio_player_demo_util.c)
+    endif()
+
     # add GATT DB creation
     if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
             DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
-            COMMAND ${Python_EXECUTABLE}
+            COMMAND ${Python3_EXECUTABLE}
             ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
         )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
@@ -110,12 +118,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 
     # Create Ozone Project
     set(OZONE_PROJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug)
-    add_custom_command(
-            OUTPUT ${OZONE_PROJECT_FILE}
-            DEPENDS ozone.jdebug
-            COMMAND ${Python_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/replace_string.py ${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE} "EXAMPLE" ${EXAMPLE}
-    )
+    configure_file(${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE})
     list(APPEND SOURCES_EXAMPLE ${OZONE_PROJECT_FILE})
 
     # Create an executable target for the example

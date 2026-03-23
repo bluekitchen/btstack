@@ -1,4 +1,3 @@
-
 include ../common.make
 
 COMMON = \
@@ -25,17 +24,14 @@ CXXFLAGS += ${INCLUDES} ${DEFINES}
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/tlv_test build-asan/tlv_test
+all: coverage test
 
 build-coverage/tlv_test: ${COMMON_OBJ_COVERAGE}
 build-asan/tlv_test: ${COMMON_OBJ_ASAN}
 
-test: all
-	build-asan/tlv_test
+test: build-asan/tlv_test
+	$<
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/tlv_test
+coverage: build-coverage/tlv_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common

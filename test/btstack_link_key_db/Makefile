@@ -34,7 +34,7 @@ FS_OBJ_ASAN     = $(addprefix build-asan/,    $(FS:.c=.o))
 MEMORY_OBJ_COVERAGE = $(addprefix build-coverage/,$(MEMORY:.c=.o))
 MEMORY_OBJ_ASAN     = $(addprefix build-asan/,    $(MEMORY:.c=.o))
 
-all:  build-coverage/btstack_link_key_db_memory_test build-coverage/btstack_link_key_db_fs_test build-asan/btstack_link_key_db_memory_test build-asan/btstack_link_key_db_fs_test
+all: coverage test
 
 build-coverage/btstack_link_key_db_fs_test: ${FS_OBJ_COVERAGE}
 
@@ -44,15 +44,13 @@ build-asan/btstack_link_key_db_fs_test: ${FS_OBJ_ASAN}
 
 build-asan/btstack_link_key_db_memory_test: ${MEMORY_OBJ_ASAN}
 
-test: all
+test: build-asan/btstack_link_key_db_memory_test \
+	  build-asan/btstack_link_key_db_fs_test
 	build-asan/btstack_link_key_db_memory_test
 	build-asan/btstack_link_key_db_fs_test
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/btstack_link_key_db_memory_test
-	build-coverage/btstack_link_key_db_fs_test
+coverage: build-coverage/btstack_link_key_db_memory_test.info \
+		  build-coverage/btstack_link_key_db_fs_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

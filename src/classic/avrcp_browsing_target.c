@@ -52,6 +52,10 @@
 
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static bool avrcp_browsing_target_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes_needed){
+    return (pos <= end) && (bytes_needed <= (uint16_t)(end - pos));
+}
+
 static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t * connection){
     int pos = 0; 
     
@@ -112,10 +116,10 @@ static void avrcp_browsing_target_emit_get_folder_items(btstack_packet_handler_t
 static void avrcp_browsing_target_emit_search(btstack_packet_handler_t callback, uint16_t browsing_cid, avrcp_browsing_connection_t * connection){
     btstack_assert(callback != NULL);
 
-    uint8_t event[11 + AVRCP_SEARCH_STRING_MAX_LENGTH];
+    uint8_t event[11 + AVRCP_SEARCH_STRING_MAX_LENGTH + 1];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
-    event[pos++] = sizeof(event) - 2;
+    pos++;
     event[pos++] = AVRCP_SUBEVENT_BROWSING_SEARCH;
     little_endian_store_16(event, pos, browsing_cid);
     pos += 2;
@@ -123,14 +127,15 @@ static void avrcp_browsing_target_emit_search(btstack_packet_handler_t callback,
     pos += 2;
     little_endian_store_16(event, pos, connection->target_search_str_len);
     pos += 2;
-    uint16_t target_search_str_len = btstack_min(AVRCP_SEARCH_STRING_MAX_LENGTH, (uint16_t) strlen(connection->target_search_str));
+    uint16_t target_search_str_len = btstack_min(AVRCP_SEARCH_STRING_MAX_LENGTH, connection->target_search_str_len);
     little_endian_store_16(event, pos, target_search_str_len);
     pos += 2;
     if (target_search_str_len > 0){
         memcpy(&event[pos], connection->target_search_str, target_search_str_len);
-        connection->target_search_str[target_search_str_len - 1] = 0;
         pos += target_search_str_len;
     }
+    event[pos++] = 0;
+    event[1] = pos - 2;
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -207,7 +212,6 @@ static void avrcp_browsing_target_emit_get_item_attributes(btstack_packet_handle
 }
 
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(size);
     avrcp_browsing_connection_t * browsing_connection;
 
     switch (packet_type) {
@@ -215,23 +219,31 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             browsing_connection = avrcp_get_browsing_connection_for_l2cap_cid_for_role(AVRCP_TARGET, channel);
             if (!browsing_connection) break;
             int pos = 0;
+            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, size, 1u)) break;
             uint8_t transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
             browsing_connection->transaction_label = transport_header >> 4;
             avctp_packet_type_t avctp_packet_type = (avctp_packet_type_t)((transport_header & 0x0F) >> 2);
             switch (avctp_packet_type){
                 case AVCTP_SINGLE_PACKET:
-                case AVCTP_START_PACKET:
+                case AVCTP_START_PACKET:{
+                    if (!avrcp_browsing_target_have_bytes((uint16_t)pos, size, 2u)) break;
                     browsing_connection->subunit_type = packet[pos++] >> 2;
                     browsing_connection->subunit_id = 0;
                     browsing_connection->command_opcode = packet[pos++];
                     browsing_connection->num_packets = 1;
                     if (avctp_packet_type == AVCTP_START_PACKET){
+                        if (!avrcp_browsing_target_have_bytes((uint16_t)pos, size, 1u)) break;
                         browsing_connection->num_packets = packet[pos++];
                     } 
+                    if (!avrcp_browsing_target_have_bytes((uint16_t)pos, size, 3u)) break;
                     browsing_connection->pdu_id = packet[pos++];
                     uint16_t parameter_length = big_endian_read_16(packet, pos);
                     pos += 2;
+                    uint16_t payload_pos = (uint16_t) pos;
+                    if (!avrcp_browsing_target_have_bytes(payload_pos, size, parameter_length)) break;
+
+                    uint16_t payload_end = payload_pos + parameter_length;
 
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_SEARCH:
@@ -243,17 +255,17 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             pos += 2;
                             browsing_connection->target_search_str_len = big_endian_read_16(packet, pos);
                             pos += 2;
-                            browsing_connection->target_search_str = (char *) &packet[pos];
 
                             if (parameter_length < (4 + browsing_connection->target_search_str_len)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
 
-                            if (browsing_connection->target_search_str_len > (size-pos)){
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, browsing_connection->target_search_str_len)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_PARAMETER);
                                 break;
                             }
+                            browsing_connection->target_search_str = (char *) &packet[pos];
                             avrcp_browsing_target_emit_search(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
 
@@ -270,11 +282,18 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             pos += 4;
                             uint8_t attr_count = packet[pos++];
                             browsing_connection->attr_bitmap = 0;
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, (uint16_t)(4u * attr_count))){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
 
                             while (attr_count){
                                 uint32_t attr_id = big_endian_read_32(packet, pos);
                                 pos += 4;
-                                browsing_connection->attr_bitmap |= (1 << attr_id);
+                                // only store first 32 attribute ids
+                                if (attr_id < 32) {
+                                    browsing_connection->attr_bitmap |= (1 << attr_id);
+                                }
                                 attr_count--;
                             }
                             avrcp_browsing_target_emit_get_folder_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
@@ -283,6 +302,10 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
                             // send total num items
                             if (parameter_length != 1){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_SCOPE);
+                                break;
+                            }
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, 1u)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_SCOPE);
                                 break;
                             }
@@ -297,7 +320,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
-                            if ( (pos + 2) > size ){
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, 2u)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_PLAYER_ID);
                                 break;
                             }
@@ -307,6 +330,10 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         case AVRCP_PDU_ID_CHANGE_PATH:
                             // one level up or down in the virtual filesystem
                             if (parameter_length != 11){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, 11u)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
@@ -327,6 +354,10 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, 12u)){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
 
                             browsing_connection->scope = packet[pos++];
                             memcpy(browsing_connection->item_uid, &packet[pos], 8);
@@ -334,8 +365,17 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             browsing_connection->uid_counter = big_endian_read_16(packet, pos);
                             pos += 2;
                             browsing_connection->attr_list_size = packet[pos++];
+                            if (browsing_connection->attr_list_size > AVRCP_MEDIA_ATTR_NUM){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
+                            if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, (uint16_t)(4u * browsing_connection->attr_list_size))){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
                             browsing_connection->attr_list = &packet[pos];
-                            
+
+                            // reass 4 * browsing_connection->attr_list_size from buffer
                             avrcp_browsing_target_emit_get_item_attributes(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter,
                                                                            browsing_connection->scope, browsing_connection->item_uid, browsing_connection->attr_list_size, browsing_connection->attr_list);
                             break;
@@ -347,6 +387,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                     }
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
                     break;
+                }
 
                 default:
                     break;

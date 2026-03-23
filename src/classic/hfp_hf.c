@@ -970,13 +970,6 @@ static bool hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if ((hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) ||
         (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return false;
 
-    if (hfp_connection->release_audio_connection){
-        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
-        hfp_connection->release_audio_connection = 0;
-        gap_disconnect(hfp_connection->sco_handle);
-        return true;
-    }
-
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return false;
 
     // run codecs exchange
@@ -1007,91 +1000,14 @@ static bool call_setup_state_machine(hfp_connection_t * hfp_connection){
     return false;
 }
 
-static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
+static bool hfp_hf_hci_command_ready(hfp_connection_t * hfp_connection) {
+    bool ready = false;
+    ready |= hfp_connection->accept_sco && (hfp_sco_setup_active() == false);
+    ready |= hfp_hci_command_ready(hfp_connection);
+    return ready;
+}
 
-	btstack_assert(hfp_connection != NULL);
-	btstack_assert(hfp_connection->local_role == HFP_ROLE_HF);
-
-	// during SDP query, RFCOMM CID is not set
-	if (hfp_connection->rfcomm_cid == 0) return;
-
-	// assert command could be sent
-	if (hci_can_send_command_packet_now() == 0) return;
-
-#ifdef ENABLE_CC256X_ASSISTED_HFP
-    // WBS Disassociate
-    if (hfp_connection->cc256x_send_wbs_disassociate){
-        hfp_connection->cc256x_send_wbs_disassociate = false;
-        hci_send_cmd(&hci_ti_wbs_disassociate);
-        return;
-    }
-    // Write Codec Config
-    if (hfp_connection->cc256x_send_write_codec_config){
-        hfp_connection->cc256x_send_write_codec_config = false;
-        hfp_cc256x_write_codec_config(hfp_connection);
-        return;
-    }
-    // WBS Associate
-    if (hfp_connection->cc256x_send_wbs_associate){
-        hfp_connection->cc256x_send_wbs_associate = false;
-        hci_send_cmd(&hci_ti_wbs_associate, hfp_connection->acl_handle);
-        return;
-    }
-#endif
-#ifdef ENABLE_BCM_PCM_WBS
-    // Enable WBS
-    if (hfp_connection->bcm_send_enable_wbs){
-        hfp_connection->bcm_send_enable_wbs = false;
-        hci_send_cmd(&hci_bcm_enable_wbs, 1, 2);
-        return;
-    }
-    // Write I2S/PCM params
-    if (hfp_connection->bcm_send_write_i2spcm_interface_param){
-        hfp_connection->bcm_send_write_i2spcm_interface_param = false;
-        hfp_bcm_write_i2spcm_interface_param(hfp_connection);
-        return;
-    }
-    // Disable WBS
-    if (hfp_connection->bcm_send_disable_wbs){
-        hfp_connection->bcm_send_disable_wbs = false;
-        hci_send_cmd(&hci_bcm_enable_wbs, 0, 2);
-        return;
-    }
-#endif
-#ifdef ENABLE_RTK_PCM_WBS
-    if (hfp_connection->rtk_send_sco_config){
-        hfp_connection->rtk_send_sco_config = false;
-        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-            log_info("RTK SCO: 16k + mSBC");
-            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x00, 0x00, 0x41);
-        } else {
-            log_info("RTK SCO: 16k + CVSD");
-            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x0c, 0x00, 0x01);
-        }
-        return;
-    }
-#endif
-#ifdef ENABLE_NXP_PCM_WBS
-    if (hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID){
-        hci_con_handle_t sco_handle = hfp_connection->nxp_start_audio_handle;
-        hfp_connection->nxp_start_audio_handle = HCI_CON_HANDLE_INVALID;
-        hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 0, 0, sco_handle, 0);
-        return;
-    }
-    if (hfp_connection->nxp_stop_audio_handle != HCI_CON_HANDLE_INVALID){
-        hci_con_handle_t sco_handle = hfp_connection->nxp_stop_audio_handle;
-        hfp_connection->nxp_stop_audio_handle = HCI_CON_HANDLE_INVALID;
-        hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 1, 0, sco_handle, 0);
-        return;
-    }
-#endif
-#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
-    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
-        hfp_finalize_connection_context(hfp_connection);
-        return;
-    }
-#endif
-
+static void hfp_hf_hci_command_send(hfp_connection_t * hfp_connection) {
     if (hfp_connection->accept_sco && (hfp_sco_setup_active() == false)){
         bool incoming_eSCO = hfp_connection->accept_sco == 2;
         // notify about codec selection if not done already
@@ -1101,7 +1017,42 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         hfp_accept_synchronous_connection(hfp_connection, incoming_eSCO);
         return;
     }
+    hfp_hci_command_send(hfp_connection);
+}
 
+static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
+
+	btstack_assert(hfp_connection != NULL);
+	btstack_assert(hfp_connection->local_role == HFP_ROLE_HF);
+
+	// during SDP query, RFCOMM CID is not set
+	if (hfp_connection->rfcomm_cid == 0) return;
+
+#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
+    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
+        hfp_finalize_connection_context(hfp_connection);
+        return;
+    }
+#endif
+
+    if (hfp_connection->release_audio_connection){
+        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
+        hfp_connection->release_audio_connection = 0;
+        gap_disconnect(hfp_connection->sco_handle);
+        return;
+    }
+
+    // check if we need to send command
+    if (hfp_hf_hci_command_ready(hfp_connection)) {
+        if (hci_can_send_command_packet_now()) {
+            hfp_hf_hci_command_send(hfp_connection);
+        } else {
+            // trigger events
+            hfp_set_hf_hci_command_pending();
+        }
+    }
+
+    // make sure we could send an RFCOMM packet if needed
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;
@@ -1624,9 +1575,9 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
 
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         if (strcmp(hfp_connection->ag_indicators[i].name, "callsetup") == 0){
-            hfp_callsetup_status_t new_hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
             bool ringing_old = hfp_is_ringing(hfp_connection->hf_callsetup_status);
-            bool ringing_new = hfp_is_ringing(new_hf_callsetup_status);
+            hfp_connection->hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
+            bool ringing_new = hfp_is_ringing(hfp_connection->hf_callsetup_status);
             if (ringing_old != ringing_new){
                 if (ringing_new){
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
@@ -1634,21 +1585,21 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
                 }
             }
-            hfp_connection->hf_callsetup_status = new_hf_callsetup_status;
         } else if (strcmp(hfp_connection->ag_indicators[i].name, "callheld") == 0){
             hfp_connection->hf_callheld_status = (hfp_callheld_status_t) hfp_connection->ag_indicators[i].status;
             // avoid set but not used warning
             (void) hfp_connection->hf_callheld_status;
         } else if (strcmp(hfp_connection->ag_indicators[i].name, "call") == 0){
-            hfp_call_status_t new_hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
-            if (hfp_connection->hf_call_status != new_hf_call_status){
-                if (new_hf_call_status == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
+            hfp_call_status_t call_status_old = hfp_connection->hf_call_status;
+            hfp_connection->hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
+            hfp_call_status_t call_status_new = hfp_connection->hf_call_status;
+            if (call_status_old != call_status_new){
+                if (call_status_new == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
                 } else {
                     hfp_hf_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
                 }
             }
-            hfp_connection->hf_call_status = new_hf_call_status;
         }
     }
 }

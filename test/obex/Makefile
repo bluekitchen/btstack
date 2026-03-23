@@ -21,8 +21,7 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/obex_message_builder_test build-asan/obex_message_builder_test \
-	 build-coverage/obex_parser_test build-asan/obex_parser_test
+all: coverage test
 
 build-coverage/obex_message_builder_test: ${COMMON_OBJ_COVERAGE}
 build-asan/obex_message_builder_test: ${COMMON_OBJ_ASAN}
@@ -30,15 +29,11 @@ build-asan/obex_message_builder_test: ${COMMON_OBJ_ASAN}
 build-coverage/obex_parser_test: ${COMMON_OBJ_COVERAGE}
 build-asan/obex_parser_test: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/obex_message_builder_test build-asan/obex_parser_test
 	build-asan/obex_message_builder_test
 	build-asan/obex_parser_test
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/obex_message_builder_test
-	build-coverage/obex_parser_test
+coverage: build-coverage/obex_message_builder_test.info build-coverage/obex_parser_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

@@ -1,7 +1,14 @@
-BTSTACK_ROOT =  ../..
-PYTHON = python3
+CC                 = clang
+CXX                = clang++
+LLVM_PROFDATA     ?= llvm-profdata
+LLVM_COV          ?= llvm-cov
+LLVM_PROFILE_FILE ?= default.profraw
 
-GENERIC_FLAGS    := -g -Wall -Wextra
+BTSTACK_ROOT      ?=  ../..
+PYTHON             = python3
+LCOV_UTIL          = ${BTSTACK_ROOT}/tool/lcov_util.py
+
+GENERIC_FLAGS    := -O2 -g -Wall -Wextra
 CPPUTEST_CFLAGS  := ${shell pkg-config --cflags cpputest}
 CPPUTEST_LDFLAGS := ${shell pkg-config --libs   cpputest}
 
@@ -15,9 +22,9 @@ CFLAGS   += ${GENERIC_FLAGS} -std=gnu11
 CXXFLAGS += ${GENERIC_FLAGS} -std=gnu++17
 
 # Coverage
-CFLAGS_COVERAGE   = ${CFLAGS} -Ibuild-coverage -fprofile-arcs -ftest-coverage
-CXXFLAGS_COVERAGE = ${CXXFLAGS} -Ibuild-coverage -fprofile-arcs -ftest-coverage
-LDFLAGS_COVERAGE  = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_COVERAGE   = ${CFLAGS} -Ibuild-coverage -fprofile-instr-generate -fcoverage-mapping
+CXXFLAGS_COVERAGE = ${CXXFLAGS} -Ibuild-coverage -fprofile-instr-generate -fcoverage-mapping
+LDFLAGS_COVERAGE  = ${LDFLAGS} -fprofile-instr-generate
 
 # Address sanitiser
 CFLAGS_ASAN     = ${CFLAGS} -Ibuild-asan -fsanitize=address -DHAVE_ASSERT
@@ -32,7 +39,7 @@ build-%:
 build-asan/%.h: %.gatt | build-asan
 	${PYTHON} ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-build-coverage/%.h: %.gatt| build-coverage
+build-coverage/%.h: %.gatt | build-coverage
 	${PYTHON} ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
@@ -53,3 +60,17 @@ build-coverage/%: build-coverage/%.o | build-coverage
 build-asan/%: build-asan/%.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
+%.info: %
+	./$<
+	${LLVM_PROFDATA} merge -o $<.profdata $$(find . -type f -iname "*.profraw")
+	find . -type f -iname "*.profraw" -delete
+	${LLVM_COV} export $< -ignore-filename-regex="*/test/*" -format=lcov -instr-profile=$<.profdata > $<.temp
+	${LCOV_UTIL} $<.temp -o $<.info
+	rm $<.profdata $<.temp
+
+.NOTPARALLEL: coverage
+
+.PHONY: clean-common
+clean-common:
+	rm -rf build-coverage build-asan
+	rm -rf *.gcno *.gcda *.profraw

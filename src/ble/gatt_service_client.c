@@ -86,7 +86,7 @@ static void gatt_service_client_handle_deleted_bonding(int device_index) {
     void * tlv_context;
     btstack_tlv_get_instance(&tlv_impl, &tlv_context);
     if (!tlv_impl) return;
-    for (uint16_t cache_index = 0 ; cache_index <= 255 ; cache_index++) {
+    for (uint16_t cache_index = 1 ; cache_index <= 255 ; cache_index++) {
         uint32_t tag = gatt_service_client_tag_for_cache(device_index, cache_index);
         int len = tlv_impl->get_tag(tlv_context, tag, NULL, 0);
         if (len == 0) break;

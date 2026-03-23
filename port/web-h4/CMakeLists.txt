@@ -21,7 +21,7 @@ endif()
 message("BTstack root: ${BTSTACK_ROOT}")
 
 # to generate .h from .gatt files
-find_package(Python REQUIRED COMPONENTS Interpreter)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include("${BTSTACK_ROOT}/tool/cmake/BTstackUtils.cmake")
 

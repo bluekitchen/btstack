@@ -1,4 +1,3 @@
-
 include ../common.make
 
 DEFINES := -DUNIT_TEST
@@ -17,25 +16,23 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 COMMON = \
 	btstack_util.c		  \
 	btstack_linked_list.c \
-	hci_dump.c 			  \
-    avdtp_util.c		  \
+	hci_dump.c			  \
+    avdtp_util.c         \
+    avdtp_initiator.c
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/avdtp_util_test build-asan/avdtp_util_test
+all: coverage test
 
 build-coverage/avdtp_util_test: ${COMMON_OBJ_COVERAGE}
 
 build-asan/avdtp_util_test: ${COMMON_OBJ_ASAN}
 
-test: all
-	build-asan/avdtp_util_test
+test: build-asan/avdtp_util_test
+	$<
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/avdtp_util_test
+coverage: build-coverage/avdtp_util_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

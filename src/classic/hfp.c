@@ -87,6 +87,9 @@ static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 static uint8_t          hfp_hf_indicators_nr;
 static const uint16_t * hfp_hf_indicators;
 
+static bool hfp_hf_hci_command_pending;
+static bool hfp_ag_hci_command_pending;
+
 static uint16_t hfp_allowed_sco_packet_types;
 static hfp_connection_t * hfp_sco_establishment_active;
 
@@ -848,7 +851,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     hfp_connection_t * hfp_connection = NULL;
     uint8_t status;
 
-    bool forward_event_to_all = false;
+    bool forward_if_pending = false;
 
     log_debug("HFP HCI event handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
@@ -885,9 +888,14 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }            
             break;
 
+        case HCI_EVENT_TRANSPORT_PACKET_SENT:
+            // to allow sending HCI Commands
+            forward_if_pending = true;
+            break;
+
         case HCI_EVENT_COMMAND_COMPLETE:
             // to allow sending HCI Commands
-            forward_event_to_all = true;
+            forward_if_pending = true;
             break;
 
         case HCI_EVENT_COMMAND_STATUS:
@@ -911,7 +919,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                                     hfp_connection->negotiated_codec, 0, 0);
             }
             // to allow sending HCI Commands
-            forward_event_to_all = true;
+            forward_if_pending = true;
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
@@ -1018,7 +1026,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             } else if (hfp_connection->release_slc_connection == 1){
                 hfp_connection->release_slc_connection = 0;
                 hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                rfcomm_disconnect(hfp_connection->acl_handle);
+                rfcomm_disconnect(hfp_connection->rfcomm_cid);
             }
 
             if (hfp_connection->state == HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN){
@@ -1036,11 +1044,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
     }
 
-    if (forward_event_to_all) {
-        if (hfp_ag_callback != NULL) {
+    if (forward_if_pending) {
+        if (hfp_ag_hci_command_pending) {
+            hfp_ag_hci_command_pending = false;
+            btstack_assert(hfp_ag_callback != NULL);
             (*hfp_ag_callback)(packet_type, channel, packet, size);
         }
-        if (hfp_hf_callback != NULL) {
+        else if (hfp_hf_hci_command_pending) {
+            hfp_hf_hci_command_pending = false;
+            btstack_assert(hfp_hf_callback != NULL);
             (*hfp_hf_callback)(packet_type, channel, packet, size);
         }
     }
@@ -2292,6 +2304,104 @@ void hfp_prepare_for_sco(hfp_connection_t * hfp_connection){
 #endif
 }
 
+bool hfp_hci_command_ready(hfp_connection_t * hfp_connection) {
+
+    bool ready = false;
+    UNUSED(hfp_connection);
+
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    ready |= hfp_connection->cc256x_send_wbs_disassociate;
+    ready |= hfp_connection->cc256x_send_write_codec_config;
+    ready |= hfp_connection->cc256x_send_wbs_associate;
+#endif
+#ifdef ENABLE_BCM_PCM_WBS
+    ready |= hfp_connection->bcm_send_enable_wbs;
+    ready |= hfp_connection->bcm_send_write_i2spcm_interface_param;
+    ready |= hfp_connection->bcm_send_disable_wbs;
+#endif
+#ifdef ENABLE_RTK_PCM_WBS
+    ready |= hfp_connection->rtk_send_sco_config;
+#endif
+#ifdef ENABLE_NXP_PCM_WBS
+    ready |= hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID;
+    ready |= hfp_connection->nxp_stop_audio_handle  != HCI_CON_HANDLE_INVALID;
+#endif
+    return ready;
+}
+
+void hfp_hci_command_send(hfp_connection_t * hfp_connection) {
+    UNUSED(hfp_connection);
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    // WBS Disassociate
+    if (hfp_connection->cc256x_send_wbs_disassociate){
+        hfp_connection->cc256x_send_wbs_disassociate = false;
+        hci_send_cmd(&hci_ti_wbs_disassociate);
+        return;
+    }
+    // Write Codec Config
+    if (hfp_connection->cc256x_send_write_codec_config){
+        hfp_connection->cc256x_send_write_codec_config = false;
+        hfp_cc256x_write_codec_config(hfp_connection);
+        return;
+    }
+    // WBS Associate
+    if (hfp_connection->cc256x_send_wbs_associate){
+        hfp_connection->cc256x_send_wbs_associate = false;
+        hci_send_cmd(&hci_ti_wbs_associate, hfp_connection->acl_handle);
+        return;
+    }
+#endif
+#ifdef ENABLE_BCM_PCM_WBS
+    // Enable WBS
+    if (hfp_connection->bcm_send_enable_wbs){
+        hfp_connection->bcm_send_enable_wbs = false;
+        hci_send_cmd(&hci_bcm_enable_wbs, 1, 2);
+        return;
+    }
+    // Write I2S/PCM params
+    if (hfp_connection->bcm_send_write_i2spcm_interface_param){
+        hfp_connection->bcm_send_write_i2spcm_interface_param = false;
+        hfp_bcm_write_i2spcm_interface_param(hfp_connection);
+        return;
+    }
+    // Disable WBS
+    if (hfp_connection->bcm_send_disable_wbs){
+        hfp_connection->bcm_send_disable_wbs = false;
+        hci_send_cmd(&hci_bcm_enable_wbs, 0, 2);
+        return;
+    }
+#endif
+#ifdef ENABLE_RTK_PCM_WBS
+    if (hfp_connection->rtk_send_sco_config){
+        hfp_connection->rtk_send_sco_config = false;
+        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+            log_info("RTK SCO: 16k + mSBC");
+            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x00, 0x00, 0x41);
+        } else {
+            log_info("RTK SCO: 16k + CVSD");
+            hci_send_cmd(&hci_rtk_configure_sco_routing, 0x81, 0x90, 0x00, 0x00, 0x1a, 0x0c, 0x0c, 0x00, 0x01);
+        }
+        return;
+    }
+#endif
+#ifdef ENABLE_NXP_PCM_WBS
+    if (hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID){
+        hci_con_handle_t sco_handle = hfp_connection->nxp_start_audio_handle;
+        hfp_connection->nxp_start_audio_handle = HCI_CON_HANDLE_INVALID;
+        hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 0, 0, sco_handle, 0);
+        return;
+    }
+    if (hfp_connection->nxp_stop_audio_handle != HCI_CON_HANDLE_INVALID){
+        hci_con_handle_t sco_handle = hfp_connection->nxp_stop_audio_handle;
+        hfp_connection->nxp_stop_audio_handle = HCI_CON_HANDLE_INVALID;
+        hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 1, 0, sco_handle, 0);
+        return;
+    }
+#endif
+
+    btstack_unreachable();
+}
+
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
     hfp_hf_callback = callback;
 }
@@ -2416,6 +2526,13 @@ void hfp_register_custom_ag_command(hfp_custom_at_command_t * custom_at_command)
 
 void hfp_register_custom_hf_command(hfp_custom_at_command_t * custom_at_command){
     btstack_linked_list_add(&hfp_custom_commands_hf, (btstack_linked_item_t *) custom_at_command);
+}
+
+void hfp_set_hf_hci_command_pending(void) {
+    hfp_hf_hci_command_pending = true;
+}
+void hfp_set_ag_hci_command_pending(void) {
+    hfp_ag_hci_command_pending = true;
 }
 
 // HFP H2 Synchronization - might get moved into a hfp_h2.c

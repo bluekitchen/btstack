@@ -674,6 +674,24 @@ static void daemon_disconnect_client(connection_t * connection){
     free(client); 
 }
 
+static void hci_emit_command_complete_with_status(connection_t * connection, uint16_t opcode, uint8_t status,
+    const uint8_t * param_data, uint8_t param_length) {
+
+    uint8_t event[260];
+    uint16_t event_length = 6 + param_length;
+    btstack_assert(event_length <= sizeof(event));
+    event[0] = HCI_EVENT_COMMAND_COMPLETE;
+    event[1] = event_length - 2;
+    event[2] = 1;                                           // num command packets
+    little_endian_store_16(event, 3, opcode); // opcode
+    event[5] = status;
+    if (param_length > 0) {
+        memcpy(event + 6, param_data, param_length);    // return params
+    }
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, event_length);
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, event_length);
+}
+
 static void hci_emit_btstack_version(void){
     log_info("DAEMON_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
     uint8_t event[6];
@@ -872,7 +890,8 @@ static void btstack_server_intel_firmware_done(int result){
 #endif
 
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
-    
+
+    uint8_t command_status = ERROR_CODE_SUCCESS;
     bd_addr_t addr;
 #ifdef ENABLE_BLE
     bd_addr_type_t addr_type;
@@ -906,6 +925,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
 
     // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
+    uint16_t opcode = little_endian_read_16(packet, 0);
     switch (READ_CMD_OCF(packet)){
         case BTSTACK_GET_STATE:
             log_info("BTSTACK_GET_STATE");
@@ -1130,8 +1150,15 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
 #endif
         case GAP_DISCONNECT:
-            handle = little_endian_read_16(packet, 3);
-            gap_disconnect(handle);
+            if (size == 5) {
+                handle = little_endian_read_16(packet, 3);
+                command_status = gap_disconnect(handle);
+                if (command_status != ERROR_CODE_SUCCESS) {
+                    hci_emit_command_complete_with_status(connection, opcode, command_status, &packet[3], 2);
+                }
+            } else {
+                hci_emit_command_complete_with_status(connection, opcode, ERROR_CODE_UNSPECIFIED_ERROR, NULL, 0);
+            }
             break;
 #ifdef ENABLE_CLASSIC
         case GAP_INQUIRY_START:
@@ -1346,7 +1373,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_error("Error: command %u not implemented:", READ_CMD_OCF(packet));
             break;
     }
-    
+
     return 0;
 }
 

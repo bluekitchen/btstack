@@ -16,8 +16,8 @@ include_directories(../../src)
 include_directories(../mock)
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})
 
-add_compile_options(--coverage)
-add_link_options(   --coverage)
+add_compile_options(-fsanitize=address,undefined)
+add_link_options(   -fsanitize=address,undefined)
 add_definitions(    -DCOVERAGE)
 add_definitions(    -DHAVE_ASSERT)
 

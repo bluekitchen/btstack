@@ -19,18 +19,15 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/hid_parser_test build-asan/hid_parser_test
+all: coverage test
 
 build-coverage/hid_parser_test: ${COMMON_OBJ_COVERAGE}
 build-asan/hid_parser_test: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/hid_parser_test
 	build-asan/hid_parser_test
 	
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/hid_parser_test
+coverage: build-coverage/hid_parser_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 

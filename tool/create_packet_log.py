@@ -117,42 +117,29 @@ with open (outfile, 'wb') as fout:
 				# strip newlines
 				line = line.strip("\n\r")
 				# skip empty lines
-				if len(line) == 0: 
+				if len(line) == 0:
 					continue
 				parts = re.match(r'\[(.*)\] (.*)', line)
 				if parts and len(parts.groups()) == 2:
 					(timestamp, line) = parts.groups()
-				rest = chop(line,'CMD => ')
-				if rest:
-					handleHexPacket(fout, timestamp, 0, rest)
-					continue
-				rest = chop(line,'EVT <= ')
-				if rest:
-					handleHexPacket(fout, timestamp, 1, rest)
-					continue
-				rest = chop(line,'ACL => ')
-				if rest:
-					handleHexPacket(fout, timestamp, 2, rest)
-					continue
-				rest = chop(line,'ACL <= ')
-				if rest:
-					handleHexPacket(fout, timestamp, 3, rest)
-					continue
-				rest = chop(line,'SCO => ')
-				if rest:
-					handleHexPacket(fout, timestamp, 8, rest)
-					continue
-				rest = chop(line,'SCO <= ')
-				if rest:
-					handleHexPacket(fout, timestamp, 9, rest)
-					continue
-				rest = chop(line,'ISO => ')
-				if rest:
-					handleHexPacket(fout, timestamp, 0x0c, rest)
-					continue
-				rest = chop(line,'ISO <= ')
-				if rest:
-					handleHexPacket(fout, timestamp, 0x0d, rest)
+				hci_prefixes = [
+					('CMD => ', 0), ('CMD -> ', 0),
+					('EVT <= ', 1), ('EVT <- ', 1),
+					('ACL => ', 2), ('ACL -> ', 2),
+					('ACL <= ', 3), ('ACL <- ', 3),
+					('SCO => ', 8), ('SCO -> ', 8),
+					('SCO <= ', 9), ('SCO <- ', 9),
+					('ISO => ', 0x0c), ('ISO -> ', 0x0c),
+					('ISO <= ', 0x0d), ('ISO <- ', 0x0d),
+				]
+				handled = False
+				for (prefix, packet_type) in hci_prefixes:
+					rest = chop(line, prefix)
+					if rest:
+						handleHexPacket(fout, timestamp, packet_type, rest)
+						handled = True
+						break
+				if handled:
 					continue
 				rest = chop(line,'LOG -- ')
 				if rest:

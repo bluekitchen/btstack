@@ -83,14 +83,11 @@ all: build-coverage/sm_test
 
 build-coverage/sm_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ}
 
-myclean:
-	rm -rf build-coverage
+clean: clean-common myclean
 	rm -f  *.o
 	rm -rf *.dSYM
 	rm -f *.gcno *.gcda
 	rm -rf SM_*
-
-clean: myclean
 
 test: build-coverage/sm_test
 	rm -rf SM_*

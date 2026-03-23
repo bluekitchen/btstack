@@ -11,6 +11,7 @@ CORE += \
     btstack_memory_pool.c       \
     btstack_run_loop.c          \
     btstack_run_loop_posix.c    \
+    btstack_signal.c            \
     btstack_stdin_posix.c       \
     btstack_tlv.c               \
     btstack_tlv_posix.c         \
@@ -19,6 +20,7 @@ CORE += \
     hci.c                       \
     hci_cmd.c                   \
     hci_dump.c                  \
+    hci_dump_posix_fs.c         \
     hci_transport_h2_libusb.c   \
     l2cap.c                     \
     l2cap_signaling.c           \
@@ -76,6 +78,7 @@ CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/example
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
@@ -109,13 +112,22 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
+SBC_DECODER_WITHOUT_WRAPPER_OBJ = $(filter-out ${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.o,${SBC_DECODER_OBJ})
 
-EXAMPLES  = spp_counter
+EXAMPLES  = spp_counter a2dp_source_demo a2dp_sink_demo
 
 all: ${EXAMPLES}
 
 spp_counter: spp_counter.o ${CORE_OBJ}
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+a2dp_source_demo: a2dp_source_demo.o ${CORE_OBJ} ${SBC_DECODER_WITHOUT_WRAPPER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} ${AVRCP_OBJ} btstack_audio_generator.o btstack_sbc_bluedroid.o a2dp.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+a2dp_source_demo: CFLAGS += -Wno-error
+
+a2dp_sink_demo: a2dp_sink_demo.o ${CORE_OBJ} ${SBC_DECODER_WITHOUT_WRAPPER_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} ${AVRCP_OBJ} btstack_audio_generator.o btstack_sbc_bluedroid.o a2dp.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+a2dp_sink_demo: CFLAGS += -Wno-error
 
 myclean:
 	rm -rf *.o *.dSYM *.wav *.sbc ${EXAMPLES}

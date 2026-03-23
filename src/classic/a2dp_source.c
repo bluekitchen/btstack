@@ -277,6 +277,12 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
             (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
             status = avdtp_config_atrac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
+        case AVDTP_CODEC_MPEG_D_USAC:
+            codec_info_len = 7;
+            (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            status = avdtp_config_mpegd_usac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
+            break;
+
         default:
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }

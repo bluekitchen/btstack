@@ -194,6 +194,8 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
         return;
     }
+    char latest_file[1000] = {0};
+    int has_latest_file = 0;
     uint16_t device_name_len = (uint16_t) strlen(device_name);
     while (dir.has_next) {
         tinydir_file file;
@@ -209,17 +211,23 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
             continue;
         }
         // check suffix
-        if (strncasecmp(".hcd", &file.name[filename_len - 4], device_name_len) == 0) {
-            btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
-            btstack_strcat(matched_file, sizeof(matched_file), "/");
-            btstack_strcat(matched_file, sizeof(matched_file), file.name);
-            hcd_file_path = matched_file;
-            log_info("PatchRAM: %s", hcd_file_path);
-            break;
+        if (strncasecmp(".hcd", &file.name[filename_len - 4], 4) != 0) {
+            continue;
+        }
+
+        if (!has_latest_file || strcmp(file.name, latest_file) > 0) {
+            btstack_strcpy(latest_file, sizeof(latest_file), file.name);
+            has_latest_file = 1;
         }
     }
     tinydir_close(&dir);
-    if (hcd_file_path == NULL) {
+    if (has_latest_file){
+        btstack_strcpy(matched_file, sizeof(matched_file), hcd_folder_path);
+        btstack_strcat(matched_file, sizeof(matched_file), "/");
+        btstack_strcat(matched_file, sizeof(matched_file), latest_file);
+        hcd_file_path = matched_file;
+        log_info("PatchRAM: %s", hcd_file_path);
+    } else {
         log_error("chipset-bcm: could not find .hcd that starts with %s at path %s", device_name, hcd_folder_path);
     }
 }

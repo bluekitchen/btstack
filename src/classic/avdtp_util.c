@@ -212,34 +212,49 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
     signaling_header->packet_type = (avdtp_packet_type_t)((packet[pos] >> 2) & 0x03);
     signaling_header->message_type = (avdtp_message_type_t) (packet[pos] & 0x03);
     pos++;
-    memset(signaling_header->command, 0, sizeof(signaling_header->command));
+    
     switch (signaling_header->packet_type){
         case AVDTP_SINGLE_PACKET:
             signaling_header->num_packets = 0;
+            signaling_header->signal_identifier = (avdtp_signal_identifier_t)(packet[pos++] & 0x3f);
+
+            memset(signaling_header->command, 0, sizeof(signaling_header->command));
             signaling_header->offset = 0;
             signaling_header->size = 0;
             break;
-        case AVDTP_END_PACKET:
-            signaling_header->num_packets = 0;
-            break;
+
         case AVDTP_START_PACKET:
+            if (size < 3) return 0;
             signaling_header->num_packets = packet[pos++];
-            if (pos < 3) return 0;
+            signaling_header->signal_identifier = (avdtp_signal_identifier_t)(packet[pos++] & 0x3f);
+
+            memset(signaling_header->command, 0, sizeof(signaling_header->command));
             signaling_header->size = 0;
             signaling_header->offset = 0;
+            log_info("START packet: %d packets", signaling_header->num_packets);
             break;
+
         case AVDTP_CONTINUE_PACKET:
-            if (signaling_header->num_packets <= 0) {
-                log_info("    ERROR: wrong num fragmented packets\n");
+            if (signaling_header->num_packets < 3) {
+                log_info("Continue packet: %d packets", signaling_header->num_packets);
                 break;
             }
             signaling_header->num_packets--;
             break;
+
+        case AVDTP_END_PACKET:
+            if (signaling_header->num_packets != 2) {
+                log_info("END packet: %d packets", signaling_header->num_packets);
+                break;
+            }
+            signaling_header->num_packets--;
+            break;
+
         default:
             btstack_assert(false);
             break;
     }
-    signaling_header->signal_identifier = (avdtp_signal_identifier_t)(packet[pos++] & 0x3f);
+
     return pos;
 }
 
@@ -259,11 +274,27 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
         case AVDTP_DELAY_REPORTING:
             break;
         case AVDTP_RECOVERY:
+            if (size < (3 + pos)){
+                log_error("recovery capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = caps.recovery.recovery_type; // 0x01=RFC2733
             buffer[pos++] = caps.recovery.maximum_recovery_window_size;
             buffer[pos++] = caps.recovery.maximum_number_media_packets;
             break;
         case AVDTP_CONTENT_PROTECTION:
+            if (size < (3 + pos)){
+                log_error("recovery capability does not fit the buffer\n");
+                break;
+            }
+            if (caps.content_protection.cp_type_value_len > sizeof(caps.content_protection.cp_type_value)){
+                log_error("copy protection capability not configured\n");
+                break;
+            }
+            if (caps.content_protection.cp_type_value_len > (size - (pos + 3))){
+                log_error("copy protection capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = caps.content_protection.cp_type_value_len + 2;
             big_endian_store_16(buffer, pos, caps.content_protection.cp_type);
             pos += 2;
@@ -272,9 +303,21 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
             pos += caps.content_protection.cp_type_value_len;
             break;
         case AVDTP_HEADER_COMPRESSION:
+            if (size < (1 + pos)){
+                log_error("header compression capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
             break;
         case AVDTP_MULTIPLEXING:
+            if (size < (1 + caps.multiplexing_mode.transport_identifiers_num * 2)){
+                log_error("multiplexing capability does not fit the buffer\n");
+                break;
+            }
+            if (caps.multiplexing_mode.transport_identifiers_num > sizeof(caps.multiplexing_mode.transport_session_identifiers)){
+                log_error("multiplexing capability not configured\n");
+                break;
+            }
             buffer[pos++] = caps.multiplexing_mode.fragmentation << 7;
             for (i=0; i<caps.multiplexing_mode.transport_identifiers_num; i++){
                 buffer[pos++] = caps.multiplexing_mode.transport_session_identifiers[i] << 7;
@@ -283,6 +326,10 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
             }
             break;
         case AVDTP_MEDIA_CODEC:
+            if (size < (2 + caps.media_codec.media_codec_information_len)){
+                log_error("media codec capability does not fit the buffer\n");
+                break;
+            }
             buffer[pos++] = ((uint8_t)caps.media_codec.media_type) << 4;
             buffer[pos++] = (uint8_t)caps.media_codec.media_codec_type;
             for (i = 0; i<caps.media_codec.media_codec_information_len; i++){
@@ -300,10 +347,17 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
     connection->error_code = 0;
     
     if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || (category > AVDTP_DELAY_REPORTING)){
-        log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
-        connection->reject_service_category = category;
-        connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;
-        return 1;
+        switch (signal_identifier){
+            case AVDTP_SI_GET_CAPABILITIES:
+            case AVDTP_SI_GET_ALL_CAPABILITIES:
+                // ignore capabilities with reserved ID
+                return 0;
+            default:
+                log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
+                connection->reject_service_category = category;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;
+                return 1;
+        }
     }
 
     if (signal_identifier == AVDTP_SI_RECONFIGURE){
@@ -382,13 +436,15 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
         packet     += 2;
         to_process -= 2;
 
+        if (avdtp_unpack_service_capabilities_has_errors(connection, signal_identifier, category, cap_len) > 0){
+            return 0;
+        }
+
         if (cap_len > to_process){
             connection->reject_service_category = category;
             connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
             return 0;
         }
-
-        if (avdtp_unpack_service_capabilities_has_errors(connection, signal_identifier, category, cap_len)) return 0;
 
         int category_valid = 1;
 
@@ -402,8 +458,15 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
                 caps->recovery.maximum_number_media_packets = data[pos++];
                 break;
             case AVDTP_CONTENT_PROTECTION:
-                caps->content_protection.cp_type = big_endian_read_16(data, 0);
+                caps->content_protection.cp_type = big_endian_read_16(data, pos);
+                pos += 2;
                 caps->content_protection.cp_type_value_len = cap_len - 2;
+                memset(caps->content_protection.cp_type_value, 0, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
+                if (caps->content_protection.cp_type_value_len <= AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN){
+                    memcpy(caps->content_protection.cp_type_value, data + pos, caps->content_protection.cp_type_value_len);
+                }
+                pos += caps->content_protection.cp_type_value_len;
+
                 // connection->reject_service_category = category;
                 // connection->error_code = UNSUPPORTED_CONFIGURATION;
                 // support for content protection goes here
@@ -965,6 +1028,42 @@ static void avdtp_signaling_emit_media_codec_capability(uint16_t avdtp_cid, uint
             break;
         default:
             avdtp_signaling_emit_media_codec_other_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+    }
+}
+
+void avdtp_signaling_emit_capabilities_of_service_category(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
+                                       avdtp_service_category_t service_category) {
+    switch (service_category) {
+        case AVDTP_MEDIA_CODEC:
+            avdtp_signaling_emit_media_codec_capability(avdtp_cid, remote_seid, capabilities->media_codec);
+            break;
+        case AVDTP_MEDIA_TRANSPORT:
+            avdtp_signaling_emit_media_transport_capability(avdtp_cid, remote_seid);
+            break;
+        case AVDTP_REPORTING:
+            avdtp_signaling_emit_reporting_capability(avdtp_cid, remote_seid);
+            break;
+        case AVDTP_RECOVERY:
+            avdtp_signaling_emit_recovery_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->recovery);
+            break;
+        case AVDTP_CONTENT_PROTECTION:
+            avdtp_signaling_emit_content_protection_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->content_protection);
+            break;
+        case AVDTP_HEADER_COMPRESSION:
+            avdtp_signaling_emit_header_compression_capability(avdtp_cid, remote_seid,
+                                                               &capabilities->header_compression);
+            break;
+        case AVDTP_MULTIPLEXING:
+            avdtp_signaling_emit_content_multiplexing_capability(avdtp_cid, remote_seid,
+                                                                 &capabilities->multiplexing_mode);
+            break;
+        case AVDTP_DELAY_REPORTING:
+            avdtp_signaling_emit_delay_reporting_capability(avdtp_cid, remote_seid);
+            break;
+        default:
             break;
     }
 }

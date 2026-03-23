@@ -204,7 +204,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
                     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-                        COMMAND  ${PYTHON_EXECUTABLE}
+                        COMMAND ${Python3_EXECUTABLE}
                         ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
                 )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)

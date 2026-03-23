@@ -343,6 +343,38 @@ typedef enum {
     HCI_OPCODE_HCI_LE_SET_DATA_RELATED_ADDRESS_CHANGES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7C),
     HCI_OPCODE_HCI_LE_SET_DEFAULT_SUBRATE= HCI_OPCODE (OGF_LE_CONTROLLER, 0x7D),
     HCI_OPCODE_HCI_LE_SUBRATE_REQUEST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7E),
+    HCI_OPCODE_HCI_LE_SET_DECISION_DATA = HCI_OPCODE (OGF_LE_CONTROLLER, 0x80),
+    HCI_OPCODE_HCI_LE_SET_DECISION_INSTRUCTIONS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x81),
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_SUBEVENT_DATA = HCI_OPCODE (OGF_LE_CONTROLLER, 0x82),
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_RESPONSE_DATA = HCI_OPCODE (OGF_LE_CONTROLLER, 0x83),
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_SYNC_SUBEVENT = HCI_OPCODE (OGF_LE_CONTROLLER, 0x84),
+    HCI_OPCODE_HCI_LE_READ_ALL_LOCAL_SUPPORTED_FEATURES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x87),
+    HCI_OPCODE_HCI_LE_READ_ALL_REMOTE_FEATURES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x88),
+    HCI_OPCODE_HCI_LE_CS_READ_LOCAL_SUPPORTED_CAPABILITIES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x89),
+    HCI_OPCODE_HCI_LE_CS_READ_REMOTE_SUPPORTED_CAPABILITIES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8A),
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_SUPPORTED_CAPABILITIES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8B),
+    HCI_OPCODE_HCI_LE_CS_SECURITY_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8C),
+    HCI_OPCODE_HCI_LE_CS_SET_DEFAULT_SETTINGS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8D),
+    HCI_OPCODE_HCI_LE_CS_READ_REMOTE_FAE_TABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8E),
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_FAE_TABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x8F),
+    HCI_OPCODE_HCI_LE_CS_CREATE_CONFIG = HCI_OPCODE (OGF_LE_CONTROLLER, 0x90),
+    HCI_OPCODE_HCI_LE_CS_REMOVE_CONFIG = HCI_OPCODE (OGF_LE_CONTROLLER, 0x91),
+    HCI_OPCODE_HCI_LE_CS_SET_CHANNEL_CLASSIFICATION = HCI_OPCODE (OGF_LE_CONTROLLER, 0x92),
+    HCI_OPCODE_HCI_LE_CS_SET_PROCEDURE_PARAMETERS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x93),
+    HCI_OPCODE_HCI_LE_CS_SET_PROCEDURE_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x94),
+    HCI_OPCODE_HCI_LE_CS_TEST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x95),
+    HCI_OPCODE_HCI_LE_CS_TEST_END = HCI_OPCODE (OGF_LE_CONTROLLER, 0x96),
+    HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_MONITORED_ADVERTISERS_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x98),
+    HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_MONITORED_ADVERTISERS_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x99),
+    HCI_OPCODE_HCI_LE_CLEAR_MONITORED_ADVERTISERS_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x9A),
+    HCI_OPCODE_HCI_LE_READ_MONITORED_ADVERTISERS_LIST_SIZE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x9B),
+    HCI_OPCODE_HCI_LE_ENABLE_MONITORING_ADVERTISERS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x9C),
+    HCI_OPCODE_HCI_LE_FRAME_SPACE_UPDATE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x9D),
+    HCI_OPCODE_HCI_LE_ENABLE_UTP_OTA_MODE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x9F),
+    HCI_OPCODE_HCI_LE_UTP_SEND = HCI_OPCODE (OGF_LE_CONTROLLER, 0xA0),
+    HCI_OPCODE_HCI_LE_CONNECTION_RATE_REQUEST = HCI_OPCODE (OGF_LE_CONTROLLER, 0xA1),
+    HCI_OPCODE_HCI_LE_SET_DEFAULT_RATE_PARAMETERS = HCI_OPCODE (OGF_LE_CONTROLLER, 0xA2),
+    HCI_OPCODE_HCI_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL = HCI_OPCODE (OGF_LE_CONTROLLER, 0xA3),
 
     // Broadcom/Cypress/Infineon/Synaptics
     HCI_OPCODE_HCI_BCM_WRITE_SCO_PCM_INT = HCI_OPCODE (0x3f, 0x1c),
@@ -494,25 +526,44 @@ extern const hci_cmd_t hci_write_synchronous_flow_control_enable;
 
 extern const hci_cmd_t hci_le_accept_cis_request;
 extern const hci_cmd_t hci_le_add_device_to_periodic_advertiser_list;
+extern const hci_cmd_t hci_le_add_device_to_monitored_advertisers_list;
 extern const hci_cmd_t hci_le_add_device_to_resolving_list;
 extern const hci_cmd_t hci_le_add_device_to_white_list;
 extern const hci_cmd_t hci_le_big_create_sync;
 extern const hci_cmd_t hci_le_big_terminate_sync;
 extern const hci_cmd_t hci_le_clear_advertising_sets;
+extern const hci_cmd_t hci_le_clear_monitored_advertisers_list;
 extern const hci_cmd_t hci_le_clear_periodic_advertiser_list;
 extern const hci_cmd_t hci_le_clear_resolving_list;
 extern const hci_cmd_t hci_le_clear_white_list;
 extern const hci_cmd_t hci_le_connection_cte_request_enable;
 extern const hci_cmd_t hci_le_connection_cte_response_enable;
+extern const hci_cmd_t hci_le_connection_rate_request;
 extern const hci_cmd_t hci_le_connection_update;
 extern const hci_cmd_t hci_le_create_big;
 extern const hci_cmd_t hci_le_create_big_test;
 extern const hci_cmd_t hci_le_create_cis;
 extern const hci_cmd_t hci_le_create_connection;
 extern const hci_cmd_t hci_le_create_connection_cancel;
+extern const hci_cmd_t hci_le_cs_create_config;
+extern const hci_cmd_t hci_le_cs_read_local_supported_capabilities;
+extern const hci_cmd_t hci_le_cs_read_remote_fae_table;
+extern const hci_cmd_t hci_le_cs_read_remote_supported_capabilities;
+extern const hci_cmd_t hci_le_cs_remove_config;
+extern const hci_cmd_t hci_le_cs_security_enable;
+extern const hci_cmd_t hci_le_cs_set_channel_classification;
+extern const hci_cmd_t hci_le_cs_set_default_settings;
+extern const hci_cmd_t hci_le_cs_set_procedure_enable;
+extern const hci_cmd_t hci_le_cs_set_procedure_parameters;
+extern const hci_cmd_t hci_le_cs_test;
+extern const hci_cmd_t hci_le_cs_test_end;
+extern const hci_cmd_t hci_le_cs_write_cached_remote_fae_table;
+extern const hci_cmd_t hci_le_cs_write_cached_remote_supported_capabilities;
 extern const hci_cmd_t hci_le_encrypt;
 extern const hci_cmd_t hci_le_enhanced_read_transmit_power_level;
+extern const hci_cmd_t hci_le_enable_monitoring_advertisers;
 extern const hci_cmd_t hci_le_extended_create_connection;
+extern const hci_cmd_t hci_le_frame_space_update;
 extern const hci_cmd_t hci_le_generate_dhkey;
 extern const hci_cmd_t hci_le_generate_dhkey_v2;
 extern const hci_cmd_t hci_le_iso_read_test_counters;
@@ -528,6 +579,8 @@ extern const hci_cmd_t hci_le_periodic_advertising_set_info_transfer;
 extern const hci_cmd_t hci_le_periodic_advertising_sync_transfer;
 extern const hci_cmd_t hci_le_periodic_advertising_terminate_sync;
 extern const hci_cmd_t hci_le_rand;
+extern const hci_cmd_t hci_le_read_all_local_supported_features;
+extern const hci_cmd_t hci_le_read_all_remote_features;
 extern const hci_cmd_t hci_le_read_advertising_channel_tx_power;
 extern const hci_cmd_t hci_le_read_antenna_information;
 extern const hci_cmd_t hci_le_read_buffer_size;
@@ -540,6 +593,8 @@ extern const hci_cmd_t hci_le_read_local_resolvable_address;
 extern const hci_cmd_t hci_le_read_local_supported_features;
 extern const hci_cmd_t hci_le_read_maximum_advertising_data_length;
 extern const hci_cmd_t hci_le_read_maximum_data_length;
+extern const hci_cmd_t hci_le_read_minimum_supported_connection_interval;
+extern const hci_cmd_t hci_le_read_monitored_advertisers_list_size;
 extern const hci_cmd_t hci_le_read_number_of_supported_advertising_sets;
 extern const hci_cmd_t hci_le_read_peer_resolvable_address;
 extern const hci_cmd_t hci_le_read_periodic_advertiser_list_size;
@@ -560,6 +615,7 @@ extern const hci_cmd_t hci_le_remote_connection_parameter_request_negative_reply
 extern const hci_cmd_t hci_le_remote_connection_parameter_request_reply;
 extern const hci_cmd_t hci_le_remove_advertising_set;
 extern const hci_cmd_t hci_le_remove_cig;
+extern const hci_cmd_t hci_le_remove_device_from_monitored_advertisers_list;
 extern const hci_cmd_t hci_le_remove_device_from_periodic_advertiser_list;
 extern const hci_cmd_t hci_le_remove_device_from_resolving_list;
 extern const hci_cmd_t hci_le_remove_device_from_white_list;
@@ -579,7 +635,10 @@ extern const hci_cmd_t hci_le_set_connectionless_cte_transmit_parameters;
 extern const hci_cmd_t hci_le_set_connectionless_iq_sampling_enable;
 extern const hci_cmd_t hci_le_set_data_length;
 extern const hci_cmd_t hci_le_set_data_related_address_changes;
+extern const hci_cmd_t hci_le_set_decision_data;
+extern const hci_cmd_t hci_le_set_decision_instructions;
 extern const hci_cmd_t hci_le_set_default_periodic_advertising_sync_transfer_parameters;
+extern const hci_cmd_t hci_le_set_default_rate_parameters;
 extern const hci_cmd_t hci_le_set_default_phy;
 extern const hci_cmd_t hci_le_set_default_subrate;
 extern const hci_cmd_t hci_le_set_event_mask;
@@ -596,9 +655,12 @@ extern const hci_cmd_t hci_le_set_path_loss_reporting_parameters;
 extern const hci_cmd_t hci_le_set_periodic_advertising_data;
 extern const hci_cmd_t hci_le_set_periodic_advertising_enable;
 extern const hci_cmd_t hci_le_set_periodic_advertising_parameters;
+extern const hci_cmd_t hci_le_set_periodic_advertising_response_data;
 extern const hci_cmd_t hci_le_set_periodic_advertising_receive_enable;
+extern const hci_cmd_t hci_le_set_periodic_advertising_subevent_data;
 extern const hci_cmd_t hci_le_set_periodic_advertising_sync_transfer_parameters;
 extern const hci_cmd_t hci_le_set_phy;
+extern const hci_cmd_t hci_le_set_periodic_sync_subevent;
 extern const hci_cmd_t hci_le_set_privacy_mode;
 extern const hci_cmd_t hci_le_set_random_address;
 extern const hci_cmd_t hci_le_set_resolvable_private_address_timeout;
@@ -615,6 +677,7 @@ extern const hci_cmd_t hci_le_transmitter_test;
 extern const hci_cmd_t hci_le_transmitter_test_v2;
 extern const hci_cmd_t hci_le_transmitter_test_v3;
 extern const hci_cmd_t hci_le_transmitter_test_v4;
+extern const hci_cmd_t hci_le_utp_send;
 extern const hci_cmd_t hci_le_write_rf_path_compensation;
 extern const hci_cmd_t hci_le_write_suggested_default_data_length;
 extern const hci_cmd_t hci_opcode_hci_le_read_buffer_size_v2;

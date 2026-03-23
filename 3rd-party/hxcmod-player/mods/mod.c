@@ -25,7 +25,7 @@ const mod_title_t mod_titles[] = {
     },
     {
         .len = 7600,
-        .name = "deceased by disease",
+        .name = "nao deceased",
         .data = nao_deceased_by_disease_mod,
     }
 };

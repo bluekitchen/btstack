@@ -98,6 +98,8 @@ void avdtp_signaling_emit_reject(uint16_t avdtp_cid, uint8_t local_seid, avdtp_s
 
 void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
 									   uint16_t registered_service_categories);
+void avdtp_signaling_emit_capabilities_of_service_category(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
+                                                           avdtp_service_category_t service_category);
 
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay);
 

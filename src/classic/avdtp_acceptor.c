@@ -47,6 +47,9 @@
 #include "btstack_util.h"
 #include "l2cap.h"
 
+static bool avdtp_acceptor_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes_needed){
+    return (pos <= end) && (bytes_needed <= (uint16_t)(end - pos));
+}
 
 static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){
     uint8_t command[2];
@@ -217,6 +220,13 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
         case AVDTP_SI_OPEN:
         case AVDTP_SI_RECONFIGURE:
         case AVDTP_SI_DELAYREPORT:
+            if (!avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
             connection->acceptor_local_seid  = packet[offset++] >> 2;
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
@@ -294,8 +304,14 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 case AVDTP_SI_DELAYREPORT:
                     log_info("W2_ANSWER_DELAY_REPORT, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_DELAY_REPORT;
+                    if (!avdtp_acceptor_have_bytes((uint16_t)offset, packet_size, 2u)) {
+                        connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                        connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                        connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                        break;
+                    }
                     avdtp_signaling_emit_delay(connection->avdtp_cid, connection->acceptor_local_seid,
-                                               big_endian_read_16(packet, offset));
+                                               big_endian_read_16(connection->acceptor_signaling_packet.command, offset));
                     break;
                 
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
@@ -423,16 +439,28 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     }
                     break;
                 case AVDTP_SI_ABORT:
-                     switch (stream_endpoint->state){
+                    // AVDTP Spec v1.3, 9.9 Abort Stream
+                    switch (stream_endpoint->state){
                         case AVDTP_STREAM_ENDPOINT_CONFIGURED:
                         case AVDTP_STREAM_ENDPOINT_CLOSING:
                         case AVDTP_STREAM_ENDPOINT_OPENED:
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            // Figure 9.16 and Figure 9.17 depict the state transition, from ACP and INT point of views,
+                            // when the state is CONFIGURED, OPEN, STREAMING or CLOSING
                             log_info("W2_ANSWER_ABORT_STREAM");
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_ABORT_STREAM;
                             break;
-                        default:
+                        case AVDTP_STREAM_ENDPOINT_IDLE:
+                             // However, AVDTP_ABORT_CMD can be sent or received in IDLE state.
+                             // In the event that an AVDTP_ABORT_CMD is received in IDLE state, ACP or INT shall reply
+                             // with an AVDTP_ABORT_RSP, no state change is required. As there should be no Transport
+                             // Channels established no actions have to be taken to release the Transport Channels.
+                             log_info("W2_ANSWER_ABORT_STREAM (idle)");
+                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_ABORT_STREAM;
+                             break;
+                    default:
+                            // Reject command in other states
                             log_info("AVDTP_SI_ABORT, bad state %d ", stream_endpoint->state);
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                             connection->error_code = AVDTP_ERROR_CODE_BAD_STATE;

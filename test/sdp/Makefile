@@ -55,18 +55,15 @@ COMMON = \
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/sdp_record_builder build-asan/sdp_record_builder
+all: coverage test
 
 build-coverage/sdp_record_builder: ${COMMON_OBJ_COVERAGE}
 build-asan/sdp_record_builder: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/sdp_record_builder
 	build-asan/sdp_record_builder
 
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/sdp_record_builder
+coverage: build-coverage/sdp_record_builder.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

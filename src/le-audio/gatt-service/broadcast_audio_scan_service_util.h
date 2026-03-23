@@ -50,10 +50,11 @@ extern "C" {
 
 #define BASS_ERROR_CODE_OPCODE_NOT_SUPPORTED            0x80
 #define BASS_ERROR_CODE_INVALID_SOURCE_ID               0x81
-#define BASS_SUBGROUPS_MAX_NUM                          10
+#define BASS_INVALID_SOURCE_INDEX                       0xFF
 
-#define BASS_MAX_NOTIFY_BUFFER_SIZE                             200
-#define BASS_INVALID_SOURCE_INDEX                               0xFF
+#ifndef MAX_NR_BASS_SUBGROUPS
+#define MAX_NR_BASS_SUBGROUPS                            10
+#endif
 
 /* API_START */
 
@@ -104,7 +105,7 @@ typedef struct {
     uint16_t  pa_interval;
 
     uint8_t  subgroups_num;
-    bass_subgroup_t subgroups[BASS_SUBGROUPS_MAX_NUM];
+    bass_subgroup_t subgroups[MAX_NR_BASS_SUBGROUPS];
 
     // state send to client by server
     le_audio_pa_sync_state_t  pa_sync_state;

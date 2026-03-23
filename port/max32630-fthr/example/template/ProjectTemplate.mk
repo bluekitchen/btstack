@@ -51,7 +51,7 @@ TARGET_LC:=$(shell echo $(TARGET) | tr A-Z a-z)
 
 # Select 'GCC' or 'IAR' compiler
 COMPILER=GCC
-PYTHON=python
+PYTHON=python3
 
 cc256x_init_script=bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
 

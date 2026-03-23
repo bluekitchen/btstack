@@ -14,18 +14,15 @@ COMMON = btstack_ring_buffer.c
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/btstack_ring_buffer_test build-asan/btstack_ring_buffer_test
+all: coverage test
 
 build-coverage/btstack_ring_buffer_test: ${COMMON_OBJ_COVERAGE}
 build-asan/btstack_ring_buffer_test: ${COMMON_OBJ_ASAN}
 
-test: all
+test: build-asan/btstack_ring_buffer_test
 	build-asan/btstack_ring_buffer_test
 	
-coverage: all
-	rm -f build-coverage/*.gcda
-	build-coverage/btstack_ring_buffer_test
+coverage: build-coverage/btstack_ring_buffer_test.info
 
-clean:
-	rm -rf build-coverage build-asan
+clean: clean-common
 	

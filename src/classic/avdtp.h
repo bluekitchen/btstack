@@ -62,6 +62,7 @@ extern "C" {
 #define AVDTP_MAX_NUM_SEPS 10
 #define AVDTP_MAX_CSRC_NUM 15
 #define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
+#define AVDTP_MAX_DATA_BUFFER_SIZE                  200
 
 // Supported Features
 #define AVDTP_SOURCE_FEATURE_MASK_PLAYER        0x0001u
@@ -503,7 +504,7 @@ typedef enum {
 } avdtp_initiator_connection_state_t;
 
 typedef struct {
-    uint8_t  command[200];
+    uint8_t  command[AVDTP_MAX_DATA_BUFFER_SIZE];
     uint16_t size;
     uint16_t offset;
     uint8_t  acp_seid;
@@ -528,19 +529,19 @@ typedef enum {
     A2DP_W4_CONNECTED,
     A2DP_CONNECTED,
     A2DP_DISCOVER_SEPS,
-    A2DP_GET_CAPABILITIES,
-    A2DP_W2_GET_ALL_CAPABILITIES, //5
+    A2DP_W2_GET_ALL_CAPABILITIES,
+    A2DP_W4_GET_ALL_CAPABILITIES,
     A2DP_DISCOVERY_DONE,
-    A2DP_SET_CONFIGURATION,      
     A2DP_W4_GET_CONFIGURATION,
+    A2DP_W2_SET_CONFIGURATION,
     A2DP_W4_SET_CONFIGURATION,
     A2DP_CONFIGURED,
-    A2DP_W2_SUSPEND_STREAM_WITH_SEID, //10
+    A2DP_W2_SUSPEND_STREAM_WITH_SEID,
     A2DP_W2_RECONFIGURE_WITH_SEID,
     A2DP_W2_OPEN_STREAM_WITH_SEID,   
     A2DP_W4_OPEN_STREAM_WITH_SEID,
     A2DP_W2_START_STREAM_WITH_SEID,  
-    A2DP_W2_ABORT_STREAM_WITH_SEID,   //15
+    A2DP_W2_ABORT_STREAM_WITH_SEID,
     A2DP_W2_STOP_STREAM_WITH_SEID,
     A2DP_STREAMING_OPENED
 } a2dp_state_t;
@@ -553,6 +554,13 @@ typedef struct {
     a2dp_state_t state;
     struct avdtp_stream_endpoint * local_stream_endpoint;
 } a2dp_config_process_t;
+
+typedef enum {
+    AVDTP_PARSER_GET_SERVICE_CATEGORY = 0,
+    AVDTP_PARSER_GET_CAPABILITIES_VALUE_LEN,
+    AVDTP_PARSER_GET_CAPABILITIES_VALUE,
+    AVDTP_PARSER_IGNORE_REST_OF_CAPABILITY_VALUE
+} avdtp_capability_parser_state_t;
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -579,6 +587,10 @@ typedef struct {
 
     // used to prepare outgoing signaling packets
     avdtp_signaling_packet_t initiator_signaling_packet;
+    avdtp_capability_parser_state_t capability_parser_state;
+    avdtp_service_category_t  parser_service_category_id;
+    uint8_t parser_value_offset;
+    uint8_t parser_value_size;
 
     uint8_t initiator_local_seid;
     uint8_t initiator_remote_seid;
@@ -710,6 +722,9 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_stop_stream (uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid);
+
+// required to send ABORT in IDLE state, which is allowed by spec but useless
+uint8_t avdtp_abort_stream_with_remote_seid(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid);
 
 uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid);
 uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);

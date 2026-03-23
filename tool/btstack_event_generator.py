@@ -122,7 +122,12 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
     return event[0];
 }
 
-typedef uint8_t* btstack_event_iterator_t;
+typedef struct {
+    const uint8_t * event;
+    int16_t event_len;
+    int16_t pos;
+    int16_t item_length;
+} btstack_event_iterator_t;
 
 """
 
@@ -166,7 +171,10 @@ c_prototype_iterator_init = '''/**
  * @note: btstack_type {format}
  */
 static inline void {event}_{field}_init(btstack_event_iterator_t * iter, const uint8_t * event){{
-    *iter = (btstack_event_iterator_t)&event[{list_field}];
+    iter->event = event;
+    iter->event_len = 2 + (int16_t) event[1];
+    iter->pos = ({list_field});
+    iter->item_length = 0;
 }}
 
 '''
@@ -174,15 +182,15 @@ static inline void {event}_{field}_init(btstack_event_iterator_t * iter, const u
 c_prototype_iterator_has_next = '''/**
  * @brief Returns true if iterator of list {scope} of {event} has more elements, false otherwise.
  * @param iterator
- * @param event packet
  * @return
  * @note: btstack_type {format}
  */
-static inline bool {event}_{field}_has_next(btstack_event_iterator_t * iter, const uint8_t * event){{
-    uint8_t length = event[{length_field}];
-    const uint8_t *begin = &event[{list_field}];
-    const uint8_t *end = begin+length;
-    return *iter<end;
+static inline bool {event}_{field}_has_next(btstack_event_iterator_t * iter){{
+    if (iter->pos >= iter->event_len){{
+        return false;
+    }}
+    iter->item_length = {item_length_code};
+    return (iter->item_length > 0) && ((iter->pos + iter->item_length) <= iter->event_len);
 }}
 
 '''
@@ -193,8 +201,7 @@ c_prototype_iterator_next = '''/**
  * @note: btstack_type {format}
  */
 static inline void {event}_{scope}_next(btstack_event_iterator_t * iter){{
-    uint8_t length = {code}
-    *iter = *iter+length;
+    iter->pos = iter->pos + iter->item_length;
 }}
 
 '''
@@ -250,8 +257,10 @@ defines_used = set()
 
 param_read = {
     '1' : 'return event[{offset}];',
+    'a' : 'return (int8_t) event[{offset}];',
     'J' : 'return event[{offset}];',
     '2' : 'return little_endian_read_16(event, {offset});',
+    'b' : 'return (int16_t) little_endian_read_16(event, {offset});',
     'L' : 'return little_endian_read_16(event, {offset});',
     '3' : 'return little_endian_read_24(event, {offset});',
     '4' : 'return little_endian_read_32(event, {offset});',
@@ -275,11 +284,13 @@ param_read = {
 }
 
 param_iterator_read = {
-    '1' : 'return (*iter)[{offset}];',
-    '2' : 'return little_endian_read_16(*iter, {offset});',
-    'J' : 'return (*iter)[{offset}] + 1;',
-    'V' : 'return &((*iter)[{offset}]);',
-    open_bracket    : '*iter = &event[{offset}];',
+    '1' : 'return iter->event[iter->pos + {offset}];',
+    'a' : 'return (int8_t) iter->event[iter->pos + {offset}];',
+    '2' : 'return little_endian_read_16(iter->event, iter->pos + {offset});',
+    'b' : 'return (int16_t) little_endian_read_16(iter->event, iter->pos + {offset});',
+    'J' : 'return iter->event[iter->pos + {offset}];',
+    'V' : 'return &(iter->event[iter->pos + {offset}]);',
+    open_bracket    : 'iter->event = event; iter->event_len = (uint16_t) event[1] + 2u; iter->pos = (uint16_t) ({offset});',
     closing_bracket : ''
 }
 
@@ -298,7 +309,7 @@ def description_for_type(type):
     return 'Get field {0} from event {1}'
 
 def c_type_for_btstack_type(type):
-    param_types = { '1' : 'uint8_t', '2' : 'uint16_t', '3' : 'uint32_t', '4' : 'uint32_t', 'H' : 'hci_con_handle_t', 'B' : 'bd_addr_t',
+    param_types = { '1' : 'uint8_t', 'a' : 'int8_t', '2' : 'uint16_t', 'b' : 'int16_t', '3' : 'uint32_t', '4' : 'uint32_t', 'H' : 'hci_con_handle_t', 'B' : 'bd_addr_t',
                     'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'const char *' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
                     'J' : 'uint8_t', 'L' : 'uint16_t', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
@@ -309,7 +320,7 @@ def c_type_for_btstack_type(type):
     return param_types[type]
 
 def size_for_type(type):
-    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32, 'K':16,
+    param_sizes = { '1' : 1, 'a' : 1, '2' : 2, 'b' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32, 'K':16,
                     'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1, 'C':-1,
                    open_bracket : 0, closing_bracket : 0 }
     return param_sizes[type]
@@ -356,22 +367,24 @@ def create_iterator( event_name, field_name, field_type, offset, offset_is_numbe
 
     generated = ''
     if field_type == open_bracket:
-        generated_init = c_prototype_iterator_init.format( list_field=offset, scope=list_name_scope,
-                                                          event=event_name, field=field_name, format=field_type)
-        generated_has_next = c_prototype_iterator_has_next.format( list_field=offset, length_field=last_length_field_offset,
-                                                                  format=field_type, scope=list_name_scope, event=event_name,
-                                                                  field=field_name )
-        generated = generated_init + generated_has_next
+        generated = c_prototype_iterator_init.format( list_field=offset, scope=list_name_scope,
+                                                     event=event_name, field=field_name, format=field_type)
     else:
         # the item length is either determiend statically, format "12"
         # or dynamically by an list element, format "J"
-        code = ''
+        item_length_code = ''
         if list_length_field_offset < last_length_field_offset:
-            #dynamic element size
-            code = '*iter[{0}] + 1;'.format( last_length_field_offset-list_base )
+            # Dynamic element size: size(bytes before J) + J byte + variable payload.
+            j_offset = last_length_field_offset - list_base
+            item_length_code = '{0} + 1 + (int16_t) iter->event[iter->pos + {0}]'.format(j_offset)
         else:
-            code = '{0};'.format( list_static_size )
-        generated = c_prototype_iterator_next.format( event=event_name, scope=list_name_scope, format=field_type, code=code )
+            item_length_code = '{0}'.format(list_static_size)
+        generated_has_next = c_prototype_iterator_has_next.format(
+            item_length_code=item_length_code,
+            format=field_type, scope=list_name_scope, event=event_name, field=list_name_scope)
+        generated_next = c_prototype_iterator_next.format(
+            event=event_name, scope=list_name_scope, format=field_type)
+        generated = generated_has_next + generated_next
 
     if field_type == closing_bracket:
         listScope.pop()
@@ -439,21 +452,41 @@ def create_events(events):
             supported = all_fields_supported(format)
             last_variable_length_field_pos = ""
             last_length_field_offset = 0
+            # Closing bracket tokens do not need dedicated @param entries.
+            format_num_closing = format.count(closing_bracket)
+            expected_args_without_closing = len(format) - format_num_closing
+            if len(args) == len(format):
+                consume_closing_param = True
+            elif len(args) == expected_args_without_closing:
+                consume_closing_param = False
+            else:
+                print(event_name.upper())
+                print ("Format %s does not match @param/@array/@field entries %s " % (format, args))
+                print
+                continue
+
             if is_le_event(event_group):
                 fout.write("#ifdef ENABLE_BLE\n")
-            if len(format) != len(args):
-                print(event_name.upper())
-                print ("Format %s does not match params %s " % (format, args))
-                print
-            for f, arg in zip(format, args):
-                field_name = arg
-                if field_name.lower() == 'subevent_code':
+
+            arg_index = 0
+            for field_type in format:
+                if field_type == closing_bracket and not consume_closing_param:
+                    field_name = ''
+                else:
+                    if arg_index >= len(args):
+                        print(event_name.upper())
+                        print ("Missing @param/@array/@field for format token '%s' in format %s" % (field_type, format))
+                        print
+                        break
+                    field_name = args[arg_index]
+                    arg_index += 1
+
+                if field_type != closing_bracket and field_name.lower() == 'subevent_code':
                     offset += 1
                     continue
                 if offset_unknown:
                     print("Param after variable length field without preceding 'J' length field")
                     break
-                field_type = f
                 if field_type in open_bracket + closing_bracket:
                     text = create_iterator( base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported )
                 else:

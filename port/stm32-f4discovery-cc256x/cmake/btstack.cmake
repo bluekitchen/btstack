@@ -8,9 +8,6 @@ if( DEFINED ENV{BTSTACK_ROOT} )
     set(BTSTACK_ROOT $ENV{BTSTACK_ROOT})
 endif()
 
-# pkgconfig
-find_package(PkgConfig REQUIRED)
-
 # to generate .h from .gatt files
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -107,12 +104,6 @@ set (LWIP_PORT
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 list(TRANSFORM SOURCES_LWIP PREPEND ${BTSTACK_ROOT}/)
 
-#file(GLOB SOURCES_SRC_OFF "${BTSTACK_ROOT}/src/hci_transport_*.c")
-#list(REMOVE_ITEM SOURCES_SRC   ${SOURCES_SRC_OFF})
-
-file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/att_db_util.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
 list(APPEND SOURCES_LE_AUDIO "${BTSTACK_ROOT}/example/le_audio_demo_util_sink.c")
 list(APPEND SOURCES_LE_AUDIO "${BTSTACK_ROOT}/example/le_audio_demo_util_source.c")
 
@@ -151,52 +142,3 @@ set_target_properties( btstack PROPERTIES
     C_STANDARD 11
     C_EXTENSIONS ON
 )
-
-list(SORT EXAMPLES)
-file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt" "${BTSTACK_ROOT}/test/le_audio/*.gatt")
-
-# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
-# workaround: add lwip sources only to lwip_examples
-set (LWIP_EXAMPLES pan_lwip_http_server)
-
-set( SOURCES_EXAMPLE )
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
-    #   get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-
-    # get c file, either from examples or local
-    if( EXISTS "${BTSTACK_ROOT}/example/${EXAMPLE}.c" )
-        set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
-    else()
-        set (SOURCES_EXAMPLE ${EXAMPLE}.c)
-    endif()
-
-    list(APPEND SOURCES_EXAMPLE "${CMAKE_SOURCE_DIR}/port/port.c")
-
-    # add lwip sources for lwip examples
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-    endif()
-
-    # add GATT DB creation
-    foreach ( GATT ${EXAMPLES_GATT} )
-        if( GATT MATCHES ${EXAMPLE} )
-            message("example ${EXAMPLE} -- with GATT DB")
-            get_filename_component( out_f ${GATT} NAME )
-            set(out_f "${CMAKE_CURRENT_BINARY_DIR}/${out_f}")
-            string(REGEX REPLACE "\\.[^.]*$" ".h" out_f ${out_f})
-            message( ${out_f} )
-            add_custom_command(
-            OUTPUT ${out_f}
-            DEPENDS ${GATT}
-            COMMAND ${Python_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${GATT} ${out_f}
-            COMMENT "Generate ${out_f}"
-            VERBATIM
-        )
-            list(APPEND SOURCES_EXAMPLE ${out_f})
-        endif()
-    endforeach(GATT)
-    #    target_sources( app PRIVATE ${SOURCES_EXAMPLE} )
-    #    target_link_libraries( app PRIVATE btstack )
-endforeach(EXAMPLE)

@@ -47,12 +47,16 @@ System properties:
 
 Embedded platform properties:
 
-| \#define                        | Description                          |
-|---------------------------------|--------------------------------------|
-| HAVE_EMBEDDED_TIME_MS           | System provides time in milliseconds |
-| HAVE_EMBEDDED_TICK              | System provides tick interrupt       |
-| HAVE_HAL_AUDIO                  | Audio HAL is available               |
-| HAVE_HAL_AUDIO_SINK_<br>STEREO_ONLY | Duplicate samples for mono playback  |
+| \#define                                 | Description                                      |
+|------------------------------------------|--------------------------------------------------|
+| HAVE_EMBEDDED_TIME_MS                    | System provides time in milliseconds             |
+| HAVE_EMBEDDED_TICK                       | System provides tick interrupt                   |
+| HAVE_HAL_AUDIO                           | Audio HAL is available                           |
+| HAVE_HAL_AUDIO_SINK_<br>BUFFER_CONTEXT   | Audio Sink provides playback time information    |
+| HAVE_HAL_AUDIO_SINK_<br>STEREO_ONLY      | Duplicate samples for mono playback              |
+| HAVE_HAL_AUDIO_SINK_<br>VOLUME_CONTROL   | Audio Sink provides volume control               |
+| HAVE_HAL_AUDIO_SOURCE_<br>BUFFER_CONTEXT | Audio Source provides recording time information |
+| HAVE_HAL_AUDIO_SOURCE_<br>GAIN_CONTROL   | Audio Source provides gain control               |
 
 FreeRTOS platform properties:
 
@@ -128,6 +132,7 @@ BTstack properties:
 | ENABLE_LE_PROACTIVE_<br>AUTHENTICATION                                        | Enable automatic encryption for bonded devices on re-connect                                                                |
 | ENABLE_LE_SECURE_<br>CONNECTIONS                                              | Enable LE Secure Connections                                                                                                |
 | ENABLE_LE_SECURE_<br>CONNECTIONS_DEBUG_KEY                                    | Enable support for LE Secure Connection debug keys for testing                                                              |
+| ENABLE_LE_SHORTER_CONNECTION_INTERVALS                                        | Enable LE Shorter Connection Intervals via Frame Space Update and Connection Rate Update                                    |
 | ENABLE_LE_SET_<br>ADV_PARAMS_ON_RANDOM_<br>ADDRESS_CHANGE                     | Send HCI LE Set Advertising Params after HCI LE Set Random Address - workaround for Controller Bug                          |
 | ENABLE_LE_SIGNED_WRITE                                                        | Enable LE Signed Writes in ATT/GATT                                                                                         |
 | ENABLE_LE_WHITELIST<br>_TOUCH_AFTER_<br>RESOLVING_LIST_UPDATE                 | Enable Workaround for Controller bug                                                                                        |

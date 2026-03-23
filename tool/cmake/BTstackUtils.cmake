@@ -7,7 +7,7 @@ function(target_gatt TARGETOBJ GATT_FILE)
     add_custom_command(
         OUTPUT ${OUTPUT_HEADER}
         DEPENDS ${GATT_FILE}
-        COMMAND ${Python_EXECUTABLE}
+        COMMAND ${Python3_EXECUTABLE}
         ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${GATT_FILE} ${OUTPUT_HEADER}
     )
 

@@ -237,6 +237,10 @@ typedef enum {
 #define GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT     0x0002u
 #define GAP_CONNECTION_TASK_READ_RSSI                     0x0004u
 #define GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES       0x0008u
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+#define GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST    0x0010u
+#define GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE         0x0020u
+#endif
 
 /**
  * Connection State 
@@ -686,6 +690,25 @@ typedef struct {
     uint16_t le_subrate_continuation_number;
     uint16_t le_subrate_supervision_timeout;
 
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+    // LE Frame Space Update
+    uint16_t le_frame_space_min_us;
+    uint16_t le_frame_space_max_us;
+    uint8_t  le_frame_space_phys;
+    uint16_t le_frame_space_spacing_types;
+
+    // LE Connection Rate Request
+    uint16_t le_connection_rate_interval_min_us;
+    uint16_t le_connection_rate_interval_max_us;
+    uint16_t le_connection_rate_subrate_min;
+    uint16_t le_connection_rate_subrate_max;
+    uint16_t le_connection_rate_max_latency;
+    uint16_t le_connection_rate_continuation_number;
+    uint16_t le_connection_rate_supervision_timeout;
+    uint16_t le_connection_rate_min_ce_length;
+    uint16_t le_connection_rate_max_ce_length;
+#endif
+
     // LE Security Manager
     sm_connection_t sm_connection;
 
@@ -937,6 +960,13 @@ typedef enum hci_init_state{
 #ifdef ENABLE_BLE
     HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING,
     HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING,
+#endif
+
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+    HCI_INIT_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS,
+    HCI_INIT_W4_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS,
+    HCI_INIT_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL,
+    HCI_INIT_W4_LE_READ_MINIMUM_SUPPORTED_CONNECTION_INTERVAL,
 #endif
 
     HCI_INIT_DONE,
@@ -1484,12 +1514,14 @@ void hci_remove_event_handler(btstack_packet_callback_registration_t * callback_
 void hci_register_acl_packet_handler(btstack_packet_handler_t handler);
 
 /**
- * @brief Registers a packet handler for SCO data. Used for HSP and HFP profiles.
+ * @brief Registers a packet handler for SCO data. Used by HSP and HFP profiles.
+ * Receives HCI_EVENT_SCO_CAN_SEND_NOW
  */
 void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
 /**
- * @brief Registers a packet handler for ISO data. Used for LE Audio profiles
+ * @brief Registers a packet handler for ISO data. Used by LE Audio profiles
+ * Receives HCI_EVENT_CIS_CAN_SEND_NOW and HCI_EVENT_BIS_CAN_SEND_NOW
  */
 void hci_register_iso_packet_handler(btstack_packet_handler_t handler);
 

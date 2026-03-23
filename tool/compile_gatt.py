@@ -12,7 +12,6 @@
 # alternatively, the pycryptodome package can be used instead
 # - pip3 install pycryptodome
 
-import codecs
 import csv
 import io
 import os
@@ -889,7 +888,7 @@ def parseLines(fname_in, fin, fout):
             imported_file = getFile( imported_file )
             print("Importing %s" % imported_file)
             try:
-                imported_fin = codecs.open (imported_file, encoding='utf-8')
+                imported_fin = open (imported_file, encoding='utf-8')
                 fout.write('\n\n    // ' + line + ' -- BEGIN\n')
                 parseLines(imported_file, imported_fin, fout)
                 fout.write('    // ' + line + ' -- END\n')
@@ -1085,7 +1084,7 @@ try:
     bluetooth_gatt = read_defines(gen_path)
 
     filename = args.hfile
-    fin  = codecs.open (args.gattfile, encoding='utf-8')
+    fin = open(args.gattfile, encoding="utf-8")
 
     # pass 1: create temp .h file
     ftemp = tempfile.TemporaryFile(mode='w+t')
