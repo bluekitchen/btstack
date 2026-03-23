@@ -8,25 +8,41 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
-- A2DP Source: emit capabilities for MPEC-D USAC codec
+### Fixed
+### Changed
+
+
+## Release v1.8.1
+
+### Added
+- HCI: add Core v6.2 commands and events, including Channel Sounding definitions
 - GAP: ENABLE_LE_SHORTER_CONNECTION_INTERVALS provides:
   - gap_request_connection_rate_update
   - gap_request_frame_space_update
+- A2DP Source: emit capabilities for MPEG-D USAC codec
+- HAL Audio: add external trigger support, playback/recording timestamps, and optional gain/volume control
+- Port for STM32 F4-Discovery with Infineon CYW55310
 
 ### Fixed
-- AVDTP Initiator: Allow abort operation in any state
-- HID Host: support reports longer than 255 bytes
-- HFP HF: allow to answer call from HFP_SUBEVENT_START_RINGING
-- HFP: Service Level Disconnect with active SCO connection
+- HCI ISO: reset CIG/BIG state on startup, mark streams idle on disconnect, and make can-send-now handling more robust
 - SDP Server: return Invalid Continuation State if needed
+- AVDTP Initiator: Allow abort operation in any state
+- AVDTP: improve packet parsing in initiator/acceptor, including DELAYREPORT handling
+- AVRCP: improve packet parsing in controller, target, and browsing implementations
+- HID Host: support reports longer than 255 bytes
+- HFP: Service Level Disconnect with active SCO connection
+- HFP HF: allow to answer call from HFP_SUBEVENT_START_RINGING
+- LE Audio: validate metadata serialization buffer sizes
 
 ### Changed
 - HCI: emit HCI_EVENT_CIS_CAN_SEND_NOW and HCI_EVENT_BIS_CAN_SEND_NOW via registered ISO packet handler
 - GAP: gap_disconnect returns ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER instead of emitting HCI Disconnected Event
-- ADVTP Initiator: handle fragmented Get(All)Capabilities response
+- AVDTP Initiator: handle fragmented Get(All)Capabilities response
 - HID Device: add hid_device_accept_truncated_hid_reports to optionally accept shorter HID reports
+- BASS Client: rework API to use GATT Service Client
 - Chipset BCM: select lexicographically latest matching .hcd file
 - Daemon: emit hci command complete for failed gap_disconnect
+
 
 ## Release v1.8
 
@@ -1416,4 +1432,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: fix default remote MTU as 672 instead of 48 (Minimal MTU)
 - HCI: avoid double free during halting
 - SM: fixed reconnect using legacy pairing in slave role
-
