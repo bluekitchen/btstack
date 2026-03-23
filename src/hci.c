@@ -2524,6 +2524,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS;
+                log_info("LE Set Host Feature: Connected Isochronous Stream Host");
                 hci_send_cmd(&hci_le_set_host_feature, 32, 1);
                 break;
             }
@@ -2548,7 +2549,20 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING;
+                log_info("LE Set Host Feature: Connection Subrating Host");
                 hci_send_cmd(&hci_le_set_host_feature, 38, 1);
+                break;
+            }
+#endif
+
+#ifdef ENABLE_LE_CHANNEL_SOUNDING
+            /* fall through */
+
+        case HCI_INIT_LE_SET_HOST_FEATURE_CHANNEL_SOUNDING:
+            if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
+                hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CHANNEL_SOUNDING;
+                log_info("LE Set Host Feature: Channel Sounding Host");
+                hci_send_cmd(&hci_le_set_host_feature, 47, 1);
                 break;
             }
 #endif
@@ -2559,6 +2573,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS;
+                log_info("LE Set Host Feature: Shorter Connection Intervals Host");
                 hci_send_cmd(&hci_le_set_host_feature, 73, 1);
                 break;
             }
