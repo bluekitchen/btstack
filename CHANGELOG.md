@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- Chipset BCM: btstack_chipset_bcm_set_patch_ram() allows to provide dynamic PatchRAM buffer
+
 ### Fixed
 ### Changed
 

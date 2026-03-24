@@ -234,16 +234,29 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
 
 #else
 
+static const uint8_t * custom_patchram_data;
+static uint32_t custom_patchram_size;
+static const uint8_t * active_patchram_data;
+static uint32_t active_patchram_size;
+
 static void chipset_init(const void * config){
     UNUSED(config);
-    log_info("chipset-bcm: init script %s, len %u", brcm_patch_version, brcm_patch_ram_length);
+    if (custom_patchram_data != NULL){
+        active_patchram_data = custom_patchram_data;
+        active_patchram_size = custom_patchram_size;
+        log_info("chipset-bcm: init custom script, len %u", (unsigned int) active_patchram_size);
+    } else {
+        active_patchram_data = brcm_patchram_buf;
+        active_patchram_size = (uint32_t) brcm_patch_ram_length;
+        log_info("chipset-bcm: init script %s, len %u", brcm_patch_version, (unsigned int) active_patchram_size);
+    }
     init_script_offset = 0;
     send_download_command = 1;
 }
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     // no initscript
-    if (brcm_patch_ram_length == 0) return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
+    if (active_patchram_size == 0) return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
 
     // send download firmware command
     if (send_download_command){
@@ -254,12 +267,12 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         return BTSTACK_CHIPSET_VALID_COMMAND;
     }
 
-    if (init_script_offset >= brcm_patch_ram_length) {
+    if ((uint32_t) init_script_offset >= active_patchram_size) {
         return BTSTACK_CHIPSET_DONE;
     }
 
-    int cmd_len = 3 + brcm_patchram_buf[init_script_offset+2];
-    memcpy(&hci_cmd_buffer[0], &brcm_patchram_buf[init_script_offset], cmd_len); 
+    int cmd_len = 3 + active_patchram_data[init_script_offset+2];
+    memcpy(&hci_cmd_buffer[0], &active_patchram_data[init_script_offset], cmd_len);
     init_script_offset += cmd_len;
     return BTSTACK_CHIPSET_VALID_COMMAND;     
 }
@@ -277,6 +290,16 @@ static btstack_chipset_t btstack_chipset_bcm = {
 // MARK: public API
 const btstack_chipset_t * btstack_chipset_bcm_instance(void){
     return &btstack_chipset_bcm;
+}
+
+void btstack_chipset_bcm_set_patchram(const uint8_t * data, uint32_t size){
+#ifdef HAVE_POSIX_FILE_IO
+    UNUSED(data);
+    UNUSED(size);
+#else
+    custom_patchram_data = data;
+    custom_patchram_size = data != NULL ? size : 0;
+#endif
 }
 
 /**
