@@ -6696,31 +6696,13 @@ static inline hci_con_handle_t hci_subevent_le_cs_read_remote_fae_table_complete
     return little_endian_read_16(event, 4);
 }
 /**
- * @brief Get field remote_fae_table_0 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
+ * @brief Get field remote_fae_table from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
  * @param event packet
- * @param Pointer to storage for remote_fae_table_0
- * @note: btstack_type Q
+ * @param Pointer to storage for remote_fae_table
+ * @note: btstack_type F
  */
-static inline void hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_0(const uint8_t * event, uint8_t * remote_fae_table_0){
-    reverse_bytes(&event[6], remote_fae_table_0, 32);
-}
-/**
- * @brief Get field remote_fae_table_1 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
- * @param event packet
- * @param Pointer to storage for remote_fae_table_1
- * @note: btstack_type Q
- */
-static inline void hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_1(const uint8_t * event, uint8_t * remote_fae_table_1){
-    reverse_bytes(&event[38], remote_fae_table_1, 32);
-}
-/**
- * @brief Get field remote_fae_table_2 from event HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE
- * @param event packet
- * @return remote_fae_table_2
- * @note: btstack_type D
- */
-static inline const uint8_t * hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_2(const uint8_t * event){
-    return (const uint8_t *) &event[70];
+static inline void hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table(const uint8_t * event, le_cs_fae_table_t remote_fae_table){
+    memcpy(remote_fae_table, &event[6], 72);
 }
 
 /**
