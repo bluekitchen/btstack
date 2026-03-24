@@ -6860,31 +6860,13 @@ static inline uint8_t hci_subevent_le_cs_config_complete_get_cs_sync_phy(const u
     return event[16];
 }
 /**
- * @brief Get field channel_map_0_3 from event HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE
+ * @brief Get field channel_map from event HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE
  * @param event packet
- * @return channel_map_0_3
- * @note: btstack_type 4
+ * @param Pointer to storage for channel_map
+ * @note: btstack_type M
  */
-static inline uint32_t hci_subevent_le_cs_config_complete_get_channel_map_0_3(const uint8_t * event){
-    return little_endian_read_32(event, 17);
-}
-/**
- * @brief Get field channel_map_4_7 from event HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE
- * @param event packet
- * @return channel_map_4_7
- * @note: btstack_type 4
- */
-static inline uint32_t hci_subevent_le_cs_config_complete_get_channel_map_4_7(const uint8_t * event){
-    return little_endian_read_32(event, 21);
-}
-/**
- * @brief Get field channel_map_8_9 from event HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE
- * @param event packet
- * @return channel_map_8_9
- * @note: btstack_type 2
- */
-static inline uint16_t hci_subevent_le_cs_config_complete_get_channel_map_8_9(const uint8_t * event){
-    return little_endian_read_16(event, 25);
+static inline void hci_subevent_le_cs_config_complete_get_channel_map(const uint8_t * event, le_cs_channel_map_t channel_map){
+    memcpy(channel_map, &event[17], 10);
 }
 /**
  * @brief Get field channel_map_repetition from event HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE

@@ -1076,7 +1076,7 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_CS_SECURITY_ENABLE_COMPLETE               0x2Eu
 
 /**
- * @format 11H11111111111442111111111
+ * @format 11H11111111111M111111111
  * @param subevent_code
  * @param status
  * @param connection_handle
@@ -1091,9 +1091,7 @@ typedef SSIZE_T ssize_t;
  * @param role
  * @param rtt_type
  * @param cs_sync_phy
- * @param channel_map_0_3
- * @param channel_map_4_7
- * @param channel_map_8_9
+ * @param channel_map
  * @param channel_map_repetition
  * @param channel_selection_type
  * @param ch3c_shape

@@ -112,6 +112,11 @@ TEST(btstack_event, le_cs_security_enable_complete_getters){
 }
 
 TEST(btstack_event, le_cs_config_complete_getters){
+    const le_cs_channel_map_t expected_channel_map = {
+        0x11, 0x22, 0x33, 0x44,
+        0x55, 0x66, 0x77, 0x88,
+        0x99, 0xaa
+    };
     const uint8_t event[] = {
         HCI_EVENT_LE_META, 0x22, HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE,
         0x24,
@@ -123,6 +128,7 @@ TEST(btstack_event, le_cs_config_complete_getters){
         0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0x12, 0x13, 0x14, 0x15
     };
+    le_cs_channel_map_t channel_map;
 
     CHECK_EQUAL(HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE, hci_event_le_meta_get_subevent_code(event));
     CHECK_EQUAL(0x24, hci_subevent_le_cs_config_complete_get_status(event));
@@ -138,9 +144,8 @@ TEST(btstack_event, le_cs_config_complete_getters){
     CHECK_EQUAL(0x09, hci_subevent_le_cs_config_complete_get_role(event));
     CHECK_EQUAL(0x0a, hci_subevent_le_cs_config_complete_get_rtt_type(event));
     CHECK_EQUAL(0x0b, hci_subevent_le_cs_config_complete_get_cs_sync_phy(event));
-    CHECK_EQUAL(0x44332211u, hci_subevent_le_cs_config_complete_get_channel_map_0_3(event));
-    CHECK_EQUAL(0x88776655u, hci_subevent_le_cs_config_complete_get_channel_map_4_7(event));
-    CHECK_EQUAL(0xaa99, hci_subevent_le_cs_config_complete_get_channel_map_8_9(event));
+    hci_subevent_le_cs_config_complete_get_channel_map(event, channel_map);
+    MEMCMP_EQUAL(expected_channel_map, channel_map, sizeof(channel_map));
     CHECK_EQUAL(0xbb, hci_subevent_le_cs_config_complete_get_channel_map_repetition(event));
     CHECK_EQUAL(0xcc, hci_subevent_le_cs_config_complete_get_channel_selection_type(event));
     CHECK_EQUAL(0xdd, hci_subevent_le_cs_config_complete_get_ch3c_shape(event));
