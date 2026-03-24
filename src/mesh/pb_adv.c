@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bluetooth_data_types.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_util.h"
@@ -187,13 +188,15 @@ static void pb_adv_device_link_timeout(btstack_timer_source_t * ts){
 
 static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
     UNUSED(transaction_nr);
-    UNUSED(size);
+
+    if (size < 1) return;
 
     uint8_t bearer_opcode = pdu[0] >> 2;
     uint8_t reason;
     const uint8_t * own_device_uuid;
     switch (bearer_opcode){
         case MESH_GENERIC_PROVISIONING_LINK_OPEN: // Open a session on a bearer with a device
+            if (size < 17) break;
             // does it match our device_uuid?
             own_device_uuid = mesh_node_get_device_uuid();
             if (!own_device_uuid) break;
@@ -239,6 +242,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             break;
 #endif
         case MESH_GENERIC_PROVISIONING_LINK_CLOSE: // Close a session on a bearer
+            if (size < 2) break;
             // does it match link id
             if (link_id != pb_adv_link_id) break;
             if (link_state == LINK_STATE_W4_OPEN) break;
@@ -310,6 +314,23 @@ static void pb_adv_handle_transaction_start(uint8_t transaction_nr, const uint8_
             return;
         }
 
+        uint16_t payload_len = size - 4;
+        if (payload_len > MESH_PB_ADV_START_PAYLOAD){
+            return;
+        }
+        if (payload_len > msg_len){
+            return;
+        }
+        if (last_segment == 0){
+            // last segment = 0 -> only segment -> check length
+            if (payload_len != msg_len){
+                return;
+            }
+        } else {
+            // all but last segments have max length
+            if (payload_len != MESH_PB_ADV_START_PAYLOAD) return;
+        }
+
         printf("PB-ADV: %02x started\n", transaction_nr);
 
         pb_adv_msg_in_transaction_nr = transaction_nr;
@@ -321,7 +342,6 @@ static void pb_adv_handle_transaction_start(uint8_t transaction_nr, const uint8_
         pb_adv_msg_in_segments_missing = (1 << last_segment) - 1;
 
         // store payload
-        uint16_t payload_len = size - 4;
         (void)memcpy(pb_adv_msg_in_buffer, &pdu[4], payload_len);
 
         // complete?
@@ -332,6 +352,8 @@ static void pb_adv_handle_transaction_start(uint8_t transaction_nr, const uint8_
 }
 
 static void pb_adv_handle_transaction_cont(uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
+
+    if (size < 1) return;
 
     // check transaction nr
     if (transaction_nr != 0xff && transaction_nr == pb_adv_msg_in_transaction_nr_prev){
@@ -362,6 +384,15 @@ static void pb_adv_handle_transaction_cont(uint8_t transaction_nr, const uint8_t
     // calculate offset and fragment size
     uint16_t msg_pos = MESH_PB_ADV_START_PAYLOAD + (seg-1) * MESH_PB_ADV_CONT_PAYLOAD;
     uint16_t fragment_size = size - 1;
+    if (fragment_size > MESH_PB_ADV_CONT_PAYLOAD){
+        return;
+    }
+    if (msg_pos >= pb_adv_msg_in_len){
+        return;
+    }
+    if ((msg_pos + fragment_size) > pb_adv_msg_in_len){
+        return;
+    }
 
     // check size if last segment
     if (seg == pb_adv_msg_in_last_segment && (msg_pos + fragment_size) != pb_adv_msg_in_len){
@@ -439,25 +470,28 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (size < 3) return;
+    if (size < 1) return;
 
     const uint8_t * data;
+    uint8_t  data_len;
     uint8_t  length;
     uint32_t link_id;
     uint8_t  transaction_nr;
     uint8_t  generic_provisioning_control;
     switch(packet[0]){
         case GAP_EVENT_ADVERTISING_REPORT:
-            // check minimal size
-            if (size < (12 + 8)) return;
-
             // data starts at offset 12
-            data = &packet[12];
-            // PDB ADV PDU
-            length = data[0];
+            if (size < 12) return;
 
-            // validate length field
-            if ((12 + length) > size) return;
+            data_len = gap_event_advertising_report_get_data_length(packet);
+            if ((12u + (uint16_t) data_len) > size) return;
+            if (data_len < 8) return;
+
+            data = gap_event_advertising_report_get_data(packet);
+            length = data[0];
+            if (length < 7) return;
+            if (((uint16_t) length + 1u) > data_len) return;
+            if (data[1] != BLUETOOTH_DATA_TYPE_PB_ADV) return;
 
             link_id = big_endian_read_32(data, 2);
             transaction_nr = data[6];
