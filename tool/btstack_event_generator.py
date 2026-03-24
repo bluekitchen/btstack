@@ -271,7 +271,9 @@ param_read = {
     'P' : 'return (const uint8_t *) &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
     'D' : 'return (const uint8_t *) &event[{offset}];',
+    'F' : 'memcpy({result_name}, &event[{offset}], 72);',
     'K' : 'reverse_bytes(&event[{offset}], {result_name}, 16);',
+    'M' : 'memcpy({result_name}, &event[{offset}], 10);',
     'Q' : 'reverse_bytes(&event[{offset}], {result_name}, 32);',
     'V' : 'return &event[{offset}];',
     'X' : 'gatt_client_deserialize_service(event, {offset}, {result_name});',
@@ -289,6 +291,8 @@ param_iterator_read = {
     '2' : 'return little_endian_read_16(iter->event, iter->pos + {offset});',
     'b' : 'return (int16_t) little_endian_read_16(iter->event, iter->pos + {offset});',
     'J' : 'return iter->event[iter->pos + {offset}];',
+    'F' : 'memcpy({result_name}, &iter->event[iter->pos + {offset}], 72);',
+    'M' : 'memcpy({result_name}, &iter->event[iter->pos + {offset}], 10);',
     'V' : 'return &(iter->event[iter->pos + {offset}]);',
     open_bracket    : 'iter->event = event; iter->event_len = (uint16_t) event[1] + 2u; iter->pos = (uint16_t) ({offset});',
     closing_bracket : ''
@@ -313,7 +317,7 @@ def c_type_for_btstack_type(type):
                     'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'const char *' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
                     'J' : 'uint8_t', 'L' : 'uint16_t', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
-                    'Q' : 'uint8_t *', 'K' : 'uint8_t *',
+                    'Q' : 'uint8_t *', 'K' : 'uint8_t *', 'F' : 'le_cs_fae_table_t', 'M' : 'le_cs_channel_map_t',
                     'X' : 'gatt_client_service_t *', 'Y' : 'gatt_client_characteristic_t *', 'Z' : 'gatt_client_characteristic_descriptor_t *',
                     'T' : 'const char *', 'C' : 'uint16_t',
                     open_bracket : 'void', closing_bracket : ''}
@@ -321,6 +325,7 @@ def c_type_for_btstack_type(type):
 
 def size_for_type(type):
     param_sizes = { '1' : 1, 'a' : 1, '2' : 2, 'b' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32, 'K':16,
+                    'F' : 72, 'M' : 10,
                     'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1, 'C':-1,
                    open_bracket : 0, closing_bracket : 0 }
     return param_sizes[type]
@@ -339,7 +344,7 @@ def template_for_type(field_type):
         return c_prototoype_array_getter
 #    if field_type == open_bracket:
 #        return c_prototype_iterator_init
-    types_with_struct_return = "BKQXYZ"
+    types_with_struct_return = "BFKMQXYZ"
     if field_type in types_with_struct_return:
         return c_prototoype_struct_return
     if listScope:
