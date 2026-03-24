@@ -458,9 +458,11 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 }
 /* LISTING_END */
 
-int btstack_main(void);
-int btstack_main(void)
-{
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
+
     le_streamer_setup();
 
     // turn on!

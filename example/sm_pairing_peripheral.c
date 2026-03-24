@@ -342,9 +342,11 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
 /* LISTING_END */
 
-int btstack_main(void);
-int btstack_main(void)
-{
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
+
     sm_peripheral_setup();
 
     // turn on!

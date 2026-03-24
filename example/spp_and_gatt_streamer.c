@@ -443,10 +443,9 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 
 
 /* LISTING_START(MainConfiguration): Init L2CAP RFCOMM SDO SM ATT Server and start heartbeat timer */
-int btstack_main(int argc, const char * argv[])
-{
+int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
-    (void)argv;
+    UNUSED(argv);
 
     l2cap_init();
 

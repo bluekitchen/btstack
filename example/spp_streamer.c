@@ -276,10 +276,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 
 /* LISTING_START(MainConfiguration): Init L2CAP RFCOMM SDP SPP */
-int btstack_main(int argc, const char * argv[])
-{
-    (void)argc;
-    (void)argv;
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
 
     l2cap_init();
 
