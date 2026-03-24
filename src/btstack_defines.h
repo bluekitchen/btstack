@@ -66,7 +66,9 @@
  * - P: pointer to 16-byte value, e.g. used for PIN
  * - T: pointer to text payload; parsing stops at this field
  * - D: pointer to 8-byte value in big endian
+ * - F: pointer to le_cs_fae_table_t (72-byte little endian LE CS FAE table)
  * - K: pointer to 16-byte value in big endian, e.g. for cryptographic keys
+ * - M: pointer to le_cs_channel_map_t (10-byte little endian LE CS channel map)
  * - Q: pointer to 32-byte value in big endian, e.g. for public key
  * - V: pointer to variable-length data (length from preceding J when present)
  * - X: pointer to gatt_client_service_t
@@ -140,6 +142,18 @@ typedef uint8_t uuid128_t[16];
  * @note time wraps around every 71.6 minutes
  */
 typedef uint32_t btstack_time_us_t;
+
+/**
+ * @brief 10-byte LE Channel Sounding channel map as carried in HCI commands and events
+ * @note Stored in little-endian byte order.
+ */
+typedef uint8_t le_cs_channel_map_t[10];
+
+/**
+ * @brief 72-byte LE Channel Sounding mode-0 Frequency Actuation Error table as carried in HCI commands and events
+ * @note Stored in little-endian byte order.
+ */
+typedef uint8_t le_cs_fae_table_t[72];
 
 // provide ssize_t on windows
 #ifdef _MSC_VER
