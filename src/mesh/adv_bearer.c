@@ -121,10 +121,13 @@ static btstack_linked_list_t gap_connectable_advertisements;
 static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     const uint8_t * data;
     int data_len;
+    uint16_t ad_structure_len;
+    uint16_t payload_len;
     message_type_id_t type_id;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
+            if (size < 1) break;
             switch(packet[0]){
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
@@ -135,6 +138,12 @@ static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, ui
                     if (gap_event_advertising_report_get_advertising_event_type(packet) != 0x03) break;
                     data = gap_event_advertising_report_get_data(packet);
                     data_len = gap_event_advertising_report_get_data_length(packet);
+                    if ((12u + (uint16_t) data_len) > size) break;
+                    if (data_len < 2) break;
+                    ad_structure_len = (uint16_t) data[0] + 1u;
+                    if (ad_structure_len > data_len) break;
+                    if (data[0] < 1) break;
+                    payload_len = (uint16_t) data[0] - 1u;
 
                     switch(data[1]){
                         case BLUETOOTH_DATA_TYPE_MESH_MESSAGE:
@@ -155,10 +164,10 @@ static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, ui
                                 (*client_callbacks[type_id])(packet_type, channel, packet, size);
                                 break;
                             case MESH_NETWORK_ID:
-                                (*client_callbacks[type_id])(MESH_NETWORK_PACKET, 0, (uint8_t*) &data[2], data_len-2);
+                                (*client_callbacks[type_id])(MESH_NETWORK_PACKET, 0, (uint8_t*) &data[2], payload_len);
                                 break;
                             case MESH_BEACON_ID:
-                                (*client_callbacks[type_id])(MESH_BEACON_PACKET, 0, (uint8_t*) &data[2], data_len-2);
+                                (*client_callbacks[type_id])(MESH_BEACON_PACKET, 0, (uint8_t*) &data[2], payload_len);
                                 break;
                             default:
                                 break;
