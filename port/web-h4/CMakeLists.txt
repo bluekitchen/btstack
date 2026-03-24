@@ -20,6 +20,39 @@ if( NOT DEFINED ${BTSTACK_ROOT} )
 endif()
 message("BTstack root: ${BTSTACK_ROOT}")
 
+set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0233.0117.hcd)
+
+# Downloaded web assets, format: "URL|relative/output/path"
+set(WEB_H4_DOWNLOADED_ASSETS
+    "https://bluekitchen-gmbh.com/files/infineon/patchram/${CYW55310_PATCHRAM_NAME}|${CYW55310_PATCHRAM_NAME}"
+)
+
+function(web_h4_download_asset asset_entry)
+    string(REPLACE "|" ";" asset_fields "${asset_entry}")
+    list(LENGTH asset_fields asset_fields_len)
+    if (NOT asset_fields_len EQUAL 2)
+        message(FATAL_ERROR "Invalid WEB_H4_DOWNLOADED_ASSETS entry: ${asset_entry}")
+    endif()
+
+    list(GET asset_fields 0 asset_url)
+    list(GET asset_fields 1 asset_output_relpath)
+
+    set(asset_output_abspath "${CMAKE_CURRENT_BINARY_DIR}/${asset_output_relpath}")
+    get_filename_component(asset_output_dir "${asset_output_abspath}" DIRECTORY)
+    file(MAKE_DIRECTORY "${asset_output_dir}")
+
+    file(DOWNLOAD "${asset_url}" "${asset_output_abspath}" STATUS asset_status)
+    list(GET asset_status 0 asset_status_code)
+    if (NOT asset_status_code EQUAL 0)
+        list(GET asset_status 1 asset_status_message)
+        message(FATAL_ERROR "Failed to download ${asset_url}: ${asset_status_message}")
+    endif()
+endfunction()
+
+foreach(asset_entry IN LISTS WEB_H4_DOWNLOADED_ASSETS)
+    web_h4_download_asset("${asset_entry}")
+endforeach()
+
 # to generate .h from .gatt files
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
