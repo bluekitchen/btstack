@@ -4975,6 +4975,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
     switch (channel_id) {
 
         case L2CAP_CID_SIGNALING_LE: {
+            if (size < (COMPLETE_L2CAP_HEADER + 4u)) break;
             uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
             uint16_t len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER + 2);
             if ((COMPLETE_L2CAP_HEADER + 4u + len) > size) break;

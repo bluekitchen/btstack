@@ -1018,7 +1018,7 @@ void mesh_network_set_proxy_message_handler(void (*packet_handler)(mesh_network_
 
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags){
     // verify len
-    if (pdu_len > 29) return;
+    if ((pdu_len < 14) || (pdu_len > MESH_NETWORK_PAYLOAD_MAX)) return;
 
     // allocate network_pdu
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
@@ -1037,7 +1037,7 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, ui
 
 void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len){
     // verify len
-    if (pdu_len > 29) return;
+    if ((pdu_len < 14) || (pdu_len > MESH_NETWORK_PAYLOAD_MAX)) return;
 
     // allocate network_pdu
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
