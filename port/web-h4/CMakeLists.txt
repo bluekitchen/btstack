@@ -164,6 +164,8 @@ list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 set(EXPORTED_FUNCTIONS
     "_main"
     "_main_set_initial_baudrate"
+    "_main_start_with_patchram"
+    "_main_set_airoc_download_mode"
     "_main_set_log_level"
     "_main_set_hci_log"
     "_btstack_main"
@@ -208,6 +210,7 @@ foreach(EXAMPLE ${EXAMPLES})
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
         "-sASYNCIFY"
         "-sASYNCIFY_IMPORTS=['hci_transport_h4_js_set_baudrate']"
+        "-sFETCH"
         "-sUSE_SDL=2"
         "--pre-js" "${PRE_JS}"
     )

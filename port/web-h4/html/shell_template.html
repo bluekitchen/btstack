@@ -198,8 +198,9 @@
             let config = {
                 module: "",
                 baud: 115200,
-                patchUrl: "",
+                patchURL: "",
                 debug: false,
+                airocDownloadMode: false,
             };
 
             const moduleList = [
@@ -223,6 +224,10 @@
                     key: "Generic_3000000",
                     label: "Generic HCI H4 Controller at 3000000",
                 },
+                {
+                    key: "CYW55310",
+                    label: "Infineon CYW55310, e.g. Ezurio IF310",
+                },
             ];
 
             const moduleDefaults = {
@@ -230,6 +235,10 @@
                 Generic_921600: { baud: 921600 },
                 Generic_1000000: { baud: 1000000 },
                 Generic_3000000: { baud: 3000000 },
+                CYW55310: { baud: 921600,
+                            patchURL:"${CYW55310_PATCHRAM_NAME}",
+                            airocDownloadMode: true,
+                },
             };
 
             function populateModuleSelect() {
@@ -253,14 +262,18 @@
                 moduleSelect.value = moduleList[0].key;
             }
 
+            function selectedModuleDefaults() {
+                return moduleDefaults[moduleSelect.value] || {};
+            }
+
             function updateConfigFromUI() {
                 config.module = moduleSelect.value;
                 const isCustom = config.module === "Custom";
-                const isAiroc = config.module === "AIROC";
+                const defaults = selectedModuleDefaults();
+                const showPatch = isCustom || Boolean(defaults.patchURL);
                 console.log("Module selected " +  config.module);
 
-                // Patch field visible only for AIROC
-                const showPatch = isAiroc;
+                // Patch field visible for Custom and modules with PatchRAM
                 patchUrlInput.classList.toggle("hidden", !showPatch);
                 patchLabel.classList.toggle("hidden", !showPatch);
 
@@ -269,14 +282,17 @@
 
                 if (isCustom) {
                     config.baud = parseInt(baudrateSelect.value, 10);
-                    config.patchUrl = patchUrlInput.value.trim();
+                    config.patchURL = patchUrlInput.value.trim();
                 } else {
-                    const defaults = moduleDefaults[config.module] || {};
                     config.baud = defaults.baud || 115200;
-                    config.patchUrl = defaults.patchUrl || "";
+                    config.patchURL = defaults.patchURL || "";
                     baudrateSelect.value = config.baud;
-                    patchUrlInput.value = config.patchUrl;
+                    patchUrlInput.value = config.patchURL;
                 }
+
+                // get AIROC Download Mode
+                config.airocDownloadMode = defaults.airocDownloadMode || false;
+                console.log("AIROC Download Mode: " + config.airocDownloadMode);
 
                 // get logging options
                 config.debug = debugToggle.checked;
@@ -301,8 +317,7 @@
             });
 
             patchUrlInput.addEventListener("input", () => {
-                if (config.module === "AIROC" || config.module === "Custom")
-                    config.patchUrl = patchUrlInput.value.trim();
+                config.patchURL = patchUrlInput.value.trim();
             });
 
             debugToggle.addEventListener("change", () => {
@@ -328,6 +343,7 @@
                     return;
                 }
                 _main_set_initial_baudrate(config.baud);
+                _main_set_airoc_download_mode(config.airocDownloadMode);
                 Module.onStartBTstack(config);
             });
 

@@ -157,8 +157,16 @@ Module.onStartBTstack = async (config) => {
         // open serial port
         await hci_transport_h4_js_open();
 
-        // start example
-        _btstack_main();
+        // Reset with CTS asserted (low)
+        Module.print("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:");
+        for (i = 3; i > 0; i--){
+            Module.print(i);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+        Module.print("Firmware download started\n");
+
+        // let C fetch optional PatchRAM and start the example
+        Module.ccall("main_start_with_patchram", null, ["string"], [serialConfig.patchURL || ""]);
     }
 };
 

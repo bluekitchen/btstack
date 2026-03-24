@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include <emscripten/emscripten.h>
+#include <emscripten/fetch.h>
 
 #include "bluetooth_company_id.h"
 #include "btstack_chipset_zephyr.h"
@@ -67,8 +68,8 @@
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    0,
+    921600,
+    921600,
     1,
     NULL,
     BTSTACK_UART_PARITY_OFF
@@ -85,14 +86,23 @@ static const hci_dump_t * hci_dump_stdout;
 static hci_dump_dispatch_item_t hci_dump_dispach_to_js;
 static hci_dump_dispatch_item_t hci_dump_dispach_to_stdio;
 
+static emscripten_fetch_t * bcm_patchram_fetch;
+static char bcm_patchram_fetch_error[128];
+
 /** Empty PatchRAM for BCM support */
 const uint8_t brcm_patchram_buf[] = {};
 const int     brcm_patch_ram_length = sizeof(brcm_patchram_buf);
 const char    brcm_patch_version[] = "";
 
+/** AIROC Download Mode */
+static bool airoc_download_mode;
+
 /** Zephyr Static Address - used on nRF5x SoCs */
 static bd_addr_t zephyr_static_address;
 static bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+
+/** main exzample */
+int btstack_main(int argc, char **argv);
 
 /** HAL LED */
 static int led_state = 0;
@@ -101,15 +111,27 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-static void use_fast_uart(void){
-    // only increase baudrate if started with default baudrate
-    // to avoid issues with custom default baudrates
-    if (config.baudrate_init == 115200) {
-        config.baudrate_main = 921600;
-        printf("Update to %u baud.\n", config.baudrate_main);
-    } else {
-        printf("Keep %u baud.\n", config.baudrate_init);
+static void bcm_patchram_reset(void){
+    btstack_chipset_bcm_set_patchram(NULL, 0);
+    if (bcm_patchram_fetch != NULL){
+        emscripten_fetch_close(bcm_patchram_fetch);
+        bcm_patchram_fetch = NULL;
     }
+    bcm_patchram_fetch_error[0] = '\0';
+}
+
+static void bcm_patchram_fetch_success(emscripten_fetch_t * fetch){
+    bcm_patchram_fetch = fetch;
+    btstack_chipset_bcm_set_patchram((const uint8_t *) fetch->data, (uint32_t) fetch->numBytes);
+    printf("Loaded PatchRAM %s (%llu bytes)\n", fetch->url, (unsigned long long) fetch->numBytes);
+    btstack_main(0, NULL);
+}
+
+static void bcm_patchram_fetch_error_callback(emscripten_fetch_t * fetch){
+    snprintf(bcm_patchram_fetch_error, sizeof(bcm_patchram_fetch_error), "Failed to fetch %s (status %d)", fetch->url, fetch->status);
+    printf("%s\n", bcm_patchram_fetch_error);
+    emscripten_fetch_close(fetch);
+    bcm_patchram_fetch = NULL;
 }
 
 static void local_version_information_handler(uint8_t * packet){
@@ -126,14 +148,14 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- Manufacturer 0x%04x\n", manufacturer);
     switch (manufacturer){
         case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
-            printf("Broadcom/Cypress - using BCM driver.\n");
+            printf("Broadcom/Cypress/Infineon - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
-            use_fast_uart();
+            config.baudrate_main = 921600;
+            printf("Update to %u baud.\n", config.baudrate_main);
             break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
             hci_set_chipset(btstack_chipset_zephyr_instance());
-            use_fast_uart();
             break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
@@ -195,6 +217,39 @@ EMSCRIPTEN_KEEPALIVE
 void main_set_initial_baudrate(uint32_t baudrate) {
     printf("Set Baudrate %u\n", baudrate);
     config.baudrate_init = baudrate;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void main_set_airoc_download_mode(bool enable) {
+    printf("Set AIROC Download Mode: %u\n", enable);
+    airoc_download_mode = enable;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void main_start_with_patchram(const char * url){
+
+    hci_set_airoc_download_mode(airoc_download_mode);
+
+    bcm_patchram_reset();
+    if ((url == NULL) || (url[0] == '\0')){
+        btstack_main(0, NULL);
+        return;
+    }
+
+    printf("Fetching PatchRAM %s\n", url);
+
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+    strcpy(attr.requestMethod, "GET");
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+    attr.onsuccess = bcm_patchram_fetch_success;
+    attr.onerror = bcm_patchram_fetch_error_callback;
+
+    bcm_patchram_fetch = emscripten_fetch(&attr, url);
+    if (bcm_patchram_fetch == NULL){
+        snprintf(bcm_patchram_fetch_error, sizeof(bcm_patchram_fetch_error), "Failed to start fetch for %s", url);
+        printf("%s\n", bcm_patchram_fetch_error);
+    }
 }
 
 static void main_set_log_level_private(int level){
