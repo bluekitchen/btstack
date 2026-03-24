@@ -73,6 +73,8 @@
  *   B: Bluetooth Baseband Address (BD_ADDR)
  *   D: 8 byte data block
  *   E: Extended Inquiry Result
+ *   F: 72 byte LE CS FAE table
+ *   M: 10 byte LE CS channel map
  *   N: Name up to 248 chars, \0 terminated
  *   P: 16 byte data block. Pairing code, Simple Pairing Hash and Randomizer
  *   A: 31 bytes advertising data
@@ -161,6 +163,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 240);
                 pos += 240;
                 break;
+#ifdef ENABLE_BLE
+            case 'F': // 72 byte LE CS FAE table
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 72);
+                pos += 72;
+                break;
+#endif
             case 'N': { // UTF-8 string, null terminated
                 ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 uint16_t len = (uint16_t) strlen((const char*) ptr);
@@ -190,6 +199,11 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
+                break;
+            case 'M': // 10 byte LE CS channel map
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 10);
+                pos += 10;
                 break;
             case 'a':
                 btstack_assert(array_num_elements == INVALID_ARRAY_LEN);
@@ -2642,15 +2656,11 @@ const hci_cmd_t hci_le_cs_read_remote_fae_table = {
 
 /**
  * @param connection_handle
- * @param remote_fae_table_0 (16 bytes)
- * @param remote_fae_table_1 (16 bytes)
- * @param remote_fae_table_2 (16 bytes)
- * @param remote_fae_table_3 (16 bytes)
- * @param remote_fae_table_4 (8 bytes)
+ * @param remote_fae_table
  * Core Spec v6.2, Vol 4, Part E, Section 7.8.136
  */
 const hci_cmd_t hci_le_cs_write_cached_remote_fae_table = {
-    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_FAE_TABLE, "HPPPPD"
+    HCI_OPCODE_HCI_LE_CS_WRITE_CACHED_REMOTE_FAE_TABLE, "HF"
 };
 
 /**
@@ -2666,9 +2676,7 @@ const hci_cmd_t hci_le_cs_write_cached_remote_fae_table = {
  * @param role
  * @param rtt_type
  * @param cs_sync_phy
- * @param channel_map_0_3
- * @param channel_map_4_7
- * @param channel_map_8_9
+ * @param channel_map
  * @param channel_map_repetition
  * @param channel_selection_type
  * @param ch3c_shape
@@ -2677,7 +2685,7 @@ const hci_cmd_t hci_le_cs_write_cached_remote_fae_table = {
  * Core Spec v6.2, Vol 4, Part E, Section 7.8.137
  */
 const hci_cmd_t hci_le_cs_create_config = {
-    HCI_OPCODE_HCI_LE_CS_CREATE_CONFIG, "H1111111111144211111"
+    HCI_OPCODE_HCI_LE_CS_CREATE_CONFIG, "H11111111111M11111"
 };
 
 /**
