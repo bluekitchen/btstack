@@ -18,8 +18,8 @@ echo "[-] Create output folder"
 rm -rf ${target_folder}
 mkdir -p ${target_folder}
 
-echo "[-] Copy .html/.js/.wasm files"
-cp ${build_folder}/*.html ${build_folder}/*.js ${build_folder}/*.wasm ${target_folder}
+echo "[-] Copy .html/.js/.wasm/.hcd files"
+cp ${build_folder}/*.html ${build_folder}/*.js ${build_folder}/*.wasm ${build_folder}/*.hcd ${target_folder}
 
 echo "[-] All examples are provided in folder ${build_folder}"
 echo "[+] Done"
