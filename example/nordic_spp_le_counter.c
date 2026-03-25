@@ -150,9 +150,11 @@ static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-int btstack_main(void);
-int btstack_main(void)
-{
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
+
     l2cap_init();
 
     // setup SM: Display only

@@ -258,9 +258,11 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
  */
 
 /* LISTING_START(MainConfiguration): Init L2CAP RFCOMM SDO SM ATT Server and start heartbeat timer */
-int btstack_main(void);
-int btstack_main(void)
-{
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
+
     l2cap_init();
 
     rfcomm_init();

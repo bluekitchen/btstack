@@ -267,9 +267,11 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 /* LISTING_END */
 
-int btstack_main(void);
-int btstack_main(void)
-{
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
+
     le_counter_setup();
 
     // turn on!

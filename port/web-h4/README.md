@@ -29,14 +29,11 @@ It communicates to the Bluetooth Controller via the WebSerial API.
 - Force refresh of .js files: CMD+Alt+R on Safari, CMD+Shift+R on Chrome
 
 ## Supported Bluetooth Controllers
-The baudrate is currently set to 115200 and there's no chipset detection.
-Suitable Controllers are therefore:
+There's no chipset detection yet, so only Controllers that don't need configuration or firmware upload are supported:
 - Controllers with USB CDC and no need for firmware upload:
   - e.g. BL654 with Bluetooth SIG PTS Firmware
-- Controllers with regular UART that start up at 115200 and no need for firmware upload:
+- Controllers with regular UART that need for firmware upload:
   - e.g. Ezurio IF820/CYW20820 with HCI Firmware.
 
 ## Status
-Supported Controller start up and all examples work as expected. The 115200 baud are to low for A2DP.
-There's no audio driver yet as well as no support for STDIO. In addition, TLV is not supported, so
-bonding information cannot be stored. A better UI will come, too. :)
+Supported Controller start up and all examples work as expected.

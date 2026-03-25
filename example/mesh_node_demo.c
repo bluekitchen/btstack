@@ -177,9 +177,11 @@ static void stdin_process(char cmd){
     }
 }
 
-int btstack_main(void);
-int btstack_main(void)
-{
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    UNUSED(argv);
+
 #ifdef HAVE_BTSTACK_STDIN
     // console
     btstack_stdin_setup(stdin_process);
