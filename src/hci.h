@@ -1072,6 +1072,9 @@ typedef struct {
     // chipset driver requires pre-init
     bool chipset_pre_init;
 
+    // use AIROC Download mode (same as ENABLE_AIROC_DOWNLOAD_MODE)
+    bool init_airoc_download_mode;
+
     // hardware power controller
     const btstack_control_t * control;
 
@@ -1417,6 +1420,13 @@ typedef struct {
  * @brief Set up HCI. Needs to be called before any other function.
  */
 void hci_init(const hci_transport_t *transport, const void *config);
+
+/**
+ * @brief Enable AIROC download mode during init. Has to be called before power on.
+ * @note Matches ENABLE_AIROC_DOWNLOAD_MODE if enabled
+ * @param enable
+ */
+void hci_set_airoc_download_mode(bool enable);
 
 /**
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information.
