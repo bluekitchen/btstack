@@ -2941,7 +2941,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
         status = hci_event_command_complete_get_return_parameters(packet)[0];
     }
     uint16_t manufacturer;
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_DATA_LENGTH_EXTENSION)
     hci_connection_t * conn;
 #endif
 #if defined(ENABLE_CLASSIC)
@@ -3028,7 +3028,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_OPCODE_HCI_LE_SET_DATA_LENGTH:
             if (le_active_command_con_handle != HCI_CON_HANDLE_INVALID){
-                hci_connection_t * conn = hci_connection_for_handle(le_active_command_con_handle);
+                conn = hci_connection_for_handle(le_active_command_con_handle);
                 if (conn != NULL){
                     conn->gap_connection_tasks_active &= ~GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH;
                 }
