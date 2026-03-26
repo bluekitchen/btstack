@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Chipset BCM: btstack_chipset_bcm_set_patch_ram() allows to provide dynamic PatchRAM buffer
+- HCI: configure LE Data Length with hci_le_set_max_data_length and hci_le_set_default_data_length
 
 ### Fixed
 
 ### Changed
 - GAP: LE link layer commands are sent sequentially
-
 
 ## Release v1.8.1
 

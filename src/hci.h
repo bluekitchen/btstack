@@ -1381,6 +1381,8 @@ typedef struct {
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+    bool     le_set_data_length_max;
+
     // LE Data Length
     uint16_t le_supported_max_tx_octets;
     uint16_t le_supported_max_tx_time;
@@ -1500,6 +1502,21 @@ void hci_set_num_iso_packets_to_queue(uint8_t num_packets);
  * @param inquriy_mode see bluetooth_defines.h
  */
 void hci_set_inquiry_mode(inquiry_mode_t inquriy_mode);
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+/**
+ * @brief Set maximum LE Data Length during startup if enabled. Has to be called before power on.
+ * @param enable default: true
+ */
+void hci_le_set_max_data_length(bool enable);
+
+/**
+ * @brief Set default LE Data Length during startup. Has to be called before power on.
+ * @param tx_octets
+ * @param tx_time in us
+ */
+void hci_le_set_default_data_length(uint8_t tx_octets, uint16_t tx_time);
+#endif
 
 /**
  * @brief Requests the change of BTstack power mode.

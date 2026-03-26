@@ -2374,7 +2374,8 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
-            if (hci_le_supported()
+            if (hci_stack->le_set_data_length_max
+            && hci_le_supported()
             && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_READ_MAXIMUM_DATA_LENGTH)) {
                 hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
                 hci_send_cmd(&hci_le_read_maximum_data_length);
@@ -2384,7 +2385,8 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
-            if (hci_le_supported()
+            if (hci_stack->le_supported_max_tx_octets != 0u
+            && hci_le_supported()
             && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH)) {
                 hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
                 hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
@@ -5380,6 +5382,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_supervision_timeout      = 0x0048;    //  720 ms
     hci_stack->le_minimum_ce_length        =      0;    //    0 ms
     hci_stack->le_maximum_ce_length        =      0;    //    0 ms
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+    hci_stack->le_set_data_length_max      =   true;
+#endif
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
@@ -10135,6 +10140,18 @@ uint8_t gap_send_link_key_response(const bd_addr_t addr, link_key_t link_key, li
 void hci_set_inquiry_mode(inquiry_mode_t inquiry_mode){
     hci_stack->inquiry_mode = inquiry_mode;
 }
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+void hci_le_set_max_data_length(bool enable){
+    hci_stack->le_set_data_length_max = enable;
+}
+
+void hci_le_set_default_data_length(uint8_t tx_octets, uint16_t tx_time){
+    hci_stack->le_set_data_length_max = false;
+    hci_stack->le_supported_max_tx_octets = tx_octets;
+    hci_stack->le_supported_max_tx_time = tx_time;
+}
+#endif
 
 /** 
  * @brief Configure Voice Setting for use with SCO data in HSP/HFP
