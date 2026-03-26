@@ -652,6 +652,7 @@ typedef struct {
 
     // gap connection tasks, see GAP_CONNECTION_TASK_x
     uint16_t gap_connection_tasks_pending;
+    uint16_t gap_connection_tasks_active;
 
     btstack_timer_source_t timeout;
 
