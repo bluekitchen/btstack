@@ -153,6 +153,10 @@ static void next_connection_index(void){
 
 static void le_streamer_setup(void){
 
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+    hci_le_set_max_data_length(false);
+#endif
+
     l2cap_init();
 
     // setup SM: Display only
