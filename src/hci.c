@@ -2948,6 +2948,9 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     le_audio_cig_t * cig;
 #endif
+#ifdef ENABLE_BLE
+    hci_stack->le_active_command_con_handle = HCI_CON_HANDLE_INVALID;
+#endif
 #if defined(ENABLE_BLE) && defined(ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
     hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
@@ -3390,13 +3393,18 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
     // get opcode and command status
     uint16_t opcode = hci_event_command_status_get_command_opcode(packet);
 
-#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL) || defined(ENABLE_LE_ISOCHRONOUS_STREAMS)
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE) || defined(ENABLE_LE_ISOCHRONOUS_STREAMS)
     uint8_t status = hci_event_command_status_get_status(packet);
 #endif
 
 #if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
     bd_addr_type_t addr_type;
     bd_addr_t addr;
+#endif
+
+#ifdef ENABLE_BLE
+    hci_con_handle_t le_active_command_con_handle = hci_stack->le_active_command_con_handle;
+    hci_stack->le_active_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 
 #if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
@@ -3491,6 +3499,34 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
         default:
             break;
     }
+
+#ifdef ENABLE_BLE
+    if (status != ERROR_CODE_SUCCESS){
+        uint16_t gap_connection_task = 0;
+        switch (opcode){
+            case HCI_OPCODE_HCI_LE_READ_REMOTE_USED_FEATURES:
+                gap_connection_task = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                break;
+            case HCI_OPCODE_HCI_LE_SET_PHY:
+                gap_connection_task = GAP_CONNECTION_TASK_LE_SET_PHY;
+                break;
+            case HCI_OPCODE_HCI_LE_FRAME_SPACE_UPDATE:
+                gap_connection_task = GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                break;
+            case HCI_OPCODE_HCI_LE_CONNECTION_RATE_REQUEST:
+                gap_connection_task = GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                break;
+            default:
+                break;
+        }
+        if (gap_connection_task != 0){
+            hci_connection_t * conn = hci_connection_for_handle(le_active_command_con_handle);
+            if (conn != NULL){
+                conn->gap_connection_tasks_active &= ~gap_connection_task;
+            }
+        }
+    }
+#endif
 }
 
 #ifdef ENABLE_BLE
@@ -4681,6 +4717,36 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn->le_connection_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
                     break;
 
+                case HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE:
+                    handle = hci_subevent_le_read_remote_features_complete_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (!conn) break;
+                    conn->gap_connection_tasks_active &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                    break;
+
+                case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
+                    handle = hci_subevent_le_phy_update_complete_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (!conn) break;
+                    conn->gap_connection_tasks_active &= ~GAP_CONNECTION_TASK_LE_SET_PHY;
+                    break;
+
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+                case HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE:
+                    handle = hci_subevent_le_frame_space_update_complete_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (!conn) break;
+                    conn->gap_connection_tasks_active &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                    break;
+
+                case HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE:
+                    handle = hci_subevent_le_connection_rate_change_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (!conn) break;
+                    conn->gap_connection_tasks_active &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                    break;
+#endif
+
                 case HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST:
                     // connection
                     handle = hci_subevent_le_remote_connection_parameter_request_get_connection_handle(packet);
@@ -5172,6 +5238,7 @@ static void hci_state_reset(void){
 #ifdef ENABLE_BLE
     memset(hci_stack->le_random_address, 0, 6);
     hci_stack->le_random_address_set = 0;
+    hci_stack->le_active_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 #ifdef ENABLE_LE_CENTRAL
     hci_stack->le_scanning_active  = false;
@@ -7883,11 +7950,15 @@ static bool hci_run_general_pending_commands(void){
 #ifdef ENABLE_BLE
             if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
                 connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                hci_stack->le_active_command_con_handle = connection->con_handle;
                 hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
                 return true;
             }
             if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_SET_PHY){
                 connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_SET_PHY;
+                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_SET_PHY;
+                hci_stack->le_active_command_con_handle = connection->con_handle;
                 hci_send_cmd(&hci_le_set_phy, connection->con_handle, connection->le_phy_update_all_phys,
                     connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
                 return true;
@@ -7895,6 +7966,8 @@ static bool hci_run_general_pending_commands(void){
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
             if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE){
                 connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                hci_stack->le_active_command_con_handle = connection->con_handle;
                 hci_send_cmd(&hci_le_frame_space_update, connection->con_handle,
                              connection->le_frame_space_min_us, connection->le_frame_space_max_us,
                              connection->le_frame_space_phys, connection->le_frame_space_spacing_types);
@@ -7902,6 +7975,8 @@ static bool hci_run_general_pending_commands(void){
             }
             if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
                 connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                hci_stack->le_active_command_con_handle = connection->con_handle;
                 hci_send_cmd(&hci_le_connection_rate_request, connection->con_handle,
                              connection->le_connection_rate_interval_min_us, connection->le_connection_rate_interval_max_us,
                              connection->le_connection_rate_subrate_min, connection->le_connection_rate_subrate_max,

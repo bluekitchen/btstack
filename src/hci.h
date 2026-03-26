@@ -1293,6 +1293,9 @@ typedef struct {
     // GAP Privacy
     btstack_linked_list_t gap_privacy_clients;
 
+    // track active LE LMP commands
+    hci_con_handle_t le_active_command_con_handle;
+
 #ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND
     hci_con_handle_t hci_command_con_handle;
 #endif
