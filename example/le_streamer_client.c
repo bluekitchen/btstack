@@ -460,6 +460,10 @@ int btstack_main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
+    hci_le_set_max_data_length(false);
+#endif
+
     // use different connection parameters: conn interval min/max (* 1.25 ms), slave latency, supervision timeout, CE len min/max (* 0.6125 ms) 
     // gap_set_connection_parameters(0x06, 0x06, 4, 1000, 0x01, 0x06 * 2);
 
