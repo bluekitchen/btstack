@@ -300,9 +300,6 @@ static void hci_connection_init(hci_connection_t * conn){
     conn->num_packets_sent = 0;
 
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-#ifdef ENABLE_BLE
-    conn->le_phy_update_all_phys = 0xff;
-#endif
 #ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
     conn->le_max_tx_octets = 27;
 #endif
@@ -7865,15 +7862,6 @@ static bool hci_run_general_pending_commands(void){
         }
 #endif
 
-#ifdef ENABLE_BLE
-        if (connection->le_phy_update_all_phys != 0xffu){
-            uint8_t all_phys = connection->le_phy_update_all_phys;
-            connection->le_phy_update_all_phys = 0xff;
-            hci_send_cmd(&hci_le_set_phy, connection->con_handle, all_phys, connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
-            return true;
-        }
-#endif
-
         if (connection->gap_connection_tasks_pending != 0){
 #ifdef ENABLE_CLASSIC
             if ((connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
@@ -7896,6 +7884,12 @@ static bool hci_run_general_pending_commands(void){
             if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
                 connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
                 hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
+                return true;
+            }
+            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_SET_PHY){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_SET_PHY;
+                hci_send_cmd(&hci_le_set_phy, connection->con_handle, connection->le_phy_update_all_phys,
+                    connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
                 return true;
             }
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
@@ -9576,6 +9570,7 @@ uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
+    conn->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_LE_SET_PHY;
     conn->le_phy_update_all_phys    = all_phys;
     conn->le_phy_update_tx_phys     = tx_phys;
     conn->le_phy_update_rx_phys     = rx_phys;
