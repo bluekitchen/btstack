@@ -7948,44 +7948,46 @@ static bool hci_run_general_pending_commands(void){
                 return true;
             }
 #ifdef ENABLE_BLE
-            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
-                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
-                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
-                hci_stack->le_active_command_con_handle = connection->con_handle;
-                hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
-                return true;
-            }
-            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_SET_PHY){
-                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_SET_PHY;
-                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_SET_PHY;
-                hci_stack->le_active_command_con_handle = connection->con_handle;
-                hci_send_cmd(&hci_le_set_phy, connection->con_handle, connection->le_phy_update_all_phys,
-                    connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
-                return true;
-            }
+            if ((connection->gap_connection_tasks_active & GAP_CONNECTION_TASK_LE_ANY) == 0){
+                if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
+                    connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                    connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+                    hci_stack->le_active_command_con_handle = connection->con_handle;
+                    hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
+                    return true;
+                }
+                if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_SET_PHY){
+                    connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_SET_PHY;
+                    connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_SET_PHY;
+                    hci_stack->le_active_command_con_handle = connection->con_handle;
+                    hci_send_cmd(&hci_le_set_phy, connection->con_handle, connection->le_phy_update_all_phys,
+                        connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
+                    return true;
+                }
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
-            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE){
-                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
-                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
-                hci_stack->le_active_command_con_handle = connection->con_handle;
-                hci_send_cmd(&hci_le_frame_space_update, connection->con_handle,
-                             connection->le_frame_space_min_us, connection->le_frame_space_max_us,
-                             connection->le_frame_space_phys, connection->le_frame_space_spacing_types);
-                return true;
-            }
-            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
-                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
-                connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
-                hci_stack->le_active_command_con_handle = connection->con_handle;
-                hci_send_cmd(&hci_le_connection_rate_request, connection->con_handle,
-                             connection->le_connection_rate_interval_min_us, connection->le_connection_rate_interval_max_us,
-                             connection->le_connection_rate_subrate_min, connection->le_connection_rate_subrate_max,
-                             connection->le_connection_rate_max_latency, connection->le_connection_rate_continuation_number,
-                             connection->le_connection_rate_supervision_timeout, connection->le_connection_rate_min_ce_length,
-                             connection->le_connection_rate_max_ce_length);
-                return true;
-            }
+                if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE){
+                    connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                    connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+                    hci_stack->le_active_command_con_handle = connection->con_handle;
+                    hci_send_cmd(&hci_le_frame_space_update, connection->con_handle,
+                                 connection->le_frame_space_min_us, connection->le_frame_space_max_us,
+                                 connection->le_frame_space_phys, connection->le_frame_space_spacing_types);
+                    return true;
+                }
+                if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
+                    connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                    connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+                    hci_stack->le_active_command_con_handle = connection->con_handle;
+                    hci_send_cmd(&hci_le_connection_rate_request, connection->con_handle,
+                                 connection->le_connection_rate_interval_min_us, connection->le_connection_rate_interval_max_us,
+                                 connection->le_connection_rate_subrate_min, connection->le_connection_rate_subrate_max,
+                                 connection->le_connection_rate_max_latency, connection->le_connection_rate_continuation_number,
+                                 connection->le_connection_rate_supervision_timeout, connection->le_connection_rate_min_ce_length,
+                                 connection->le_connection_rate_max_ce_length);
+                    return true;
+                }
 #endif
+            }
 #endif
         }
 
