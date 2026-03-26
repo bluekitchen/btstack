@@ -2950,7 +2950,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     le_audio_cig_t * cig;
 #endif
-#ifdef ENABLE_BLE
+#if defined(ENABLE_BLE) && defined(ENABLE_LE_DATA_LENGTH_EXTENSION)
     hci_con_handle_t le_active_command_con_handle = hci_stack->le_active_command_con_handle;
     hci_stack->le_active_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
