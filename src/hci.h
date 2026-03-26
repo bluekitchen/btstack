@@ -651,7 +651,7 @@ typedef struct {
     uint16_t authentication_flags;
 
     // gap connection tasks, see GAP_CONNECTION_TASK_x
-    uint16_t gap_connection_tasks;
+    uint16_t gap_connection_tasks_pending;
 
     btstack_timer_source_t timeout;
 

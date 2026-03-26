@@ -3656,7 +3656,7 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     // workaround: PAST doesn't work without LE Read Remote Features on PacketCraft Controller with LMP 568B
     if (hci_command_supported(SUPPORTED_HCI_COMMAND_LE_READ_REMOTE_FEATURES)){
-        conn->gap_connection_tasks = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+        conn->gap_connection_tasks_pending = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
     }
 #endif
 
@@ -4031,12 +4031,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
                     // trigger write supervision timeout if we're master
                     if ((hci_stack->link_supervision_timeout != HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT) && (conn->role == HCI_ROLE_MASTER)){
-                        conn->gap_connection_tasks |= GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT;
+                        conn->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT;
                     }
 
                     // trigger write automatic flush timeout
                     if (hci_stack->automatic_flush_timeout != 0){
-                        conn->gap_connection_tasks |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
+                        conn->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
                     }
 
                     // restart timer
@@ -7874,40 +7874,40 @@ static bool hci_run_general_pending_commands(void){
         }
 #endif
 
-        if (connection->gap_connection_tasks != 0){
+        if (connection->gap_connection_tasks_pending != 0){
 #ifdef ENABLE_CLASSIC
-            if ((connection->gap_connection_tasks & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
-                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
+            if ((connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
                 hci_send_cmd(&hci_write_automatic_flush_timeout, connection->con_handle, hci_stack->automatic_flush_timeout);
                 return true;
             }
-            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT){
-                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT;
+            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT;
                 hci_send_cmd(&hci_write_link_supervision_timeout, connection->con_handle, hci_stack->link_supervision_timeout);
                 return true;
             }
 #endif
-            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_READ_RSSI){
-                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_READ_RSSI;
+            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_READ_RSSI){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_READ_RSSI;
                 hci_send_cmd(&hci_read_rssi, connection->con_handle);
                 return true;
             }
 #ifdef ENABLE_BLE
-            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
-                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
                 hci_send_cmd(&hci_le_read_remote_used_features, connection->con_handle);
                 return true;
             }
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
-            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE){
-                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
                 hci_send_cmd(&hci_le_frame_space_update, connection->con_handle,
                              connection->le_frame_space_min_us, connection->le_frame_space_max_us,
                              connection->le_frame_space_phys, connection->le_frame_space_spacing_types);
                 return true;
             }
-            if (connection->gap_connection_tasks & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
-                connection->gap_connection_tasks &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+            if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST){
+                connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
                 hci_send_cmd(&hci_le_connection_rate_request, connection->con_handle,
                              connection->le_connection_rate_interval_min_us, connection->le_connection_rate_interval_max_us,
                              connection->le_connection_rate_subrate_min, connection->le_connection_rate_subrate_max,
@@ -9143,7 +9143,7 @@ uint8_t gap_request_frame_space_update(hci_con_handle_t con_handle, uint16_t fra
     connection->le_frame_space_max_us = frame_space_max_us;
     connection->le_frame_space_phys = phys;
     connection->le_frame_space_spacing_types = spacing_types;
-    connection->gap_connection_tasks |= GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
+    connection->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
@@ -9165,7 +9165,7 @@ uint8_t gap_request_connection_rate_update(hci_con_handle_t con_handle, uint16_t
     connection->le_connection_rate_supervision_timeout = supervision_timeout;
     connection->le_connection_rate_min_ce_length = min_ce_length;
     connection->le_connection_rate_max_ce_length = max_ce_length;
-    connection->gap_connection_tasks |= GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
+    connection->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
@@ -9525,7 +9525,7 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
 int gap_read_rssi(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL) return 0;
-    hci_connection->gap_connection_tasks |= GAP_CONNECTION_TASK_READ_RSSI;
+    hci_connection->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_READ_RSSI;
     hci_run();
     return 1;
 }
