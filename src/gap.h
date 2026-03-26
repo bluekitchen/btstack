@@ -1162,6 +1162,17 @@ uint8_t gap_auto_connection_stop_all(void);
  */
 uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint16_t phy_options);
 
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+/**
+ * @brief Set LE Data Length
+ * @param con_handle
+ * @param tx_octets
+ * @param tx_time in us
+ * @return status
+ */
+uint8_t gap_le_set_data_length(hci_con_handle_t con_handle, uint8_t tx_octets, uint16_t tx_time);
+#endif
+
 /**
  * @brief Get connection interval
  * @param con_handle

@@ -2951,6 +2951,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     le_audio_cig_t * cig;
 #endif
 #ifdef ENABLE_BLE
+    hci_con_handle_t le_active_command_con_handle = hci_stack->le_active_command_con_handle;
     hci_stack->le_active_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 #if defined(ENABLE_BLE) && defined(ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
@@ -3024,6 +3025,14 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_stack->le_supported_max_tx_octets = little_endian_read_16(packet, 6);
             hci_stack->le_supported_max_tx_time = little_endian_read_16(packet, 8);
             log_info("hci_le_read_maximum_data_length: tx octets %u, tx time %u us", hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_DATA_LENGTH:
+            if (le_active_command_con_handle != HCI_CON_HANDLE_INVALID){
+                hci_connection_t * conn = hci_connection_for_handle(le_active_command_con_handle);
+                if (conn != NULL){
+                    conn->gap_connection_tasks_active &= ~GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH;
+                }
+            }
             break;
 #endif
 #ifdef ENABLE_LE_CENTRAL
@@ -3511,6 +3520,9 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
                 break;
             case HCI_OPCODE_HCI_LE_SET_PHY:
                 gap_connection_task = GAP_CONNECTION_TASK_LE_SET_PHY;
+                break;
+            case HCI_OPCODE_HCI_LE_SET_DATA_LENGTH:
+                gap_connection_task = GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH;
                 break;
             case HCI_OPCODE_HCI_LE_FRAME_SPACE_UPDATE:
                 gap_connection_task = GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE;
@@ -7991,6 +8003,16 @@ static bool hci_run_general_pending_commands(void){
                                  connection->le_connection_rate_max_ce_length);
                     return true;
                 }
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+                if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH){
+                    connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH;
+                    connection->gap_connection_tasks_active  |= GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH;
+                    hci_stack->le_active_command_con_handle = connection->con_handle;
+                    hci_send_cmd(&hci_le_set_data_length, connection->con_handle,
+                                 connection->le_set_data_length_tx_octets, connection->le_set_data_length_tx_time);
+                    return true;
+                }
+#endif
 #endif
             }
 #endif
@@ -9662,6 +9684,21 @@ uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx
 
     return 0;
 }
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+uint8_t gap_le_set_data_length(hci_con_handle_t con_handle, uint8_t tx_octets, uint16_t tx_time){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    conn->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH;
+    conn->le_set_data_length_tx_octets = tx_octets;
+    conn->le_set_data_length_tx_time = tx_time;
+
+    hci_run();
+
+    return 0;
+}
+#endif
 
 static uint8_t hci_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address){
 
