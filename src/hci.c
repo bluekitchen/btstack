@@ -1999,7 +1999,10 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_SEND_READ_LOCAL_NAME:
 #if defined(ENABLE_CLASSIC)
-            if (!hci_stack->init_airoc_download_mode){
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+            if (!hci_stack->init_airoc_download_mode)
+#endif
+            {
                 hci_send_cmd(&hci_read_local_name);
                 hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
                 break;
@@ -2090,9 +2093,13 @@ static void hci_initializing_run(void){
                 ||    (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA)) ){
 
                     // - baud rate to reset, restore UART baud rate if needed
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
                     if (hci_stack->init_airoc_download_mode) {
+                        log_info("Local baud rate change to default after init script (AIROC Download Mode)");
                         hci_stack->hci_transport->set_baudrate(115200);
-                    } else if (need_baud_change) {
+                    } else
+#endif
+                    if (need_baud_change) {
                         uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
                         log_info("Local baud rate change to %" PRIu32 " after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
@@ -5471,9 +5478,11 @@ void hci_enable_custom_pre_init(void){
     hci_stack->chipset_pre_init = true;
 }
 
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
 void hci_set_airoc_download_mode(bool enable){
     hci_stack->init_airoc_download_mode = enable;
 }
+#endif
 
 /**
  * @brief Configure Bluetooth hardware control. Has to be called after hci_init() but before power on.
@@ -5792,12 +5801,15 @@ static int hci_power_control_state_off(HCI_POWER_MODE power_mode){
                 log_error("hci_power_control_on() error %d", err);
                 return err;
             }
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
             if (hci_stack->init_airoc_download_mode) {
                 // support AIROC Download Mode"
                 // - emit state
                 // - continue upon
                 hci_stack->state = HCI_STATE_REQUIRE_POWER_CYCLE;
-            } else {
+            } else
+#endif
+            {
                 // start init
                 hci_power_enter_initializing_state();
             }
