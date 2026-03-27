@@ -62,7 +62,9 @@ extern "C" {
 typedef enum {
     HCI_POWER_OFF = 0,
     HCI_POWER_ON,
-    HCI_POWER_SLEEP
+    HCI_POWER_SLEEP,
+    // report power cycle complete, required for AIROC Download Mode
+    HCI_POWER_CYCLE_COMPLETED,
 } HCI_POWER_MODE;
 
 /**
@@ -74,7 +76,9 @@ typedef enum {
     HCI_STATE_WORKING,
     HCI_STATE_HALTING,
     HCI_STATE_SLEEPING,
-    HCI_STATE_FALLING_ASLEEP
+    HCI_STATE_FALLING_ASLEEP,
+    // custom state for pwer cycle required for AIROC Download Mode
+    HCI_STATE_REQUIRE_POWER_CYCLE,
 } HCI_STATE;
 
 /** 
