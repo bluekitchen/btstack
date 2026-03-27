@@ -71,6 +71,7 @@ static int main_argc;
 static const char ** main_argv;
 static const btstack_uart_t * uart_driver;
 static btstack_uart_config_t uart_config;
+static bool airoc_download_mode = false;
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
@@ -170,7 +171,7 @@ static void phase2(int status){
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &transport_config, NULL, NULL );
+    btstack_main_config( argc, argv, &transport_config, NULL, NULL, &airoc_download_mode );
     uart_driver = btstack_uart_posix_instance();
 
     // extract UART config from transport config, but overide initial uart speed

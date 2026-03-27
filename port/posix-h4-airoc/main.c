@@ -81,6 +81,7 @@ static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bool tlv_reset;
+static bool airoc_download_mode = false;
 static bd_addr_t custom_address = {0,0,0,0,0,0};
 
 static hci_transport_config_uart_t transport_config = {
@@ -215,7 +216,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &transport_config, custom_address, &tlv_reset );
+    btstack_main_config( argc, argv, &transport_config, custom_address, &tlv_reset, &airoc_download_mode );
 
     // register callback for CTRL-c
     btstack_signal_register_callback(SIGINT, sigint_handler);

@@ -82,6 +82,8 @@ static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             static_address;
 
+static bool airoc_download_mode = false;
+
 // random MAC address for the device, used if nothing else is available 
 static bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
 static bd_addr_t custom_address = { 0 };
@@ -308,7 +310,7 @@ static void trigger_shutdown(void){
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &config, custom_address, &tlv_reset );
+    btstack_main_config( argc, argv, &config, custom_address, &tlv_reset, &airoc_download_mode );
 
     // register callback for CTRL-c
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);

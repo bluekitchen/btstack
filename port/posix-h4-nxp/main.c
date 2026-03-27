@@ -81,6 +81,7 @@ static const char ** main_argv;
 
 static const btstack_uart_t * uart_driver;
 static btstack_uart_config_t uart_config;
+static bool airoc_download_mode = false;
 
 // shutdown
 static bool shutdown_triggered;
@@ -192,7 +193,7 @@ static void nxp_phase2(uint8_t status){
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &transport_config, NULL, NULL );
+    btstack_main_config( argc, argv, &transport_config, NULL, NULL, &airoc_download_mode );
 
     uart_driver = btstack_uart_posix_instance();
 
