@@ -77,9 +77,10 @@
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
-static bool tlv_reset=false;
+static bool tlv_reset = false;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
+
 static bd_addr_t             static_address;
 
 static bool airoc_download_mode = false;
@@ -106,6 +107,20 @@ static hci_transport_config_uart_t config = {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+
+static void enter_download_mode(void){
+    printf("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:\n");
+    uint8_t i;
+    for (i = 3; i > 0; i--){
+        printf("%u\n", i);
+        sleep(1);
+    }
+    printf("Firmware download started\n");
+    hci_power_control(HCI_POWER_CYCLE_COMPLETED);
+}
+#endif
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     static bd_addr_t local_addr;
@@ -118,6 +133,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+                case HCI_STATE_REQUIRE_POWER_CYCLE:
+                    enter_download_mode();
+                    break;
+#endif
                 case HCI_STATE_WORKING:
                     gap_local_bd_addr(local_addr);
                     if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_address) ) {
@@ -227,6 +247,9 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- LMP Version    0x%04x\n", lmp_version);
     printf("- LMP Subversion 0x%04x\n", lmp_subversion);
     printf("- Manufacturer 0x%04x\n", manufacturer);
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+#endif
+    const char * device_name = NULL;
     switch (manufacturer){
         case BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
             printf("Cambridge Silicon Radio - CSR chipset, Build ID: %u.\n", hci_revision);
@@ -250,11 +273,25 @@ static void local_version_information_handler(uint8_t * packet){
 #endif
 
             break;
-        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:   
-            printf("Broadcom/Cypress - using BCM driver.\n");
-            hci_set_chipset(btstack_chipset_bcm_instance());
-            use_fast_uart();
-            is_bcm = 1;
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+            if (airoc_download_mode) {
+                device_name = btstack_chipset_bcm_identify_controller(lmp_subversion);
+                if (device_name == NULL){
+                    printf("Unknown device, please update btstack_chipset_bcm_identify_controller(...)\n");
+                    printf("in btstack/chipset/bcm/btstack_chipset_bcm.c\n");
+                } else {
+                    printf("Identified Controller: %s\n", device_name);
+                    btstack_chipset_bcm_set_device_name(device_name);
+                }
+            } else
+#endif
+            {
+                printf("Broadcom/Cypress - using BCM driver.\n");
+                hci_set_chipset(btstack_chipset_bcm_instance());
+                use_fast_uart();
+                is_bcm = 1;
+            }
             break;
         case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:   
             printf("ST Microelectronics - using STLC2500d driver.\n");
@@ -319,6 +356,15 @@ int main(int argc, const char * argv[]){
     const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    if (airoc_download_mode) {
+        printf("Use AIROC Download Mode for Broadcom/Cypress/Infineon chipset\n");
+        hci_set_airoc_download_mode(true);
+        hci_set_chipset(btstack_chipset_bcm_instance());
+        use_fast_uart();
+        is_bcm = 1;
+    }
+#endif
 
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};

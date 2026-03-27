@@ -50,13 +50,25 @@ or with CMake/Ninja
 
 All examples provide the following command line options:
 
-    --help      | -h            		    print (this) help.
-    --logfile   | -l  LOGFILE   		    set file to store debug output and HCI trace.
-    --logformat | -f  btsnoop|bluez|pklg	set file format to store debug output in.
-    --reset-tlv | -r            		    reset bonding information stored in TLV.
-    --tty       | -u  TTY       		    set path to Bluetooth Controller.
-    --bd-addr   | -m  BD_ADDR   		    set random static Bluetooth address.
-    --baudrate  | -b  BAUDRATE  		    set initial baudrate.
+    --help               | -h            		    print (this) help.
+    --logfile            | -l  LOGFILE   		    set file to store debug output and HCI trace.
+    --logformat          | -f  btsnoop|bluez|pklg	set file format to store debug output in.
+    --reset-tlv          | -r            		    reset bonding information stored in TLV.
+    --tty                | -u  TTY       		    set path to Bluetooth Controller.
+    --bd-addr            | -m  BD_ADDR   		    set random static Bluetooth address.
+    --baudrate           | -b  BAUDRATE  		    set initial baudrate.
+    --airoc-download-mode| -d                       enable AIROC Download Mode for newer CYW55xx Controller
+
+## Infineon AIROC Controller
+
+Newer Infineon Airoc (tm) Controllers like the CYW55xx series accept PatchRAM upload only in a so-called 'Download Mode' 
+or 'Auto-Baud Mode' which is entered by asserting CTS (low) and starting/resetting the controller via BT_REG_EN.
+The PatchRAM name is retrieved via a custom HCI Command from the Controller and loaded from the current folder.
+
+To enable this mode, please provide '--airoc-download-mode' on the command line.
+
+As this doing a power cycle is usually not possible on a desktop system, this port request the user to press the "RESET"
+button while showing a countdown.
 
 ## Running the examples
 
