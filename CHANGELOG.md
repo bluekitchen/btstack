@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GAP: LE link layer commands are sent sequentially
+- posix-h4-zephyr: deprecated. Zephyr-based Controllers are supported by posix-h4 port 
+
 
 ## Release v1.8.1
 
