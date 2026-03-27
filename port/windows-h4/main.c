@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -55,12 +55,14 @@
 #include "btstack_chipset_tc3566x.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "btstack_main_config.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_windows.h"
 #include "btstack_stdin.h"
 #include "btstack_stdin_windows.h"
 #include "btstack_tlv_windows.h"
+#include "btstack_util.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_led.h"
 #include "hci.h"
@@ -71,6 +73,7 @@
 
 int btstack_main(int argc, const char * argv[]);
 static void local_version_information_handler(uint8_t * packet);
+static void usage(const char *name);
 
 static hci_transport_config_uart_t config = {
         HCI_TRANSPORT_CONFIG_UART,
@@ -87,9 +90,11 @@ static int led_state = 0;
 #define TLV_DB_PATH_PREFIX "btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
+static bool tlv_reset;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_windows_t   tlv_context;
 static bd_addr_t             local_addr;
+static bd_addr_t             custom_address;
 static bool shutdown_triggered;
 
 void hal_led_toggle(void){
@@ -106,6 +111,178 @@ static void trigger_shutdown(void){
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static const char * hci_dump_type_to_string[] = {
+        [HCI_DUMP_INVALID]      = "invalid",
+        [HCI_DUMP_BLUEZ]        = "bluez",
+        [HCI_DUMP_PACKETLOGGER] = "pklg",
+        [HCI_DUMP_BTSNOOP]      = "btsnoop",
+};
+
+#define STR(x) #x
+#define ENUM_TO_STRING(x) [x] = STR(x)
+static const char * hci_dump_enum_to_string[] = {
+        ENUM_TO_STRING(HCI_DUMP_INVALID),
+        ENUM_TO_STRING(HCI_DUMP_BLUEZ),
+        ENUM_TO_STRING(HCI_DUMP_PACKETLOGGER),
+        ENUM_TO_STRING(HCI_DUMP_BTSNOOP),
+};
+
+static int dump_format_name_to_enum(const char *name) {
+    int i;
+    for (i = HCI_DUMP_INVALID; i <= HCI_DUMP_BTSNOOP; i++) {
+        if (strcmp(hci_dump_type_to_string[i], name) == 0) {
+            return i;
+        }
+    }
+    return HCI_DUMP_INVALID;
+}
+
+static const char * get_file_ext(const char *filename){
+    const char *dot = strrchr(filename, '.');
+    if ((dot == NULL) || (dot == filename)) return NULL;
+    return dot + 1;
+}
+
+static const char * path_basename(const char *path){
+    const char *base_name = strrchr(path, '\\');
+    const char *alt_base_name = strrchr(path, '/');
+    if (base_name == NULL) return (alt_base_name != NULL) ? alt_base_name + 1 : path;
+    if ((alt_base_name != NULL) && (alt_base_name > base_name)) return alt_base_name + 1;
+    return base_name + 1;
+}
+
+static bool option_matches(const char *arg, const char *short_option, const char *long_option){
+    return (strcmp(arg, short_option) == 0) || (strcmp(arg, long_option) == 0);
+}
+
+static const char * option_value(int argc, const char * argv[], int * arg_index, const char * option_name){
+    if ((*arg_index + 1) >= argc){
+        printf("Missing argument for %s\n", option_name);
+        return NULL;
+    }
+    (*arg_index)++;
+    return argv[*arg_index];
+}
+
+static void usage(const char *name){
+    printf("usage:\n\t%s [options]\n", name);
+    printf("valid options:\n");
+    printf("--help      | -h             \t\tprint (this) help.\n");
+    printf("--logfile   | -l  LOGFILE    \t\tset file to store debug output and HCI trace.\n");
+    printf("--logformat | -f  btsnoop|bluez|pklg\t\tset file format to store debug output in.\n");
+    printf("--reset-tlv | -r             \t\treset bonding information stored in TLV.\n");
+    printf("--tty       | -u  TTY        \t\tset path to Bluetooth Controller.\n");
+    printf("--bd-addr   | -m  BD_ADDR    \t\tset random static Bluetooth address.\n");
+    printf("--baudrate  | -b  BAUDRATE   \t\tset initial baudrate.\n");
+}
+
+int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t * transport_config, bd_addr_t address, bool * reset_tlv){
+    const char * log_file_path = NULL;
+    hci_dump_format_t dump_format = HCI_DUMP_PACKETLOGGER;
+    char default_log_path[200];
+    int arg_index;
+
+    btstack_assert(transport_config != NULL);
+
+    btstack_memory_init();
+    btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+
+    for (arg_index = 1; arg_index < argc; arg_index++){
+        const char *arg = argv[arg_index];
+        const char *value;
+        if (option_matches(arg, "-u", "--tty")){
+            value = option_value(argc, argv, &arg_index, arg);
+            if (value == NULL) continue;
+            transport_config->device_name = value;
+            continue;
+        }
+        if (option_matches(arg, "-l", "--logfile")){
+            value = option_value(argc, argv, &arg_index, arg);
+            if (value == NULL) continue;
+            log_file_path = value;
+            continue;
+        }
+        if (option_matches(arg, "-f", "--logformat")){
+            value = option_value(argc, argv, &arg_index, arg);
+            if (value == NULL) continue;
+            dump_format = dump_format_name_to_enum(value);
+            continue;
+        }
+        if (option_matches(arg, "-r", "--reset-tlv")){
+            if (reset_tlv != NULL){
+                *reset_tlv = true;
+            }
+            continue;
+        }
+        if (option_matches(arg, "-m", "--bd-addr") || (strcmp(arg, "-a") == 0)){
+            value = option_value(argc, argv, &arg_index, arg);
+            if (value == NULL) continue;
+            if (address != NULL){
+                sscanf_bd_addr(value, address);
+            }
+            continue;
+        }
+        if (option_matches(arg, "-b", "--baudrate")){
+            value = option_value(argc, argv, &arg_index, arg);
+            if (value == NULL) continue;
+            transport_config->baudrate_init = atoi(value);
+            continue;
+        }
+        if (option_matches(arg, "-h", "--help")){
+            usage(argv[0]);
+            continue;
+        }
+    }
+
+    if (log_file_path == NULL){
+        char sanitized_device_name[80];
+        const char * app_name = path_basename(argv[0]);
+        const char * device_name = path_basename(transport_config->device_name);
+        const char * dump_ext;
+        size_t i;
+
+        if (dump_format == HCI_DUMP_INVALID){
+            dump_format = HCI_DUMP_PACKETLOGGER;
+        }
+        dump_ext = hci_dump_type_to_string[dump_format];
+        btstack_strcpy(sanitized_device_name, sizeof(sanitized_device_name), device_name);
+        for (i = 0; i < strlen(sanitized_device_name); i++){
+            if ((sanitized_device_name[i] == '.') || (sanitized_device_name[i] == '\\') || (sanitized_device_name[i] == '/')){
+                sanitized_device_name[i] = '_';
+            }
+        }
+        btstack_snprintf_best_effort(default_log_path, sizeof(default_log_path), "hci_dump_%s_%s.%s", app_name, sanitized_device_name, dump_ext);
+        log_file_path = default_log_path;
+    } else {
+        const char *ext = get_file_ext(log_file_path);
+        if (ext != NULL){
+            dump_format = dump_format_name_to_enum(ext);
+        }
+        if (dump_format == HCI_DUMP_INVALID){
+            dump_format = HCI_DUMP_PACKETLOGGER;
+        }
+    }
+
+    hci_dump_windows_fs_open(log_file_path, dump_format);
+    hci_dump_init(hci_dump_windows_fs_get_instance());
+    printf("Packet Log: %s\n", log_file_path);
+    printf("Log format: %s\n", hci_dump_enum_to_string[dump_format]);
+    printf("Device    : \"%s\"\n", transport_config->device_name);
+    printf("Baudrate  : %u\n", transport_config->baudrate_init);
+    if ((reset_tlv != NULL) && *reset_tlv){
+        printf("Reset tlv : true\n");
+    }
+    if ((address != NULL) && !btstack_is_null_bd_addr(address)){
+        printf("address   : %s\n", bd_addr_to_str(address));
+    }
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
+
+    return EXIT_SUCCESS;
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
@@ -113,10 +290,23 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch (btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
                     gap_local_bd_addr(local_addr);
+                    if (btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(custom_address)){
+                        memcpy(local_addr, custom_address, sizeof(bd_addr_t));
+                    }
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str_with_delimiter(local_addr, '-'));
                     btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
+                    printf("TLV path: %s", tlv_db_path);
+                    if (tlv_reset){
+                        int rc = remove(tlv_db_path);
+                        if (rc == 0){
+                            printf(", reset ok");
+                        } else {
+                            printf(", reset failed with result = %d", rc);
+                        }
+                    }
+                    printf("\n");
                     tlv_impl = btstack_tlv_windows_init_instance(&tlv_context, tlv_db_path);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -156,6 +346,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+
 static void use_fast_uart(void){
     printf("Using 921600 baud.\n");
     config.baudrate_main = 921600;
@@ -227,37 +418,17 @@ static void local_version_information_handler(uint8_t * packet){
 int main(int argc, const char * argv[]){
     printf("BTstack on windows booting up\n");
 
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_windows_get_instance());
-
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "hci_dump.pklg";
-    hci_dump_windows_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_windows_fs_get_instance();
-    hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", pklg_path);
-
     // pick serial port
     config.device_name = "\\\\.\\COM7";
-
-    // accept path from command line
-    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
-        config.device_name = argv[2];
-        argc -= 2;
-        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
-    }
-    printf("H4 device: %s\n", config.device_name);
+    btstack_main_config(argc, argv, &config, custom_address, &tlv_reset);
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &config);
-
-#ifdef HAVE_PORTAUDIO
-    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
-    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
-#endif
+    if (!btstack_is_null_bd_addr(custom_address)){
+        hci_set_bd_addr(custom_address);
+    }
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
