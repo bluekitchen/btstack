@@ -262,9 +262,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
+            switch (btstack_event_state_get_state(packet)) {
+                case HCI_STATE_REQUIRE_POWER_CYCLE:
+                    // power cycle already performed during hal_uart_dma_init with CTS low
+                    hci_power_control(HCI_POWER_CYCLE_COMPLETED);
+                    break;
+                case HCI_STATE_WORKING:
+                    gap_local_bd_addr(local_addr);
+                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+                    break;
+                default:
+                    break;
+            }
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-            gap_local_bd_addr(local_addr);
-            printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
@@ -313,6 +323,7 @@ void port_main(void){
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_bcm_instance());
+    hci_set_airoc_download_mode(true);
 
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
