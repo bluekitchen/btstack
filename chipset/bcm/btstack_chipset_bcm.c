@@ -181,17 +181,13 @@ void btstack_chipset_bcm_set_hcd_folder_path(const char * path){
 }
 
 void btstack_chipset_bcm_set_device_name(const char * device_name){
-    // ignore if file path already set
-    if (hcd_file_path) {
-        log_error("chipset-bcm: set device name called %s although path %s already set", device_name, hcd_file_path);
-        return;
-    }
+    btstack_assert(hcd_file_path == NULL);
 
     // find in folder
     tinydir_dir dir = {};
     int res = tinydir_open(&dir, hcd_folder_path);
     if (res < 0){
-        log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
+        printf("chipset-bcm: could not get directory for %s\n", hcd_folder_path);
         return;
     }
     char latest_file[1000] = {0};
@@ -226,9 +222,9 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
         btstack_strcat(matched_file, sizeof(matched_file), "/");
         btstack_strcat(matched_file, sizeof(matched_file), latest_file);
         hcd_file_path = matched_file;
-        log_info("PatchRAM: %s", hcd_file_path);
+        printf("Use PatchRAM: %s\n", hcd_file_path);
     } else {
-        log_error("chipset-bcm: could not find .hcd that starts with %s at path %s", device_name, hcd_folder_path);
+        printf("chipset-bcm: could not find .hcd that starts with %s at path %s\n", device_name, hcd_folder_path);
     }
 }
 
