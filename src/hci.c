@@ -5922,6 +5922,7 @@ static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
     return ERROR_CODE_SUCCESS;
 }
 
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
 static int hci_power_control_state_require_power_cycle(HCI_POWER_MODE power_mode) {
     switch (power_mode){
         case HCI_POWER_OFF:
@@ -5936,6 +5937,7 @@ static int hci_power_control_state_require_power_cycle(HCI_POWER_MODE power_mode
     }
     return ERROR_CODE_SUCCESS;
 }
+#endif
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
@@ -5960,9 +5962,11 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_SLEEPING:
             err = hci_power_control_state_sleeping(power_mode);
             break;
-        case HCI_STATE_REQUIRE_POWER_CYCLE:
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE0
+            case HCI_STATE_REQUIRE_POWER_CYCLE:
             err = hci_power_control_state_require_power_cycle(power_mode);
             break;
+#endif
         default:
             btstack_assert(false);
             break;
