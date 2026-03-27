@@ -63,8 +63,10 @@ typedef enum {
     HCI_POWER_OFF = 0,
     HCI_POWER_ON,
     HCI_POWER_SLEEP,
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
     // report power cycle complete, required for AIROC Download Mode
     HCI_POWER_CYCLE_COMPLETED,
+#endif
 } HCI_POWER_MODE;
 
 /**
@@ -77,8 +79,10 @@ typedef enum {
     HCI_STATE_HALTING,
     HCI_STATE_SLEEPING,
     HCI_STATE_FALLING_ASLEEP,
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
     // custom state for pwer cycle required for AIROC Download Mode
     HCI_STATE_REQUIRE_POWER_CYCLE,
+#endif
 } HCI_STATE;
 
 /** 
