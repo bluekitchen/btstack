@@ -5324,10 +5324,6 @@ void hci_init(const hci_transport_t *transport, const void *config){
 #endif
     memset(hci_stack, 0, sizeof(hci_stack_t));
 
-#ifdef ENABLE_AIROC_DOWNLOAD_MODE
-    hci_stack->init_airoc_download_mode = true;
-#endif
-
     // reference to use transport layer implementation
     hci_stack->hci_transport = transport;
         
