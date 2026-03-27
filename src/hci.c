@@ -5962,7 +5962,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_SLEEPING:
             err = hci_power_control_state_sleeping(power_mode);
             break;
-#ifdef ENABLE_AIROC_DOWNLOAD_MODE0
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
             case HCI_STATE_REQUIRE_POWER_CYCLE:
             err = hci_power_control_state_require_power_cycle(power_mode);
             break;
