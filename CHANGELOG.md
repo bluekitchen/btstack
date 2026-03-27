@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: LE link layer commands are sent sequentially
 - posix-h4-zephyr: deprecated. Zephyr-based Controllers are supported by posix-h4 port 
 - posix-h4-airoc: moved to port/archive. Use posix-h4 with --airoc-download-mode instead
+- raspi: moved to port/archive. Use port/linux instead
 - Chipset BCM: ENABLE_AIROC_DOWNLOAD_MODE enables support, hci_set_airoc_download_mode activates it
 
 ## Release v1.8.1
