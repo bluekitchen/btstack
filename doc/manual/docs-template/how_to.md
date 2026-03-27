@@ -90,7 +90,7 @@ BTstack properties:
 | \#define                                                                      | Description                                                                                                                 |
 |-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | ENABLE_A2DP_EXPLICIT_CONFIG                                                   | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                                |
-| ENABLE_AIROC_DOWNLOAD_MODE                                                    | Enable AIROC (newer Infineon) Controller PatchRAM download mode                                                             |
+| ENABLE_AIROC_DOWNLOAD_MODE                                                    | Enable support for AIROC (newer Infineon) Controller PatchRAM download mode                                                 |
 | ENABLE_ATT_DELAYED_RESPONSE                                                   | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)                               |
 | ENABLE_AVDTP_ACCEPTOR_<br>EXPLICIT_START_STREAM_<br>CONFIRMATION              | Allow accept or reject of stream start on A2DP_SUBEVENT_<br>START_STREAM_REQUESTED                                          |
 | ENABLE_BCM_PCM_WBS                                                            | Enable support for Wide-Band Speech codec in BCM controller, requires<br>ENABLE_SCO_OVER_PCM                                |
@@ -117,7 +117,7 @@ BTstack properties:
 | ENABLE_HCI_CONTROLLER_<br>TO_HOST_FLOW_CONTROL                                | Enable HCI Controller to Host Flow Control, see below                                                                       |
 | ENABLE_HCI_SERIALIZED_<br>CONTROLLER_OPERATIONS                               | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                    |
 | ENABLE_HFP_AT_MESSAGES                                                        | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events                                         |
-| ENABLE_HFP_WIDE_BAND_<br>PEECH                                                | Enable support for mSBC codec used in HFP profile for Wide-Band Speech                                                      |
+| ENABLE_HFP_WIDE_BAND_<br>SPEECH                                               | Enable support for mSBC codec used in HFP profile for Wide-Band Speech                                                      |
 | ENABLE_L2CAP_ENHANCED_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                  | Enable Enhanced credit-based flow-control mode for L2CAP Channels                                                           |
 | ENABLE_L2CAP_ENHANCED_<br>RETRANSMISSION_MODE                                 | Enable Enhanced Retransmission Mode for L2CAP Channels. Mandatory for AVRCP Browsing                                        |
 | ENABLE_L2CAP_LE_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                        | Enable LE credit-based flow-control mode for L2CAP channels                                                                 |
