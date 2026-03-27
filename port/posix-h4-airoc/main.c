@@ -91,9 +91,19 @@ static hci_transport_config_uart_t transport_config = {
     .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
     .parity = BTSTACK_UART_PARITY_OFF,
 };
-static btstack_uart_config_t uart_config;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void enter_download_mode(void){
+    printf("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:\n");
+    uint8_t i;
+    for (i = 3; i > 0; i--){
+        printf("%u\n", i);
+        sleep(1);
+    }
+    printf("Firmware download started\n");
+    hci_power_control(HCI_POWER_CYCLE_COMPLETED);
+}
 
 static void sigint_handler(void){
     printf("CTRL-C - SIGINT received, shutting down..\n");
@@ -164,78 +174,58 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            gap_local_bd_addr(addr);
-            printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
+            switch (btstack_event_state_get_state(packet)){
+                case HCI_STATE_REQUIRE_POWER_CYCLE:
+                    enter_download_mode();
+                    break;
+                case HCI_STATE_WORKING:
+                    gap_local_bd_addr(addr);
+                    printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
 
-            // setup TLV
-            btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
-            btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str(addr));
-            btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
-            printf("TLV path: %s", tlv_db_path);
-            if (tlv_reset){
-                int rc = unlink(tlv_db_path);
-                if (rc == 0) {
-                    printf(", reset ok");
-                } else {
-                    printf(", reset failed with result = %d", rc);
-                }
-            }
-            printf("\n");
-            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
-            btstack_tlv_set_instance(tlv_impl, &tlv_context);
+                    // setup TLV
+                    btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str(addr));
+                    btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
+                    printf("TLV path: %s", tlv_db_path);
+                    if (tlv_reset){
+                        int rc = unlink(tlv_db_path);
+                        if (rc == 0) {
+                            printf(", reset ok");
+                        } else {
+                            printf(", reset failed with result = %d", rc);
+                        }
+                    }
+                    printf("\n");
+                    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+                    btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
-            hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+                    hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
 #endif
 #ifdef ENABLE_BLE
-            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+                    le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
+                default:
+                    break;
+            }
             break;
         default:
             break;
     }
 }
 
-static void enter_download_mode(const btstack_uart_t * the_uart_driver){
-    btstack_chipset_bcm_enable_init_script(1);
-    int res = the_uart_driver->open();
-    if (res) {
-        log_error("uart_block init failed %u", res);
-        return;
-    }
-
-    // Reset with CTS asserted (low)
-    printf("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:\n");
-    uint8_t i;
-    for (i = 3; i > 0; i--){
-        printf("%u\n", i);
-        sleep(1);
-    }
-    printf("Firmware download started\n");
-}
-
 int main(int argc, const char * argv[]){
 
     btstack_main_config( argc, argv, &transport_config, custom_address, &tlv_reset );
 
-    // get BCM chipset driver
-    const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
-    chipset->init(&transport_config);
+    // register callback for CTRL-c
+    btstack_signal_register_callback(SIGINT, sigint_handler);
 
-    // setup UART driver
-    const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
-
-    // extract UART config from transport config
-    uart_config.baudrate    = transport_config.baudrate_init;
-    uart_config.flowcontrol = transport_config.flowcontrol;
-    uart_config.device_name = transport_config.device_name;
-    uart_driver->init(&uart_config);
-
-    // setup HCI (to be able to use bcm chipset driver)
     // init HCI
-    const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
+    const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_bcm_instance());
+    hci_set_airoc_download_mode(true);
 
     if (!btstack_is_null_bd_addr(custom_address)) {
         hci_set_bd_addr(custom_address);
@@ -249,12 +239,6 @@ int main(int argc, const char * argv[]){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // register callback for CTRL-c
-    btstack_signal_register_callback(SIGINT, sigint_handler);
-
-    // show countdown to start firmware download
-    enter_download_mode(uart_driver);
 
     // setup app
     btstack_main(argc, argv);
