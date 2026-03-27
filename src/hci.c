@@ -5792,7 +5792,15 @@ static int hci_power_control_state_off(HCI_POWER_MODE power_mode){
                 log_error("hci_power_control_on() error %d", err);
                 return err;
             }
-            hci_power_enter_initializing_state();
+            if (hci_stack->init_airoc_download_mode) {
+                // support AIROC Download Mode"
+                // - emit state
+                // - continue upon
+                hci_stack->state = HCI_STATE_REQUIRE_POWER_CYCLE;
+            } else {
+                // start init
+                hci_power_enter_initializing_state();
+            }
             break;
         case HCI_POWER_OFF:
             // do nothing
@@ -5906,6 +5914,21 @@ static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
     return ERROR_CODE_SUCCESS;
 }
 
+static int hci_power_control_state_require_power_cycle(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_OFF:
+            hci_power_enter_halting_state();
+            break;
+        case HCI_POWER_CYCLE_COMPLETED:
+            // power cycle completed, start regular init
+            hci_power_enter_initializing_state();
+            break;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 int hci_power_control(HCI_POWER_MODE power_mode){
     log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
     btstack_run_loop_remove_timer(&hci_stack->timeout);
@@ -5928,6 +5951,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
             break;
         case HCI_STATE_SLEEPING:
             err = hci_power_control_state_sleeping(power_mode);
+            break;
+        case HCI_STATE_REQUIRE_POWER_CYCLE:
+            err = hci_power_control_state_require_power_cycle(power_mode);
             break;
         default:
             btstack_assert(false);
