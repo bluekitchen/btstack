@@ -1,7 +1,8 @@
 # BTstack Port for POSIX Systems with H4 Bluetooth Controller
 
 ## Configuration
-Most Bluetooth Bluetooth Controllers connected via UART/H4 require some special configuration, e.g. to set the UART baud rate, and/or require firmware patches during startup. In this port, we've tried to do most of these automatically based on information gathered from the Bluetooth Controller. Here's some Controller specific details:
+Most Bluetooth Bluetooth Controllers connected via UART/H4 require some special configuration, e.g. to set the UART baud rate, and/or require firmware patches during startup. 
+In this port, we've tried to do most of these automatically based on information gathered from the Bluetooth Controller. Here's some Controller specific details:
 
 ## TI CC256x
 The CC2564x needs the correct init script to start up. The Makfile already has entries for most silicon revisions:
@@ -12,17 +13,50 @@ The CC2564x needs the correct init script to start up. The Makfile already has e
 
 Please pick the correct one. The main.c verifies that the correct script is loaded, but the init script is linked to the executable.
 
-## Broadcom BCM/CYW 43430
+## Broadcom/Cypress/Infineon Controllers
 
-The correct firmware file needs to be provided in the current working directory. The Makefile downloads the one for the BCM43430 e.g. found on later Raspberry Pi editions. Please see the separate port/raspi, too.
+The correct firmware file needs to be provided in the current working directory. 
+The Makefile / CMake build downloads the one for the BCM43430 e.g. found on later Raspberry Pi editions. 
 
+## Nordic Controller with HCI UART firmware
+
+We maintain an enhanced / configured version of the official HCI UART example here:
+https://github.com/bluekitchen/hci_uart_iso_timesync/tree/main
+
+The main difference of Zephyr-based Nordic Bluetooth Controllers is that:
+- the nRF52- and nRF54-Series use 1000000 as baud rate instead of 115200
+- they don't have a public BD_ADDR.
+
+You can use these by setting the baudrate to 1000000, e.g. like this
+
+	$ ./gatt_counter -u /dev/tty.usbmodem1234 --baud 1000000
+
+The fixed random static address used automatically.
 
 ## Compilation
 
-BTstack's POSIX-H4 does not have additional dependencies. You can directly run make.
+BTstack's POSIX-H4 does not have additional dependencies. You can directly run make
 
-	make
+	$ make
 
+or with CMake/Ninja
+
+    $ mkdir build
+    $ cd build
+    $ cmake -G Ninja ..
+    $ ninja
+
+## Command-line options
+
+All examples provide the following command line options:
+
+    --help      | -h            		    print (this) help.
+    --logfile   | -l  LOGFILE   		    set file to store debug output and HCI trace.
+    --logformat | -f  btsnoop|bluez|pklg	set file format to store debug output in.
+    --reset-tlv | -r            		    reset bonding information stored in TLV.
+    --tty       | -u  TTY       		    set path to Bluetooth Controller.
+    --bd-addr   | -m  BD_ADDR   		    set random static Bluetooth address.
+    --baudrate  | -b  BAUDRATE  		    set initial baudrate.
 
 ## Running the examples
 
