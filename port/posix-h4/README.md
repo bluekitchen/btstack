@@ -33,18 +33,61 @@ You can use these by setting the baudrate to 1000000, e.g. like this
 
 The fixed random static address used automatically.
 
-## Compilation
+## Build with Make
 
 BTstack's POSIX-H4 does not have additional dependencies. You can directly run make
 
 	$ make
 
-or with CMake/Ninja
+## Build with CMake on the command line
 
-    $ mkdir build
-    $ cd build
-    $ cmake -G Ninja ..
-    $ ninja
+To configure and build all examples with CMake/Ninja from the repository root, use:
+
+    $ cmake -S port/posix-h4 -B build/posix-h4 -G Ninja
+    $ cmake --build build/posix-h4
+
+To build a single example only, specify the target explicitly, for example:
+
+    $ cmake --build build/posix-h4 --target gatt_counter
+
+## Build with CMake in Visual Studio Code
+
+The repository contains a shared VS Code workspace file for this port:
+
+    port/posix-h4/btstack-posix-h4.code-workspace
+
+Open this workspace file in Visual Studio Code using File->Open Workspace from File. 
+
+It shows the full BTstack repository in the file explorer, but configures CMake to use `port/posix-h4/CMakeLists.txt`.
+
+### Setup
+
+- Install the `CMake Tools` extension
+- Open `port/posix-h4/btstack-posix-h4.code-workspace`
+
+### Build an example
+
+1. Open the Command Palette
+2. Run `CMake: Configure`
+3. Run `CMake: Select Build Target`
+4. Pick an example, e.g. `gatt_counter`
+5. Run `CMake: Build`
+
+The executable will be created in:
+
+    port/posix-h4/build
+
+### Run an example
+
+Open a terminal in Visual Studio Code and start the example from the build directory,
+for example:
+
+    $ cd port/posix-h4/build
+    $ ./gatt_counter
+
+Running from the build directory is useful as controller-specific firmware and init
+files downloaded by the CMake build are placed there as well.
+
 
 ## Command-line options
 
