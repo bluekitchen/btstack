@@ -210,8 +210,12 @@ static void nxp_handle_chip_version_v1(void){
 
 static void nxp_handle_chip_version_v3(void){
     nxp_chip_id = little_endian_read_16(nxp_input_buffer, 1);
+#ifdef HAVE_POSIX_FILE_IO
     btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), nxp_fw_name_from_chipid(nxp_chip_id));
     printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x -> firmware '%s'\n", nxp_chip_id, nxp_input_buffer[3], nxp_firmware_path);
+#else
+    printf("RECV: NXP_V3_CHIP_VER_PKT, id = 0x%04x, loader 0x%02x\n", nxp_chip_id, nxp_input_buffer[3]);
+#endif
     nxp_tx_send_ack_v3 = true;
     nxp_run();
 }
@@ -414,9 +418,11 @@ static void nxp_done_with_status(uint8_t status){
     nxp_run();
 }
 
+#ifdef HAVE_POSIX_FILE_IO
 void btstack_chipset_nxp_set_v1_firmware_path(const char * firmware_path){
     btstack_strcpy(nxp_firmware_path, sizeof(nxp_firmware_path), firmware_path);
 }
+#endif
 
 void btstack_chipset_nxp_set_firmware(const uint8_t * fw_data, uint32_t fw_size){
     nxp_fw_data = fw_data;
@@ -424,6 +430,7 @@ void btstack_chipset_nxp_set_firmware(const uint8_t * fw_data, uint32_t fw_size)
 }
 
 void nxp_timer_handler(btstack_timer_source_t *ts) {
+    UNUSED(ts);
     printf("No firmware request received, assuming firmware already loaded\n");
     nxp_done_with_status(ERROR_CODE_SUCCESS);
     nxp_run();
