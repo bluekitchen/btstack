@@ -10,6 +10,47 @@ The port provides both a regular Makefile as well as a CMake build file. It uses
 
 Visual Studio can directly open the provided `port/windows-windows-h4/CMakeLists.txt` and allows to compile and run all examples.
 
+## Visual Studio Code
+
+The repository contains a shared VS Code workspace file for this port:
+
+    port/windows-h4/btstack-windows-h4.code-workspace
+
+Open this workspace file in Visual Studio Code. It shows the full BTstack repository
+in the file explorer, but configures CMake to use `port/windows-h4/CMakeLists.txt`
+and places the build directory in `port/windows-h4/build`.
+
+### Setup
+
+- Install the VS Code extensions `CMake Tools` and `C/C++`
+- Install a C/C++ toolchain on Windows, e.g. Visual Studio Community or Build Tools
+  with the `Desktop development with C++` workload
+- Make sure Python is installed, as some generated headers are created during the build
+- Open `port/windows-h4/btstack-windows-h4.code-workspace`
+
+### Build an example
+
+1. Open the Command Palette with `Ctrl+Shift+P`
+2. Run `CMake: Scan for Kits`
+3. Run `CMake: Select a Kit`
+4. Pick your Windows toolchain, e.g. `Visual Studio ... - amd64`
+5. Run `CMake: Configure`
+6. Run `CMake: Select Build Target`
+7. Pick an example, e.g. `gatt_counter`
+8. Run `CMake: Build`
+
+The executable will be created in:
+
+    port/windows-h4/build/
+
+### Run an example
+
+Open a terminal in Visual Studio Code, change to the build directory, and start the
+selected example, for example:
+
+    > cd port\windows-h4\build
+    > .\gatt_counter.exe
+
 ## mingw64 
 
 It can also be compiles with a regular Unix-style toolchain like [mingw-w64](https://www.mingw-w64.org).
@@ -47,4 +88,3 @@ When running the examples in the MSYS2 shell, the console input (via btstack_std
     $ winpty ./gatt_counter.exe
 
 The packet log will be written to hci_dump.pklg
-
