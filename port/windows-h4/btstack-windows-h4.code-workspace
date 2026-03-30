@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "name": "btstack",
+      "path": "../.."
+    }
+  ],
+  "settings": {
+    "cmake.sourceDirectory": "${workspaceFolder}/port/windows-h4",
+    "cmake.buildDirectory": "${workspaceFolder}/port/windows-h4/build"
+  }
+}
