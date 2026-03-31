@@ -22,6 +22,12 @@ Broadcom/Cypress/Infineon controllers require a PatchRAM file. The CMake build d
 
 When running an example, provide the matching `.hcd` file in the current working directory.
 
+Newer Infineon AIROC controllers like the CYW55xx series require AIROC Download Mode for PatchRAM upload. To enable it, provide `--airoc-download-mode` on the command line, for example:
+
+    gatt_counter.exe -u COM3 --airoc-download-mode
+
+After opening the serial port, BTstack asks you to reset the controller and starts the firmware download after a short countdown.
+
 ## Nordic Controller with HCI UART firmware
 
 The main difference of Zephyr-based Nordic Bluetooth Controllers is that:

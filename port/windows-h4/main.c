@@ -98,6 +98,7 @@ static btstack_tlv_windows_t   tlv_context;
 static bd_addr_t             local_addr;
 static bd_addr_t             static_address;
 static bd_addr_t             custom_address;
+static bool                  airoc_download_mode;
 static char                  normalized_device_name[100];
 static bool shutdown_triggered;
 
@@ -114,6 +115,18 @@ static void trigger_shutdown(void){
 }
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+static void enter_download_mode(void){
+    printf("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:\n");
+    for (uint8_t i = 3; i > 0; i--){
+        printf("%u\n", i);
+        Sleep(1000);
+    }
+    printf("Firmware download started\n");
+    hci_power_control(HCI_POWER_CYCLE_COMPLETED);
+}
+#endif
 
 static const char * hci_dump_type_to_string[] = {
         [HCI_DUMP_INVALID]      = "invalid",
@@ -195,9 +208,12 @@ static void usage(const char *name){
     printf("--tty       | -u  TTY        \t\tset path to Bluetooth Controller, e.g. COM1.\n");
     printf("--bd-addr   | -m  BD_ADDR    \t\tset random static Bluetooth address.\n");
     printf("--baudrate  | -b  BAUDRATE   \t\tset initial baudrate.\n");
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    printf("--airoc-download-mode | -d   \t\tenable AIROC Download Mode for newer CYW55xx Controller.\n");
+#endif
 }
 
-int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t * transport_config, bd_addr_t address, bool * reset_tlv){
+int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t * transport_config, bd_addr_t address, bool * reset_tlv, bool * airoc_download_mode_enabled){
     const char * log_file_path = NULL;
     hci_dump_format_t dump_format = HCI_DUMP_PACKETLOGGER;
     char default_log_path[200];
@@ -249,6 +265,14 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
             transport_config->baudrate_init = atoi(value);
             continue;
         }
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+        if (option_matches(arg, "-d", "--airoc-download-mode")){
+            if (airoc_download_mode_enabled != NULL){
+                *airoc_download_mode_enabled = true;
+            }
+            continue;
+        }
+#endif
         if (option_matches(arg, "-h", "--help")){
             usage(argv[0]);
             continue;
@@ -298,6 +322,11 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     if ((address != NULL) && !btstack_is_null_bd_addr(address)){
         printf("address   : %s\n", bd_addr_to_str(address));
     }
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    if ((airoc_download_mode_enabled != NULL) && *airoc_download_mode_enabled){
+        printf("AIROC DL  : true\n");
+    }
+#endif
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
@@ -311,8 +340,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_POWERON_FAILED:
+            printf("Terminating.\n");
+            exit(EXIT_FAILURE);
+            break;
         case BTSTACK_EVENT_STATE:
             switch (btstack_event_state_get_state(packet)){
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+                case HCI_STATE_REQUIRE_POWER_CYCLE:
+                    enter_download_mode();
+                    break;
+#endif
                 case HCI_STATE_WORKING:
                     gap_local_bd_addr(local_addr);
                     if (btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(custom_address)){
@@ -425,10 +463,24 @@ static void local_version_information_handler(uint8_t * packet){
 #endif
             break;
         case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
-            printf("Broadcom - using BCM driver.\n");
-            hci_set_chipset(btstack_chipset_bcm_instance());
-            use_fast_uart();
-            is_bcm = 1;
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+            if (airoc_download_mode) {
+                const char * device_name = btstack_chipset_bcm_identify_controller(lmp_subversion);
+                if (device_name == NULL){
+                    printf("Unknown device, please update btstack_chipset_bcm_identify_controller(...)\n");
+                    printf("in btstack/chipset/bcm/btstack_chipset_bcm.c\n");
+                } else {
+                    printf("Identified Controller: %s\n", device_name);
+                    btstack_chipset_bcm_set_device_name(device_name);
+                }
+            } else
+#endif
+            {
+                printf("Broadcom - using BCM driver.\n");
+                hci_set_chipset(btstack_chipset_bcm_instance());
+                use_fast_uart();
+                is_bcm = 1;
+            }
             break;
         case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:
             printf("ST Microelectronics - using STLC2500d driver.\n");
@@ -463,12 +515,21 @@ int main(int argc, const char * argv[]){
 
     // pick serial port
     config.device_name = "COM1";
-    btstack_main_config(argc, argv, &config, custom_address, &tlv_reset);
+    btstack_main_config(argc, argv, &config, custom_address, &tlv_reset, &airoc_download_mode);
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &config);
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    if (airoc_download_mode) {
+        printf("Use AIROC Download Mode for Broadcom/Cypress/Infineon chipset\n");
+        hci_set_airoc_download_mode(true);
+        hci_set_chipset(btstack_chipset_bcm_instance());
+        use_fast_uart();
+        is_bcm = 1;
+    }
+#endif
     if (!btstack_is_null_bd_addr(custom_address)){
         hci_set_bd_addr(custom_address);
     }
