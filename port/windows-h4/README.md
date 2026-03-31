@@ -6,6 +6,34 @@ Make sure to manually reset the Bluetooth Controller before starting any of the 
 
 The port provides both a regular Makefile as well as a CMake build file. It uses native Win32 APIs for file access and does not require the Cygwin or mingw64 build/runtine. All examples can also be build with Visual Studio 2022 (e.g. Community Edition).
 
+## Configuration
+
+Most Bluetooth Controllers connected via UART/H4 require some special configuration, e.g. to set the UART baud rate and/or to upload firmware patches during startup. The Windows-H4 port tries to detect the controller type automatically based on the reported manufacturer information. Here are some controller specific details:
+
+## TI CC256x
+
+The CC256x needs the correct init script to start up. The build is configured to use `bluetooth_init_cc2564C_1.5.c` by default.
+
+Please pick the correct one for your controller if needed. The application verifies that the selected init script matches the detected chipset, but the init script is linked into the executable.
+
+## Broadcom/Cypress/Infineon Controllers
+
+Broadcom/Cypress/Infineon controllers require a PatchRAM file. The CMake build downloads the BCM43430 PatchRAM used e.g. on later Raspberry Pi models.
+
+When running an example, provide the matching `.hcd` file in the current working directory.
+
+## Nordic Controller with HCI UART firmware
+
+The main difference of Zephyr-based Nordic Bluetooth Controllers is that:
+- the nRF52- and nRF54-Series use 1000000 as baud rate instead of 115200
+- they don't have a public BD_ADDR
+
+You can use these with the regular `windows-h4` port by setting the baudrate to `1000000`, e.g. like this
+
+    gatt_counter.exe -u COM3 --baud 1000000
+
+The fixed random static address is used automatically.
+
 ## Visual Studio 2022
 
 Visual Studio can directly open the provided `port/windows-windows-h4/CMakeLists.txt` and allows to compile and run all examples.
