@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "main.c"
 
 #include <stdint.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,9 +54,9 @@
 #include "btstack_chipset_em9301.h"
 #include "btstack_chipset_stlc2500d.h"
 #include "btstack_chipset_tc3566x.h"
+#include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_main_config.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_windows.h"
@@ -64,6 +65,7 @@
 #include "btstack_tlv_windows.h"
 #include "btstack_util.h"
 #include "classic/btstack_link_key_db_tlv.h"
+#include "gap.h"
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -94,7 +96,9 @@ static bool tlv_reset;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_windows_t   tlv_context;
 static bd_addr_t             local_addr;
+static bd_addr_t             static_address;
 static bd_addr_t             custom_address;
+static char                  normalized_device_name[100];
 static bool shutdown_triggered;
 
 void hal_led_toggle(void){
@@ -151,6 +155,23 @@ static const char * path_basename(const char *path){
     return base_name + 1;
 }
 
+static void copy_app_name(char * buffer, size_t buffer_size, const char * path){
+    const char * app_name = path_basename(path);
+    const char * ext = get_file_ext(app_name);
+    btstack_strcpy(buffer, buffer_size, app_name);
+    if (ext == NULL) return;
+    if ((tolower((unsigned char) ext[0]) != 'e') || (tolower((unsigned char) ext[1]) != 'x') || (tolower((unsigned char) ext[2]) != 'e') || (ext[3] != '\0')) return;
+    buffer[strlen(buffer) - 4] = '\0';
+}
+
+static const char * normalize_device_name(const char * device_name){
+    if (device_name == NULL) return NULL;
+    if (strncmp(device_name, "\\\\.\\", 4) == 0) return device_name;
+    if ((toupper((unsigned char) device_name[0]) != 'C') || (toupper((unsigned char) device_name[1]) != 'O') || (toupper((unsigned char) device_name[2]) != 'M')) return device_name;
+    btstack_snprintf_best_effort(normalized_device_name, sizeof(normalized_device_name), "\\\\.\\%s", device_name);
+    return normalized_device_name;
+}
+
 static bool option_matches(const char *arg, const char *short_option, const char *long_option){
     return (strcmp(arg, short_option) == 0) || (strcmp(arg, long_option) == 0);
 }
@@ -171,7 +192,7 @@ static void usage(const char *name){
     printf("--logfile   | -l  LOGFILE    \t\tset file to store debug output and HCI trace.\n");
     printf("--logformat | -f  btsnoop|bluez|pklg\t\tset file format to store debug output in.\n");
     printf("--reset-tlv | -r             \t\treset bonding information stored in TLV.\n");
-    printf("--tty       | -u  TTY        \t\tset path to Bluetooth Controller.\n");
+    printf("--tty       | -u  TTY        \t\tset path to Bluetooth Controller, e.g. COM1.\n");
     printf("--bd-addr   | -m  BD_ADDR    \t\tset random static Bluetooth address.\n");
     printf("--baudrate  | -b  BAUDRATE   \t\tset initial baudrate.\n");
 }
@@ -193,7 +214,7 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
         if (option_matches(arg, "-u", "--tty")){
             value = option_value(argc, argv, &arg_index, arg);
             if (value == NULL) continue;
-            transport_config->device_name = value;
+            transport_config->device_name = normalize_device_name(value);
             continue;
         }
         if (option_matches(arg, "-l", "--logfile")){
@@ -235,8 +256,8 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     }
 
     if (log_file_path == NULL){
+        char sanitized_app_name[80];
         char sanitized_device_name[80];
-        const char * app_name = path_basename(argv[0]);
         const char * device_name = path_basename(transport_config->device_name);
         const char * dump_ext;
         size_t i;
@@ -245,13 +266,14 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
             dump_format = HCI_DUMP_PACKETLOGGER;
         }
         dump_ext = hci_dump_type_to_string[dump_format];
+        copy_app_name(sanitized_app_name, sizeof(sanitized_app_name), argv[0]);
         btstack_strcpy(sanitized_device_name, sizeof(sanitized_device_name), device_name);
         for (i = 0; i < strlen(sanitized_device_name); i++){
             if ((sanitized_device_name[i] == '.') || (sanitized_device_name[i] == '\\') || (sanitized_device_name[i] == '/')){
                 sanitized_device_name[i] = '_';
             }
         }
-        btstack_snprintf_best_effort(default_log_path, sizeof(default_log_path), "hci_dump_%s_%s.%s", app_name, sanitized_device_name, dump_ext);
+        btstack_snprintf_best_effort(default_log_path, sizeof(default_log_path), "hci_dump_%s_%s.%s", sanitized_app_name, sanitized_device_name, dump_ext);
         log_file_path = default_log_path;
     } else {
         const char *ext = get_file_ext(log_file_path);
@@ -265,6 +287,7 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
 
     hci_dump_windows_fs_open(log_file_path, dump_format);
     hci_dump_init(hci_dump_windows_fs_get_instance());
+    transport_config->device_name = normalize_device_name(transport_config->device_name);
     printf("Packet Log: %s\n", log_file_path);
     printf("Log format: %s\n", hci_dump_enum_to_string[dump_format]);
     printf("Device    : \"%s\"\n", transport_config->device_name);
@@ -284,6 +307,8 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    const uint8_t * params;
+    UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
@@ -292,6 +317,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     gap_local_bd_addr(local_addr);
                     if (btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(custom_address)){
                         memcpy(local_addr, custom_address, sizeof(bd_addr_t));
+                    } else if (btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_address)){
+                        memcpy(local_addr, static_address, sizeof(bd_addr_t));
                     }
                     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
                     btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
@@ -329,17 +356,28 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_NAME){
-                if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
-                // terminate, name 248 chars
-                packet[6+248] = 0;
-                printf("Local name: %s\n", &packet[6]);
-                if (is_bcm){
-                    btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
-                }
-            }
-            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
-                local_version_information_handler(packet);
+            switch (hci_event_command_complete_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+                    local_version_information_handler(packet);
+                    break;
+                case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+                    params = hci_event_command_complete_get_return_parameters(packet);
+                    if (params[0] != 0) break;
+                    if (size < 13) break;
+                    reverse_48(&params[2], static_address);
+                    gap_random_address_set(static_address);
+                    break;
+                case HCI_OPCODE_HCI_READ_LOCAL_NAME:
+                    if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
+                    // terminate, name 248 chars
+                    packet[6+248] = 0;
+                    printf("Local name: %s\n", &packet[6]);
+                    if (is_bcm){
+                        btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
         default:
@@ -402,7 +440,12 @@ static void local_version_information_handler(uint8_t * packet){
             hci_set_chipset(btstack_chipset_em9301_instance());
             break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
-            printf("Nordic Semiconductor nRF5 chipset.\n");
+            printf("Nordic Semiconductor nRF5 chipset - using Zephyr driver.\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
+            break;
+        case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
+            printf("Linux Foundation - assuming Zephyr running on Nordic chipset.\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
             break;
         case BLUETOOTH_COMPANY_ID_TOSHIBA_CORP:
             printf("Toshiba - using TC3566x driver.\n");
@@ -419,7 +462,7 @@ int main(int argc, const char * argv[]){
     printf("BTstack on windows booting up\n");
 
     // pick serial port
-    config.device_name = "\\\\.\\COM7";
+    config.device_name = "COM1";
     btstack_main_config(argc, argv, &config, custom_address, &tlv_reset);
 
     // init HCI
