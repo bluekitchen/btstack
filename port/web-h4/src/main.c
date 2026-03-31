@@ -175,6 +175,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
+            case HCI_STATE_REQUIRE_POWER_CYCLE:
+                    // power cycle already done in interop.js:Module.onStartBTstack()
+                    hci_power_control(HCI_POWER_CYCLE_COMPLETED);
+                    break;
                 case HCI_STATE_WORKING:
                     gap_local_bd_addr(local_addr);
                     if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(zephyr_static_address) ) {
