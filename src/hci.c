@@ -2368,10 +2368,15 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_EVENT_MASK:
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
+#ifdef ENABLE_SM_REPLAY_TEST
+                // SM Replay Test have been recorded with
+                hci_send_cmd(&hci_le_set_event_mask, 0xfffffdff, 0x0007);
+#else
 #ifdef ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT
                 hci_send_cmd(&hci_le_set_event_mask, 0xffffffff, 0x7ffd07); // all events from core v6.2
 #else
                 hci_send_cmd(&hci_le_set_event_mask, 0xfffffdff, 0x7ffc07); // all events from core v6.2 without LE Enhanced Connection Complete
+#endif
 #endif
                 break;
             }
