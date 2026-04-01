@@ -326,10 +326,12 @@ static void avdtp_initiator_handle_stream_endpoint_responses(avdtp_connection_t 
                         log_error("AVDTP_SI_OPEN in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->initiator_local_seid = stream_endpoint->sep.seid;
                     l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, AVDTP_L2CAP_MTU, NULL);
-                    return;
+                    break;
+
                 case AVDTP_SI_START:
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED) {
                         log_error("AVDTP_SI_START in wrong stream endpoint state %d", stream_endpoint->state);
@@ -400,13 +402,14 @@ static void avdtp_initiator_handle_stream_endpoint_responses(avdtp_connection_t 
             log_info("AVDTP_RESPONSE_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
             avdtp_signaling_emit_reject(connection->avdtp_cid, connection->initiator_local_seid,
                                         connection->initiator_signaling_packet.signal_identifier, true);
-            return;
+            break;
 
         case AVDTP_GENERAL_REJECT_MSG:
             log_info("AVDTP_GENERAL_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
             avdtp_signaling_emit_general_reject(connection->avdtp_cid, connection->initiator_local_seid,
                                                 connection->initiator_signaling_packet.signal_identifier, true);
-            return;
+            break;
+
         default:
             break;
     }
