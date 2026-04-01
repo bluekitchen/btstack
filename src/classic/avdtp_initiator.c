@@ -189,31 +189,26 @@ static void avdtp_initiator_handle_general_connection_responses(avdtp_connection
         case AVDTP_RESPONSE_ACCEPT_MSG:
             switch (connection->initiator_signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:{
-                    if (connection->initiator_signaling_packet.transaction_label != connection->initiator_transaction_label){
+                    if (connection->initiator_signaling_packet.transaction_label == connection->initiator_transaction_label) {
+                        int i;
+                        for (i = offset; i < size; i += 2){
+                            if (!avdtp_initiator_have_bytes((uint16_t)i, size, 2u)) break;
+                            sep.seid = packet[i] >> 2;
+                            if ((sep.seid < 0x01) || (sep.seid > 0x3E)){
+                                log_info("invalid sep id");
+                                // status = BAD_ACP_SEID;
+                                break;
+                            }
+                            sep.in_use = (packet[i] >> 1) & 0x01;
+                            sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
+                            sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
+                            avdtp_signaling_emit_sep(connection->avdtp_cid, sep);
+                        }
+                    } else {
                         log_info("unexpected transaction label, got %d, expected %d", connection->initiator_signaling_packet.transaction_label, connection->initiator_transaction_label);
                         // status = BAD_HEADER_FORMAT;
-                        break;
                     }
-                    
-                    if (size == 3){
-                        log_info("ERROR code %02x", packet[offset]);
-                        break;
-                    }
-                    
-                    int i;
-                    for (i = offset; i < size; i += 2){
-                        if (!avdtp_initiator_have_bytes((uint16_t)i, size, 2u)) break;
-                        sep.seid = packet[i] >> 2;
-                        if ((sep.seid < 0x01) || (sep.seid > 0x3E)){
-                            log_info("invalid sep id");
-                            // status = BAD_ACP_SEID;
-                            break;
-                        }
-                        sep.in_use = (packet[i] >> 1) & 0x01;
-                        sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
-                        sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
-                        avdtp_signaling_emit_sep(connection->avdtp_cid, sep);
-                    }
+
                     avdtp_signaling_emit_sep_done(connection->avdtp_cid);
                     break;
                 }
