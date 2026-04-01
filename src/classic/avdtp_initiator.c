@@ -191,8 +191,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
     avdtp_signaling_packet_t * signaling_header = &connection->initiator_signaling_packet;
 
     switch (connection->initiator_connection_state){
+        // This state is in W4_ANSWER for the general queries that do not involve stream endpoint configuration or control,
+        // e.g. SEP discovery, getting capabilities and configuration, delay report.
+        // Once the answer is received, the state is set back to IDLE.
+
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
             switch (connection->initiator_signaling_packet.signal_identifier) {
+                // handle fragmented answer for GET_CAPABILITIES/GET_ALL_CAPABILITIES, ignore for all other
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     if (!avdtp_initiator_num_packets_valid(connection, signaling_header)) {
@@ -217,7 +222,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             }
             break;
 
-        case AVDTP_INITIATOR_STREAM_CONFIG_IDLE:
+        case AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE:
+            // Handle answers to stream endpoint configuration and control commands
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
             if (stream_endpoint == NULL) {
                 log_debug("no stream endpoint for local seid %u", connection->initiator_local_seid);
@@ -225,17 +231,16 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             }
             log_debug("using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
 
-            sep.seid = connection->initiator_remote_seid;
-
             if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
                 log_error("initiator_config_state is in wrong state %d, expected %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER);
                 return;
             }
+
+            sep.seid = connection->initiator_remote_seid;
             stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
             break;
 
         default:
-            btstack_unreachable();
             return;
     }
 
