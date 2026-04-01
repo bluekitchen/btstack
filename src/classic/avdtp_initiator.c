@@ -204,7 +204,6 @@ static void avdtp_initiator_handle_general_connection_responses(avdtp_connection
                     for (i = offset; i < size; i += 2){
                         if (!avdtp_initiator_have_bytes((uint16_t)i, size, 2u)) break;
                         sep.seid = packet[i] >> 2;
-                        offset++;
                         if ((sep.seid < 0x01) || (sep.seid > 0x3E)){
                             log_info("invalid sep id");
                             // status = BAD_ACP_SEID;
