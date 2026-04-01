@@ -1,7 +1,7 @@
 # BTstack Port for POSIX Systems with libusb Library
 
 ## Compilation
-The quickest way to try BTstack is on a Linux or OS X system with an
+The quickest way to try BTstack is on a Linux or macOS system with an
 additional USB Bluetooth dongle. It requires
 [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
 and [libusb-1.0](http://libusb.info) or higher to be
@@ -10,7 +10,6 @@ installed.
 On a recent Debian-based system, all you need is:
 
 	sudo apt-get install gcc git cmake ninja-build pkg-config libusb-1.0 portaudio19-dev
-
 
 When everything is ready, you compile all examples with make:
 
@@ -66,6 +65,19 @@ Note: if you get this error,
 
 and you didn't start another instance and you didn't assign the USB Controller to a virtual machine,
 macOS uses the plugged-in Bluetooth Controller. Please configure NVRAM as explained and try again after a reboot.
+
+#### macOS 26 Tahoe
+
+From macOS 26.0 until now (currently macOS 26.4) access to a Bluetooth Controller via libusb causes a kernel panic.
+
+The libusb project has a closed issue about it here: https://github.com/libusb/libusb/issues/1762
+They closed it as the crash happens in the kernel and they or we cannot fix this.
+Please send bug/crash reports via the Feedback Assistant to Apple.
+
+To use BTstack on macOS 26, you're best option is to run a Linux distribution like Debian or Ubuntu in a virtual machine
+and acess the USB Bluetooth Dongle from there. We can confirm that BTstack works as expected in a Ubuntu 2024 VM with
+UTM and the CSR8510 USB dongle.
+
 
 ### Broadcom/Cypress/Infineon Controllers
 During startup BTstack queries the Controlle for the Local Name, which is set to the Controller type (e.g. 'BCM20702A).
