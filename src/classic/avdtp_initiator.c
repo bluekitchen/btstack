@@ -258,7 +258,6 @@ static void avdtp_initiator_handle_general_connection_responses(avdtp_connection
                     break;
             }
             avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
-            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             break;
 
         case AVDTP_RESPONSE_REJECT_MSG:
@@ -382,20 +381,19 @@ static void avdtp_initiator_handle_stream_endpoint_responses(avdtp_connection_t 
 
                 default:
                     log_info("AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
-                    break;
+                    return;
             }
             if (stream_endpoint_for_event != NULL){
                 avdtp_signaling_emit_accept_for_stream_endpoint(stream_endpoint_for_event, connection->initiator_local_seid,
                                                                 connection->initiator_signaling_packet.signal_identifier, true);
             }
-            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             break;
 
         case AVDTP_RESPONSE_REJECT_MSG:
             switch (connection->initiator_signaling_packet.signal_identifier){
                 case AVDTP_SI_SET_CONFIGURATION:
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
-                    sep.in_use = 0;
+                    stream_endpoint->sep.in_use = 0;
                     log_info("Received reject for set configuration, role changed from initiator to acceptor. TODO: implement retry.");
                     break;
                 case AVDTP_SI_RECONFIGURE:
