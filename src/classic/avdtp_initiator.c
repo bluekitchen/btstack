@@ -182,67 +182,8 @@ static bool avdtp_initiator_num_packets_valid(const avdtp_connection_t *connecti
     }
 }
 
-void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
-    // int status = 0;
-    avdtp_stream_endpoint_t * stream_endpoint = NULL;
-    avdtp_stream_endpoint_t * stream_endpoint_for_event = NULL;
-
+static void avdtp_initiator_handle_general_connection_responses(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
     avdtp_sep_t sep;
-    avdtp_signaling_packet_t * signaling_header = &connection->initiator_signaling_packet;
-
-    switch (connection->initiator_connection_state){
-        // This state is in W4_ANSWER for the general queries that do not involve stream endpoint configuration or control,
-        // e.g. SEP discovery, getting capabilities and configuration, delay report.
-        // Once the answer is received, the state is set back to IDLE.
-
-        case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
-            switch (connection->initiator_signaling_packet.signal_identifier) {
-                // handle fragmented answer for GET_CAPABILITIES/GET_ALL_CAPABILITIES, ignore for all other
-                case AVDTP_SI_GET_CAPABILITIES:
-                case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    if (!avdtp_initiator_num_packets_valid(connection, signaling_header)) {
-                        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                        avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);
-                        return;
-                    }
-                    if ((signaling_header->packet_type == AVDTP_END_PACKET) ||
-                        (signaling_header->packet_type == AVDTP_SINGLE_PACKET)) {
-                        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                        break;
-                    }
-                    // assembly implemented, keep AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER state
-                    break;
-                default:
-                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
-                    if ((signaling_header->packet_type != AVDTP_SINGLE_PACKET)) {
-                        log_info("Fragmentation for signal identifier %d not implemented", connection->initiator_signaling_packet.signal_identifier);
-                        return;
-                    }
-                    break;
-            }
-            break;
-
-        case AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE:
-            // Handle answers to stream endpoint configuration and control commands
-            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
-            if (stream_endpoint == NULL) {
-                log_debug("no stream endpoint for local seid %u", connection->initiator_local_seid);
-                return;
-            }
-            log_debug("using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
-
-            if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
-                log_error("initiator_config_state is in wrong state %d, expected %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER);
-                return;
-            }
-
-            sep.seid = connection->initiator_remote_seid;
-            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-            break;
-
-        default:
-            return;
-    }
 
     switch (connection->initiator_signaling_packet.message_type){
         case AVDTP_RESPONSE_ACCEPT_MSG:
@@ -280,10 +221,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    signaling_header->size = size - offset;
-                    signaling_header->offset = 0;
+                    connection->initiator_signaling_packet.size = size - offset;
+                    connection->initiator_signaling_packet.offset = 0;
 
-                    switch (signaling_header->packet_type){
+                    switch (connection->initiator_signaling_packet.packet_type){
                         case AVDTP_START_PACKET:
                             avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
                             avdtp_initiator_parser_reset(connection);
@@ -309,11 +250,43 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     }
                     break;
                 
+                case AVDTP_SI_DELAYREPORT:
+                case AVDTP_SI_GET_CONFIGURATION:
+                    break;
+                default:
+                    log_info("AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
+                    break;
+            }
+            avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
+            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+            break;
+
+        case AVDTP_RESPONSE_REJECT_MSG:
+            log_info("AVDTP_RESPONSE_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
+            avdtp_signaling_emit_reject(connection->avdtp_cid, connection->initiator_local_seid,
+                                        connection->initiator_signaling_packet.signal_identifier, true);
+            return;
+
+        case AVDTP_GENERAL_REJECT_MSG:
+            log_info("AVDTP_GENERAL_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
+            avdtp_signaling_emit_general_reject(connection->avdtp_cid, connection->initiator_local_seid,
+                                                connection->initiator_signaling_packet.signal_identifier, true);
+            return;
+        default:
+            break;
+    }
+}
+
+static void avdtp_initiator_handle_stream_endpoint_responses(avdtp_connection_t *connection, avdtp_stream_endpoint_t * stream_endpoint){
+    avdtp_stream_endpoint_t * stream_endpoint_for_event = NULL;
+
+    avdtp_sep_t sep;
+    sep.seid = connection->initiator_remote_seid;
+
+    switch (connection->initiator_signaling_packet.message_type){
+        case AVDTP_RESPONSE_ACCEPT_MSG:
+            switch (connection->initiator_signaling_packet.signal_identifier){
                 case AVDTP_SI_RECONFIGURE:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_RECONFIGURE: stream endpoint is null");
-                        break;
-                    }
                     stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->remote_sep.configured_service_categories |= stream_endpoint->remote_configuration_bitmap;
                     stream_endpoint->remote_sep.configuration = stream_endpoint->remote_configuration;
@@ -329,11 +302,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
-                        break;
-                    }
-
                     stream_endpoint_for_event = stream_endpoint;
 
                     sep.configured_service_categories = stream_endpoint->remote_configuration_bitmap;
@@ -361,24 +329,15 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     break;
 
                 case AVDTP_SI_OPEN:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_OPEN: stream endpoint is null");
-                        break;
-                    }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_ACCEPT_OPEN_STREAM) {
                         log_error("AVDTP_SI_OPEN in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
                     }
-                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->initiator_local_seid = stream_endpoint->sep.seid;
                     l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, AVDTP_L2CAP_MTU, NULL);
                     return;
                 case AVDTP_SI_START:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_START: stream endpoint is null");
-                        break;
-                    }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED) {
                         log_error("AVDTP_SI_START in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
@@ -387,10 +346,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
                     break;
                 case AVDTP_SI_SUSPEND:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_SUSPEND: stream endpoint is null");
-                        break;
-                    }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) {
                         log_error("AVDTP_SI_SUSPEND in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
@@ -399,10 +354,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
                 case AVDTP_SI_CLOSE:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_CLOSE: stream endpoint is null");
-                        break;
-                    }
                     switch (stream_endpoint->state){
                         case AVDTP_STREAM_ENDPOINT_OPENED:
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
@@ -415,10 +366,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     }
                     break;
                 case AVDTP_SI_ABORT:
-                    if (!stream_endpoint){
-                        log_error("AVDTP_SI_ABORT: stream endpoint is null");
-                        break;
-                    }
                     switch (stream_endpoint->state){
                         case AVDTP_STREAM_ENDPOINT_CONFIGURED:
                         case AVDTP_STREAM_ENDPOINT_CLOSING:
@@ -433,10 +380,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     }
                     break;
 
-                case AVDTP_SI_DELAYREPORT:
-                    break;
-                case AVDTP_SI_GET_CONFIGURATION:
-                    break;
                 default:
                     log_info("AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
                     break;
@@ -444,8 +387,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             if (stream_endpoint_for_event != NULL){
                 avdtp_signaling_emit_accept_for_stream_endpoint(stream_endpoint_for_event, connection->initiator_local_seid,
                                                                 connection->initiator_signaling_packet.signal_identifier, true);
-            } else {
-                avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
             }
             connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             break;
@@ -476,6 +417,66 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             return;
         default:
             break;
+    }
+}
+
+void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
+    avdtp_stream_endpoint_t * stream_endpoint = NULL;
+    avdtp_signaling_packet_t * signaling_header = &connection->initiator_signaling_packet;
+
+    switch (connection->initiator_connection_state){
+        // This state is in W4_ANSWER for the general queries that do not involve stream endpoint configuration or control,
+        // e.g. SEP discovery, getting capabilities and configuration, delay report.
+        // Once the answer is received, the state is set back to IDLE.
+
+        case AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER:
+            switch (connection->initiator_signaling_packet.signal_identifier) {
+                // handle fragmented answer for GET_CAPABILITIES/GET_ALL_CAPABILITIES, ignore for all other
+                case AVDTP_SI_GET_CAPABILITIES:
+                case AVDTP_SI_GET_ALL_CAPABILITIES:
+                    if (!avdtp_initiator_num_packets_valid(connection, signaling_header)) {
+                        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                        avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);
+                        return;
+                    }
+                    if ((signaling_header->packet_type == AVDTP_END_PACKET) ||
+                        (signaling_header->packet_type == AVDTP_SINGLE_PACKET)) {
+                        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                        break;
+                    }
+                    // assembly implemented, keep AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER state
+                    break;
+                default:
+                    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
+                    if ((signaling_header->packet_type != AVDTP_SINGLE_PACKET)) {
+                        log_info("Fragmentation for signal identifier %d not implemented", connection->initiator_signaling_packet.signal_identifier);
+                        return;
+                    }
+                    break;
+            }
+            avdtp_initiator_handle_general_connection_responses(connection, packet, size, offset);
+            break;
+
+        case AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE:
+            // Handle answers to stream endpoint configuration and control commands
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
+            if (stream_endpoint == NULL) {
+                log_debug("no stream endpoint for local seid %u, signal identifier %d", connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier);
+                return;
+            }
+            log_debug("using stream endpoint %p for local seid %u, signal identifier %d", stream_endpoint, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier);
+
+            if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
+                log_error("initiator_config_state is in wrong state %d, expected %d, signal identifier %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER, connection->initiator_signaling_packet.signal_identifier);
+                return;
+            }
+
+            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
+            avdtp_initiator_handle_stream_endpoint_responses(connection, stream_endpoint);
+            break;
+
+        default:
+            return;
     }
 }
 
