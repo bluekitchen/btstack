@@ -60,7 +60,7 @@ include_directories(${BTSTACK_ROOT}/platform/lwip)
 include_directories(${BTSTACK_ROOT}/platform/lwip/port)
 include_directories(${BTSTACK_ROOT}/platform/posix)
 
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/example/audio_player_demo_util.c")
+file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/*_demo_util*.c")
 file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
 file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
@@ -140,6 +140,7 @@ set(SOURCES
   ${SOURCES_GATT}
   ${SOURCES_HXCMOD}
   ${SOURCES_HXCMOD}
+  ${SOURCES_LC3_GOOGLE}
   ${SOURCES_LIBUSB}
   ${SOURCES_MD5}
   ${SOURCES_MESH}
@@ -193,7 +194,7 @@ include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_LE_AUDIO} ${EXAMPLES_DUAL_MODE})
 list(REMOVE_DUPLICATES EXAMPLES)
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
