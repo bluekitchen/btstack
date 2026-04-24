@@ -99,6 +99,9 @@ static btstack_context_callback_registration_t stdio_callback_context = {
     .context = NULL,
 };
 
+#ifdef CONFIG_ESP_CONSOLE_UART
+/* UART Implementation */
+
 void btstack_stdin_setup(void (*handler)(char c)){
     if (btstack_stdio_initialized == false){
         ESP_LOGE(TAG, "to enable support for console input, call btstack_stdio_init first");
@@ -106,9 +109,6 @@ void btstack_stdin_setup(void (*handler)(char c)){
     // set handler
     stdin_handler = handler;
 }
-
-#ifdef CONFIG_ESP_CONSOLE_UART
-/* UART Implementation */
 
 #include "driver/uart.h"
 static QueueHandle_t uart_queue = NULL;
@@ -233,6 +233,14 @@ void btstack_stdio_init(void) {
 
 #elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
 
+void btstack_stdin_setup(void (*handler)(char c)){
+    if (btstack_stdio_initialized == false){
+        ESP_LOGE(TAG, "to enable support for console input, call btstack_stdio_init first");
+    }
+    // set handler
+    stdin_handler = handler;
+}
+
 /* USB JTAG/Serial Implementation */
 #include "driver/usb_serial_jtag.h"
 
@@ -284,6 +292,9 @@ void btstack_stdio_init(void) {
 #else
 
 // Empty functions for backwards-compatibility
+static void btstack_stdio_process(void *context){
+    UNUSED(context);
+}
 void btstack_stdio_init(void) {}
 void btstack_stdin_setup(void (*handler)(char c)){
     (void) handler;
