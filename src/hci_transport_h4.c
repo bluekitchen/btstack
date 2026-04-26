@@ -50,6 +50,7 @@
 #include "hci_transport_h4.h"
 
 #include "btstack_debug.h"
+#include "btstack_bool.h"
 #include "hci.h"
 #include "hci_transport.h"
 #include "bluetooth_company_id.h"
@@ -146,6 +147,7 @@ static void (*hci_transport_h4_packet_handler)(uint8_t packet_type, uint8_t *pac
 static  H4_STATE h4_state;
 static uint16_t bytes_to_read;
 static uint16_t read_pos;
+static bool hci_transport_h4_read_active;
 
 // incoming packet buffer
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE + 1]; // packet type + max(acl header + acl payload, event header + event data)
@@ -188,6 +190,7 @@ static void hci_transport_h4_reset_statemachine(void){
 
 static void hci_transport_h4_trigger_next_read(void){
     // log_info("hci_transport_h4_trigger_next_read: %u bytes", bytes_to_read);
+    hci_transport_h4_read_active = true;
     btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);  
 }
 
@@ -227,6 +230,7 @@ static void hci_transport_h4_packet_complete(void){
 }
 
 static void hci_transport_h4_block_read(void){
+    hci_transport_h4_read_active = false;
 
     read_pos += bytes_to_read;
 
@@ -341,7 +345,8 @@ static void hci_transport_h4_block_read(void){
         hci_transport_h4_packet_complete();
     }
 
-    if (h4_state != H4_OFF) {
+    // Packet delivery may power-cycle the transport and trigger a new read via hci_transport_h4_open().
+    if ((h4_state != H4_OFF) && !hci_transport_h4_read_active) {
         hci_transport_h4_trigger_next_read();
     }
 }
@@ -441,6 +446,7 @@ static void hci_transport_h4_init(const void * transport_config){
     // set state to off
     tx_state = TX_OFF;
     h4_state = H4_OFF;
+    hci_transport_h4_read_active = false;
 
     // setup UART driver
     btstack_uart->init(&hci_transport_h4_uart_config);
@@ -470,6 +476,7 @@ static int hci_transport_h4_close(void){
     // set state to off
     tx_state = TX_OFF;
     h4_state = H4_OFF;
+    hci_transport_h4_read_active = false;
 
     // close uart driver
     return btstack_uart->close();
