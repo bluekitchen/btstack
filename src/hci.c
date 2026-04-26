@@ -3609,45 +3609,53 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
     log_info("LE Connection_complete (status=%u) type %u, %s", status, addr_type, bd_addr_to_str(addr));
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
 
-#ifdef ENABLE_LE_CENTRAL
-	// handle error: error is reported only to the initiator -> outgoing connection
 	if (status){
+#ifdef ENABLE_LE_CENTRAL
+	    if (role == HCI_ROLE_MASTER) {
+	        // handle cancelled outgoing connection
+	        // "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
+	        //  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
+	        //  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
+	        bool connection_was_cancelled = false;
+	        if (status == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
+	            connection_was_cancelled = true;
+	            // reset state
+	            hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+	            // get outgoing connection conn struct for direct connect
+	            conn = gap_get_outgoing_le_connection();
+	            // prepare restart if still active
+	            if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
+	                conn->state = SEND_CREATE_CONNECTION;
+	            }
+	        }
 
-		// handle cancelled outgoing connection
-		// "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
-		//  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
-		//  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
-        bool connection_was_cancelled = false;
-		if (status == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
-            connection_was_cancelled = true;
-		    // reset state
-            hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-            // get outgoing connection conn struct for direct connect
-            conn = gap_get_outgoing_le_connection();
-            // prepare restart if still active
-            if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
-                conn->state = SEND_CREATE_CONNECTION;
-            }
-		}
+	        // free connection if cancelled by user (request == IDLE)
+	        bool cancelled_by_user = hci_stack->le_connecting_request == LE_CONNECTING_IDLE;
+	        if ((conn != NULL) && cancelled_by_user){
+	            // remove entry
+	            btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
+	            btstack_memory_hci_connection_free( conn );
+	        }
 
-		// free connection if cancelled by user (request == IDLE)
-        bool cancelled_by_user = hci_stack->le_connecting_request == LE_CONNECTING_IDLE;
-		if ((conn != NULL) && cancelled_by_user){
-			// remove entry
-			btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
-			btstack_memory_hci_connection_free( conn );
-		}
-
-        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for:
-        // - outgoing error not caused by connection cancel
-        // - connection cancelled by user
-        // by this, no event is emitted for intermediate connection cancel required filterlist modification
-        if ((connection_was_cancelled == false) || cancelled_by_user){
-            hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
-        }
-        return;
-	}
+	        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for:
+	        // - outgoing error not caused by connection cancel
+	        // - connection cancelled by user
+	        // by this, no event is emitted for intermediate connection cancel required filterlist modification
+	        if ((connection_was_cancelled == false) || cancelled_by_user){
+	            hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
+	        }
+	        return;
+	    }
 #endif
+#ifdef ENABLE_LE_PERIPHERAL
+	    if (role == HCI_ROLE_SLAVE) {
+	        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for:
+	        // - directed advertising timeout (ERROR_CODE_DIRECTED_ADVERTISING_TIMEOUT)
+	        hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
+	        return;
+	    }
+#endif
+	}
 
 	// on success, both hosts receive connection complete event
     if (role == HCI_ROLE_MASTER){
