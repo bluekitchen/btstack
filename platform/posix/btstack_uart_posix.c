@@ -366,10 +366,14 @@ static int btstack_uart_posix_open(void){
     return 0;
 }
 
-static int btstack_uart_posix_close_new(void){
+static int btstack_uart_posix_close(void){
 
     // first remove run loop handler
     btstack_run_loop_remove_data_source(&transport_data_source);
+
+    // cancel in-flight transfers
+    btstack_uart_block_read_bytes_len = 0;
+    btstack_uart_block_write_bytes_len = 0;
 
     // then close device 
     close(transport_data_source.source.fd);
@@ -640,27 +644,30 @@ static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_sourc
 }
 
 static const btstack_uart_t btstack_uart_posix = {
-    /* int  (*init)(hci_transport_config_uart_t * config); */              &btstack_uart_posix_init,
-    /* int  (*open)(void); */                                              &btstack_uart_posix_open,
-    /* int  (*close)(void); */                                             &btstack_uart_posix_close_new,
-    /* void (*set_block_received)(void (*handler)(void)); */               &btstack_uart_posix_set_block_received,
-    /* void (*set_block_sent)(void (*handler)(void)); */                   &btstack_uart_posix_set_block_sent,
-    /* int  (*set_baudrate)(uint32_t baudrate); */                         &btstack_uart_posix_set_baudrate,
-    /* int  (*set_parity)(int parity); */                                  &btstack_uart_posix_set_parity,
-    /* int  (*set_flowcontrol)(int flowcontrol); */                        &btstack_uart_posix_set_flowcontrol,
-    /* void (*receive_block)(uint8_t *buffer, uint16_t len); */            &btstack_uart_posix_receive_block,
-    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */      &btstack_uart_posix_send_block,
-    /* int (*get_supported_sleep_modes); */                                NULL,
-    /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */         NULL,
-    /* void (*set_wakeup_handler)(void (*handler)(void)); */               NULL,
+    .init                    = &btstack_uart_posix_init,
+    .open                    = &btstack_uart_posix_open,
+    .close                   = &btstack_uart_posix_close,
+    .set_block_received      = &btstack_uart_posix_set_block_received,
+    .set_block_sent          = &btstack_uart_posix_set_block_sent,
+    .set_baudrate            = &btstack_uart_posix_set_baudrate,
+    .set_parity              = &btstack_uart_posix_set_parity,
+    .set_flowcontrol         = &btstack_uart_posix_set_flowcontrol,
+    .receive_block           = &btstack_uart_posix_receive_block,
+    .send_block              = &btstack_uart_posix_send_block,
+    .get_supported_sleep_modes = NULL,
+    .set_sleep               = NULL,
+    .set_wakeup_handler      = NULL,
 
 #ifdef ENABLE_H5
-    /* void (*set_frame_received)(void (*handler)(uint16_t frame_size); */ &btstack_uart_slip_posix_set_frame_received,
-    /* void (*set_fraae_sent)(void (*handler)(void)); */                   &btstack_uart_slip_posix_set_frame_sent,
-    /* void (*receive_frame)(uint8_t *buffer, uint16_t len); */            &btstack_uart_slip_posix_receive_frame,
-    /* void (*send_frame)(const uint8_t *buffer, uint16_t length); */      &btstack_uart_slip_posix_send_frame,
+    .set_frame_received      = &btstack_uart_slip_posix_set_frame_received,
+    .set_frame_sent          = &btstack_uart_slip_posix_set_frame_sent,
+    .receive_frame           = &btstack_uart_slip_posix_receive_frame,
+    .send_frame              = &btstack_uart_slip_posix_send_frame,
 #else
-    NULL, NULL, NULL, NULL,
+    .set_frame_received      = NULL,
+    .set_frame_sent          = NULL,
+    .receive_frame           = NULL,
+    .send_frame              = NULL,
 #endif
 };
 
