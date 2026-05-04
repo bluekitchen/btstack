@@ -3649,6 +3649,10 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
 	    if (role == HCI_ROLE_SLAVE) {
+	        // reset advertising state for advertising timeout in directed advertising
+	        if (status == ERROR_CODE_DIRECTED_ADVERTISING_TIMEOUT) {
+                hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+	        }
 	        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for:
 	        // - directed advertising timeout (ERROR_CODE_DIRECTED_ADVERTISING_TIMEOUT)
 	        hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
