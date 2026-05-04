@@ -362,6 +362,11 @@ static int setup_demo(void){
     // - Allow to show up in Bluetooth inquiry
     gap_discoverable_control(1);
 
+#ifdef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
+    // - Allow to connect
+    gap_connectable_control(1);
+#endif
+    
     // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Headphone
     gap_set_class_of_device(0x200404);
 

@@ -361,7 +361,12 @@ static int a2dp_source_and_avrcp_services_init(void){
     gap_set_local_name("A2DP Source 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
-    
+
+#ifdef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
+    // - Allow to connect
+    gap_connectable_control(1);
+#endif
+
     // Register for HCI events.
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
