@@ -544,6 +544,7 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(status);
 
     bd_addr_t address;
+    link_key_t link_key = { 0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa};
     uint32_t cod;
 
     // Service Class: Rendering | Audio, Major Device Class: Audio
@@ -560,6 +561,11 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf("Pin code request - using '0000'\n");
             hci_event_pin_code_request_get_bd_addr(packet, address);
             gap_pin_code_response(address, "0000");
+            break;
+        case HCI_EVENT_LINK_KEY_REQUEST:
+            printf("Use dummyh link key\n");
+            hci_event_link_key_request_get_bd_addr(packet, address);
+            gap_send_link_key_response(address, link_key, AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256);
             break;
         case GAP_EVENT_INQUIRY_RESULT:
             gap_event_inquiry_result_get_bd_addr(packet, address);

@@ -687,11 +687,21 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
-        bd_addr_t address;
-        printf("Pin code request - using '0000'\n");
-        hci_event_pin_code_request_get_bd_addr(packet, address);
-        gap_pin_code_response(address, "0000");
+    bd_addr_t address;
+    link_key_t link_key = { 0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa};
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            printf("Pin code request - using '0000'\n");
+            hci_event_pin_code_request_get_bd_addr(packet, address);
+            gap_pin_code_response(address, "0000");
+            break;
+        case HCI_EVENT_LINK_KEY_REQUEST:
+            printf("Use dummyh link key\n");
+            hci_event_link_key_request_get_bd_addr(packet, address);
+            gap_send_link_key_response(address, link_key, AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256);
+            break;
+        default:
+            break;
     }
 }
 
@@ -1149,8 +1159,9 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
         case A2DP_SUBEVENT_START_STREAM_REQUESTED:
+            cid = a2dp_subevent_start_stream_requested_get_a2dp_cid(packet);
             printf("A2DP  Sink      : Explicit Accept to start stream, local_seid %d\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
-            a2dp_sink_start_stream_accept(a2dp_cid, a2dp_local_seid);
+            a2dp_sink_start_stream_accept(cid, a2dp_subevent_start_stream_requested_get_local_seid(packet));
             break;
 #endif
         case A2DP_SUBEVENT_STREAM_STARTED:
