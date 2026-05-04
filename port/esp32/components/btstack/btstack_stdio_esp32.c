@@ -56,6 +56,9 @@
 
 #include "btstack_stdin.h"
 #include "esp_log.h"
+
+#include <stddef.h>
+
 static const char *TAG = "btstack_stdio";
 
 #ifdef HAVE_CONSOLE
@@ -78,17 +81,15 @@ static const char *TAG = "btstack_stdio";
 #else
 #include "esp_vfs_dev.h"
 #endif
-#endif
 
-
-static void (*stdin_handler)(char c);
-
-// after the capacity of the TX buffer is exceeded the output will block, so
+// after the capacity of the TX buffer is exceeded, the output will block, so
 // in order to prevent that the TX buffer needs to be big enough or
 // the baudrate needs to be increased.
 // Usually the maximum baudrate for the target is preferred
 #define RX_BUF_SIZE (1024)
 #define TX_BUF_SIZE (4096)
+
+static void (*stdin_handler)(char c);
 
 static bool btstack_stdio_initialized;
 
@@ -106,6 +107,7 @@ void btstack_stdin_setup(void (*handler)(char c)){
     // set handler
     stdin_handler = handler;
 }
+#endif
 
 #ifdef CONFIG_ESP_CONSOLE_UART
 /* UART Implementation */
