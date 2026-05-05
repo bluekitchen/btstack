@@ -86,6 +86,7 @@ const uint8_t adv_data[] = {
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 uint8_t adv_data_len = sizeof(adv_data);
 
@@ -207,6 +208,10 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case SM_EVENT_JUST_WORKS_REQUEST:
+                    printf("Just Works requested\n");
+                    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+                    break;
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
@@ -477,8 +482,10 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
 
-    // setup SM: Display only
+    // setup SM: Just Works pairing, without bonding
     sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
@@ -486,6 +493,10 @@ int btstack_main(int argc, const char * argv[]){
     // register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &hci_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);

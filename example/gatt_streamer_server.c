@@ -95,6 +95,7 @@ const uint8_t adv_data[] = {
 const uint8_t adv_data_len = sizeof(adv_data);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 // support for multiple clients
 typedef struct {
@@ -151,12 +152,14 @@ static void next_connection_index(void){
  
 /* LISTING_START(MainConfiguration): Init L2CAP, SM, ATT Server, and enable advertisements */
 
-static void le_streamer_setup(void){
+static void gatt_streamer_server_setup(void){
 
     l2cap_init();
 
-    // setup SM: Display only
+    // setup SM: Just Works pairing, without bonding
     sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // init SDP, create record for GATT and register with SDP
@@ -178,6 +181,10 @@ static void le_streamer_setup(void){
     // register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &hci_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);
@@ -264,6 +271,10 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     };
 
     switch (hci_event_packet_get_type(packet)) {
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
@@ -463,7 +474,7 @@ int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
     UNUSED(argv);
 
-    le_streamer_setup();
+    gatt_streamer_server_setup();
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
