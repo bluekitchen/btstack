@@ -531,7 +531,6 @@ static void hci_dedicated_bonding_handle_complete(hci_connection_t* hci_connecti
 }
 
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
-    hci_connection->requested_security_level = LEVEL_0;
     if (!hci_pairing_active(hci_connection)) return;
     hci_connection_clear_authentication_flags(hci_connection, AUTH_FLAG_PAIRING_ACTIVE_MASK);
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
