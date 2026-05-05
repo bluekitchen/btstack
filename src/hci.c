@@ -9009,8 +9009,8 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
         requested_level, connection->requested_security_level, current_level);
 
-    // authentication active if authentication request was sent or planned level > 0
-    bool authentication_active = ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) || (connection->requested_security_level > LEVEL_0);
+    // authentication active if requested level already set
+    bool authentication_active = connection->requested_security_level > LEVEL_0;
     if (authentication_active){
         // authentication already active
         if (connection->requested_security_level < requested_level){
