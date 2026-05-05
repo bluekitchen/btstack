@@ -5225,6 +5225,9 @@ void sm_init(void){
 
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 16;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    sm_sc_only_mode = true;
+#endif
 
     sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;

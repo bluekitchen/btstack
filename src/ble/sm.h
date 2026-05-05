@@ -126,7 +126,7 @@ void sm_set_io_capabilities(io_capability_t io_capability);
 
 /**
  * @brief Enable/disable Secure Connections Mode only
- * @param enable secure connections only mode
+ * @param enable secure connections only mode (default: true, if ENABLE_LE_SECURE_CONNECTIONS enabled)
  */
 void sm_set_secure_connections_only_mode(bool enable);
 
