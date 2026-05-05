@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - GAP: emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for timeout of directed advertising
+- GAP: avoid sending HCI Authenticate a second time in some cases
 - A2DP: get capabilities of all streamendpoints
 - A2DP: avoid assert for outgoing connection to local Bluetooth address
 - AVDTP: fix serialization of MPEG-D USAC configuration
