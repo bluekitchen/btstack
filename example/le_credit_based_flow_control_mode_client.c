@@ -246,7 +246,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("Connect to performance test service.\n");
                     state = TC_W4_CHANNEL;
                     l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm, cbm_receive_buffer,
-                                             sizeof(cbm_receive_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &le_cbm_connection.cid);
+                                             sizeof(cbm_receive_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &le_cbm_connection.cid);
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     if (cmdline_addr_found){
