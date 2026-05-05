@@ -5224,7 +5224,7 @@ void sm_init(void){
                                        | SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON;
 
     sm_max_encryption_key_size = 16;
-    sm_min_encryption_key_size = 7;
+    sm_min_encryption_key_size = 16;
 
     sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;
