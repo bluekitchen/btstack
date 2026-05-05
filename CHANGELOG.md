@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - GAP: LE link layer commands are sent sequentially
 - GAP: set default minimum encryption key size to 16. Can be reduced with gap_set_required_encryption_key_size()
+- GAP: set default for automatic accept of SSP numeric comparison or just works to off. Can be enabled wwith gap_ssp_set_auto_accept()
 - posix-h4-zephyr: deprecated. Zephyr-based Controllers are supported by posix-h4 port 
 - posix-h4-airoc: moved to port/archive. Use posix-h4 with --airoc-download-mode instead
 - raspi: moved to port/archive. Use port/linux instead

@@ -5428,11 +5428,11 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->enabled_packet_types_acl = ACL_PACKET_TYPES_ALL;
 #endif
 
-    // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
+    // Secure Simple Pairing default: auto accept disable, no I/O capabilities, general bonding, mitm not required, auto accept
     hci_stack->ssp_enable = 1;
     hci_stack->ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
-    hci_stack->ssp_auto_accept = 1;
+    hci_stack->ssp_auto_accept = 0;
 
     // Secure Connections: enable (requires support from Controller)
     hci_stack->secure_connections_enable = true;

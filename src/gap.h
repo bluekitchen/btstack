@@ -547,6 +547,7 @@ bool gap_secure_connections_active(void);
 
 /**
  * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
+ * @note Default: auto_accept disabled
  */
 void gap_ssp_set_auto_accept(int auto_accept);
 
