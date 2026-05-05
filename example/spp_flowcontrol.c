@@ -50,6 +50,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 
@@ -149,6 +150,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
                     gap_pin_code_response(event_addr, "0000");
                     break;
+
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    // inform about user confirmation request
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
+                    printf("Accepting Pairing - TODO: require actual user action\n");
+                    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                    gap_ssp_confirmation_response(event_addr);
+                    break;
                 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
                     rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
@@ -223,5 +232,3 @@ int btstack_main(int argc, const char * argv[]){
     return 0;
 }
 /* EXAMPLE_END */
-
-

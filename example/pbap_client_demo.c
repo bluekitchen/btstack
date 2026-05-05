@@ -53,6 +53,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 
@@ -277,6 +278,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
+    bd_addr_t event_addr;
     char buffer[32];
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -286,6 +288,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         show_usage();
                     }
+                    break;
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
+                    printf("Accepting Pairing - TODO: require actual user action\n");
+                    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                    gap_ssp_confirmation_response(event_addr);
                     break;
                 case HCI_EVENT_PBAP_META:
                     switch (hci_event_pbap_meta_get_subevent_code(packet)){
@@ -348,6 +356,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
     int i;
+    bd_addr_t event_addr;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -357,6 +366,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         printf("[+] Connect to Phone Book Server on %s\n", bd_addr_to_str(remote_addr));
                         pbap_connect(&packet_handler, remote_addr, &pbap_cid);
                     }
+                    break;
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
+                    printf("Accepting Pairing - TODO: require actual user action\n");
+                    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                    gap_ssp_confirmation_response(event_addr);
                     break;
                 case HCI_EVENT_PBAP_META:
                     switch (hci_event_pbap_meta_get_subevent_code(packet)){
