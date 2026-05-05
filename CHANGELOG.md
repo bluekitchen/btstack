@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP: fix serialization of MPEG-D USAC configuration
 
 ### Changed
+- example: require encryption for all LE demos
 - GAP: LE link layer commands are sent sequentially
 - GAP: set default minimum encryption key size to 16. Can be reduced with gap_set_required_encryption_key_size()
 - GAP: set default for automatic accept of SSP numeric comparison or just works to off. Can be enabled wwith gap_ssp_set_auto_accept()
