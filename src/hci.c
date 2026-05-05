@@ -5415,8 +5415,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Default Security Mode 4
     hci_stack->gap_security_mode = GAP_SECURITY_MODE_4;
 
-    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3
-    hci_stack->gap_required_encyrption_key_size = 7;
+    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we default to 16
+    hci_stack->gap_required_encyrption_key_size = 16;
 
     // Link Supervision Timeout
     hci_stack->link_supervision_timeout = HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT;
