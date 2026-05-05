@@ -276,6 +276,7 @@ TEST(SecurityManager, MainTest){
 
     mock_init();
     mock_simulate_hci_state_working();
+    sm_set_secure_connections_only_mode(false);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 	// on start, new ECC Key is generated
