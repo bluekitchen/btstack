@@ -66,21 +66,11 @@ add_custom_command(
     ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-# create targets for all examples
-file(GLOB EXAMPLES_C    "../../example/*.c")
-list(SORT EXAMPLES_C)
-file(GLOB EXAMPLES_GATT "../../example/*.gatt")
-
-# remove some
-file(GLOB EXAMPLES_OFF
-    "../../example/*demo_util*.c"
-    "../../example/ant_test.c"
-    "../../example/avrcp_browsing_client.c"
-    "../../example/mesh_node_demo.c"
-    "../../example/le_audio*"
-    "../../example/panu_demo.c"
-)
-list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
+# get list of examples
+include(${BTSTACK_ROOT}/example/CMakeLists.txt)
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
+list(REMOVE_DUPLICATES EXAMPLES)
+list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client" "mesh_node_demo")
 
 # .gatt files in src
 file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
@@ -90,10 +80,7 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
 # Create targets
-foreach(EXAMPLE_FILE ${EXAMPLES_C})
-    # Extract the base name of the file (e.g., a2dp_sink_demo.c -> a2dp_sink_demo)
-    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-
+foreach(EXAMPLE ${EXAMPLES})
     # get c file
     set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
@@ -113,7 +100,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     endif()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
