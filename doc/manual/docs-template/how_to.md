@@ -101,7 +101,7 @@ BTstack properties:
 | ENABLE_CLASSIC_OOB_PAIRING                                                     | Enable support for classic Out-of-Band (OOB) pairing                                                                        |
 | ENABLE_CONTROLLER_<br>DUMP_PACKETS                                             | Dump number of packets in Controller per type for debugging                                                                 |
 | ENABLE_CONTROLLER_<br>WARM_BOOT                                                | Enable stack startup without power cycle (if supported/possible)                                                            |
-| ENABLE_CROSS_TRANSPORT_<br>KEY_DERIVATION                                      | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections                                                         |
+| ENABLE_CROSS_TRANSPORT_<br>KEY_DERIVATION                                      | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections. Requires BR/EDR plus LE Secure Connections support.   |
 | ENABLE_CYPRESS_BAUDRATE_<br>CHANGE_FLOWCONTROL_<br>BUG_WORKAROUND              | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.                              |
 | ENABLE_EHCILL                                                                  | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets                                                                   |
 | ENABLE_EXPLICIT_BR_EDR_<br>SECURITY_MANAGER                                    | Report BR/EDR Security Manager support in L2CAP Information Response                                                        |
@@ -794,6 +794,8 @@ From a BTstack application perspective, setting up Classic security consists of 
 
 Unless the application enables `gap_ssp_set_auto_accept(1)`, it must actively answer SSP confirmation or passkey events in its packet handler.
 
+If `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` is enabled, `sm_init()` should also be called in dual-mode or Classic-oriented examples that want CTKD support. This allows BTstack to derive and store transport keys across LE and BR/EDR after Secure Connections pairing.
+
 The examples in `example/` already show the relevant building blocks:
 
 - `example/spp_counter.c` shows a basic Classic service with SSP handling.
@@ -868,6 +870,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 ~~~~
 
 This is the right baseline for examples like SPP that need encrypted Classic connections but do not need stronger authentication than standard SSP.
+
+If CTKD is enabled, this baseline is also sufficient to allow an LE Secure Connections bond to later create a usable Classic link key, as long as the LE Security Manager is initialized and bonding data is persisted.
 
 ### Example 2: Require MITM Protection for a Classic Service
 
@@ -977,6 +981,13 @@ Pairing is only useful across reboots if link keys are stored persistently.
 
 On POSIX ports, persistent link key storage is typically provided by `platform/posix/btstack_link_key_db_fs.c`. On embedded targets, link keys are commonly stored in TLV-backed flash storage.
 
+For CTKD, persistence on both sides matters:
+
+- the Classic link key database must be available to retain derived BR/EDR keys
+- the LE device database must be available to retain derived LE keys
+
+If one side is not persisted, the corresponding CTKD-derived trust relationship will be lost after reset even if the other side is still stored.
+
 ## GATT over Classic Bluetooth Security Setup in Examples {#sec:gattOverClassicSecurityExamples}
 
 When `ENABLE_GATT_OVER_CLASSIC` is enabled, BTstack can expose the same GATT database over BR/EDR and LE at the same time.
@@ -1012,6 +1023,8 @@ For GATT over LE:
 - security requirements are configured with `sm_set_io_capabilities()` and `sm_set_authentication_requirements()`
 
 BTstack keeps the ATT database and ATT callbacks shared, but the security procedures are transport-specific.
+
+If `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` is enabled, the two security domains can still benefit from each other after Secure Connections bonding, but they are not merged. CTKD derives keys across transports; it does not replace Classic GAP/SSP policy or LE Security Manager policy.
 
 ### Example 1: Default Dual-Mode GATT Server Security
 
@@ -1052,6 +1065,8 @@ static void gatt_counter_setup(void){
 ~~~~
 
 This is the current baseline if you want one GATT server that is reachable via both transports without requiring authenticated pairing.
+
+If CTKD is enabled, this baseline also allows a successful LE Secure Connections pairing to seed a future Classic GATT connection with derived BR/EDR bonding material.
 
 ### Example 2: Require Stronger Security for Classic GATT
 
@@ -1164,6 +1179,11 @@ The main rule is:
 - configure LE security with Security Manager APIs
 - configure Classic GATT security with GAP / SSP APIs
 - use `.gatt` permissions to express which GATT attributes actually require protected access
+
+If CTKD is part of the product design, add these two checks:
+
+- initialize the LE Security Manager with `sm_init()` even if the visible product flow is primarily Classic
+- verify CTKD activity during testing via `SM_EVENT_PAIRING_COMPLETE` and `sm_event_pairing_complete_get_ctkd_active(packet)`
 
 ## Bluetooth Power Control {#sec:powerControl}
 
