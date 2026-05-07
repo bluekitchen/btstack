@@ -977,6 +977,194 @@ Pairing is only useful across reboots if link keys are stored persistently.
 
 On POSIX ports, persistent link key storage is typically provided by `platform/posix/btstack_link_key_db_fs.c`. On embedded targets, link keys are commonly stored in TLV-backed flash storage.
 
+## GATT over Classic Bluetooth Security Setup in Examples {#sec:gattOverClassicSecurityExamples}
+
+When `ENABLE_GATT_OVER_CLASSIC` is enabled, BTstack can expose the same GATT database over BR/EDR and LE at the same time.
+
+From the application perspective, this creates two independent security domains:
+
+- Classic GATT security is controlled by Classic GAP and SSP configuration.
+- LE GATT security is controlled by the LE Security Manager configuration.
+
+This is why the dual-mode GATT examples contain both Classic security calls and LE security calls in the same setup function.
+
+The main examples to look at are:
+
+- `example/gatt_counter.c`
+- `example/gatt_streamer_server.c`
+- `example/spp_and_gatt_counter.c`
+- `example/spp_and_gatt_streamer.c`
+
+### What Is Secured by Which Stack Component
+
+For GATT over Classic:
+
+- discovery of the GATT service happens via Classic SDP
+- transport uses Classic L2CAP ATT
+- pairing and bonding use Classic GAP / SSP
+- link security level is controlled via `gap_set_security_level()` and related GAP APIs
+
+For GATT over LE:
+
+- discovery happens via LE advertisements and GATT procedures
+- transport uses LE ATT
+- pairing and bonding use the LE Security Manager
+- security requirements are configured with `sm_set_io_capabilities()` and `sm_set_authentication_requirements()`
+
+BTstack keeps the ATT database and ATT callbacks shared, but the security procedures are transport-specific.
+
+### Example 1: Default Dual-Mode GATT Server Security
+
+The `gatt_counter` and `gatt_streamer_server` examples use the simplest dual-mode security split:
+
+- LE side: Just Works, no bonding
+- Classic side: normal SSP configuration for BR/EDR reachability
+
+The setup looks like this:
+
+~~~~ {.c}
+static void gatt_counter_setup(void){
+    l2cap_init();
+
+    // LE security setup
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // publish GATT service over Classic
+    sdp_init();
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    gatt_create_sdp_record(gatt_service_buffer,
+                           sdp_create_service_record_handle(),
+                           ATT_SERVICE_GATT_SERVICE_START_HANDLE,
+                           ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+
+    // Classic SSP setup
+    gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_discoverable_control(1);
+#endif
+
+    att_server_init(profile_data, att_read_callback, att_write_callback);
+}
+~~~~
+
+This is the current baseline if you want one GATT server that is reachable via both transports without requiring authenticated pairing.
+
+### Example 2: Require Stronger Security for Classic GATT
+
+If the BR/EDR side of the GATT service should require encrypted or authenticated Classic links, configure the Classic security level before the GATT service is exposed:
+
+~~~~ {.c}
+static void gatt_over_classic_security_setup(void){
+    gap_set_security_level(LEVEL_3);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_ssp_set_authentication_requirement(
+        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+}
+~~~~
+
+Important points:
+
+- `gap_set_security_level()` affects the Classic ATT bearer in the same way it affects other Classic services.
+- `LEVEL_2` requires encryption but not MITM protection.
+- `LEVEL_3` requires MITM protection and is the practical choice if the Classic GATT service carries sensitive control or configuration data.
+- `LEVEL_4` can be used if Secure Connections grade protection is required for Classic GATT as well.
+
+This configuration should be applied before `att_server_init()` registers the Classic ATT service and before the SDP record is published.
+
+### Example 3: Keep LE and Classic Security Policies Different
+
+In many products, LE and Classic do not need the same policy.
+
+For example:
+
+- LE side may use `sm_set_authentication_requirements(0)` for simple app access.
+- Classic side may use `gap_set_security_level(LEVEL_3)` because the BR/EDR GATT service exposes administrative features.
+
+This is a valid BTstack setup because the two transports negotiate security independently, even though they share the same ATT database.
+
+A mixed setup could look like this:
+
+~~~~ {.c}
+static void dual_mode_gatt_security_setup(void){
+    // LE: Just Works, no bonding
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // Classic: authenticated and bondable
+    gap_set_security_level(LEVEL_3);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_ssp_set_authentication_requirement(
+        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+#endif
+}
+~~~~
+
+This is often the most practical way to think about security in dual-mode GATT examples: one shared application protocol, two transport-specific security policies.
+
+### Example 4: Characteristic Permissions and Transport Security
+
+The GATT database itself can also require security by marking characteristics with flags such as:
+
+- `READ_ENCRYPTED`
+- `READ_AUTHENTICATED`
+- `WRITE_ENCRYPTED`
+- `WRITE_AUTHENTICATED`
+- `AUTHENTICATION_REQUIRED`
+
+For dual-mode GATT servers, these permissions are evaluated against the current transport security state:
+
+- on LE, against LE pairing / encryption state
+- on Classic, against BR/EDR link security state
+
+This means that the same `.gatt` file can enforce protected reads and writes over both transports, while BTstack maps the check onto the appropriate underlying security mechanism.
+
+### Example 5: Event Handling in Dual-Mode GATT Servers
+
+A dual-mode GATT server often needs to handle both:
+
+- LE security events such as `SM_EVENT_JUST_WORKS_REQUEST`
+- Classic pairing events such as `HCI_EVENT_USER_CONFIRMATION_REQUEST`
+
+For example, the LE side of `gatt_counter.c` confirms Just Works pairing:
+
+~~~~ {.c}
+case SM_EVENT_JUST_WORKS_REQUEST:
+    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+    break;
+~~~~
+
+If the application also wants explicit control over Classic SSP, it should additionally handle:
+
+~~~~ {.c}
+case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+    gap_ssp_confirmation_response(event_addr);
+    break;
+~~~~
+
+Without `gap_ssp_set_auto_accept(1)`, BTstack expects the application to answer Classic SSP confirmation or passkey requests itself.
+
+### Choosing an Example
+
+Start from these examples depending on the required security shape:
+
+- `gatt_counter.c` for the smallest dual-mode GATT server baseline.
+- `gatt_streamer_server.c` for a higher-throughput dual-mode GATT server.
+- `spp_and_gatt_counter.c` if Classic SPP and dual-mode GATT should coexist.
+- `spp_and_gatt_streamer.c` if throughput on both SPP and GATT matters.
+
+The main rule is:
+
+- configure LE security with Security Manager APIs
+- configure Classic GATT security with GAP / SSP APIs
+- use `.gatt` permissions to express which GATT attributes actually require protected access
+
 ## Bluetooth Power Control {#sec:powerControl}
 
 In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodically activate its receiver in order to listen for inquiries or connecting requests from another device.
