@@ -778,6 +778,205 @@ In addition to the HCI packets, you can also enable BTstack's debug information 
 
 to the btstack_config.h and recompiling your application.
 
+## Classic Bluetooth Security Setup in Examples {#sec:classicSecurityExamples}
+
+For BR/EDR (Classic Bluetooth), BTstack uses Security Mode 4 by default:
+
+- `gap_get_security_mode()` defaults to `GAP_SECURITY_MODE_4`
+- `gap_get_security_level()` defaults to `LEVEL_2`
+
+From a BTstack application perspective, setting up Classic security consists of four parts:
+
+1. Select the global security policy before initializing services and profiles.
+2. Configure Secure Simple Pairing (SSP) IO capabilities and authentication requirements.
+3. Handle pairing-related HCI events in the application packet handler.
+4. Store link keys in persistent storage if bonding shall survive reboot.
+
+Unless the application enables `gap_ssp_set_auto_accept(1)`, it must actively answer SSP confirmation or passkey events in its packet handler.
+
+The examples in `example/` already show the relevant building blocks:
+
+- `example/spp_counter.c` shows a basic Classic service with SSP handling.
+- `example/gap_dedicated_bonding.c` shows explicit dedicated bonding.
+- `example/hid_keyboard_demo.c` shows a profile that relies on pairing and bonding in practice.
+
+### Security Levels and Their Meaning
+
+BTstack exposes the Classic security target via `gap_set_security_level()`:
+
+- `LEVEL_0`: no security
+- `LEVEL_1`: no encryption, minimal user interaction
+- `LEVEL_2`: encryption required, no MITM protection
+- `LEVEL_3`: encryption and MITM protection required
+- `LEVEL_4`: encryption, MITM protection, and Secure Connections strength required
+
+For most Classic examples, these are the practical choices:
+
+- use `LEVEL_2` for standard encrypted pairing
+- use `LEVEL_3` if the remote user must confirm or enter a passkey
+- use `LEVEL_4` if only Secure Connections grade pairing is acceptable
+
+### Example 1: Use the Default Classic Security Setup
+
+The `spp_counter` example already uses the default Mode 4 behavior. The minimal setup is:
+
+~~~~ {.c}
+static void btstack_main_security_setup(void){
+    l2cap_init();
+
+#ifdef ENABLE_BLE
+    // Needed if Cross-Transport Key Derivation is enabled
+    sm_init();
+#endif
+
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_set_local_name("SPP Counter 00:00:00:00:00:00");
+    gap_discoverable_control(1);
+}
+~~~~
+
+With this configuration, BTstack keeps Security Mode 4 and `LEVEL_2`. If the remote device is old, it may still request legacy PIN pairing. If it supports Bluetooth 2.1+, SSP is used instead.
+
+The application should handle both cases in the packet handler:
+
+~~~~ {.c}
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    bd_addr_t event_addr;
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+            gap_pin_code_response(event_addr, "0000");
+            break;
+
+        case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+            hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+            printf("Confirm numeric value %06"PRIu32"\n",
+                   hci_event_user_confirmation_request_get_numeric_value(packet));
+            gap_ssp_confirmation_response(event_addr);
+            break;
+
+        default:
+            break;
+    }
+}
+~~~~
+
+This is the right baseline for examples like SPP that need encrypted Classic connections but do not need stronger authentication than standard SSP.
+
+### Example 2: Require MITM Protection for a Classic Service
+
+If a service should require authenticated pairing, set the security level before the profile or service is initialized:
+
+~~~~ {.c}
+static void classic_security_setup_mitm(void){
+    gap_set_security_level(LEVEL_3);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_ssp_set_authentication_requirement(
+        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+}
+~~~~
+
+Important points:
+
+- `gap_set_security_level()` must be called before BTstack registers Classic services that depend on `gap_get_security_level()`.
+- `LEVEL_3` requires MITM protection, so `SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT` is usually not appropriate.
+- The actual SSP association model depends on both devices' IO capabilities.
+
+Typical event handling then becomes:
+
+~~~~ {.c}
+case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+    printf("Numeric comparison %06"PRIu32"\n",
+           hci_event_user_confirmation_request_get_numeric_value(packet));
+    gap_ssp_confirmation_response(event_addr);
+    break;
+
+case HCI_EVENT_USER_PASSKEY_REQUEST:
+    hci_event_user_passkey_request_get_bd_addr(packet, event_addr);
+    gap_ssp_passkey_response(event_addr, 123456);
+    break;
+~~~~
+
+This setup is appropriate for Classic HID, control channels, or administrative services where "Just Works" pairing is not sufficient.
+
+### Example 3: Force Secure Connections Quality
+
+If the application should only accept Secure Connections grade authentication for Classic pairing, use `LEVEL_4`. On top of that, BTstack can enforce Secure Connections Only mode:
+
+~~~~ {.c}
+static void classic_security_setup_secure_connections_only(void){
+    gap_set_security_level(LEVEL_4);
+    gap_set_secure_connections_only_mode(true);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_ssp_set_authentication_requirement(
+        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+}
+~~~~
+
+Use this only when all intended peers support Secure Connections. Legacy peers will no longer be able to pair successfully.
+
+### Example 4: Start Dedicated Bonding Explicitly
+
+If bonding should happen before any profile connection is opened, use dedicated bonding as shown in `gap_dedicated_bonding.c`. In the current example, the application also handles SSP numeric confirmation explicitly:
+
+~~~~ {.c}
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                gap_dedicated_bonding(device_addr, 1);
+            }
+            break;
+        case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+            hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+            printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n",
+                   hci_event_user_confirmation_request_get_numeric_value(packet));
+            gap_ssp_confirmation_response(event_addr);
+            break;
+        case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
+            printf("Dedicated bonding completed, status 0x%02x\n",
+                   gap_event_dedicated_bonding_completed_get_status(packet));
+            break;
+        default:
+            break;
+    }
+}
+~~~~
+
+This is useful if the user interface has an explicit "pair device" action and the product should finish bonding before opening RFCOMM, HID, or other profile channels.
+
+### Example 5: Raise Security for a Specific Existing Connection
+
+If a connection already exists and the application now needs stronger protection, request it explicitly:
+
+~~~~ {.c}
+gap_request_security_level(con_handle, LEVEL_3);
+~~~~
+
+BTstack reports the result with `GAP_EVENT_SECURITY_LEVEL`. This is useful for outgoing Classic client roles that do not want to require authentication immediately after link setup.
+
+### Notes on Bonding Persistence
+
+Pairing is only useful across reboots if link keys are stored persistently.
+
+- On Classic, BTstack stores a link key plus its type.
+- If link keys are not persisted, the devices will have to pair again after reset.
+- The number of stored Classic bonds is limited by `NVM_NUM_LINK_KEYS`.
+
+On POSIX ports, persistent link key storage is typically provided by `platform/posix/btstack_link_key_db_fs.c`. On embedded targets, link keys are commonly stored in TLV-backed flash storage.
+
 ## Bluetooth Power Control {#sec:powerControl}
 
 In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodically activate its receiver in order to listen for inquiries or connecting requests from another device.
