@@ -42,6 +42,18 @@
  * Encodes the LC3 config in advertising and creates CIS without LE Audio profiles.
  */
 
+// *****************************************************************************
+/* EXAMPLE_START(le_audio_unicast_gateway_lite): LE Audio - Unicast Gateway Lite
+ *
+ * @text The LE Audio Unicast Gateway Lite streams audio over a Connected Isochronous Stream (CIS)
+ * without using the LE Audio profiles. Instead, the LC3 codec configuration is encoded into
+ * manufacturer specific advertising data. A matching Lite Headset can scan for this data, connect,
+ * and create a CIS with the same codec parameters.
+ *
+ * @text Use the console menu to select the codec configuration and start advertising.
+ */
+// *****************************************************************************
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,10 +72,16 @@
 #include "le_audio_demo_util_sink.h"
 #include "le_audio_demo_util_source.h"
 
-// max config
+/*
+ * @section Configuration
+ *
+ * @text The example is intentionally limited to one CIS. The audio payload can be mono or stereo,
+ * depending on the selected codec configuration. The selected values are advertised so that
+ * the peer can configure its CIG/CIS parameters without using ASCS, PACS, or BAP.
+ */
 #define MAX_NUM_CIS 1
 
-// Advertisement
+/* LISTING_START(advertisement): Extended Advertising with Codec Configuration */
 static le_extended_advertising_parameters_t extended_params = {
         .advertising_event_properties = 1,  // connectable
         .primary_advertising_interval_min = 160,    // 100 ms
@@ -99,6 +117,7 @@ static uint8_t adv_data[] = {
         // name
         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'o', 'u', 'r', 'c', 'e'
 };
+/* LISTING_END */
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -107,24 +126,24 @@ static hci_con_handle_t cis_con_handles[MAX_NUM_CIS];
 static bool cis_established[MAX_NUM_CIS];
 static uint8_t num_cis;
 
-// time stamping
+// Optional send interval histogram for throughput/timing experiments.
 #ifdef COUNT_MODE
 #define MAX_PACKET_INTERVAL_BINS_MS 50
 static uint32_t send_time_bins[MAX_PACKET_INTERVAL_BINS_MS];
 static uint32_t send_last_ms;
 #endif
 
-// lc3 codec config
+// LC3 codec configuration used for advertising and ISO frame generation.
 static uint32_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t octets_per_frame;
 static uint8_t  num_channels = 2;
 
-// codec menu
+// Console menu selection into codec_configurations.
 static uint8_t menu_sampling_frequency = 5;
 static uint8_t menu_variant = 3;
 
-// audio producer
+// Audio producer: reads demo audio and packetizes it into LC3 ISO frames.
 static le_audio_demo_source_generator_t iso_gen;
 static btstack_audio_player_t audio_player;
 
@@ -135,7 +154,15 @@ static enum {
     APP_STREAMING,
 } app_state = APP_W4_WORKING;
 
-// enumerate default codec configs
+/*
+ * @section Codec Configuration
+ *
+ * @text The table contains the LC3 configurations from the Basic Audio Profile. The console menu
+ * selects one sampling frequency and one variant. The selected tuple determines both the
+ * advertisement payload and the LC3 encoder setup.
+ */
+
+/* LISTING_START(codecConfiguration): LC3 Codec Configuration Table */
 static struct {
     uint16_t samplingrate_hz;
     uint8_t  samplingrate_index;
@@ -193,6 +220,7 @@ static struct {
         }
     },
 };
+/* LISTING_END */
 
 static void show_usage(void);
 
@@ -206,6 +234,7 @@ static void print_config(void) {
 }
 
 static void configure_source_generator(void){
+    // Open the demo playlist and configure the LC3 source helper.
     btstack_linked_list_t playlist = audio_player_demo_util_get_playlist_instance();
     btstack_audio_player_init(&audio_player, sampling_frequency_hz, num_channels, playlist);
     btstack_audio_player_play(&audio_player);
@@ -217,6 +246,15 @@ static void configure_source_generator(void){
     le_audio_demo_util_source_generate_iso_frame(&iso_gen);
 }
 
+/*
+ * @section Start Unicast
+ *
+ * @text The gateway advertises the selected codec configuration and waits for an incoming
+ * ACL connection. When the peer requests a CIS, the gateway accepts it and starts streaming
+ * after all CIS handles are established.
+ */
+
+/* LISTING_START(startUnicast): Configure Source and Start Advertising */
 static void start_unicast() {
     // use values from table
     sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
@@ -225,7 +263,7 @@ static void start_unicast() {
 
     configure_source_generator();
 
-    // update adv / BASE
+    // Update manufacturer data with the Lite codec description.
     adv_data[4] = 0; // subtype
     adv_data[5] = 0; // flags
     adv_data[6] = num_channels;
@@ -238,6 +276,7 @@ static void start_unicast() {
     gap_local_bd_addr(local_addr);
     bool local_address_invalid = btstack_is_null_bd_addr(local_addr);
     if (local_address_invalid) {
+        // Public address is not available; use the random address set by the port.
         extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
     }
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
@@ -253,7 +292,17 @@ static void start_unicast() {
     num_cis = 1;
     app_state = APP_W4_CIS_COMPLETE;
 }
+/* LISTING_END */
 
+/*
+ * @section Packet Handler
+ *
+ * @text The packet handler waits until the controller is working, accepts incoming CIS requests,
+ * tracks when all CIS handles are established, and configures the ISO sink for audio received
+ * from the peer.
+ */
+
+/* LISTING_START(packetHandler): HCI and GAP Event Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -267,6 +316,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     app_state = APP_IDLE;
+                    printf("LE Audio Unicast Gateway Lite uses a private advertising format and creates CIS without LE Audio profiles.\n");
+                    printf("It interoperates with the LE Audio Unicast Headset Lite example, but will not work with a smartphone that supports LE Audio.\n");
 #ifdef ENABLE_DEMO_MODE
                     // start unicast automatically, 48 kHz, 10 ms, stereo
                     num_channels = 2;
@@ -297,9 +348,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    // A new ACL connection starts a new sequence of CIS requests.
                     next_cis_index = 0;
                     break;
                 case HCI_SUBEVENT_LE_CIS_REQUEST:
+                    // The peer created the CIG and now asks us to accept the CIS.
                     cis_con_handles[next_cis_index] = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
                     gap_cis_accept(cis_con_handles[next_cis_index]);
                     next_cis_index++;
@@ -322,11 +375,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     for (i=0; i < num_cis; i++) {
                         complete &= cis_established[i];
                     }
-                    // ready to send
                     if (complete) {
                         printf("All CIS Established and ISO Path setup\n");
 
-                        // init sink
+                        // Configure sink for the optional microphone audio sent by the peer.
                         uint16_t iso_interval_1250us = gap_subevent_cis_created_get_iso_interval_1250us(packet);
                         uint8_t  flush_timeout       = gap_subevent_cis_created_get_flush_timeout_c_to_p(packet);
                         le_audio_demo_util_sink_configure_unicast(1, 1, sampling_frequency_hz, frame_duration,
@@ -348,7 +400,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+/* LISTING_END */
 
+/*
+ * @section ISO Packet Handler
+ *
+ * @text ISO transmission is driven by HCI_EVENT_CIS_CAN_SEND_NOW. The source helper sends one
+ * frame per CIS and generates the next LC3 frame after the current group has been sent.
+ * Incoming ISO packets are passed to the sink helper for optional microphone monitoring.
+ */
+
+/* LISTING_START(isoPacketHandler): Send and Receive ISO Packets */
 static void handle_iso_can_send_now_event(const uint8_t *packet, uint16_t size) {
     UNUSED(size);
     if (app_state != APP_STREAMING) return;
@@ -381,6 +443,7 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
     }
 }
+/* LISTING_END */
 
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Source Test Console ---\n");
@@ -455,6 +518,14 @@ static void stdin_process(char c){
     }
 }
 
+/*
+ * @section Main Application Setup
+ *
+ * @text The main application registers HCI and ISO packet handlers, initializes the demo audio
+ * source and sink helpers, powers on the controller, and enables the console menu.
+ */
+
+/* LISTING_START(MainConfiguration): Register Handlers and Start Bluetooth Stack */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void) argv;
@@ -477,3 +548,5 @@ int btstack_main(int argc, const char * argv[]){
     btstack_stdin_setup(stdin_process);
     return 0;
 }
+/* LISTING_END */
+/* EXAMPLE_END */

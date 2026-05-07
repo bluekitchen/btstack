@@ -42,6 +42,18 @@
  * Scans for the lite gateway advertisement and creates CIS without LE Audio profiles.
  */
 
+// *****************************************************************************
+/* EXAMPLE_START(le_audio_unicast_headset_lite): LE Audio - Unicast Headset Lite
+ *
+ * @text The LE Audio Unicast Headset Lite scans for a matching Lite Gateway advertisement.
+ * The advertisement contains the LC3 codec configuration in manufacturer specific data.
+ * After connecting, the headset creates a CIG/CIS directly and receives audio without using
+ * the LE Audio profiles.
+ *
+ * @text The console can start scanning and optionally enable a virtual microphone stream back
+ * to the gateway.
+ */
+// *****************************************************************************
 
 #include "btstack_config.h"
 
@@ -62,7 +74,13 @@
 #include "le_audio_demo_util_sink.h"
 #include "le_audio_demo_util_source.h"
 
-// max config
+/*
+ * @section Configuration
+ *
+ * @text The example supports up to two audio channels from the gateway and optionally sends
+ * one mono microphone stream back to it. The codec configuration is copied from the
+ * gateway advertisement before the CIG is created.
+ */
 #define MAX_CHANNELS 2
 static void show_usage(void);
 
@@ -75,10 +93,9 @@ static enum {
     APP_IDLE,
 } app_state = APP_W4_WORKING;
 
-//
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// remote info
+// Remote gateway selected from advertising reports.
 static char             remote_name[20];
 static bd_addr_t        remote_addr;
 static bd_addr_type_t   remote_type;
@@ -87,7 +104,7 @@ static hci_con_handle_t remote_handle;
 static le_audio_cig_t cig;
 static le_audio_cig_params_t cig_params;
 
-// iso info
+// ISO parameters derived from the advertised LC3 configuration.
 static bool framed_pdus;
 static uint16_t frame_duration_us;
 
@@ -95,18 +112,26 @@ static uint8_t num_cis;
 static hci_con_handle_t cis_con_handles[MAX_CHANNELS];
 static bool cis_established[MAX_CHANNELS];
 
-// lc3 codec config
+// LC3 codec configuration received via manufacturer specific advertising data.
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_channels;
 
-// microphone
+// Optional microphone producer for the C-to-P direction.
 static bool microphone_enable;
 static le_audio_demo_source_generator_t iso_gen;
 static btstack_audio_generator_sine_t sine_generator;
 
+/*
+ * @section CIG State
+ *
+ * @text The headset creates the CIG after the ACL connection to the gateway is established.
+ * These helpers reset local state and remove the CIG after a disconnect.
+ */
+
+/* LISTING_START(cigState): Reset and Remove CIG */
 static void reset_cig_state(void){
     uint8_t i;
     for (i = 0; i < MAX_CHANNELS; i++){
@@ -123,7 +148,18 @@ static void remove_cig(void){
     }
     reset_cig_state();
 }
+/* LISTING_END */
 
+/*
+ * @section Scanning and CIG Creation
+ *
+ * @text Scanning looks for the Lite Gateway advertisement. After a matching gateway is found
+ * and connected, the headset creates a CIG with one CIS. The P-to-C direction carries the
+ * advertised number of audio channels, while the C-to-P direction is enabled only when the
+ * virtual microphone is active.
+ */
+
+/* LISTING_START(createCig): Scan and Create CIG */
 static void start_scanning() {
     app_state = APP_W4_SOURCE_ADV;
     gap_set_scan_params(1, 0x30, 0x30, 0);
@@ -134,7 +170,7 @@ static void start_scanning() {
 static void create_cig() {
     if (sampling_frequency_hz == 44100){
         framed_pdus = 1;
-        // same config as for 48k -> frame is longer by 48/44.1
+        // 44.1 kHz uses framed PDUs; frame duration is scaled from the 48 kHz configuration.
         frame_duration_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
     } else {
         framed_pdus = 0;
@@ -172,7 +208,16 @@ static void create_cig() {
         app_state = APP_IDLE;
     }
 }
+/* LISTING_END */
 
+/*
+ * @section Streaming Setup
+ *
+ * @text Once the CIS is established, the sink helper is configured for received audio.
+ * If enabled, the virtual microphone sends a generated sine wave in the opposite direction.
+ */
+
+/* LISTING_START(streamingSetup): Configure ISO Source and Sink */
 static void enter_streaming(void){
     // init source
     if (microphone_enable){
@@ -189,7 +234,17 @@ static void enter_streaming(void){
                                               iso_interval_1250us, flush_timeout);
     printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame);
 }
+/* LISTING_END */
 
+/*
+ * @section Advertisement Parser
+ *
+ * @text The Lite Gateway stores its LC3 configuration in BlueKitchen manufacturer specific
+ * data. A matching advertisement provides the number of channels, sampling frequency,
+ * frame duration, and octets per frame needed to configure the CIS and decoder.
+ */
+
+/* LISTING_START(advertisementParser): Parse Lite Gateway Advertisement */
 static void handle_advertisement(bd_addr_type_t address_type, bd_addr_t address, uint8_t adv_size,  const uint8_t * adv_data){
     ad_context_t context;
     bool found = false;
@@ -244,7 +299,17 @@ static void handle_advertisement(bd_addr_type_t address_type, bd_addr_t address,
     gap_stop_scan();
     gap_connect(remote_addr, remote_type);
 }
+/* LISTING_END */
 
+/*
+ * @section Packet Handler
+ *
+ * @text The packet handler starts scanning after the controller is ready, processes advertising
+ * reports, creates the CIG and CIS after the ACL connection is open, and starts ISO streaming
+ * when all CIS handles are established.
+ */
+
+/* LISTING_START(packetHandler): HCI and GAP Event Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -258,6 +323,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
+                    printf("LE Audio Unicast Headset Lite uses a private advertising format and creates CIS without LE Audio profiles.\n");
+                    printf("It interoperates with the LE Audio Unicast Gateway Lite example, but will not work with a smartphone that supports LE Audio.\n");
 #ifdef ENABLE_DEMO_MODE
                     if (app_state != APP_W4_WORKING) break;
                     start_scanning();
@@ -317,6 +384,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("\n");
 
                         printf("Create CIS\n");
+                        // Bind each CIS to the same ACL connection to the Lite Gateway.
                         hci_con_handle_t acl_connection_handles[MAX_CHANNELS];
                         for (i=0; i < num_cis; i++){
                             acl_connection_handles[i] = remote_handle;
@@ -344,7 +412,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("All CIS Established\n");
                             app_state = APP_STREAMING;
                             enter_streaming();
-                            // start sending
+                            // Start microphone transmission if the C-to-P direction is enabled.
                             if (microphone_enable){
                                 hci_request_cis_can_send_now_events(cis_con_handles[0]);
                             }
@@ -366,12 +434,23 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+/* LISTING_END */
 
+/*
+ * @section ISO Packet Handler
+ *
+ * @text Incoming ISO packets contain LC3 audio from the gateway and are passed to the sink helper.
+ * If the virtual microphone is enabled, HCI_EVENT_CIS_CAN_SEND_NOW drives transmission of
+ * generated microphone frames back to the gateway.
+ */
+
+/* LISTING_START(isoPacketHandler): Receive and Optionally Send ISO Packets */
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
     le_audio_demo_util_sink_receive(0, packet, size);
 }
+/* LISTING_END */
 
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Sink Test Console ---\n");
@@ -409,6 +488,14 @@ static void stdin_process(char c){
     }
 }
 
+/*
+ * @section Main Application Setup
+ *
+ * @text The main application registers HCI and ISO packet handlers, initializes the demo audio
+ * helpers, powers on the controller, and enables the console menu.
+ */
+
+/* LISTING_START(MainConfiguration): Register Handlers and Start Bluetooth Stack */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void) argv;
@@ -431,3 +518,5 @@ int btstack_main(int argc, const char * argv[]){
     btstack_stdin_setup(stdin_process);
     return 0;
 }
+/* LISTING_END */
+/* EXAMPLE_END */
