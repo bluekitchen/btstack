@@ -172,12 +172,12 @@ extern const hci_cmd_t rfcomm_request_can_send_now_cmd;
 
 extern const hci_cmd_t gap_delete_all_link_keys_cmd;
 extern const hci_cmd_t gap_disconnect_cmd;
-extern const hci_cmd_t gap_drop_link_key_for_bd_addr_cmd;
+extern const hci_cmd_t gap_drop_link_key_cmd;
 extern const hci_cmd_t gap_inquiry_start_cmd;
 extern const hci_cmd_t gap_inquiry_stop_cmd;
 extern const hci_cmd_t gap_remote_name_request_cmd;
 extern const hci_cmd_t gap_pin_code_response_cmd;
-extern const hci_cmd_t gap_pin_code_response_cmd;
+extern const hci_cmd_t gap_pin_code_negative_cmd;
 
 extern const hci_cmd_t gap_le_scan_start;
 extern const hci_cmd_t gap_le_scan_stop;
