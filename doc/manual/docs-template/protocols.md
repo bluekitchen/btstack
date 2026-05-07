@@ -952,14 +952,101 @@ As part of Bluetooth Core V4.2 specification, a device with a keyboard but no di
 
 ### Cross-transport Key Derivation (CTKD) for LE Secure Connections
 
-In a dual-mode configuration, BTstack  generates an BR/EDR Link Key from the LE LTK via the Link Key Conversion functions *h6* ,
-(or *h7* if supported) when *ENABLE_CROSS_TRANSPORT_KEY_DERIVATION* is defined.
-The derived key then stored in local LE Device DB. 
+Cross-transport Key Derivation (CTKD) allows a dual-mode device to derive bonding material for one Bluetooth transport from bonding material established on the other transport.
 
-The main use case for this is connections with smartphones. E.g. iOS provides APIs for LE scanning and connection, but none for BR/EDR. This allows an application to connect and pair with
-a device and also later setup a BR/EDR connection without the need for the smartphone user to use the system Settings menu.
+In BTstack, CTKD is enabled at compile time by defining `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION`.
 
-To derive an LE LTK from a BR/EDR link key, the Bluetooth controller needs to support Secure Connections via NIST P-256 elliptic curves. BTstack does not support LE Secure Connections via LE Transport currently.
+#### Prerequisites
+
+BTstack currently requires:
+
+- `ENABLE_CLASSIC`
+- `ENABLE_BLE`
+- `ENABLE_LE_SECURE_CONNECTIONS`
+- `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION`
+
+The implementation enforces the essential requirement that CTKD is only used together with LE Secure Connections and BR/EDR support.
+
+#### What BTstack Derives
+
+BTstack supports both directions defined for dual-mode Secure Connections:
+
+- derive a BR/EDR Link Key from an LE LTK after LE Secure Connections bonding
+- derive an LE LTK from a BR/EDR Link Key after BR/EDR Secure Connections bonding
+
+For the derivation, BTstack uses the Bluetooth-specified conversion functions `h6` or `h7` depending on the negotiated authentication flags.
+
+#### Main Use Case
+
+The main practical use case is pairing over LE first and then reusing that trust relationship for BR/EDR.
+
+This is particularly useful with smartphones. For example, iOS exposes APIs for LE discovery and pairing, but not for establishing arbitrary Classic pairings from an app. With CTKD, an application can pair over LE and later open a BR/EDR connection without sending the user through the system Bluetooth settings again.
+
+#### Storage in BTstack
+
+When CTKD derives a Classic Link Key from LE bonding material, BTstack stores it in the Classic Link Key database via the normal link key storage path.
+
+When CTKD derives an LE LTK from BR/EDR Secure Connections bonding, BTstack stores it in the LE device database via the normal LE bonding storage path.
+
+In other words, CTKD does not introduce a separate persistence mechanism. It feeds the derived keys into BTstack's existing:
+
+- Classic link key database
+- LE device database
+
+If either side is not persisted, that derived trust relationship will also be lost after reset.
+
+#### Setup from the Application Perspective
+
+From an application point of view, CTKD setup is simple:
+
+1. Enable the compile-time option `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION`.
+2. Initialize the LE Security Manager by calling `sm_init()`.
+3. Make sure persistent storage for both LE bonding data and Classic link keys is configured if the relationship should survive reboot.
+
+This is why a number of Classic examples call `sm_init()` when BLE is enabled and explicitly note that it is needed for cross-transport key derivation, for example:
+
+- `example/spp_counter.c`
+- `example/gap_dedicated_bonding.c`
+- `example/hid_keyboard_demo.c`
+
+Even if the primary profile in such an example is Classic-only, CTKD support still depends on the LE Security Manager being initialized.
+
+#### How to Tell if CTKD Was Used
+
+BTstack reports whether CTKD participated in the finished pairing via `SM_EVENT_PAIRING_COMPLETE`.
+
+The event contains the `ctkd_active` field, which can be queried with:
+
+~~~~ {.c}
+sm_event_pairing_complete_get_ctkd_active(packet)
+~~~~
+
+The pairing examples already print this field:
+
+- `example/sm_pairing_central.c`
+- `example/sm_pairing_peripheral.c`
+
+A value of `1` indicates that CTKD was active for the completed pairing.
+
+#### Security Restrictions and Rejection Cases
+
+BTstack does not blindly overwrite stronger existing bonding material.
+
+In particular, the implementation checks whether the derived key would lower the authentication level of an already stored key and avoids doing so. This is intended to reduce downgrade risk and reflects the stricter security guidance introduced after the BLURtooth discussion.
+
+BTstack also rejects CTKD in situations where it is not allowed, for example if BR/EDR Secure Connections requirements are not met. In this case, pairing can fail with:
+
+~~~~
+SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED
+~~~~
+
+The implementation also rejects CTKD when the BR/EDR side falls back to P-192 based encryption instead of Secure Connections grade protection.
+
+#### Practical Notes
+
+- CTKD is about deriving transport keys, not merging transports. LE and BR/EDR still run their own connection and security procedures.
+- Attribute-level GATT permissions and Classic profile security still apply normally after derivation.
+- CTKD is most useful on dual-mode products that expose different features over LE and BR/EDR but want one pairing step to unlock both.
 
 ### Out-of-Band Data with LE Legacy Pairing
 
