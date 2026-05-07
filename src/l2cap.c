@@ -2455,7 +2455,7 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
-    bool security_required = channel->required_security_level > LEVEL_0;
+    bool security_sufficient = gap_security_level(channel->con_handle) >= channel->required_security_level;
 
     if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) != 0){
 
@@ -2481,7 +2481,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
 
         // incoming: assert security requirements
         channel->state = L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
-        if (channel->required_security_level <= gap_security_level(channel->con_handle)){
+        if (security_sufficient){
             l2cap_handle_security_level_incoming_sufficient(channel);
         } else {
             // send connection pending if not already done
@@ -2491,13 +2491,13 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
             gap_request_security_level(channel->con_handle, channel->required_security_level);
         }
     } else {
-        // outgoing: we have been waiting for remote supported features
-        if (security_required){
-            // request security level
+        // outgoing: we might have been waiting for remote supported features or authentication
+        if (security_sufficient) {
+            l2cap_ready_to_connect(channel);
+        } else {
+            // request higher security
             channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
             gap_request_security_level(channel->con_handle, channel->required_security_level);
-        } else {
-            l2cap_ready_to_connect(channel);
         }
     }
 }
