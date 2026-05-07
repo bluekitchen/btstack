@@ -1185,6 +1185,114 @@ If CTKD is part of the product design, add these two checks:
 - initialize the LE Security Manager with `sm_init()` even if the visible product flow is primarily Classic
 - verify CTKD activity during testing via `SM_EVENT_PAIRING_COMPLETE` and `sm_event_pairing_complete_get_ctkd_active(packet)`
 
+## LE Credit-Based Flow Control Mode Security Setup in Examples {#sec:leCbmSecurityExamples}
+
+BTstack implements LE Credit-Based Flow Control Mode with the `l2cap_cbm_*` API family.
+
+From the security perspective, LE CBM is simpler than dual-mode GATT:
+
+- it always uses LE transport security
+- incoming channel policy is declared when registering the local service
+- outgoing channel policy is declared when creating the channel
+
+The current examples to look at are:
+
+- `example/le_credit_based_flow_control_mode_server.c`
+- `example/le_credit_based_flow_control_mode_client.c`
+
+### Incoming LE CBM Security
+
+For incoming LE CBM channels, the minimum required security level is configured at service registration time:
+
+~~~~ {.c}
+l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
+~~~~
+
+This means:
+
+- `LEVEL_0` allows an unencrypted LE link
+- `LEVEL_2` requires encryption
+- `LEVEL_3` requires authenticated pairing
+- `LEVEL_4` requires Secure Connections grade protection
+
+If a remote device tries to open an LE CBM channel and the current LE link security is too low, BTstack rejects the connection request with the corresponding L2CAP result code.
+
+The server example currently uses `LEVEL_2`, so the client must establish an encrypted LE link before the channel can be opened successfully.
+
+### Outgoing LE CBM Security
+
+For outgoing LE CBM channels, the minimum required security level is passed directly to `l2cap_cbm_create_channel(...)`:
+
+~~~~ {.c}
+l2cap_cbm_create_channel(&packet_handler, connection_handle, psm,
+                         receive_buffer, sizeof(receive_buffer),
+                         L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
+~~~~
+
+This is the client-side equivalent of `l2cap_cbm_register_service(...)`.
+
+The LE CBM client example also uses `LEVEL_2`, which means it requests an encrypted LE connection before the channel is considered acceptable.
+
+### Security Manager Setup
+
+Because LE CBM relies on LE link security, applications that require any protected LE CBM service should initialize the LE Security Manager:
+
+~~~~ {.c}
+sm_init();
+~~~~
+
+This is the baseline requirement if:
+
+- the LE CBM service uses `LEVEL_2` or higher
+- the LE CBM client requests `LEVEL_2` or higher
+- the product should pair or bond automatically during connection setup
+
+Without `sm_init()`, BTstack cannot manage LE pairing for the protected LE CBM channel.
+
+### Pairing and Bonding Policy
+
+The chosen LE bonding and authentication policy still comes from the normal Security Manager configuration:
+
+~~~~ {.c}
+sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+sm_set_authentication_requirements(0);
+~~~~
+
+or, for stronger protection:
+
+~~~~ {.c}
+sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
+~~~~
+
+In other words:
+
+- `l2cap_cbm_register_service(..., LEVEL_X)` and `l2cap_cbm_create_channel(..., LEVEL_X, ...)` say how strong the link must be
+- `sm_set_authentication_requirements(...)` says how LE pairing should be performed when BTstack raises the link to that level
+
+### Practical Example
+
+The examples currently use this practical combination:
+
+- LE CBM channel requires `LEVEL_2`
+- LE Security Manager is initialized
+- Simple LE pairing is sufficient for the example throughput test
+
+This is a good default for products that need protected bulk transfer over LE without requiring user interaction.
+
+If the transferred data is sensitive, raise the LE CBM security level and adjust the Security Manager policy accordingly:
+
+- use `LEVEL_3` for authenticated pairing
+- use `LEVEL_4` if Secure Connections strength is required
+- configure `sm_set_authentication_requirements(...)` to match the desired pairing method
+
+### Main Rule
+
+For LE Credit-Based Flow Control Mode:
+
+- set the required link security with the `security_level` argument on service registration or channel creation
+- initialize and configure the LE Security Manager whenever the required level is above `LEVEL_0`
+- treat LE CBM security as LE link security, not as application-layer security
+
 ## Bluetooth Power Control {#sec:powerControl}
 
 In most BTstack examples, the device is set to be discoverable and connectable. In this mode, even when there's no active connection, the Bluetooth Controller will periodically activate its receiver in order to listen for inquiries or connecting requests from another device.
