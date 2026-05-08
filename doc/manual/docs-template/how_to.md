@@ -778,6 +778,152 @@ In addition to the HCI packets, you can also enable BTstack's debug information 
 
 to the btstack_config.h and recompiling your application.
 
+## LE Security Setup for GATT {#sec:leGattSecurityExamples}
+
+For Bluetooth LE, BTstack separates GATT access control from the actual pairing and encryption procedure:
+
+- the GATT database declares which Characteristics require encryption or authentication
+- the ATT server checks those permissions for each read and write request
+- the Security Manager performs pairing, bonding, re-encryption, identity resolving, and user interaction
+
+This means that a GATT application usually does not start by "making GATT secure" globally. Instead, it marks the attributes that need protection and configures the LE Security Manager so BTstack can raise the LE link security when those attributes are accessed.
+
+The main examples to look at are:
+
+- `example/gatt_counter.c` for a small GATT server baseline
+- `example/gatt_streamer_server.c` for a GATT server with notifications and higher throughput
+- `example/hog_keyboard_demo.c` for a GATT-based profile that requires bonding
+- `example/gatt_heart_rate_client.c` for a GATT client
+- `example/sm_pairing_central.c` and `example/sm_pairing_peripheral.c` for explicit pairing behavior
+
+### What BTstack Checks on the GATT Server
+
+The `.gatt` file can mark Characteristics with security permissions:
+
+- `READ_ENCRYPTED`
+- `READ_AUTHENTICATED`
+- `WRITE_ENCRYPTED`
+- `WRITE_AUTHENTICATED`
+- `AUTHENTICATION_REQUIRED`
+- `ENCRYPTION_KEY_SIZE_X`, where `X` is in the range 7..16
+
+For example:
+
+    CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY | READ_ENCRYPTED,
+
+When an ATT request arrives, BTstack checks the current LE link security before calling the application's read or write callback. If the link is not secure enough, the ATT server returns the corresponding ATT security error. The remote GATT client can then start pairing or encryption and retry the request.
+
+The important point is that the application callback should not be the first line of defense for normal GATT permissions. Express the required protection in the `.gatt` database, then keep the callback focused on producing or accepting the attribute value.
+
+### Security Manager Setup
+
+If any GATT Characteristic requires LE security, initialize the Security Manager:
+
+    sm_init();
+
+For production devices, also configure stable identity and encryption roots with `sm_set_ir()` and `sm_set_er()` as described in [SMP - Security Manager Protocol](protocols.md#sec:smpProtocols). These values must survive reboot. If they change, previously bonded peers may no longer be recognized correctly.
+
+The simplest GATT examples use Just Works without bonding:
+
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
+
+This allows pairing when needed but does not give MITM protection. It is acceptable for simple data where encryption is useful but user authentication is not required.
+
+For a product that should remember peers across reconnects, request bonding:
+
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+
+For a product that needs protection against active MITM attacks, request MITM protection and configure IO capabilities that can actually support it:
+
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
+
+For LE Secure Connections quality, enable `ENABLE_LE_SECURE_CONNECTIONS` in `btstack_config.h` and include the Secure Connections requirement:
+
+    sm_set_authentication_requirements(
+        SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
+
+If only LE Secure Connections peers should be accepted, BTstack can enforce this policy:
+
+    sm_set_secure_connections_only_mode(true);
+
+### Handling Pairing Events
+
+When `att_server` is used, Security Manager events are delivered through the ATT server packet handler. The application should handle the events that match its security policy and user interface.
+
+For Just Works pairing:
+
+    case SM_EVENT_JUST_WORKS_REQUEST:
+        sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+        break;
+
+For Numeric Comparison:
+
+    case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+        printf("Confirm value %" PRIu32 "\n",
+               sm_event_numeric_comparison_request_get_passkey(packet));
+        sm_numeric_comparison_confirm(sm_event_numeric_comparison_request_get_handle(packet));
+        break;
+
+For Passkey Entry:
+
+    case SM_EVENT_PASSKEY_INPUT_NUMBER:
+        sm_passkey_input(sm_event_passkey_input_number_get_handle(packet), 123456);
+        break;
+
+If the user rejects pairing or the application policy does not allow it, decline bonding using the connection handle from the pairing event:
+
+    sm_bonding_decline(con_handle);
+
+After pairing finishes, BTstack reports `SM_EVENT_PAIRING_COMPLETE`. Applications that show a pairing dialog should close it there and check the status before treating the peer as trusted.
+
+### GATT Client Security
+
+By default, the GATT Client sends the requested operation and lets the remote GATT Server enforce security. If the remote Characteristic requires a stronger link, the query completes with an ATT security error.
+
+There are three useful client-side modes:
+
+- reactive: send the GATT request first and handle an insufficient-security ATT error
+- reactive with retry: define `ENABLE_GATT_CLIENT_PAIRING` so the GATT Client starts pairing on insufficient-security errors and retries the request
+- mandatory: call `gatt_client_set_required_security_level()` so the link is encrypted or authenticated before GATT Client requests are sent
+
+For example, a client that should only talk to a server over an encrypted LE link can require:
+
+    gatt_client_set_required_security_level(LEVEL_2);
+
+Use a higher level if the peer and product need stronger guarantees:
+
+- `LEVEL_2` requires encryption
+- `LEVEL_3` requires authenticated pairing
+- `LEVEL_4` requires Secure Connections grade protection
+
+If the device is already bonded, `ENABLE_LE_PROACTIVE_AUTHENTICATION` can make BTstack try to re-encrypt the link before GATT Client traffic. If the remote device has lost its bonding information, the GATT query can complete with `ATT_ERROR_BONDING_INFORMATION_MISSING`, and the application should decide whether to delete the local bond and pair again.
+
+### Bonding and Persistence
+
+Pairing only survives reboot if the LE bonding data is stored persistently. For LE, BTstack stores values such as the Long Term Key, Identity Resolving Key, EDIV, random number, and signing counters in the LE device database.
+
+For GATT servers, persistent storage also matters for Client Characteristic Configuration values. Notifications and indications are enabled by clients via CCC descriptors, and bonded clients often expect those settings to survive reconnects. The number of stored CCC values is configured with `NVN_NUM_GATT_SERVER_CCC`.
+
+On embedded targets, LE device data and CCC data are commonly backed by TLV flash storage. On POSIX ports, file-backed storage is usually used.
+
+### Practical Rule
+
+For a secure LE GATT server:
+
+1. Mark protected Characteristics in the `.gatt` file.
+2. Call `sm_init()` and configure IO capabilities, bonding, MITM, and Secure Connections policy.
+3. Handle Security Manager user interaction events.
+4. Persist LE bonding data, and persist CCC values if bonded clients use notifications or indications.
+
+For a secure LE GATT client:
+
+1. Decide whether server-enforced security is enough, or whether the client should require a security level before requests.
+2. Use `ENABLE_GATT_CLIENT_PAIRING`, `ENABLE_LE_PROACTIVE_AUTHENTICATION`, and `gatt_client_set_required_security_level()` as appropriate.
+3. Handle bonding loss explicitly, especially for products that reconnect to known devices.
+
 ## Classic Bluetooth Security Setup in Examples {#sec:classicSecurityExamples}
 
 For BR/EDR (Classic Bluetooth), BTstack uses Security Mode 4 by default:
