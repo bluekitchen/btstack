@@ -362,15 +362,11 @@ BTstack supports two modes:
 
 With manual credits, the application can grant additional credits later via:
 
-~~~~ {.c}
-l2cap_cbm_provide_credits(local_cid, credits);
-~~~~
+    l2cap_cbm_provide_credits(local_cid, credits);
 
 The currently available outgoing credits granted by the peer can be queried with:
 
-~~~~ {.c}
-uint16_t credits = l2cap_cbm_available_credits(local_cid);
-~~~~
+    uint16_t credits = l2cap_cbm_available_credits(local_cid);
 
 If `L2CAP_LE_AUTOMATIC_CREDITS` is used, BTstack replenishes incoming credits automatically when they fall below its internal watermark. This is convenient and is what the example applications use by default.
 
@@ -380,9 +376,7 @@ For outgoing channels, `l2cap_cbm_create_channel(...)` includes a `security_leve
 
 For incoming channels, the security requirement is configured when registering the service:
 
-~~~~ {.c}
-l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
-~~~~
+    l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
 
 If the current LE link security is insufficient, BTstack rejects the connection request with the corresponding L2CAP result code.
 
@@ -434,26 +428,20 @@ The client example:
 
 On the server side, the setup pattern is:
 
-~~~~ {.c}
-static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
+    static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
 
-l2cap_init();
-l2cap_cbm_register_service(packet_handler, TSPX_le_psm, LEVEL_2);
-~~~~
+    l2cap_init();
+    l2cap_cbm_register_service(packet_handler, TSPX_le_psm, LEVEL_2);
 
 Then, after receiving `L2CAP_EVENT_CBM_INCOMING_CONNECTION`:
 
-~~~~ {.c}
-l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS);
-~~~~
+    l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS);
 
 On the client side, after an LE connection is established:
 
-~~~~ {.c}
-l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm,
-                         cbm_receive_buffer, sizeof(cbm_receive_buffer),
-                         L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
-~~~~
+    l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm,
+                             cbm_receive_buffer, sizeof(cbm_receive_buffer),
+                             L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
 
 This gives a good baseline for any application that wants reliable higher-throughput LE data transfer without building a GATT service around it.
 
@@ -1147,9 +1135,7 @@ BTstack reports whether CTKD participated in the finished pairing via `SM_EVENT_
 
 The event contains the `ctkd_active` field, which can be queried with:
 
-~~~~ {.c}
-sm_event_pairing_complete_get_ctkd_active(packet)
-~~~~
+    sm_event_pairing_complete_get_ctkd_active(packet)
 
 The pairing examples already print this field:
 
@@ -1166,9 +1152,7 @@ In particular, the implementation checks whether the derived key would lower the
 
 BTstack also rejects CTKD in situations where it is not allowed, for example if BR/EDR Secure Connections requirements are not met. In this case, pairing can fail with:
 
-~~~~
-SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED
-~~~~
+    SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED
 
 The implementation also rejects CTKD when the BR/EDR side falls back to P-192 based encryption instead of Secure Connections grade protection.
 

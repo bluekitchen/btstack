@@ -842,20 +842,18 @@ With `ENABLE_GATT_OVER_CLASSIC`, `att_server_init()` additionally registers the 
 
 The application does still need to publish the Generic Attribute service via SDP so that a remote Classic GATT client can discover the ATT PSM. BTstack provides `gatt_create_sdp_record()` for this:
 
-~~~~ {.c}
-static uint8_t gatt_service_buffer[70];
+    static uint8_t gatt_service_buffer[70];
 
-static void gatt_over_classic_setup(void){
-    sdp_init();
-    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
-    gatt_create_sdp_record(gatt_service_buffer,
-                           sdp_create_service_record_handle(),
-                           ATT_SERVICE_GATT_SERVICE_START_HANDLE,
-                           ATT_SERVICE_GATT_SERVICE_END_HANDLE);
-    btstack_assert(de_get_len(gatt_service_buffer) <= sizeof(gatt_service_buffer));
-    sdp_register_service(gatt_service_buffer);
-}
-~~~~
+    static void gatt_over_classic_setup(void){
+        sdp_init();
+        memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+        gatt_create_sdp_record(gatt_service_buffer,
+                               sdp_create_service_record_handle(),
+                               ATT_SERVICE_GATT_SERVICE_START_HANDLE,
+                               ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+        btstack_assert(de_get_len(gatt_service_buffer) <= sizeof(gatt_service_buffer));
+        sdp_register_service(gatt_service_buffer);
+    }
 
 This is the essential Classic-specific step shown in `gatt_counter.c` and `spp_and_gatt_streamer.c`.
 
@@ -863,11 +861,9 @@ This is the essential Classic-specific step shown in `gatt_counter.c` and `spp_a
 
 To make the Classic GATT server reachable, the device also needs normal Classic GAP setup, for example:
 
-~~~~ {.c}
-gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
-gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-gap_discoverable_control(1);
-~~~~
+    gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_discoverable_control(1);
 
 This is separate from LE advertising:
 
@@ -906,9 +902,7 @@ In dual-mode examples, both may appear in the same file because the application 
 
 BTstack also provides a Classic GATT client entry point:
 
-~~~~ {.c}
-uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr);
-~~~~
+    uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr);
 
 Internally, BTstack performs an SDP query for the remote Generic Attribute service, extracts the ATT L2CAP PSM, and then opens the Classic ATT bearer. After the connection is up, the normal GATT client procedures are used.
 

@@ -41,7 +41,7 @@ System properties:
 |---------------------------------|--------------------------------------|
 | HAVE_AES128                     | Use platform AES128 engine                                            |
 | HAVE_BTSTACK_STDIN              | STDIN is available for CLI interface                                  |
-| HAVE_LWIP                       | lwIP is available                    |   
+| HAVE_LWIP                       | lwIP is available                    |
 | HAVE_MALLOC                     | Use dynamic memory                                                    |
 | HAVE_MBEDTLS_ECC_P256           | mbedTLS provides NIST P-256 operations e.g. for LE Secure Connections |
 
@@ -124,7 +124,7 @@ BTstack properties:
 | ENABLE_L2CAP_LE_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                         | Enable LE credit-based flow-control mode for L2CAP channels                                                                 |
 | ENABLE_LE_CENTRAL                                                              | Enable support for LE Central Role in HCI and Security Manager                                                              |
 | ENABLE_LE_DATA_<br>LENGTH_EXTENSION                                            | Enable LE Data Length Extension support                                                                                     |
-| ENABLE_LE_ENHANCED_<br>CONNECTION_COMPLETE_EVENT                               | Enable LE Enhanced Connection Complete Event v1 & v2                                                                        | 
+| ENABLE_LE_ENHANCED_<br>CONNECTION_COMPLETE_EVENT                               | Enable LE Enhanced Connection Complete Event v1 & v2                                                                        |
 | ENABLE_LE_EXTENDED_<br>ADVERTISING                                             | Enable extended advertising and scanning                                                                                    |
 | ENABLE_LE_LIMIT_ACL_<br>FRAGMENT_BY_MAX_OCTETS                                 | Force HCI to fragment ACL-LE packets to fit into over-the-air packet                                                        |
 | ENABLE_LE_PERIODIC_<br>ADVERTISING                                             | Enable periodic advertising and scanning                                                                                    |
@@ -268,11 +268,11 @@ When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_init()` can be called with a
 ### LE Audio Configuration
 
 The following list of directives are all set with default values. Modify them if you need support for different number of:
-- BASS subgroups, 
-- ASCS Sink and Source endpoints, 
+- BASS subgroups,
+- ASCS Sink and Source endpoints,
 - PACS Client Sink and Source Endpoint records,
 - number of services for VOCS, or
-- if you, in rare case, need to extend the buffers. 
+- if you, in rare case, need to extend the buffers.
 
 | \#define                                                 | Default | Description                                           |
 |----------------------------------------------------------|---------|-------------------------------------------------------|
@@ -328,7 +328,7 @@ embedded system with a Bluetooth chipset connected via UART.
 
       // select embedded run loop
       btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-          
+
       // enable logging
       hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
@@ -337,14 +337,14 @@ embedded system with a Bluetooth chipset connected via UART.
       hci_transport_t     * transport = hci_transport_h4_instance();
       hci_init(transport, NULL);
 
-      // setup example    
+      // setup example
       btstack_main(argc, argv);
 
       // go
-      btstack_run_loop_execute();    
+      btstack_run_loop_execute();
     }
-    
-~~~~ 
+
+~~~~
 
 First, BTstack’s memory pools are set up. Then, the standard run loop
 implementation for embedded systems is selected.
@@ -453,7 +453,7 @@ an instance of the actual run loop. E.g. for the embedded platform, it is:
 If the run loop allows to trigger polling of data sources from interrupt context,
 *btstack_run_loop_poll_data_sources_from_irq*.
 
-On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS, 
+On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS,
 *btstack_run_loop_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
 
 The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix).
@@ -524,7 +524,7 @@ It currently only supports *btstack_run_loop_execute_code_on_main_thread*.
 ### Run Lop Qt
 
 This run loop directly maps BTstack's data source and timer source with Qt Core objects.
-It supports ready to read and write similar to the POSIX implementation. 
+It supports ready to read and write similar to the POSIX implementation.
 
 To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
@@ -751,7 +751,7 @@ For this, BTstack provides a configurable packet logging mechanism via hci_dump.
 | Embedded | `hci_dump_segger_stdout.c`   | Console output via SEGGER RTT                      |
 | Embedded | `hci_dump_segger_binary.c`   | HCI log file for Apple PacketLogger via SEGGER RTT |
 
-On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and 
+On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and
 configure the path and output format with *hci_dump_posix_fs_open(const char * path, hci_dump_format_t format)*
 where format can be *HCI_DUMP_BLUEZ* or *HCI_DUMP_PACKETLOGGER*.
 The resulting file can be analyzed with Wireshark or the Apple's PacketLogger tool.
@@ -822,52 +822,48 @@ For most Classic examples, these are the practical choices:
 
 The `spp_counter` example already uses the default Mode 4 behavior. The minimal setup is:
 
-~~~~ {.c}
-static void btstack_main_security_setup(void){
-    l2cap_init();
+    static void btstack_main_security_setup(void){
+        l2cap_init();
 
-#ifdef ENABLE_BLE
-    // Needed if Cross-Transport Key Derivation is enabled
-    sm_init();
-#endif
+    #ifdef ENABLE_BLE
+        // Needed if Cross-Transport Key Derivation is enabled
+        sm_init();
+    #endif
 
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_set_local_name("SPP Counter 00:00:00:00:00:00");
-    gap_discoverable_control(1);
-}
-~~~~
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_set_local_name("SPP Counter 00:00:00:00:00:00");
+        gap_discoverable_control(1);
+    }
 
 With this configuration, BTstack keeps Security Mode 4 and `LEVEL_2`. If the remote device is old, it may still request legacy PIN pairing. If it supports Bluetooth 2.1+, SSP is used instead.
 
 The application should handle both cases in the packet handler:
 
-~~~~ {.c}
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
+    static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        UNUSED(channel);
+        UNUSED(size);
 
-    bd_addr_t event_addr;
+        bd_addr_t event_addr;
 
-    if (packet_type != HCI_EVENT_PACKET) return;
+        if (packet_type != HCI_EVENT_PACKET) return;
 
-    switch (hci_event_packet_get_type(packet)) {
-        case HCI_EVENT_PIN_CODE_REQUEST:
-            hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-            gap_pin_code_response(event_addr, "0000");
-            break;
+        switch (hci_event_packet_get_type(packet)) {
+            case HCI_EVENT_PIN_CODE_REQUEST:
+                hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                gap_pin_code_response(event_addr, "0000");
+                break;
 
-        case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-            hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
-            printf("Confirm numeric value %06"PRIu32"\n",
-                   hci_event_user_confirmation_request_get_numeric_value(packet));
-            gap_ssp_confirmation_response(event_addr);
-            break;
+            case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                printf("Confirm numeric value %06"PRIu32"\n",
+                       hci_event_user_confirmation_request_get_numeric_value(packet));
+                gap_ssp_confirmation_response(event_addr);
+                break;
 
-        default:
-            break;
+            default:
+                break;
+        }
     }
-}
-~~~~
 
 This is the right baseline for examples like SPP that need encrypted Classic connections but do not need stronger authentication than standard SSP.
 
@@ -877,14 +873,12 @@ If CTKD is enabled, this baseline is also sufficient to allow an LE Secure Conne
 
 If a service should require authenticated pairing, set the security level before the profile or service is initialized:
 
-~~~~ {.c}
-static void classic_security_setup_mitm(void){
-    gap_set_security_level(LEVEL_3);
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_ssp_set_authentication_requirement(
-        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
-}
-~~~~
+    static void classic_security_setup_mitm(void){
+        gap_set_security_level(LEVEL_3);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    }
 
 Important points:
 
@@ -894,19 +888,17 @@ Important points:
 
 Typical event handling then becomes:
 
-~~~~ {.c}
-case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
-    printf("Numeric comparison %06"PRIu32"\n",
-           hci_event_user_confirmation_request_get_numeric_value(packet));
-    gap_ssp_confirmation_response(event_addr);
-    break;
+    case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+        hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+        printf("Numeric comparison %06"PRIu32"\n",
+               hci_event_user_confirmation_request_get_numeric_value(packet));
+        gap_ssp_confirmation_response(event_addr);
+        break;
 
-case HCI_EVENT_USER_PASSKEY_REQUEST:
-    hci_event_user_passkey_request_get_bd_addr(packet, event_addr);
-    gap_ssp_passkey_response(event_addr, 123456);
-    break;
-~~~~
+    case HCI_EVENT_USER_PASSKEY_REQUEST:
+        hci_event_user_passkey_request_get_bd_addr(packet, event_addr);
+        gap_ssp_passkey_response(event_addr, 123456);
+        break;
 
 This setup is appropriate for Classic HID, control channels, or administrative services where "Just Works" pairing is not sufficient.
 
@@ -914,15 +906,13 @@ This setup is appropriate for Classic HID, control channels, or administrative s
 
 If the application should only accept Secure Connections grade authentication for Classic pairing, use `LEVEL_4`. On top of that, BTstack can enforce Secure Connections Only mode:
 
-~~~~ {.c}
-static void classic_security_setup_secure_connections_only(void){
-    gap_set_security_level(LEVEL_4);
-    gap_set_secure_connections_only_mode(true);
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_ssp_set_authentication_requirement(
-        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
-}
-~~~~
+    static void classic_security_setup_secure_connections_only(void){
+        gap_set_security_level(LEVEL_4);
+        gap_set_secure_connections_only_mode(true);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    }
 
 Use this only when all intended peers support Secure Connections. Legacy peers will no longer be able to pair successfully.
 
@@ -930,34 +920,32 @@ Use this only when all intended peers support Secure Connections. Legacy peers w
 
 If bonding should happen before any profile connection is opened, use dedicated bonding as shown in `gap_dedicated_bonding.c`. In the current example, the application also handles SSP numeric confirmation explicitly:
 
-~~~~ {.c}
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
+    static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        UNUSED(channel);
+        UNUSED(size);
 
-    if (packet_type != HCI_EVENT_PACKET) return;
+        if (packet_type != HCI_EVENT_PACKET) return;
 
-    switch (hci_event_packet_get_type(packet)) {
-        case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                gap_dedicated_bonding(device_addr, 1);
-            }
-            break;
-        case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-            hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
-            printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n",
-                   hci_event_user_confirmation_request_get_numeric_value(packet));
-            gap_ssp_confirmation_response(event_addr);
-            break;
-        case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
-            printf("Dedicated bonding completed, status 0x%02x\n",
-                   gap_event_dedicated_bonding_completed_get_status(packet));
-            break;
-        default:
-            break;
+        switch (hci_event_packet_get_type(packet)) {
+            case BTSTACK_EVENT_STATE:
+                if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                    gap_dedicated_bonding(device_addr, 1);
+                }
+                break;
+            case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n",
+                       hci_event_user_confirmation_request_get_numeric_value(packet));
+                gap_ssp_confirmation_response(event_addr);
+                break;
+            case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
+                printf("Dedicated bonding completed, status 0x%02x\n",
+                       gap_event_dedicated_bonding_completed_get_status(packet));
+                break;
+            default:
+                break;
+        }
     }
-}
-~~~~
 
 This is useful if the user interface has an explicit "pair device" action and the product should finish bonding before opening RFCOMM, HID, or other profile channels.
 
@@ -965,9 +953,7 @@ This is useful if the user interface has an explicit "pair device" action and th
 
 If a connection already exists and the application now needs stronger protection, request it explicitly:
 
-~~~~ {.c}
-gap_request_security_level(con_handle, LEVEL_3);
-~~~~
+    gap_request_security_level(con_handle, LEVEL_3);
 
 BTstack reports the result with `GAP_EVENT_SECURITY_LEVEL`. This is useful for outgoing Classic client roles that do not want to require authentication immediately after link setup.
 
@@ -1035,34 +1021,32 @@ The `gatt_counter` and `gatt_streamer_server` examples use the simplest dual-mod
 
 The setup looks like this:
 
-~~~~ {.c}
-static void gatt_counter_setup(void){
-    l2cap_init();
+    static void gatt_counter_setup(void){
+        l2cap_init();
 
-    // LE security setup
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(0);
+        // LE security setup
+        sm_init();
+        sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+        sm_set_authentication_requirements(0);
 
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    // publish GATT service over Classic
-    sdp_init();
-    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
-    gatt_create_sdp_record(gatt_service_buffer,
-                           sdp_create_service_record_handle(),
-                           ATT_SERVICE_GATT_SERVICE_START_HANDLE,
-                           ATT_SERVICE_GATT_SERVICE_END_HANDLE);
-    sdp_register_service(gatt_service_buffer);
+    #ifdef ENABLE_GATT_OVER_CLASSIC
+        // publish GATT service over Classic
+        sdp_init();
+        memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+        gatt_create_sdp_record(gatt_service_buffer,
+                               sdp_create_service_record_handle(),
+                               ATT_SERVICE_GATT_SERVICE_START_HANDLE,
+                               ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+        sdp_register_service(gatt_service_buffer);
 
-    // Classic SSP setup
-    gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_discoverable_control(1);
-#endif
+        // Classic SSP setup
+        gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_discoverable_control(1);
+    #endif
 
-    att_server_init(profile_data, att_read_callback, att_write_callback);
-}
-~~~~
+        att_server_init(profile_data, att_read_callback, att_write_callback);
+    }
 
 This is the current baseline if you want one GATT server that is reachable via both transports without requiring authenticated pairing.
 
@@ -1072,14 +1056,12 @@ If CTKD is enabled, this baseline also allows a successful LE Secure Connections
 
 If the BR/EDR side of the GATT service should require encrypted or authenticated Classic links, configure the Classic security level before the GATT service is exposed:
 
-~~~~ {.c}
-static void gatt_over_classic_security_setup(void){
-    gap_set_security_level(LEVEL_3);
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_ssp_set_authentication_requirement(
-        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
-}
-~~~~
+    static void gatt_over_classic_security_setup(void){
+        gap_set_security_level(LEVEL_3);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    }
 
 Important points:
 
@@ -1103,22 +1085,20 @@ This is a valid BTstack setup because the two transports negotiate security inde
 
 A mixed setup could look like this:
 
-~~~~ {.c}
-static void dual_mode_gatt_security_setup(void){
-    // LE: Just Works, no bonding
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(0);
+    static void dual_mode_gatt_security_setup(void){
+        // LE: Just Works, no bonding
+        sm_init();
+        sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+        sm_set_authentication_requirements(0);
 
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    // Classic: authenticated and bondable
-    gap_set_security_level(LEVEL_3);
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_ssp_set_authentication_requirement(
-        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
-#endif
-}
-~~~~
+    #ifdef ENABLE_GATT_OVER_CLASSIC
+        // Classic: authenticated and bondable
+        gap_set_security_level(LEVEL_3);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    #endif
+    }
 
 This is often the most practical way to think about security in dual-mode GATT examples: one shared application protocol, two transport-specific security policies.
 
@@ -1148,20 +1128,16 @@ A dual-mode GATT server often needs to handle both:
 
 For example, the LE side of `gatt_counter.c` confirms Just Works pairing:
 
-~~~~ {.c}
-case SM_EVENT_JUST_WORKS_REQUEST:
-    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-    break;
-~~~~
+    case SM_EVENT_JUST_WORKS_REQUEST:
+        sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+        break;
 
 If the application also wants explicit control over Classic SSP, it should additionally handle:
 
-~~~~ {.c}
-case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
-    gap_ssp_confirmation_response(event_addr);
-    break;
-~~~~
+    case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+        hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+        gap_ssp_confirmation_response(event_addr);
+        break;
 
 Without `gap_ssp_set_auto_accept(1)`, BTstack expects the application to answer Classic SSP confirmation or passkey requests itself.
 
@@ -1204,9 +1180,7 @@ The current examples to look at are:
 
 For incoming LE CBM channels, the minimum required security level is configured at service registration time:
 
-~~~~ {.c}
-l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
-~~~~
+    l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
 
 This means:
 
@@ -1223,11 +1197,9 @@ The server example currently uses `LEVEL_2`, so the client must establish an enc
 
 For outgoing LE CBM channels, the minimum required security level is passed directly to `l2cap_cbm_create_channel(...)`:
 
-~~~~ {.c}
-l2cap_cbm_create_channel(&packet_handler, connection_handle, psm,
-                         receive_buffer, sizeof(receive_buffer),
-                         L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
-~~~~
+    l2cap_cbm_create_channel(&packet_handler, connection_handle, psm,
+                             receive_buffer, sizeof(receive_buffer),
+                             L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
 
 This is the client-side equivalent of `l2cap_cbm_register_service(...)`.
 
@@ -1237,9 +1209,7 @@ The LE CBM client example also uses `LEVEL_2`, which means it requests an encryp
 
 Because LE CBM relies on LE link security, applications that require any protected LE CBM service should initialize the LE Security Manager:
 
-~~~~ {.c}
-sm_init();
-~~~~
+    sm_init();
 
 This is the baseline requirement if:
 
@@ -1253,16 +1223,12 @@ Without `sm_init()`, BTstack cannot manage LE pairing for the protected LE CBM c
 
 The chosen LE bonding and authentication policy still comes from the normal Security Manager configuration:
 
-~~~~ {.c}
-sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-sm_set_authentication_requirements(0);
-~~~~
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
 
 or, for stronger protection:
 
-~~~~ {.c}
-sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
-~~~~
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
 
 In other words:
 
