@@ -53,7 +53,7 @@ message("Build: ${CMAKE_BUILD_TYPE}\n")
 include(cmake/btstack.cmake)
 
 # PatchRAM file for CYW55310
-set(PATCHRAM CYW55500A1_001.002.032.0233.0000_251002_TEST_ONLY)
+set(PATCHRAM CYW55500A1_001.002.032.0233.0117.hcd)
 message("Downloading PatchRAM ${PATCHRAM} from https://github.com/Ezurio/ifx_flasher/tree/main/files/if310/firmware")
 file (DOWNLOAD https://github.com/Ezurio/ifx_flasher/tree/main/files/if310/firmware/${PATCHRAM}.hcd ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd)
 
