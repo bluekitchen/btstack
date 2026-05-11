@@ -1,0 +1,116 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <freq.h>
+#include <raspberrypi/rpi_pico/rp2040.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2040-pinctrl.h>
+
+/ {
+	model = "Ezurio IF310 Development Board";
+	compatible = "ezurio,if310";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,flash-controller = &ssi;
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,code-partition = &code_partition;
+		zephyr,bt-hci = &bt_hci;
+	};
+
+	aliases {
+		led0 = &rgb_led;
+		rtc = &rtc;
+		watchdog0 = &wdt0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		rgb_led: rgb_led {
+			gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+			label = "RGB_LED";
+		};
+	};
+};
+
+&flash0 {
+	reg = <0x10000000 DT_SIZE_M(2)>;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		second_stage_bootloader: partition@0 {
+			label = "second_stage_bootloader";
+			reg = <0x00000000 0x100>;
+			read-only;
+		};
+
+		code_partition: partition@100 {
+			label = "code-partition";
+			reg = <0x100 (DT_SIZE_M(2) - 0x100)>;
+			read-only;
+		};
+	};
+};
+
+&pinctrl {
+	bt_uart0_default: bt_uart0_default {
+		group1 {
+			pinmux = <UART0_TX_P0>, <UART0_RTS_P3>;
+		};
+		group2 {
+			pinmux = <UART0_RX_P1>, <UART0_CTS_P2>;
+			input-enable;
+		};
+	};
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	hw-flow-control;
+	pinctrl-0 = <&bt_uart0_default>;
+	pinctrl-names = "default";
+
+	bt_hci: bt_hci {
+		status = "okay";
+		compatible = "zephyr,bt-hci-uart";
+
+		cyw55310 {
+			status = "okay";
+			compatible = "infineon,cyw43xxx-bt-hci";
+			bt-reg-on-gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
+			fw-download-speed = <921600>;
+			hci-operation-speed = <921600>;
+		};
+	};
+};
+
+&timer {
+	status = "okay";
+};
+
+&wdt0 {
+	status = "disabled";
+};
+
+&rtc {
+	clocks = <&clocks RPI_PICO_CLKID_CLK_RTC>;
+	status = "okay";
+};
+
+zephyr_udc0: &usbd {
+	status = "okay";
+};

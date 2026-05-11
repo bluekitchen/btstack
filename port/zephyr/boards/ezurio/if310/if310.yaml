@@ -1,0 +1,18 @@
+identifier: if310
+name: IF310 Development Board
+type: mcu
+arch: arm
+flash: 2048
+ram: 264
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - uart
+  - gpio
+  - flash
+  - dma
+  - counter
+  - clock
+  - usbd
+vendor: ezurio
