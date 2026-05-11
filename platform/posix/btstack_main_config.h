@@ -53,6 +53,7 @@ extern "C" {
 
 /**
  * Provide btstack_main_config
+ * @returns 0 on success
  */
 int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t *transport_config,
  bd_addr_t address, bool *tlv_reset, bool *airoc_download_mode );

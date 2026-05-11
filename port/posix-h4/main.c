@@ -347,7 +347,10 @@ static void trigger_shutdown(void){
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &config, custom_address, &tlv_reset, &airoc_download_mode );
+    int status = btstack_main_config( argc, argv, &config, custom_address, &tlv_reset, &airoc_download_mode );
+    if (status != 0){
+        return status;
+    }
 
     // register callback for CTRL-c
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);

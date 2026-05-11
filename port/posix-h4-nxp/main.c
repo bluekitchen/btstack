@@ -193,7 +193,10 @@ static void nxp_phase2(uint8_t status){
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &transport_config, NULL, NULL, &airoc_download_mode );
+    int status = btstack_main_config( argc, argv, &transport_config, NULL, NULL, &airoc_download_mode );
+    if (status != 0){
+        return status;
+    }
 
     uart_driver = btstack_uart_posix_instance();
 

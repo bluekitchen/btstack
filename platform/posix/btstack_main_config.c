@@ -82,7 +82,7 @@ static const char *help_options[] = {
     "set random static Bluetooth address.",
     "set initial baudrate.",
 #ifdef ENABLE_AIROC_DOWNLOAD_MODE
-    "enable AIROC Download Mode for newer CYW55xx Controller",
+    "enable AIROC Download Mode for newer CYW55xx Controller.",
 #endif
 };
 
@@ -94,6 +94,9 @@ static const char *option_arg_name[] = {
     "TTY",
     "BD_ADDR",
     "BAUDRATE",
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    ""
+#endif
 };
 
 static void usage(const char *name){
@@ -101,7 +104,7 @@ static void usage(const char *name){
     printf( "usage:\n\t%s [options]\n", name );
     printf("valid options:\n");
     for( i=0; long_options[i].name != 0; i++) {
-        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
+        printf("--%-20s| -%c  %-12s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
     }
 }
 
@@ -181,7 +184,7 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
             case 'h':
             default:
                 usage(argv[0]);
-                break;
+                return -1;
         }
     }
     // reset getopt parsing, so it works as intended from btstack_main
