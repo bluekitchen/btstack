@@ -4718,10 +4718,11 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                           0x22u
 
 /**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
  * @param lls_cid
+ * @param num_included_services
  * @param status
  */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED                          0x23u
@@ -4766,18 +4767,21 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL                        0x28u
 
 /**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
  * @param ias_cid
+ * @param num_included_services
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_IAS_CLIENT_CONNECTED                          0x29u
 
 /**
- * @format 12
+ * @format 1H21
  * @param subevent_code
+ * @param con_handle
  * @param ias_cid
+ * @param status
 */
 #define GATTSERVICE_SUBEVENT_IAS_CLIENT_DISCONNECTED                       0x2Au
 
@@ -4797,18 +4801,21 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_IAS_CLIENT_STOP_ALERTING                      0x2Cu
 
 /**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
- * @param tpxs_cid
+ * @param txpx_cid
+ * @param num_included_services
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED                         0x2Du
 
 /**
- * @format 12
+ * @format 1H21
  * @param subevent_code
- * @param tpxs_cid
+ * @param con_handle
+ * @param txps_cid
+ * @param status
 */
 #define GATTSERVICE_SUBEVENT_TXPS_CLIENT_DISCONNECTED                      0x2Eu
 
