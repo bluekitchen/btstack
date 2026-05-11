@@ -12,6 +12,12 @@
 
 #include <zephyr/storage/flash_map.h>
 
+#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+#include <zephyr/device.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
+#endif
+
 // Nordic NDK
 #if defined(CONFIG_HAS_NORDIC_DRIVERS)
 #include "nrf.h"
@@ -158,12 +164,35 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 static hal_flash_bank_zephyr_t  hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
+#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+static void wait_for_usb_cdc_console(void)
+{
+    const struct device * console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+    uint32_t dtr = 0;
+
+    if (!device_is_ready(console)) {
+        return;
+    }
+
+    while (!dtr) {
+        uart_line_ctrl_get(console, UART_LINE_CTRL_DTR, &dtr);
+        k_sleep(K_MSEC(100));
+    }
+}
+#else
+static void wait_for_usb_cdc_console(void)
+{
+}
+#endif
+
 int main(void)
 {
 #if defined(CONFIG_SOC_SERIES_NRF53X)
     // switch the nrf5340_cpuapp to 128MHz
     nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
 #endif
+
+    wait_for_usb_cdc_console();
 
     printf("BTstack booting up...\n");
 
