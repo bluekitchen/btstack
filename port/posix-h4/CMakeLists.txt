@@ -192,6 +192,20 @@ include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 # Add BCM Support and download PatchRAM files
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
+set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0233.0117.hcd)
+message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from https://github.com/Ezurio/ifx_flasher/raw/main/files/if310/firmware")
+file(
+    DOWNLOAD
+    https://github.com/Ezurio/ifx_flasher/raw/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CYW55310_PATCHRAM_NAME}
+    STATUS CYW55310_PATCHRAM_STATUS
+)
+list(GET CYW55310_PATCHRAM_STATUS 0 CYW55310_PATCHRAM_STATUS_CODE)
+if (NOT CYW55310_PATCHRAM_STATUS_CODE EQUAL 0)
+    list(GET CYW55310_PATCHRAM_STATUS 1 CYW55310_PATCHRAM_STATUS_MESSAGE)
+    message(FATAL_ERROR "Failed to download ${CYW55310_PATCHRAM_NAME}: ${CYW55310_PATCHRAM_STATUS_MESSAGE}")
+endif()
+
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
 set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_LE_AUDIO} ${EXAMPLES_DUAL_MODE})

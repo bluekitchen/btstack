@@ -16,7 +16,8 @@ Please pick the correct one. The main.c verifies that the correct script is load
 ## Broadcom/Cypress/Infineon Controllers
 
 The correct firmware file needs to be provided in the current working directory. 
-The Makefile / CMake build downloads the one for the BCM43430 e.g. found on later Raspberry Pi editions. 
+The Makefile / CMake build downloads the firmware for the BCM43430, e.g. found on later Raspberry Pi editions,
+and the PatchRAM for the Vela IF310 / CYW55310.
 
 ## Nordic Controller with HCI UART firmware
 

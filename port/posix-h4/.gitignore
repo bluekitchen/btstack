@@ -8,7 +8,7 @@ att_delayed_response
 att_delayed_response.h
 audio_duplex
 avrcp_browsing_client
-BCM43430A1.hcd
+*.hcd
 ble_central_test
 ble_peripheral
 ble_peripheral_sm_minimal

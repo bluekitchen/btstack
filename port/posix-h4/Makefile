@@ -82,5 +82,9 @@ EXAMPLES += pan_lwip_http_server
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-all: BCM43430A1.hcd ${EXAMPLES}
+CYW55310_PATCHRAM = CYW55500A1_001.002.032.0233.0117.hcd
 
+$(CYW55310_PATCHRAM):
+	curl -O -L https://github.com/Ezurio/ifx_flasher/raw/main/files/if310/firmware/$@
+
+all: BCM43430A1.hcd $(CYW55310_PATCHRAM) ${EXAMPLES}
