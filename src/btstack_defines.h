@@ -4759,9 +4759,10 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_STOP_ALERTING                      0x27u
 
 /**
- * @format 121
+ * @format 1211
  * @param subevent_code
  * @param lls_cid
+ * @param status
  * @param value
  */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL                        0x28u

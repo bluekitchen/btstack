@@ -16580,13 +16580,22 @@ static inline uint16_t gattservice_subevent_lls_client_alert_level_get_lls_cid(c
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_lls_client_alert_level_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
  * @brief Get field value from event GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL
  * @param event packet
  * @return value
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_lls_client_alert_level_get_value(const uint8_t * event){
-    return event[5];
+    return event[6];
 }
 
 /**
