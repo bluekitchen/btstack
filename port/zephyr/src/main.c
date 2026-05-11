@@ -52,6 +52,9 @@
 #include "hal_flash_bank_zephyr.h"
 #include "btstack_tlv_flash_bank.h"
 
+// Uncomment to wait during startup for USB CDC console to be ready
+// #define ENABLE_USB_CDC_WAIT
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bd_addr_t static_addr = { 0 };
@@ -164,7 +167,7 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 static hal_flash_bank_zephyr_t  hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
-#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+#if defined(ENABLE_USB_CDC_WAIT) && DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
 static void wait_for_usb_cdc_console(void)
 {
     const struct device * console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
