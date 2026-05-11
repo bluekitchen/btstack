@@ -67,6 +67,7 @@
 #define ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL                                                                     0x1843 // Audio Input Control
 #define ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE                                                            0x184E // Audio Stream Control Service
 #define ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE                                                        0x1851 // Basic Audio Announcement Service
+#define ORG_BLUETOOTH_SERVICE_RANGING_SERVICE                                                                         0x185B // Ranging Service
 #define ORG_BLUETOOTH_SERVICE_BINARY_SENSOR                                                                           0x183B // Binary Sensor 
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE                                                    0x1852 // Broadcast Audio Announcement Service
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE                                                            0x184F // Broadcast Audio Scan Service
@@ -117,6 +118,12 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_POWER_STATE                                                              0x2A1A // Battery Power State
 #define ORG_BLUETOOTH_CHARACTERISTIC_BGS_FEATURES                                                                     0x2C03
 #define ORG_BLUETOOTH_CHARACTERISTIC_BGR_FEATURES                                                                     0x2C04
+#define ORG_BLUETOOTH_CHARACTERISTIC_RAS_FEATURES                                                                     0x2C14 // RAS Features
+#define ORG_BLUETOOTH_CHARACTERISTIC_REAL_TIME_RANGING_DATA                                                           0x2C15 // Real-Time Ranging Data
+#define ORG_BLUETOOTH_CHARACTERISTIC_ON_DEMAND_RANGING_DATA                                                           0x2C16 // On-Demand Ranging Data
+#define ORG_BLUETOOTH_CHARACTERISTIC_RAS_CONTROL_POINT                                                                0x2C17 // RAS Control Point
+#define ORG_BLUETOOTH_CHARACTERISTIC_RANGING_DATA_READY                                                               0x2C18 // Ranging Data Ready
+#define ORG_BLUETOOTH_CHARACTERISTIC_RANGING_DATA_OVERWRITTEN                                                         0x2C19 // Ranging Data Overwritten
 #define ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_FEATURE                                                           0x2A49 // Blood Pressure Feature
 #define ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_MEASUREMENT                                                       0x2A35 // Blood Pressure Measurement
 #define ORG_BLUETOOTH_CHARACTERISTIC_BODY_COMPOSITION_FEATURE                                                         0x2A9B // Body Composition Feature
