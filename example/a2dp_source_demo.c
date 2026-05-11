@@ -208,7 +208,7 @@ avrcp_play_status_info_t play_info;
  *
  * @text The Listing MainConfiguration shows how to setup AD2P Source and AVRCP services. 
  * Besides calling init() method for each service, you'll also need to register several packet handlers:
- * - hci_packet_handler - handles legacy pairing, here by using fixed '0000' pin code.
+ * - hci_packet_handler - handles pairing and device discovery
  * - a2dp_source_packet_handler - handles events on stream connection status (established, released), the media codec configuration, and, the commands on stream itself (open, pause, stopp).
  * - avrcp_packet_handler - receives connect/disconnect event.
  * - avrcp_controller_packet_handler - receives answers for sent AVRCP commands.
@@ -505,9 +505,10 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
 #endif
         case HCI_EVENT_PIN_CODE_REQUEST:
-            printf("Pin code request - using '0000'\n");
+            // inform about legacy pairing with pin code - should only happen before Core v2.1
+            printf("Pin code request for Legacy Pairing received -> abort pairing'\n");
             hci_event_pin_code_request_get_bd_addr(packet, address);
-            gap_pin_code_response(address, "0000");
+            gap_pin_code_negative(address);
             break;
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
             printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));

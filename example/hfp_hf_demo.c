@@ -450,7 +450,6 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * 
     bd_addr_t event_addr;
 
     switch (packet_type){
-
         case HCI_SCO_DATA_PACKET:
             // forward received SCO / audio packets to SCO component
             if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
@@ -466,10 +465,10 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * 
                     break;
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request and respond with '0000'
-                    printf("Pin code request - using '0000'\n");
+                    // inform about legacy pairing with pin code - should only happen before Core v2.1
+                    printf("Pin code request for Legacy Pairing received -> abort pairing'\n");
                     hci_event_pin_code_request_get_bd_addr(event, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
+                    gap_pin_code_negative(event_addr);
                     break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
@@ -491,47 +490,18 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * 
         default:
             break;
     }
-
 }
 
 static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
+    UNUSED(event_size);
+
     uint8_t status;
-    bd_addr_t event_addr;
     hfp_voice_recognition_state_t ag_vra_state;
 
     switch (packet_type){
-
-        case HCI_SCO_DATA_PACKET:
-            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
-            sco_demo_receive(event, event_size);
-            break;
-
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(event)){
-                case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
-                    dump_supported_codecs();
-                    break;
-
-                case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
-                    hci_event_pin_code_request_get_bd_addr(event, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
-                    break;
-
-                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(event));
-                    printf("Accepting Pairing - TODO: require actual user action\n");
-                    hci_event_user_confirmation_request_get_bd_addr(event, event_addr);
-                    gap_ssp_confirmation_response(event_addr);
-                    break;
-
-                case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    sco_demo_send(hci_event_sco_can_send_now_get_handle(event));
-                    break;
-                    
                 case HCI_EVENT_HFP_META:
                     switch (hci_event_hfp_meta_get_subevent_code(event)) {
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:

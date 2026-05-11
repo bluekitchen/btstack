@@ -132,10 +132,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					break;
 									
 				case HCI_EVENT_PIN_CODE_REQUEST:
-					// inform about pin code request
-                    printf("Pin code request - using '0000'\n\r");
+                    // inform about legacy pairing with pin code - should only happen before Core v2.1
+                    printf("Pin code request for Legacy Pairing received -> abort pairing'\n");
                     reverse_bd_addr(&packet[2], event_addr);
-					hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
+                    gap_pin_code_negative(event_addr);
 					break;
                 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
@@ -265,4 +265,3 @@ int btstack_main(int argc, const char * argv[]){
 	hci_power_control(HCI_POWER_ON);
     return 0;
 }
-
