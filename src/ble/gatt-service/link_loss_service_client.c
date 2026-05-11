@@ -119,23 +119,23 @@ static void lls_client_connected(lls_client_connection_t * connection, uint8_t s
                                             GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED);
 }
 
-static void lls_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint16_t data_size){
+static void lls_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, uint8_t status, const uint8_t * data, uint16_t data_size) {
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
 
-    if (data_size != 1){
+    if (data_size != 1) {
         return;
     }
 
-    uint8_t event[6];
+    uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = 4;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, cid);
-    pos+= 2;
+    pos += 2;
+    event[pos++] = status;
     event[pos++] = data[0];
-
     (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -166,8 +166,6 @@ static void lls_client_emit_done_event(lls_client_connection_t * connection, uin
 
 
 static void lls_client_emit_read_event(lls_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
-    UNUSED(status);
-
     if ((data_size > 0) && (data == NULL)){
         return;
     }
@@ -175,7 +173,7 @@ static void lls_client_emit_read_event(lls_client_connection_t * connection, uin
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&lls_client, index);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_ALERT_LEVEL:
-            lls_client_emit_uint8(connection->basic_connection.cid, connection->packet_handler, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, data, data_size);
+            lls_client_emit_uint8(connection->basic_connection.cid, connection->packet_handler, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, status, data, data_size);
             break;
         default:
             btstack_assert(false);
@@ -298,8 +296,17 @@ static void lls_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             connection = lls_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
-            connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_READY;
-            lls_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+            switch (connection->state){
+                case LINK_LOSS_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
+                    connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_READY;
+                    lls_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                case LINK_LOSS_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+                    // smth. went wrong with read
+                    break;
+                default:
+                    connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_READY;
+                    break;
+            }
             break;
 
         default:
