@@ -34,20 +34,25 @@ source env.sh
 
 You can build an example using:
 ```sh
-west build -b nrf52840dk/nrf52840
+west build -b nrf52840dk/nrf52840 -- -DEXTRA_CONF_FILE=nordic_bt_ctlr.conf
 ```
 
 `nrf52840dk/nrf52840` selected the Nordic nRF52840 DK. For the older nRF52 DK with nRF52832, you can specify nrf52dk/nrf52832.
 To get a list of all supported Zephyr targets, run `west boards`
 
+Nordic Bluetooth Controller options shared by Nordic SoCs are kept in `nordic_bt_ctlr.conf`. When building with the Nordic SoftDevice Controller, also include `nordic_sdc.conf`:
+```sh
+west build -b nrf52840dk/nrf52840 -- -DEXTRA_CONF_FILE="nordic_bt_ctlr.conf;nordic_sdc.conf"
+```
+
 To change zephyr platform settings use:
 ```sh
-west build -b nrf52840dk/nrf52840 -t menuconfig
+west build -d build -t menuconfig
 ```
 
 To build a different example, e.g. the `gatt_streamer_server`, set the EXAMPLE environment variable:
 ```sh
-EXAMPLE=gatt_streamer_server west build -b nrf52840dk/nrf52840
+EXAMPLE=gatt_streamer_server west build -b nrf52840dk/nrf52840 -- -DEXTRA_CONF_FILE=nordic_bt_ctlr.conf
 ```
 
 ### 2. Flash Example
@@ -88,12 +93,12 @@ CONFIG_MAIN_STACK_SIZE=4096
 ```
 then the network core image can be compiled and flashed
 ```sh
-west build -b nrf5340dk/nrf5340/cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_sw_split.conf
+west build -b nrf5340dk/nrf5340/cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_sw_split.conf -DEXTRA_CONF_FILE=nordic_bt_ctlr.conf
 west flash
 ```
 or with debugging
 ```sh
-west build -b nrf5340dk/nrf5340/cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_sw_split.conf -DOVERLAY_CONFIG=debug_overlay.conf
+west build -b nrf5340dk/nrf5340/cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_sw_split.conf -DEXTRA_CONF_FILE=nordic_bt_ctlr.conf -DOVERLAY_CONFIG=debug_overlay.conf
 west flash
 ```
 
