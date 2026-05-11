@@ -938,13 +938,13 @@ From a BTstack application perspective, setting up Classic security consists of 
 3. Handle pairing-related HCI events in the application packet handler.
 4. Store link keys in persistent storage if bonding shall survive reboot.
 
-Unless the application enables `gap_ssp_set_auto_accept(1)`, it must actively answer SSP confirmation or passkey events in its packet handler.
+The examples handle pairing-related events explicitly in the application packet handler. Legacy PIN pairing is intentionally rejected by default and reported on stdio, while Secure Simple Pairing (SSP) confirmation requests are reported with the numeric value before the example accepts them. SPP is introduced with the Bluetooth 2.1 specification in 2007 to make device connections both faster and more secure.
 
 If `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` is enabled, `sm_init()` should also be called in dual-mode or Classic-oriented examples that want CTKD support. This allows BTstack to derive and store transport keys across LE and BR/EDR after Secure Connections pairing.
 
 The examples in `example/` already show the relevant building blocks:
 
-- `example/spp_counter.c` shows a basic Classic service with SSP handling.
+- `example/spp_counter.c` shows a basic Classic service with legacy PIN rejection and SSP handling.
 - `example/gap_dedicated_bonding.c` shows explicit dedicated bonding.
 - `example/hid_keyboard_demo.c` shows a profile that relies on pairing and bonding in practice.
 
@@ -981,7 +981,7 @@ The `spp_counter` example already uses the default Mode 4 behavior. The minimal 
         gap_discoverable_control(1);
     }
 
-With this configuration, BTstack keeps Security Mode 4 and `LEVEL_2`. If the remote device is old, it may still request legacy PIN pairing. If it supports Bluetooth 2.1+, SSP is used instead.
+With this configuration, BTstack keeps Security Mode 4 and `LEVEL_2`. If the remote device is old, it may still request legacy PIN pairing. The examples reject this request instead of silently accepting a fixed PIN. Secure Simple Pairing was introduced with the Bluetooth 2.1 specification in 2007, so Bluetooth 2.1 and newer devices use SSP instead of legacy PIN pairing.
 
 The application should handle both cases in the packet handler:
 
@@ -995,14 +995,16 @@ The application should handle both cases in the packet handler:
 
         switch (hci_event_packet_get_type(packet)) {
             case HCI_EVENT_PIN_CODE_REQUEST:
+                printf("Pin code request for Legacy Pairing received -> abort pairing\n");
                 hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                gap_pin_code_response(event_addr, "0000");
+                gap_pin_code_negative(event_addr);
                 break;
 
             case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-                hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
-                printf("Confirm numeric value %06"PRIu32"\n",
+                printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n",
                        hci_event_user_confirmation_request_get_numeric_value(packet));
+                printf("Accepting Pairing - TODO: require actual user action\n");
+                hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
                 gap_ssp_confirmation_response(event_addr);
                 break;
 
@@ -1011,7 +1013,7 @@ The application should handle both cases in the packet handler:
         }
     }
 
-This is the right baseline for examples like SPP that need encrypted Classic connections but do not need stronger authentication than standard SSP.
+This is the right baseline for examples like SPP that need encrypted Classic connections but do not need stronger authentication than standard SSP. Legacy PIN pairing is intentionally not accepted by default; an application that really needs to support pre-Bluetooth 2.1 devices must make that policy decision explicitly and provide its own PIN handling.
 
 If CTKD is enabled, this baseline is also sufficient to allow an LE Secure Connections bond to later create a usable Classic link key, as long as the LE Security Manager is initialized and bonding data is persisted.
 
