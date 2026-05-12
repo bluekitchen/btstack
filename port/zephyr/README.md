@@ -110,6 +110,78 @@ Boards that provide TLV storage should reserve a dedicated `storage_partition` o
 
 The STM32 Nucleo board overlays under `boards/` provide additional fixed-partition examples.
 
+## External Bluetooth Controllers
+
+BTstack uses Zephyr's HCI driver layer to talk to an external Bluetooth Controller. For this port, the Bluetooth Host is provided by BTstack, while Zephyr provides the HCI Transport.
+
+### Kconfig Requirements
+
+The common BTstack requirements are:
+
+```conf
+CONFIG_BT=y
+CONFIG_BT_HCI_RAW=y
+```
+
+For a UART H4 controller such as the IF310 module, the board fragment also needs the UART backend used by Zephyr's HCI transport:
+
+```conf
+CONFIG_SERIAL=y
+CONFIG_UART_INTERRUPT_DRIVEN=y
+```
+
+Controller-specific setup belongs in the board fragment as well. The IF310 board uses Infineon AIROC PatchRAM download at boot:
+
+```conf
+CONFIG_BT_AIROC_CUSTOM=y
+CONFIG_AIROC_CUSTOM_FIRMWARE_HCD_BLOB="CYW55500A1_001.002.032.0233.0117.hcd"
+CONFIG_AIROC_AUTOBAUD_MODE=y
+```
+
+Those AIROC options are specific to the CYW55xxx/CYW43xxx controller family. Other external controllers will use their own Zephyr driver Kconfig, if any.
+
+### Devicetree Requirements
+
+The selected controller must be exposed through Zephyr's `zephyr,bt-hci` chosen node:
+
+```dts
+/ {
+	chosen {
+		zephyr,bt-hci = &bt_hci;
+	};
+};
+```
+
+For a UART H4 controller, the UART node must be enabled, pinned out, contain a `zephyr,bt-hci-uart` child node and have hardware flow control is required.
+Here's the snippet from the IF310 board definition for the RP2040 connected to a CYW55310:
+
+```dts
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	hw-flow-control;
+	pinctrl-0 = <&bt_uart0_default>;
+	pinctrl-names = "default";
+
+	bt_hci: bt_hci {
+		status = "okay";
+		compatible = "zephyr,bt-hci-uart";
+
+		cyw55310 {
+			status = "okay";
+			compatible = "infineon,cyw43xxx-bt-hci";
+			bt-reg-on-gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
+			fw-download-speed = <921600>;
+			hci-operation-speed = <921600>;
+		};
+	};
+};
+```
+
+For the Infineon binding, `current-speed` should match the controller's boot ROM baud rate; `fw-download-speed` and `hci-operation-speed` 
+may then raise the baud rate for PatchRAM transfer and normal HCI traffic. 
+
+
 ## Building and Running on nRF5340
 
 The nrf5340 is a dual core SoC, where one core is used for Bluetooth HCI functionality and
