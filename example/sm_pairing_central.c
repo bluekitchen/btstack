@@ -119,19 +119,18 @@ static void sm_pairing_central_setup(void) {
      * sm_set_authentication_requirements( X | SM_AUTHREQ_BONDING)
      */
 
-    // LE Legacy Pairing, Just Works
+    // LE Legacy Pairing, Just Works - disable Secure Connections Only Mode
+    // sm_set_secure_connections_only_mode(false);
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     // sm_set_authentication_requirements(0);
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
+    // sm_set_secure_connections_only_mode(false);
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     // sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
     // sm_use_fixed_passkey_in_display_role(FIXED_PASSKEY);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-
-    // enable LE Secure Connections Only mode - disables Legacy pairing
-    // sm_set_secure_connections_only_mode(true);
 
     // LE Secure Connections, Just Works
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
