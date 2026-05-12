@@ -62,6 +62,23 @@ To flash a connected board:
 west flash
 ```
 
+## Persistent BTstack TLV Storage
+
+BTstack automatically uses Zephyr flash-backed TLV storage when all of the following are true:
+
+- `CONFIG_FLASH=y`
+- `zephyr,code-partition` is defined in devicetree
+- A fixed partition with the node label `storage_partition` exists
+
+When these requirements are met, the BTstack Zephyr port splits `storage_partition` into two equal flash banks for its TLV backend. If any requirement is missing, it falls back to non-persistent TLV storage.
+
+Boards that provide TLV storage should reserve a dedicated `storage_partition` outside the application image and keep `zephyr,code-partition` pointing at the application flash region. The IF310 board definition is an RP2040 example:
+
+- `boards/if310.conf` enables Zephyr flash support
+- `boards/ezurio/if310/if310.dts` reserves the final 32 KiB of flash as `storage_partition`
+
+The STM32 Nucleo board overlays under `boards/` provide additional fixed-partition examples.
+
 ## Building and Running on nRF5340
 
 The nrf5340 is a dual core SoC, where one core is used for Bluetooth HCI functionality and
