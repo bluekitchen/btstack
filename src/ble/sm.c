@@ -5225,8 +5225,10 @@ void sm_init(void){
 
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 16;
+    sm_auth_req = 0;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     sm_sc_only_mode = true;
+    sm_auth_req |= SM_AUTHREQ_SECURE_CONNECTION;
 #endif
 
     sm_fixed_passkey_in_display_role = 0xffffffffU;
