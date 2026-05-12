@@ -147,23 +147,22 @@ PIN, see Listing [below](#lst:PinCodeRequest).
                 printf("Pin code request - using '0000'\n\r");
                 hci_event_pin_code_request_get_bd_addr(packet, bd_addr);
 
-                // baseband address, pin length, PIN: c-string
-                hci_send_cmd(&hci_pin_code_request_reply, &bd_addr, 4, "0000");
+                // baseband address, pin PIN: c-string
+                gap_pin_code_response(&bd_addr, "0000");
                 break;
            ...
         }
     }
 ~~~~
 
-The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP),
+The Bluetooth v2.1 specification introduced Secure Simple Pairing (SSP),
 which is a better approach as it both improves security and is better
 adapted to embedded systems. With SSP, the devices first exchange their
 IO Capabilities and then settle on one of several ways to verify that
 the pairing is legitimate. If the Bluetooth device supports SSP, BTstack
-enables it by default and even automatically accepts SSP pairing
-requests. Depending on the product in which BTstack is used, this may
-not be desired and should be replaced with code to interact with the
-user.
+enables it by default. As SSP was introduced in Bluetooth v2.1, there
+should be no reason to accept PIN-based pairing. The examples automatically
+reject a PIN request with `gap_pin_code_negative()`.
 
 Regardless of the authentication mechanism (PIN/SSP), on success, both
 devices will generate a link key. The link key can be stored either in
@@ -821,14 +820,15 @@ From the BTstack side, GATT over Classic reuses the same ATT database, ATT serve
 
 This means that a single application can provide the same GATT database over LE and over BR/EDR at the same time.
 
-The current examples that demonstrate this are:
+The following examples demonstrate this:
 
 - `example/gatt_counter.c`
 - `example/gatt_streamer_server.c`
 - `example/spp_and_gatt_counter.c`
 - `example/spp_and_gatt_streamer.c`
 
-The first two are GATT server examples that optionally expose the same GATT database over Classic when compiled with `ENABLE_GATT_OVER_CLASSIC`. The latter two combine Classic SPP with a GATT server in the same application.
+The first two are GATT server examples that optionally expose the same GATT database over Classic when compiled with `ENABLE_GATT_OVER_CLASSIC`. 
+The latter two combine Classic SPP with a GATT server in the same application.
 
 ##### Server Setup
 
@@ -838,9 +838,10 @@ To provide GATT over Classic, the application still creates its GATT database in
 2. Compile it into `profile_data`.
 3. Call `att_server_init(profile_data, ...)`.
 
-With `ENABLE_GATT_OVER_CLASSIC`, `att_server_init()` additionally registers the Classic ATT L2CAP service internally. The application does not need to call `att_dispatch_classic_register_service()` directly in the common server case.
+With `ENABLE_GATT_OVER_CLASSIC`, `att_server_init()` additionally registers the Classic ATT L2CAP service internally. 
 
-The application does still need to publish the Generic Attribute service via SDP so that a remote Classic GATT client can discover the ATT PSM. BTstack provides `gatt_create_sdp_record()` for this:
+The application does still need to publish the Generic Attribute service via SDP so that a remote Classic GATT client
+can discover the ATT PSM. BTstack provides `gatt_create_sdp_record()` for this:
 
     static uint8_t gatt_service_buffer[70];
 
@@ -870,7 +871,9 @@ This is separate from LE advertising:
 - Classic clients find the device via inquiry and SDP
 - LE clients find the device via advertisements
 
-Accordingly, the dual-mode examples keep both mechanisms active. In `gatt_counter.c` and `gatt_streamer_server.c`, the LE advertisement flags are adjusted when `ENABLE_GATT_OVER_CLASSIC` is enabled so that the device is presented as BR/EDR-capable dual-mode instead of LE-only.
+Accordingly, the dual-mode examples keep both mechanisms active. In `gatt_counter.c` and `gatt_streamer_server.c`,
+the LE advertisement flags are adjusted when `ENABLE_GATT_OVER_CLASSIC` is enabled so that the device is presented as 
+BR/EDR-capable dual-mode instead of LE-only.
 
 ##### Same ATT Callbacks for LE and Classic
 
@@ -896,7 +899,8 @@ In practice this means:
 - Classic-side security is configured with GAP APIs such as `gap_set_security_level()` and `gap_ssp_set_io_capability()`
 - LE-side security is configured with `sm_init()`, `sm_set_io_capabilities()`, and `sm_set_authentication_requirements()`
 
-In dual-mode examples, both may appear in the same file because the application supports both transports at once. For example, `gatt_counter.c` sets up LE Security Manager handling and also configures Classic SSP when `ENABLE_GATT_OVER_CLASSIC` is enabled.
+In dual-mode examples, both may appear in the same file because the application supports both transports at once.
+For example, `gatt_counter.c` sets up LE Security Manager handling and also configures Classic SSP when `ENABLE_GATT_OVER_CLASSIC` is enabled.
 
 ##### Client Side
 
@@ -904,9 +908,11 @@ BTstack also provides a Classic GATT client entry point:
 
     uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr);
 
-Internally, BTstack performs an SDP query for the remote Generic Attribute service, extracts the ATT L2CAP PSM, and then opens the Classic ATT bearer. After the connection is up, the normal GATT client procedures are used.
+Internally, BTstack performs an SDP query for the remote Generic Attribute service, extracts the ATT L2CAP PSM, 
+and then opens the Classic ATT bearer. After the connection is up, the normal GATT client procedures are used.
 
-At the moment, the existing examples in `example/` focus on the server side and on dual-mode server combinations. There is currently no dedicated standalone example for `gatt_client_classic_connect()`.
+At the moment, the existing examples in `example/` focus on the server side and on dual-mode server combinations. 
+There is currently no dedicated standalone example for `gatt_client_classic_connect()`.
 
 ##### Which Example to Start From
 
