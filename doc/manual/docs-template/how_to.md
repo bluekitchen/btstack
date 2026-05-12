@@ -101,7 +101,7 @@ BTstack properties:
 | ENABLE_CLASSIC_OOB_PAIRING                                                     | Enable support for classic Out-of-Band (OOB) pairing                                                                        |
 | ENABLE_CONTROLLER_<br>DUMP_PACKETS                                             | Dump number of packets in Controller per type for debugging                                                                 |
 | ENABLE_CONTROLLER_<br>WARM_BOOT                                                | Enable stack startup without power cycle (if supported/possible)                                                            |
-| ENABLE_CROSS_TRANSPORT_<br>KEY_DERIVATION                                      | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections. Requires BR/EDR plus LE Secure Connections support.   |
+| ENABLE_CROSS_TRANSPORT_<br>KEY_DERIVATION                                      | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections. Requires BR/EDR plus LE Secure Connections support.    |
 | ENABLE_CYPRESS_BAUDRATE_<br>CHANGE_FLOWCONTROL_<br>BUG_WORKAROUND              | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.                              |
 | ENABLE_EHCILL                                                                  | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets                                                                   |
 | ENABLE_EXPLICIT_BR_EDR_<br>SECURITY_MANAGER                                    | Report BR/EDR Security Manager support in L2CAP Information Response                                                        |
@@ -308,12 +308,10 @@ _
 
 ## Run-time configuration
 
-To allow code-reuse with different platforms
-as well as with new ports, the low-level initialization of BTstack and
-the hardware configuration has been extracted to the various
-*platforms/PLATFORM/main.c* files. The examples only contain the
-platform-independent Bluetooth logic. But let’s have a look at the
-common init code.
+To allow code-reuse with different platforms as well as with new ports, the low-level initialization of BTstack and
+the hardware configuration has been extracted to the *main.c* or similar file in */port/PORT/* folder.
+The examples only contain platform-independent Bluetooth logic. 
+Let’s have a look at the common init code.
 
 Listing [below](#lst:btstackInit) shows a minimal platform setup for an
 embedded system with a Bluetooth chipset connected via UART.
@@ -498,7 +496,6 @@ In each iteration:
 - finally, it gets the next timeout. It then waits for a 'trigger' or the next timeout, if set.
 
 It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
-
 
 ### Run Loop POSIX
 
@@ -821,7 +818,9 @@ For Bluetooth LE, BTstack separates GATT access control from the actual pairing 
 - the ATT server checks those permissions for each read and write request
 - the Security Manager performs pairing, bonding, re-encryption, identity resolving, and user interaction
 
-This means that a GATT application usually does not start by "making GATT secure" globally. Instead, it marks the attributes that need protection and configures the LE Security Manager so BTstack can raise the LE link security when those attributes are accessed.
+This means that a GATT application usually does not start by "making GATT secure" globally. 
+Instead, it marks the attributes that need protection and configures the LE Security Manager so BTstack can raise 
+the LE link security when those attributes are accessed.
 
 The main examples to look at are:
 
@@ -846,47 +845,53 @@ For example:
 
     CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY | READ_ENCRYPTED,
 
-When an ATT request arrives, BTstack checks the current LE link security before calling the application's read or write callback. If the link is not secure enough, the ATT server returns the corresponding ATT security error. The remote GATT client can then start pairing or encryption and retry the request.
+When an ATT request arrives, BTstack checks the current LE link security before calling the application's read or write callback. 
+If the link is not secure enough, the ATT server returns the corresponding ATT security error. 
+The remote GATT client can then start pairing or encryption and retry the request.
 
-The important point is that the application callback should not be the first line of defense for normal GATT permissions. Express the required protection in the `.gatt` database, then keep the callback focused on producing or accepting the attribute value.
+The important point is that the application callback should not be the first line of defense for normal GATT permissions.
+Express the required protection in the `.gatt` database, then keep the callback focused on producing or accepting the attribute value.
 
 ### Security Manager Setup
 
-If any GATT Characteristic requires LE security, initialize the Security Manager:
+If any GATT Characteristic requires LE security or the remote might try to pair, e.g. when communicating with a smartphone,
+you should initialize the Security Manager:
 
     sm_init();
 
-For production devices, also configure stable identity and encryption roots with `sm_set_ir()` and `sm_set_er()` as described in [SMP - Security Manager Protocol](protocols.md#sec:smpProtocols). These values must survive reboot. If they change, previously bonded peers may no longer be recognized correctly.
+For production devices, support for LE Secure Connections should be enabled and you should 
+configure stable identity and encryption roots with `sm_set_ir()` and `sm_set_er()` as 
+described in [SMP - Security Manager Protocol](protocols.md#sec:smpProtocols). These values must survive reboot. 
+If they change, previously bonded peers may no longer be recognized correctly.
 
-The simplest GATT examples use Just Works without bonding:
+To enable support for LE Secure Connections, add `ENABLE_LE_SECURE_CONNECTIONS` in `btstack_config.h`.
 
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(0);
+If activated, BTstack will also enable "LE Secure Connections Only Mode", which will reject Legacy Pairing.
+If you need to support peer devices that do not support LE Secure Connections, you can disable Secure Connections
+Only Mode by calling:
 
-This allows pairing when needed but does not give MITM protection. It is acceptable for simple data where encryption is useful but user authentication is not required.
+    sm_set_secure_connections_only_mode(false);
 
-For a product that should remember peers across reconnects, request bonding:
+By default, the the IO Capabilites are set to No Input/No Output, which leads to Just Works pairing.
 
-    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+This allows pairing when needed but does not give MITM protection. It is acceptable for simple data where encryption 
+is useful but user authentication is not required.
 
-For a product that needs protection against active MITM attacks, request MITM protection and configure IO capabilities that can actually support it:
+For a product that should remember peers across reconnects, request bonding with support for LE Secure Connections:
+
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING | SM_AUTHREQ_SECURE_CONNECTION);
+
+For a product that needs protection against active MITM attacks, also request MITM protection and configure IO capabilities 
+that can actually support it:
 
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING | SM_AUTHREQ_SECURE_CONNECTION);
 
-For LE Secure Connections quality, enable `ENABLE_LE_SECURE_CONNECTIONS` in `btstack_config.h` and include the Secure Connections requirement:
-
-    sm_set_authentication_requirements(
-        SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
-
-If only LE Secure Connections peers should be accepted, BTstack can enforce this policy:
-
-    sm_set_secure_connections_only_mode(true);
 
 ### Handling Pairing Events
 
-When `att_server` is used, Security Manager events are delivered through the ATT server packet handler. The application should handle the events that match its security policy and user interface.
+When `att_server` is used, Security Manager events are delivered through the ATT server packet handler. 
+The application should handle the events that match its security policy and user interface.
 
 For Just Works pairing:
 
@@ -908,15 +913,19 @@ For Passkey Entry:
         sm_passkey_input(sm_event_passkey_input_number_get_handle(packet), 123456);
         break;
 
-If the user rejects pairing or the application policy does not allow it, decline bonding using the connection handle from the pairing event:
+If the user rejects pairing or the application policy does not allow it currenelty, e.g. because the user didn't put 
+it into some kind of 'pairing mode', the application can decline the bonding using the connection handle from the pairing event:
 
     sm_bonding_decline(con_handle);
 
-After pairing finishes, BTstack reports `SM_EVENT_PAIRING_COMPLETE`. Applications that show a pairing dialog should close it there and check the status before treating the peer as trusted.
+After pairing finishes, BTstack reports `SM_EVENT_PAIRING_COMPLETE`.
+An applications that show a pairing dialog should close it there and check the status before treating the peer as trusted.
+
 
 ### GATT Client Security
 
-By default, the GATT Client sends the requested operation and lets the remote GATT Server enforce security. If the remote Characteristic requires a stronger link, the query completes with an ATT security error.
+By default, the GATT Client sends the requested operation and lets the remote GATT Server enforce security.
+If the remote Characteristic requires stronger security, the query completes with an ATT security error.
 
 There are three useful client-side modes:
 
