@@ -7,6 +7,29 @@ list(APPEND BOARD_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
+# The IF310 board config references this PatchRAM file by name. Zephyr's
+# Infineon integration checks for the file while find_package(Zephyr) runs,
+# so fetch it first when configuring an IF310 build.
+if(BOARD MATCHES "^if310($|/)")
+    set(IF310_HCD_FILE
+        ${CMAKE_CURRENT_SOURCE_DIR}/CYW55500A1_001.002.032.0233.0117.hcd)
+    if(NOT EXISTS ${IF310_HCD_FILE})
+        message(STATUS "Downloading IF310 PatchRAM firmware")
+        file(DOWNLOAD
+            https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/CYW55500A1_001.002.032.0233.0117.hcd
+            ${IF310_HCD_FILE}
+            EXPECTED_HASH SHA256=f36c5698e053e167b9689bceae8693a969d7a8c3218f735b4069a62b14620282
+            STATUS IF310_HCD_DOWNLOAD_STATUS
+        )
+        list(GET IF310_HCD_DOWNLOAD_STATUS 0 IF310_HCD_DOWNLOAD_RESULT)
+        if(NOT IF310_HCD_DOWNLOAD_RESULT EQUAL 0)
+            list(GET IF310_HCD_DOWNLOAD_STATUS 1 IF310_HCD_DOWNLOAD_ERROR)
+            message(FATAL_ERROR
+                "Failed to download IF310 PatchRAM firmware: ${IF310_HCD_DOWNLOAD_ERROR}")
+        endif()
+    endif()
+endif()
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(BTstack-Zephyr)
