@@ -24,7 +24,7 @@ set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0233.0117.hcd)
 
 # Downloaded web assets, format: "URL|relative/output/path"
 set(WEB_H4_DOWNLOADED_ASSETS
-    "https://github.com/Ezurio/ifx_flasher/tree/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}|${CYW55310_PATCHRAM_NAME}"
+    "https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}|${CYW55310_PATCHRAM_NAME}"
 )
 
 function(web_h4_download_asset asset_entry)

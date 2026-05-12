@@ -85,6 +85,6 @@ EXAMPLES += pan_lwip_http_server
 CYW55310_PATCHRAM = CYW55500A1_001.002.032.0233.0117.hcd
 
 $(CYW55310_PATCHRAM):
-	curl -O -L https://github.com/Ezurio/ifx_flasher/raw/main/files/if310/firmware/$@
+	curl -O -L https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/$@
 
 all: BCM43430A1.hcd $(CYW55310_PATCHRAM) ${EXAMPLES}

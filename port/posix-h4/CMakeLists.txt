@@ -193,10 +193,10 @@ include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
 set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0233.0117.hcd)
-message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from https://github.com/Ezurio/ifx_flasher/raw/main/files/if310/firmware")
+message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware")
 file(
     DOWNLOAD
-    https://github.com/Ezurio/ifx_flasher/raw/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}
+    https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}
     ${CMAKE_CURRENT_BINARY_DIR}/${CYW55310_PATCHRAM_NAME}
     STATUS CYW55310_PATCHRAM_STATUS
 )

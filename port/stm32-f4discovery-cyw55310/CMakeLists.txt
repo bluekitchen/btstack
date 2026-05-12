@@ -53,17 +53,18 @@ message("Build: ${CMAKE_BUILD_TYPE}\n")
 include(cmake/btstack.cmake)
 
 # PatchRAM file for CYW55310
-set(PATCHRAM CYW55500A1_001.002.032.0233.0117.hcd)
-message("Downloading PatchRAM ${PATCHRAM} from https://github.com/Ezurio/ifx_flasher/tree/main/files/if310/firmware")
-file (DOWNLOAD https://github.com/Ezurio/ifx_flasher/tree/main/files/if310/firmware/${PATCHRAM}.hcd ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd)
+set(PATCHRAM CYW55500A1_001.002.032.0233.0117)
+set(PATCHRAM_FILE ${PATCHRAM}.hcd)
+message("Downloading PatchRAM ${PATCHRAM_FILE} from https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware")
+file (DOWNLOAD https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/${PATCHRAM_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE})
 
 # Convert PatchRAM file into C
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE}
     COMMAND ${Python3_EXECUTABLE}
-    ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.hcd ${CMAKE_CURRENT_BINARY_DIR}
+    ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE} ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 # get list of examples
