@@ -432,9 +432,10 @@ BTstack provides different run loop implementations that implement the *btstack_
 - Qt: implementation for the Qt applications
 - WICED: implementation for the Broadcom WICED SDK RTOS abstraction that wraps FreeRTOS or ThreadX.
 - Windows: implementation for Windows based on Event objects and WaitForMultipleObjects() call.
+- Zephyr: implementation for Zephyr based on k_poll().
 
 Depending on the platform, data sources are either polled (embedded, FreeRTOS), or the platform provides a way
-to wait for a data source to become ready for read or write (CoreFoundation, POSIX, Qt, Windows), or,
+to wait for a data source to become ready for read or write (CoreFoundation, POSIX, Qt, Windows, Zephyr), or,
 are not used as the HCI transport driver and the run loop is implemented in a different way (WICED).
 In any case, the callbacks must be explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
 
@@ -551,6 +552,40 @@ blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
 
 It currently only supports *btstack_run_loop_execute_code_on_main_thread*.
+
+
+### Run Loop Zephyr
+
+The Zephyr run loop executes BTstack on a Zephyr thread and waits for registered
+data sources with *k_poll()*. A BTstack data source handle points to a
+*fat_variable_t*, which combines the Zephyr object to wait on, such as a FIFO,
+message queue, pipe, semaphore, or poll signal, with the matching
+*K_POLL_TYPE_...* identifier. The run loop converts the registered BTstack data
+sources into Zephyr *k_poll_event* entries and dispatches the BTstack data source
+handler when Zephyr reports the event as ready.
+
+In each iteration:
+
+- expired BTstack timers are processed using Zephyr's *k_uptime_get_32()* clock
+- all registered data sources are armed as Zephyr poll events
+- the timeout for *k_poll()* is set from the next BTstack timer, or *K_FOREVER*
+  if no timer is pending
+- ready poll events call the associated BTstack data source with
+  *DATA_SOURCE_CALLBACK_READ*
+
+The implementation also registers an internal Zephyr poll signal as a BTstack
+data source. This signal wakes the run loop for operations that are not tied to
+an external Zephyr object. *btstack_run_loop_poll_data_sources_from_irq* raises
+this signal and causes the run loop to poll BTstack data sources from the run
+loop thread. *btstack_run_loop_execute_code_on_main_thread* appends the callback
+registration to BTstack's callback list while holding a Zephyr mutex, raises the
+same signal with a different value, and then the run loop drains and executes the
+queued callbacks on the run loop thread.
+
+*btstack_run_loop_trigger_exit* sets an exit flag and raises the signal so that a
+run loop blocked in *k_poll()* wakes up and returns. 
+
+It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
 
 
 ## HCI Transport configuration
