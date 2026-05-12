@@ -309,10 +309,12 @@ After returning from the packet handler, BTstack might need to send itself.
 
 ### LE Data Channels
 
-The full title for LE Data Channels is actually LE Connection-Oriented Channels with LE Credit-Based Flow-Control Mode. In this mode, data is sent as Service Data Units (SDUs) that can be larger than an individual HCI LE ACL packet.
+The full title for LE Data Channels is actually LE Connection-Oriented Channels with LE Credit-Based Flow-Control Mode.
+In this mode, data is sent as Service Data Units (SDUs) that can be larger than an individual HCI LE ACL packet.
 
 LE Data Channels are similar to Classic L2CAP Channels but also provide a credit-based flow control similar to RFCOMM Channels.
-Unless the LE Data Packet Extension of Bluetooth Core 4.2 specification is used, the maximum packet size for LE ACL packets is 27 bytes. In order to send larger packets, each packet will be split into multiple ACL LE packets and recombined on the receiving side. 
+Unless the LE Data Length Extension of Bluetooth Core 4.2 specification is used, the maximum packet size for LE ACL packets is 27 bytes. 
+In order to send larger packets, each packet will be split into multiple ACL LE packets and recombined on the receiving side. 
 
 In BTstack, this feature is enabled with `ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE`.
 
@@ -326,7 +328,7 @@ BTstack's current API for LE Credit-Based Flow-Control Mode uses the `l2cap_cbm_
 - `l2cap_cbm_provide_credits`
 - `l2cap_cbm_available_credits`
 
-The older `l2cap_le_*` names are still present as deprecated wrappers. New code should use the `l2cap_cbm_*` APIs.
+The older `l2cap_le_*` function names are still present as deprecated wrappers. New code should use the `l2cap_cbm_*` APIs.
 
 #### Dedicated Receive Buffer Per Channel
 
@@ -343,17 +345,19 @@ The `mtu` parameter defines the maximal SDU size the local side is prepared to r
 
 LE Credit-Based Flow-Control Mode still uses the normal `l2cap_send(...)` call to send SDUs once the channel is open.
 
-As with other BTstack transports, applications should not send blindly. Instead, they should first request a send-now event:
+As with other BTstack transports, applications should not send blindly. Instead, they should first request a can-send-now event:
 
 - `l2cap_request_can_send_now_event(local_cid)`
 - wait for `L2CAP_EVENT_CAN_SEND_NOW`
 - send the SDU with `l2cap_send(local_cid, data, len)`
 
-For credit-based channels, the transmitted SDU buffer must remain valid until BTstack has finished using it. In practice, the examples only queue the next SDU after the send-now event cycle has completed again.
+For credit-based channels, the transmitted SDU buffer must remain valid until BTstack has finished using it.
+In practice, the examples only queue the next SDU after the the can-send-now event has been received.
 
 #### Credits
 
-When creating or accepting a channel, the `initial_credits` parameter controls how many SDU fragments the peer may send before it has to wait for more credits.
+When creating or accepting a channel, the `initial_credits` parameter controls how many SDU fragments the peer may 
+send before it has to wait for more credits.
 
 BTstack supports two modes:
 
@@ -368,11 +372,13 @@ The currently available outgoing credits granted by the peer can be queried with
 
     uint16_t credits = l2cap_cbm_available_credits(local_cid);
 
-If `L2CAP_LE_AUTOMATIC_CREDITS` is used, BTstack replenishes incoming credits automatically when they fall below its internal watermark. This is convenient and is what the example applications use by default.
+If `L2CAP_LE_AUTOMATIC_CREDITS` is used, BTstack replenishes incoming credits automatically when they fall below 
+its internal watermark. This is convenient and is what the example applications use by default.
 
 #### Security
 
-For outgoing channels, `l2cap_cbm_create_channel(...)` includes a `security_level` parameter. This lets the application require a minimum LE security level before the channel is established.
+For outgoing channels, `l2cap_cbm_create_channel(...)` includes a `security_level` parameter. 
+This lets the application require a minimum LE security level before the channel is established.
 
 For incoming channels, the security requirement is configured when registering the service:
 
@@ -405,7 +411,7 @@ The client usually:
 
 #### Existing Examples
 
-BTstack already contains two examples that demonstrate the feature end-to-end:
+BTstack contains two examples that demonstrate the feature end-to-end:
 
 - `example/le_credit_based_flow_control_mode_server.c`
 - `example/le_credit_based_flow_control_mode_client.c`
@@ -433,7 +439,7 @@ On the server side, the setup pattern is:
     l2cap_init();
     l2cap_cbm_register_service(packet_handler, TSPX_le_psm, LEVEL_2);
 
-Then, after receiving `L2CAP_EVENT_CBM_INCOMING_CONNECTION`:
+Then, after receiving `L2CAP_EVENT_CBM_INCOMING_CONNECTION`, it accepts the connections and provides the SDU buffer:
 
     l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS);
 
