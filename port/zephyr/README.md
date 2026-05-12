@@ -9,6 +9,9 @@ or is connected to an external Controller via one of the supported Zephyr HCI Tr
 
 Tested with nRF52 DK (PCA10040), nRF52840 DK (PC10056) and nRF5340 DK (PCA10095) boards only. It uses the fixed static random BD ADDR stored in NRF_FICR/NRF_FICR_S, which will not compile on non nRF SoCs.
 
+Building for an external Bluetooth Controller on a target that doesn't support unaligned memory access (e.g. RP2040 on Ezurio IF310 Devkit) requires Zephyr main branch from May 12, 2026 or later.
+Right now, building for RP2040 however fails. You may use the 'v4.2+infineon-fix' from here: https://github.com/bluekitchen/zephyr.git
+
 ## Build Environment
 The first step needs to done once. Step two is needed every time to setup the environment.
 
