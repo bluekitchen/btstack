@@ -28,6 +28,37 @@ To setup your environment to build a BTstack example, run the provided setup in 
 source env.sh
 ```
 
+## Console Output
+
+Console output is disabled by default. Add one of these configuration fragments when debug output is needed:
+
+- `debug-segger.conf` enables console output via SEGGER RTT
+- `debug-usb.conf` enables console output via USB CDC ACM on boards whose devicetree routes `zephyr,console` to a CDC ACM UART; the IF310 board definition provides this routing
+
+For example, to build IF310 with no console output:
+
+```sh
+west build -b if310
+```
+
+To build IF310 with SEGGER RTT console output:
+
+```sh
+west build -b if310 -- -DEXTRA_CONF_FILE=debug-segger.conf
+```
+
+To build IF310 with USB CDC console output:
+
+```sh
+west build -b if310 -- -DEXTRA_CONF_FILE=debug-usb.conf
+```
+
+When a board already needs another fragment, pass both as a semicolon-separated list, for example:
+
+```sh
+west build -b nrf52840dk/nrf52840 -- -DEXTRA_CONF_FILE="nordic_bt_ctlr.conf;debug-segger.conf"
+```
+
 ## Building and Running on nRF52840
 
 ### 1. Build Example
