@@ -35,6 +35,14 @@
  *
  */
 
+#define BTSTACK_FILE__ "hci_transport_zephyr.c"
+
+/*
+ *  hci_transport_zephyr.c
+ *
+ *  BTstack HCI Transport implementation on top of Zephyr HCI Transport
+ */
+
 // Zephyr
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
