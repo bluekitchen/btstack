@@ -202,7 +202,6 @@ int main(void)
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
-
 #ifdef ENABLE_HCI_DUMP
     // enable full log output while porting
 #ifdef ENABLE_SEGGER_RTT_BINARY
@@ -217,6 +216,7 @@ int main(void)
     DT_HAS_CHOSEN(zephyr_code_partition) && \
     FIXED_PARTITION_EXISTS(storage_partition)
 
+    // setup TLV
     uint32_t bank_size = FIXED_PARTITION_SIZE(storage_partition)/2;
     uint32_t bank_0_addr = FIXED_PARTITION_OFFSET(storage_partition);
     uint32_t bank_1_addr = bank_0_addr+bank_size;
@@ -237,17 +237,17 @@ int main(void)
 #else
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
 #endif
-
-    // setup global tlv
     btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-/*
+
+#ifdef ENABLE_CLASSIC
     // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     hci_set_link_key_db(btstack_link_key_db);
-*/
-
+#endif
+#ifdef ENABLE_BLE
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+#endif
 
     // init HCI
     hci_init(hci_transport_zephyr_get_instance(), NULL);
