@@ -333,7 +333,7 @@ They commonly require to download a patch and a configuration file. Patch and co
 **Init script** is required.
 
 **BTstack integration**: H4/H5 Controller require firmware upload. 'rtk_attach' can be used for this on Embedded Linux. For H4 and USB Controllers, 
-*btstack_chipset_realtek.c* implements the patch and config upload mechanism. The next subsection document how to configure it.
+*btstack_chipset_realtek.c* implements the patch and config upload mechanism. The current implementation requires POSIX support and a file system. Please get in touch if your project requires an MCU without POSIX/File system.
 
 ### Systems with an Operating System and a File System
 
@@ -344,18 +344,6 @@ For Realtek USB Controllers, the USB transport reports the Vendor/Product ID. If
 For Realtek UART H4 Controllers, the POSIX H4 port reads the Controller's HCI Local Version Information and calls `btstack_chipset_realtek_set_local_info()` with HCI Version, HCI Revision, and LMP Subversion. The Realtek driver uses these values to select the matching patch and configuration file names from its UART table. The configuration file also defines the vendor baud rate; after the config has been parsed, `btstack_chipset_realtek_get_config_baudrate()` returns the main baud rate that the port should use.
 
 Embedded Linux systems can also use Realtek's `rtk_attach` tool to upload firmware before BTstack starts. In that setup, BTstack can then use the Controller after the operating system side has completed the Realtek initialization without specific support for Realtek chipsets.
-
-### Embedded Systems without a File System
-
-On an embedded system without a file system, dynamic file lookup is not available. The application should therefore be built for a known Realtek Controller and include the matching patch and configuration data in Flash, for example by converting the Realtek `*_fw` and `*_config` files into C arrays. The embedded port then has to feed these arrays to the Realtek download sequence instead of opening files by name.
-
-To select the correct data, identify the Controller before building the firmware:
-
-* For a USB design, use the USB Product ID together with Realtek vendor ID `0x0bda`. This is the value passed to `btstack_chipset_realtek_set_product_id()` in the libusb port.
-* For a UART H4 design, use the Controller name from the module documentation or read the HCI Local Version Information once with the same module on a development system. The relevant values are HCI Version, HCI Revision, and LMP Subversion; these are the values passed to `btstack_chipset_realtek_set_local_info()` in the POSIX H4 port.
-
-If the selected patch/config pair does not match the actual Controller, the firmware download may fail or the Controller may boot with the wrong configuration, including an unexpected main baud rate. For production devices, treat the Realtek Controller type as part of the board configuration rather than something discovered from a file system at startup.
-
 
 ## Renesas Electronics
 
