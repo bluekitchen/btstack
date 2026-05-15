@@ -7666,8 +7666,9 @@ static bool hci_run_iso_tasks(void){
                             case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_INPUT:
                             case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT:
                             case HCI_ISO_STREAM_STATE_ACTIVE:
-                                // CIS exists, trigger close CIS
+                                // CIS exists, clear send requets and trigger CIS close
                                 stream->state = HCI_ISO_STREAM_STATE_W2_CLOSE;
+                                stream->can_send_now_requested = false;
                                 cig_active = true;
                                 break;
                             default:
