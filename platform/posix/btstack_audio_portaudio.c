@@ -287,8 +287,18 @@ static int btstack_audio_portaudio_sink_init(
     log_info("PortAudio: sink stream created");
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
-    log_info("PortAudio: sink latency: %f", stream_info->outputLatency);
-    UNUSED(stream_info);
+
+    // verify latency
+    uint32_t latency_samples = (uint32_t) (stream_info->outputLatency * samplerate);
+    uint32_t buffer_samples = NUM_FRAMES_PER_PA_BUFFER * NUM_OUTPUT_BUFFERS;
+    int buffers_needed = (latency_samples + NUM_FRAMES_PER_PA_BUFFER - 1) / NUM_FRAMES_PER_PA_BUFFER;
+    log_info("PortAudio: output latency of %f requires %u buffers, %u buffers available\n",
+    stream_info->outputLatency, buffers_needed, NUM_OUTPUT_BUFFERS);
+    if (latency_samples > buffer_samples) {
+        printf("PortAudio: output latency of %f requires %u buffers, but only %u buffers are available\n",
+            stream_info->outputLatency, buffers_needed, NUM_OUTPUT_BUFFERS);
+        log_error("PortAudio: need at least %u output buffers", buffers_needed);
+    }
 
     playback_callback  = playback;
 
