@@ -563,6 +563,7 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
         playback_start_threshold_frames = PLAYBACK_START_MS * 1000 /  7500;
     }
     printf("Playback start threshold: %u frames\n", playback_start_threshold_frames);
+    playback_active = false;
 #endif
 
     reset_counters();
