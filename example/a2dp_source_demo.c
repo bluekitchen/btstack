@@ -494,8 +494,8 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     bd_addr_t address;
     uint32_t cod;
 
-    // Service Class: Rendering | Audio, Major Device Class: Audio
-    const uint32_t bluetooth_speaker_cod = 0x200000 | 0x040000 | 0x000400;
+    // Service Class: Audio, Major Device Class: Audio
+    const uint32_t bluetooth_speaker_cod = 0x200000 | 0x000400;
 
     switch (hci_event_packet_get_type(packet)){
 #ifndef HAVE_BTSTACK_STDIN
