@@ -62,6 +62,7 @@ def parse_defines():
     defines.update(read_defines(btstack_root + '/' + hci_h_path))
     defines.update(read_defines(btstack_root + '/' + bluetooth_h_path))
     defines.update(read_defines(btstack_root + '/' + btstack_defines_h_path))
+    defines.update(read_defines(btstack_root + '/' + daemon_cmds_h_path))
     return defines
 
 def my_parse_events(path):
