@@ -68,6 +68,7 @@ file(GLOB SOURCES_MESH      "${BTSTACK_ROOT}/src/mesh/*.c")
 file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
 file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
@@ -141,6 +142,7 @@ set(SOURCES
   ${SOURCES_HXCMOD}
   ${SOURCES_HXCMOD}
   ${SOURCES_LC3_GOOGLE}
+  ${SOURCES_LE_AUDIO}
   ${SOURCES_LIBUSB}
   ${SOURCES_MD5}
   ${SOURCES_MESH}
