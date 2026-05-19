@@ -167,6 +167,43 @@ static uint8_t btstack_crypto_ecc_p256_d[32];
 // Software ECDH implementation provided by mbedtls
 #ifdef USE_MBEDTLS_ECC_P256
 static mbedtls_ecp_group   mbedtls_ec_group;
+
+static int btstack_crypto_mbedtls_read_public_key(mbedtls_ecp_point * point, const uint8_t * public_key){
+    uint8_t public_key_uncompressed[65];
+    public_key_uncompressed[0] = 0x04;
+    (void)memcpy(&public_key_uncompressed[1], public_key, 64);
+    return mbedtls_ecp_point_read_binary(&mbedtls_ec_group, point, public_key_uncompressed, sizeof(public_key_uncompressed));
+}
+
+static int btstack_crypto_mbedtls_write_public_key(const mbedtls_ecp_point * point, uint8_t * public_key){
+    uint8_t public_key_uncompressed[65];
+    size_t public_key_len;
+    int res = mbedtls_ecp_point_write_binary(&mbedtls_ec_group, point, MBEDTLS_ECP_PF_UNCOMPRESSED,
+                                             &public_key_len, public_key_uncompressed, sizeof(public_key_uncompressed));
+    if (res != 0){
+        return res;
+    }
+    if (public_key_len != sizeof(public_key_uncompressed)){
+        return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
+    }
+    (void)memcpy(public_key, &public_key_uncompressed[1], 64);
+    return 0;
+}
+
+static int btstack_crypto_mbedtls_write_x_coordinate(const mbedtls_ecp_point * point, uint8_t * x_coordinate){
+    uint8_t public_key_uncompressed[65];
+    size_t public_key_len;
+    int res = mbedtls_ecp_point_write_binary(&mbedtls_ec_group, point, MBEDTLS_ECP_PF_UNCOMPRESSED,
+                                             &public_key_len, public_key_uncompressed, sizeof(public_key_uncompressed));
+    if (res != 0){
+        return res;
+    }
+    if (public_key_len != sizeof(public_key_uncompressed)){
+        return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
+    }
+    (void)memcpy(x_coordinate, &public_key_uncompressed[1], 32);
+    return 0;
+}
 #endif
 
 #endif /* ENABLE_ECC_P256 */
@@ -552,9 +589,13 @@ static void btstack_crypto_ecc_p256_generate_key_software(void){
     mbedtls_ecp_point_init(&P);
     int res = mbedtls_ecp_gen_keypair(&mbedtls_ec_group, &d, &P, &sm_generate_f_rng_mbedtls, NULL);
     log_info("gen keypair %x", res);
-    mbedtls_mpi_write_binary(&P.X, &btstack_crypto_ecc_p256_public_key[0],  32);
-    mbedtls_mpi_write_binary(&P.Y, &btstack_crypto_ecc_p256_public_key[32], 32);
-    mbedtls_mpi_write_binary(&d, btstack_crypto_ecc_p256_d, 32);
+    if (res == 0){
+        res = btstack_crypto_mbedtls_write_public_key(&P, btstack_crypto_ecc_p256_public_key);
+        log_info("write public key %x", res);
+    }
+    if (res == 0){
+        mbedtls_mpi_write_binary(&d, btstack_crypto_ecc_p256_d, 32);
+    }
     mbedtls_ecp_point_free(&P);
     mbedtls_mpi_free(&d);
 #endif  /* USE_MBEDTLS_ECC_P256 */
@@ -583,11 +624,14 @@ static void btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_
     mbedtls_ecp_point_init(&Q);
     mbedtls_ecp_point_init(&DH);
     mbedtls_mpi_read_binary(&d, btstack_crypto_ecc_p256_d, 32);
-    mbedtls_mpi_read_binary(&Q.X, &btstack_crypto_ec_p192->public_key[0] , 32);
-    mbedtls_mpi_read_binary(&Q.Y, &btstack_crypto_ec_p192->public_key[32], 32);
-    mbedtls_mpi_lset(&Q.Z, 1);
-    mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
-    mbedtls_mpi_write_binary(&DH.X, btstack_crypto_ec_p192->dhkey, 32);
+    int res = btstack_crypto_mbedtls_read_public_key(&Q, btstack_crypto_ec_p192->public_key);
+    if (res == 0){
+        res = mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
+    }
+    if (res == 0){
+        res = btstack_crypto_mbedtls_write_x_coordinate(&DH, btstack_crypto_ec_p192->dhkey);
+    }
+    log_info("calculate dhkey %x", res);
     mbedtls_ecp_point_free(&DH);
     mbedtls_mpi_free(&d);
     mbedtls_ecp_point_free(&Q);
@@ -1285,10 +1329,10 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key){
 
     mbedtls_ecp_point Q;
     mbedtls_ecp_point_init( &Q );
-    mbedtls_mpi_read_binary(&Q.X, &public_key[0], 32);
-    mbedtls_mpi_read_binary(&Q.Y, &public_key[32], 32);
-    mbedtls_mpi_lset(&Q.Z, 1);
-    err = mbedtls_ecp_check_pubkey(&mbedtls_ec_group, &Q);
+    err = btstack_crypto_mbedtls_read_public_key(&Q, public_key);
+    if (err == 0){
+        err = mbedtls_ecp_check_pubkey(&mbedtls_ec_group, &Q);
+    }
     mbedtls_ecp_point_free( & Q);
 #endif
 
