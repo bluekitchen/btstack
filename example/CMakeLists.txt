@@ -68,6 +68,8 @@ set(EXAMPLES_LE_ONLY
 # List of LE Audio Examples, enabled by selected ports
 
 set(EXAMPLES_LE_AUDIO
+	le_audio_broadcast_sink_lite
+	le_audio_broadcast_source_lite
 	le_audio_unicast_gateway_lite
 	le_audio_unicast_headset_lite
 )
