@@ -885,6 +885,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 
         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
             printf("AVRCP Controller: Track changed\n");
+            avrcp_controller_get_now_playing_info(avrcp_connection->avrcp_cid);
             break;
 
         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
@@ -999,6 +1000,21 @@ static void avrcp_volume_changed(uint8_t volume){
     }
 }
 
+static uint8_t a2dp_sink_demo_set_volume_percentage(uint16_t avrcp_cid, int new_volume_percentage){
+    if (new_volume_percentage < 0){
+        volume_percentage = 0;
+    } else if (new_volume_percentage > 100){
+        volume_percentage = 100;
+    } else {
+        volume_percentage = new_volume_percentage;
+    }
+    uint8_t volume = volume_percentage * 127 / 100;
+    printf("AVRCP Target    : Volume set to %d%% (%d)\n", volume_percentage, volume);
+    uint8_t status = avrcp_target_volume_changed(avrcp_cid, volume);
+    avrcp_volume_changed(volume);
+    return status;
+}
+
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -1024,9 +1040,15 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             switch (operation_id){
                 case AVRCP_OPERATION_ID_VOLUME_UP:
                     printf("AVRCP Target    : VOLUME UP (%s)\n", button_state);
+                    if (avrcp_subevent_operation_get_button_pressed(packet) > 0){
+                        (void) a2dp_sink_demo_set_volume_percentage(a2dp_sink_demo_avrcp_connection.avrcp_cid, volume_percentage + 10);
+                    }
                     break;
                 case AVRCP_OPERATION_ID_VOLUME_DOWN:
                     printf("AVRCP Target    : VOLUME DOWN (%s)\n", button_state);
+                    if (avrcp_subevent_operation_get_button_pressed(packet) > 0){
+                        (void) a2dp_sink_demo_set_volume_percentage(a2dp_sink_demo_avrcp_connection.avrcp_cid, volume_percentage - 10);
+                    }
                     break;
                 default:
                     return;
@@ -1215,7 +1237,6 @@ static void show_usage(void){
 
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
-    uint8_t volume;
     avrcp_battery_status_t old_battery_status;
 
     a2dp_sink_demo_a2dp_connection_t *  a2dp_connection  = &a2dp_sink_demo_a2dp_connection;
@@ -1249,18 +1270,12 @@ static void stdin_process(char cmd){
             break;
         // Volume Control
         case 't':
-            volume_percentage = volume_percentage <= 90 ? volume_percentage + 10 : 100;
-            volume = volume_percentage * 127 / 100;
-            printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume);
-            status = avrcp_target_volume_changed(avrcp_connection->avrcp_cid, volume);
-            avrcp_volume_changed(volume);
+            printf(" - volume up   for 10 percent\n");
+            status = a2dp_sink_demo_set_volume_percentage(avrcp_connection->avrcp_cid, volume_percentage + 10);
             break;
         case 'T':
-            volume_percentage = volume_percentage >= 10 ? volume_percentage - 10 : 0;
-            volume = volume_percentage * 127 / 100;
-            printf(" - volume down for 10 percent, %d%% (%d) \n", volume_percentage, volume);
-            status = avrcp_target_volume_changed(avrcp_connection->avrcp_cid, volume);
-            avrcp_volume_changed(volume);
+            printf(" - volume down for 10 percent\n");
+            status = a2dp_sink_demo_set_volume_percentage(avrcp_connection->avrcp_cid, volume_percentage - 10);
             break;
         case 'V':
             old_battery_status = battery_status;
