@@ -154,8 +154,17 @@ static uint8_t btstack_crypto_ccm_s[16];
 
 #ifdef ENABLE_ECC_P256
 
-static uint8_t  btstack_crypto_ecc_p256_public_key[64];
-static uint8_t  btstack_crypto_ecc_p256_random[64];
+#define ECC_P256_PUBLIC_KEY_SIZE 64
+#ifdef USE_MBEDTLS_ECC_P256
+// mbedTLS requires additional random data for multiplication
+#define ECC_P256_KEYGEN_EXTRA_RANDOM 32
+#endif
+#ifdef USE_MICRO_ECC_P256
+#define ECC_P256_KEYGEN_EXTRA_RANDOM 0
+#endif
+
+static uint8_t  btstack_crypto_ecc_p256_public_key[ECC_P256_PUBLIC_KEY_SIZE];
+static uint8_t  btstack_crypto_ecc_p256_random[ECC_P256_PUBLIC_KEY_SIZE + ECC_P256_KEYGEN_EXTRA_RANDOM];
 static uint8_t  btstack_crypto_ecc_p256_random_len;
 static uint8_t  btstack_crypto_ecc_p256_random_offset;
 static btstack_crypto_ecc_p256_key_generation_state_t btstack_crypto_ecc_p256_key_generation_state;
@@ -1053,10 +1062,10 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
             break;
 #ifdef ENABLE_ECC_P256
         case BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY:
-            btstack_assert((btstack_crypto_ecc_p256_random_len + 8) <= 64);
+            btstack_assert((btstack_crypto_ecc_p256_random_len + 8) <= sizeof(btstack_crypto_ecc_p256_random));
             (void)memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len], data, 8);
             btstack_crypto_ecc_p256_random_len += 8u;
-            if (btstack_crypto_ecc_p256_random_len >= 64u) {
+            if (btstack_crypto_ecc_p256_random_len >= sizeof(btstack_crypto_ecc_p256_random)) {
                 btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_ACTIVE;
                 btstack_crypto_ecc_p256_generate_key_software();
                 btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_DONE;
