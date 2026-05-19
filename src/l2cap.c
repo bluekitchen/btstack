@@ -691,6 +691,11 @@ uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_ad
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
+    // abort if not enabled
+    if (l2cap_ertm_enabled == false) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     // determine security level based on psm
     const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
 
@@ -747,6 +752,11 @@ uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     // validate local config
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
+
+    // abort if not enabled
+    if (l2cap_ertm_enabled == false) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     // configure L2CAP ERTM
     l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
