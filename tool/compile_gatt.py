@@ -23,6 +23,18 @@ import argparse
 import subprocess
 import tempfile
 
+def warn(message):
+    print("WARNING: %s" % message, file=sys.stderr)
+
+def error(message):
+    print("ERROR: %s" % message, file=sys.stderr)
+
+verbose = False
+
+def verbose_print(message):
+    if verbose:
+        print(message)
+
 have_crypto = True
 have_openssl = False
 # try to import PyCryptodome independent from PyCrypto
@@ -51,9 +63,9 @@ except ImportError:
             )
             have_openssl = True
         except (OSError, subprocess.CalledProcessError):
-            print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
-            print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'")
-            print("[!] Alternatively, install openssl with CMAC support\n")
+            print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)", file=sys.stderr)
+            print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'", file=sys.stderr)
+            print("[!] Alternatively, install openssl with CMAC support\n", file=sys.stderr)
 
 header = '''
 // clang-format off
@@ -76,11 +88,6 @@ constexpr
 #endif
 static const uint8_t profile_data[] =
 '''
-
-print('''
-BLE configuration generator for use with BTstack
-Copyright 2018 BlueKitchen GmbH
-''')
 
 assigned_uuids = {
     'GAP_SERVICE'          : 0x1800,
@@ -250,7 +257,7 @@ def parseProperties(properties):
         if property in property_flags:
             value |= property_flags[property]
         else:
-            print("WARNING: property %s undefined" % (property))
+            warn("property %s undefined" % (property))
 
     return value
 
@@ -264,7 +271,7 @@ def prettyPrintProperties(properties):
                 value += " | "
             value += property
         else:
-            print("WARNING: property %s undefined" % (property))
+            warn("property %s undefined" % (property))
 
     return value
 
@@ -820,8 +827,8 @@ def parseCharacteristicAggregateFormat(fout, parts):
     write_16(fout, 0x2905)
     for identifier in parts[1:]:
         if not identifier in presentation_formats:
-            print(parts)
-            print("ERROR: identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier)
+            print(parts, file=sys.stderr)
+            error("identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier)
             sys.exit(1)
         format_handle = presentation_formats[identifier]
         write_16(fout, format_handle)
@@ -916,24 +923,24 @@ def parseLines(fname_in, fin, fout):
             if parts and len(parts.groups()) == 1:
                 imported_file = parts.groups()[0]
             if len(imported_file) == 0:
-                print('ERROR: #import in file %s - line %u neither <name.gatt> nor "name.gatt" form', (fname_in, line_count))
+                error('#import in file %s - line %u neither <name.gatt> nor "name.gatt" form' % (fname_in, line_count))
                 continue
 
             imported_file = getFile( imported_file )
-            print("Importing %s" % imported_file)
+            verbose_print("Importing %s" % imported_file)
             try:
                 imported_fin = open (imported_file, encoding='utf-8')
                 fout.write('\n\n    // ' + line + ' -- BEGIN\n')
                 parseLines(imported_file, imported_fin, fout)
                 fout.write('    // ' + line + ' -- END\n')
             except IOError as e:
-                print('ERROR: Import failed. Please check path.')
+                error('Import failed. Please check path.')
 
             continue
 
         if line.startswith("#TODO"):
-            print ("WARNING: #TODO in file %s - line %u not handled, skipping declaration:" % (fname_in, line_count))
-            print ("'%s'" % line)
+            warn("#TODO in file %s - line %u not handled, skipping declaration:" % (fname_in, line_count))
+            print("'%s'" % line, file=sys.stderr)
             fout.write("// " + line + '\n')
             continue
             
@@ -1032,7 +1039,7 @@ def parseLines(fname_in, fin, fout):
                 parseGenericDynamicDescriptor(fout, parts, 0x290D, 'ENVIRONMENTAL_SENSING_TRIGGER_SETTING')
                 continue
 
-            print("WARNING: unknown token: %s\n" % (parts[0]))
+            warn("unknown token: %s\n" % (parts[0]))
 
 def parse(fname_in, fin, fname_out, tool_path, fout):
     global handle
@@ -1080,8 +1087,8 @@ def getFile( fileName ):
         # print("test %s" % fullFile)
         if os.path.isfile( fullFile ) == True:
             return fullFile
-    print ("'{0}' not found".format( fileName ))
-    print ("Include paths: %s" % ", ".join(include_paths))
+    error("'{0}' not found".format( fileName ))
+    print("Include paths: %s" % ", ".join(include_paths), file=sys.stderr)
     exit(-1)
 
 
@@ -1095,6 +1102,8 @@ default_includes = [os.path.normpath(path) for path in [
 
 parser = argparse.ArgumentParser(description='BLE GATT configuration generator for use with BTstack')
 
+parser.add_argument('-v', '--verbose', action='store_true',
+        help='enable verbose output on stdout')
 parser.add_argument('-I', action='append', nargs=1, metavar='includes', 
         help='include search path for .gatt service files and bluetooth_gatt.h (default: %s)' % ", ".join(default_includes))
 parser.add_argument('gattfile', metavar='gattfile', type=str,
@@ -1103,6 +1112,12 @@ parser.add_argument('hfile', metavar='hfile', type=str,
         help='header file to be generated')
 
 args = parser.parse_args()
+verbose = args.verbose
+
+verbose_print('''
+BLE configuration generator for use with BTstack
+Copyright 2018 BlueKitchen GmbH
+''')
 
 # add include path arguments
 if args.I != None:
@@ -1134,7 +1149,7 @@ try:
         # python3
         db_hash_sequence = [('0x%02x' % i) for i in db_hash]
     else:
-        print("AES CMAC returns unexpected type %s, abort" % type(db_hash))
+        error("AES CMAC returns unexpected type %s, abort" % type(db_hash))
         sys.exit(1)
     # reverse hash to get little endian
     db_hash_sequence.reverse()
@@ -1148,11 +1163,11 @@ try:
     fout.close()
     ftemp.close()
 
-    print('Created %s' % filename)
+    verbose_print('Created %s' % filename)
 
 except IOError as e:
-    parser.print_help() 
-    print(e)
+    parser.print_help(sys.stderr)
+    print(e, file=sys.stderr)
     sys.exit(1)
 
-print('Compilation successful!\n')
+verbose_print('Compilation successful!\n')
