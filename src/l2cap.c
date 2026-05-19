@@ -262,6 +262,8 @@ static btstack_linked_list_t l2cap_event_handlers;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
+static bool l2cap_ertm_enabled = true;
+
 // enable for testing
 // #define L2CAP_ERTM_SIMULATE_FCS_ERROR_INTERVAL 16
 
@@ -620,6 +622,10 @@ static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_confi
     return result;
 }
 
+void l2cap_ertm_enable(bool enabled){
+    l2cap_ertm_enabled = enabled;
+}
+
 static void l2cap_ertm_setup_buffers(l2cap_channel_t * channel, uint8_t * buffer, uint32_t size){
     btstack_assert( (((uintptr_t) buffer) & 0x0f) == 0);
 
@@ -964,6 +970,10 @@ void l2cap_init(void){
     l2cap_local_source_cid  = 0x40;
 #endif
     l2cap_sig_seq_nr  = 0xff;
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    l2cap_ertm_enabled = true;
+#endif
 
 #ifdef ENABLE_CLASSIC
     // Setup Connectionless Channel
@@ -1660,7 +1670,9 @@ static uint32_t l2cap_extended_features_mask(void){
     // extended features request supported, features: fixed channels, unicast connectionless data reception
     uint32_t features = 0x280;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (l2cap_ertm_enabled){
     features |= 0x0028;
+    }
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
     features |= 0x0400;

@@ -599,6 +599,13 @@ void l2cap_release_packet_buffer(void);
 //
 
 /**
+ * @brief Enable or disable L2CAP Enhanced Retransmission Mode at runtime.
+ * @note ERTM is enabled by default if ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE is defined.
+ * @param enabled
+ */
+void l2cap_ertm_enable(bool enabled);
+
+/**
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address using Enhanced Retransmission Mode.
  *        A new baseband connection will be initiated if necessary.
  * @param packet_handler
