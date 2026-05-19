@@ -156,8 +156,8 @@ static uint8_t btstack_crypto_ccm_s[16];
 
 #define ECC_P256_PUBLIC_KEY_SIZE 64
 #ifdef USE_MBEDTLS_ECC_P256
-// mbedTLS requires additional random data for multiplication
-#define ECC_P256_KEYGEN_EXTRA_RANDOM 32
+// mbedTLS requires additional random data for multiplication: 32 each for key gen, own DHKey and remote DHKey
+#define ECC_P256_KEYGEN_EXTRA_RANDOM 96
 #endif
 #ifdef USE_MICRO_ECC_P256
 #define ECC_P256_KEYGEN_EXTRA_RANDOM 0
@@ -545,7 +545,6 @@ static void btstack_crypto_log_ec_publickey(const uint8_t * ec_q){
 #if (defined(USE_MICRO_ECC_P256) && !defined(WICED_VERSION)) || defined(USE_MBEDTLS_ECC_P256)
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
-    if (btstack_crypto_ecc_p256_key_generation_state != ECC_P256_KEY_GENERATION_ACTIVE) return 0;
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, btstack_crypto_ecc_p256_random_offset);
     btstack_assert((btstack_crypto_ecc_p256_random_offset + size) <= btstack_crypto_ecc_p256_random_len);
     uint16_t remaining_size = size;
@@ -635,7 +634,7 @@ static void btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_
     mbedtls_mpi_read_binary(&d, btstack_crypto_ecc_p256_d, 32);
     int res = btstack_crypto_mbedtls_read_public_key(&Q, btstack_crypto_ec_p192->public_key);
     if (res == 0){
-        res = mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
+        res = mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, &sm_generate_f_rng_mbedtls, NULL);
     }
     if (res == 0){
         res = btstack_crypto_mbedtls_write_x_coordinate(&DH, btstack_crypto_ec_p192->dhkey);
