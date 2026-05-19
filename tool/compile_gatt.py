@@ -11,6 +11,7 @@
 # - pip3 install pycryptodomex
 # alternatively, the pycryptodome package can be used instead
 # - pip3 install pycryptodome
+# alternatively, openssl with CMAC support can be used instead
 
 import csv
 import io
@@ -19,9 +20,11 @@ import re
 import string
 import sys
 import argparse
+import subprocess
 import tempfile
 
 have_crypto = True
+have_openssl = False
 # try to import PyCryptodome independent from PyCrypto
 try:
     from Cryptodome.Cipher import AES
@@ -33,8 +36,24 @@ except ImportError:
         from Crypto.Hash import CMAC
     except ImportError:
         have_crypto = False
-        print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
-        print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'\n")
+        try:
+            subprocess.run(
+                [
+                    'openssl', 'dgst',
+                    '-mac', 'cmac',
+                    '-macopt', 'cipher:aes-128-cbc',
+                    '-macopt', 'hexkey:00000000000000000000000000000000'
+                ],
+                input=b'',
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True
+            )
+            have_openssl = True
+        except (OSError, subprocess.CalledProcessError):
+            print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
+            print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'")
+            print("[!] Alternatively, install openssl with CMAC support\n")
 
 header = '''
 // clang-format off
@@ -159,6 +178,21 @@ def aes_cmac(key, n):
         cobj = CMAC.new(key, ciphermod=AES)
         cobj.update(n)
         return cobj.digest()
+    elif have_openssl:
+        result = subprocess.run(
+            [
+                'openssl', 'dgst',
+                '-mac', 'cmac',
+                '-macopt', 'cipher:aes-128-cbc',
+                '-macopt', 'hexkey:' + key.hex()
+            ],
+            input=n,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True
+        )
+        digest = result.stdout.decode('ascii').strip().split()[-1]
+        return bytes.fromhex(digest)
     else:
         # return random value
         return os.urandom(16)
