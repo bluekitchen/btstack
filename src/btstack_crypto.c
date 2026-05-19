@@ -602,12 +602,15 @@ static void btstack_crypto_ecc_p256_generate_key_software(void){
     }
     mbedtls_ecp_point_free(&P);
     mbedtls_mpi_free(&d);
+    // assert key generation was successfull
+    btstack_assert(res == 0);
 #endif  /* USE_MBEDTLS_ECC_P256 */
 }
 
 #ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
-static void btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_p256_t * btstack_crypto_ec_p192){
+static int btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_p256_t * btstack_crypto_ec_p192){
     memset(btstack_crypto_ec_p192->dhkey, 0, 32);
+    int res = 0;
 
 #ifdef USE_MICRO_ECC_P256
 #if uECC_SUPPORTS_secp256r1
@@ -628,14 +631,14 @@ static void btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_
     mbedtls_ecp_point_init(&Q);
     mbedtls_ecp_point_init(&DH);
     mbedtls_mpi_read_binary(&d, btstack_crypto_ecc_p256_d, 32);
-    int res = btstack_crypto_mbedtls_read_public_key(&Q, btstack_crypto_ec_p192->public_key);
+    res = btstack_crypto_mbedtls_read_public_key(&Q, btstack_crypto_ec_p192->public_key);
     if (res == 0){
         res = mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, &sm_generate_f_rng_mbedtls, NULL);
     }
     if (res == 0){
         res = btstack_crypto_mbedtls_write_x_coordinate(&DH, btstack_crypto_ec_p192->dhkey);
     }
-    log_info("calculate dhkey %x", res);
+    log_info("calculate dhkey status: %x", res);
     mbedtls_ecp_point_free(&DH);
     mbedtls_mpi_free(&d);
     mbedtls_ecp_point_free(&Q);
@@ -643,6 +646,8 @@ static void btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_
 
     log_info("dhkey");
     log_info_hexdump(btstack_crypto_ec_p192->dhkey, 32);
+
+    return res;
 }
 #endif
 
@@ -890,6 +895,9 @@ static void btstack_crypto_run(void){
 #ifdef ENABLE_ECC_P256
     btstack_crypto_ecc_p256_t      * btstack_crypto_ec_p192;
 #endif
+#ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
+    int res;
+#endif
 
     // stack up and running?
     if (hci_get_state() != HCI_STATE_WORKING) return;
@@ -1018,7 +1026,12 @@ static void btstack_crypto_run(void){
             case BTSTACK_CRYPTO_ECC_P256_CALCULATE_DHKEY:
                 btstack_crypto_ec_p192 = (btstack_crypto_ecc_p256_t *) btstack_crypto;
 #ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
-                btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ec_p192);
+                res = btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ec_p192);
+    	        if (res != 0) {
+    	            log_error("Generate DHKEY failed -> abort");
+                    // set DHKEY to 0xff..ff
+    	            memset(btstack_crypto_ec_p192->dhkey, 0xff, 32);
+        	    }
                 // done
                 btstack_linked_list_pop(&btstack_crypto_operations);
                 (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);
