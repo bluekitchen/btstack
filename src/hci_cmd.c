@@ -96,9 +96,10 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
     uint32_t longword;
     uint8_t * ptr;
 
-#ifdef ENABLE_BLE
     // variable size data
     uint16_t var_len = INVALID_VAR_LEN;
+
+#ifdef ENABLE_BLE
     // array processing
     const char * array_format = NULL;
     void *  array_data[MAX_NR_ARRAY_FIELDS];
