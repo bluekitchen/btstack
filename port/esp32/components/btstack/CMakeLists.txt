@@ -34,7 +34,6 @@ set(include_dirs
     ${BTSTACK_ROOT}/src/ble/gatt-service
     ${BTSTACK_ROOT}/src/ble
     ${BTSTACK_ROOT}/src/le-audio
-    ${BTSTACK_ROOT}/src/le-audio/gatt-service
     ${BTSTACK_ROOT}/src/classic
     ${BTSTACK_ROOT}/src
     ${BTSTACK_ROOT}/platform/embedded
@@ -58,7 +57,6 @@ set(src_dirs
     ${BTSTACK_ROOT}/chipset/zephyr
     ${BTSTACK_ROOT}/src/ble
     ${BTSTACK_ROOT}/src/le-audio
-    ${BTSTACK_ROOT}/src/le-audio/gatt-service
     ${BTSTACK_ROOT}/src/mesh
     ${BTSTACK_ROOT}/src
     ${BTSTACK_ROOT}/platform/embedded
