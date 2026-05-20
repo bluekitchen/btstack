@@ -190,23 +190,6 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
                 break;
-            case 'J': //  8 bit variable length indicator for 'V'
-                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
-                var_len = word & 0xffu;
-                hci_cmd_buffer[pos++] = (uint8_t) var_len;
-                break;
-            case 'V':
-                btstack_assert(var_len != INVALID_VAR_LEN);
-                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
-                // avoid calling  memcpy with NULL and size = 0 <- undefined behaviour
-                if (ptr == NULL){
-                    btstack_assert(var_len == 0);
-                } else {
-                    (void)memcpy(&hci_cmd_buffer[pos], ptr, var_len);
-                }
-                pos += var_len;
-                var_len = INVALID_VAR_LEN;
-                break;
             case 'a':
                 btstack_assert(array_num_elements == INVALID_ARRAY_LEN);
                 word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
@@ -266,6 +249,23 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 }
                 break;
 #endif
+            case 'J': //  8 bit variable length indicator for 'V'
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                var_len = word & 0xffu;
+                hci_cmd_buffer[pos++] = (uint8_t) var_len;
+                break;
+            case 'V':
+                btstack_assert(var_len != INVALID_VAR_LEN);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                // avoid calling  memcpy with NULL and size = 0 <- undefined behaviour
+                if (ptr == NULL){
+                    btstack_assert(var_len == 0);
+                } else {
+                    (void)memcpy(&hci_cmd_buffer[pos], ptr, var_len);
+                }
+                pos += var_len;
+                var_len = INVALID_VAR_LEN;
+                break;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case 'Q':
                 ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
