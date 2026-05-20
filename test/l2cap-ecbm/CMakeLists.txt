@@ -29,6 +29,7 @@ set(SOURCES
 		../../src/l2cap_signaling.c
 		../../src/btstack_memory.c
 		../../src/btstack_run_loop.c
+		../../src/classic/sdp_util.c
 		../../src/hci_dump.c
 		../../platform/posix/hci_dump_posix_stdout.c
 		../../platform/embedded/btstack_run_loop_embedded.c
