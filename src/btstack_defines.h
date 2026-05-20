@@ -188,6 +188,15 @@ typedef SSIZE_T ssize_t;
 // Mesh Network PDU
 #define MESH_BEACON_PACKET       0x14u
 
+// A2DP media payload packet
+#define A2DP_MEDIA_PAYLOAD_PACKET 0x15u
+
+#define A2DP_MEDIA_PACKET_HEADER_OFFSET_LOCAL_SEID 0u
+#define A2DP_MEDIA_PACKET_HEADER_OFFSET_MARKER     1u
+#define A2DP_MEDIA_PACKET_HEADER_OFFSET_TIMESTAMP  2u
+#define A2DP_MEDIA_PACKET_HEADER_SIZE              6u
+#define A2DP_MEDIA_PACKET_PAYLOAD_OFFSET           A2DP_MEDIA_PACKET_HEADER_SIZE
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfcu
 
