@@ -55,6 +55,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+#include <sys/select.h>
+#endif
 #ifdef __APPLE__
 #include <sys/ioctl.h>
 #include <IOKit/serial/ioss.h>
@@ -389,10 +392,77 @@ static void btstack_uart_posix_set_block_received( void (*block_handler)(void)){
 static void btstack_uart_posix_set_block_sent( void (*block_handler)(void)){
     btstack_uart_block_write_bytes_len = 0;
     block_sent = block_handler;
+
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+    if (block_handler == NULL){
+        btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_WRITE);
+    }
+#else
+    btstack_assert(block_handler != NULL);
+#endif
 }
+
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+static int btstack_uart_posix_write_all(const uint8_t *data, uint16_t size){
+    int fd = transport_data_source.source.fd;
+
+    while (size > 0){
+        uint32_t start = btstack_run_loop_get_time_ms();
+        ssize_t bytes_written = write(fd, data, size);
+        uint32_t end = btstack_run_loop_get_time_ms();
+        if (end - start > 10){
+            log_info("write took %u ms", end - start);
+        }
+
+        if (bytes_written > 0){
+            data += bytes_written;
+            size -= (uint16_t) bytes_written;
+            continue;
+        }
+
+        if (bytes_written == 0){
+            fail_with_message("wrote zero bytes\n");
+            return -1;
+        }
+
+        if (errno == EINTR){
+            continue;
+        }
+
+        if ((errno == EAGAIN) || (errno == EWOULDBLOCK)){
+            fd_set write_fds;
+            FD_ZERO(&write_fds);
+            FD_SET(fd, &write_fds);
+
+            int res = select(fd + 1, NULL, &write_fds, NULL, NULL);
+            if (res < 0){
+                if (errno == EINTR){
+                    continue;
+                }
+                fail_with_message("select returned error\n");
+                return -1;
+            }
+            continue;
+        }
+
+        fail_with_message("write returned error\n");
+        return -1;
+    }
+
+    return 0;
+}
+#endif
 
 static void btstack_uart_posix_send_block(const uint8_t *data, uint16_t size){
     btstack_assert(btstack_uart_block_write_bytes_len == 0);
+
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+    // if no block sent handler is set, send synchronously
+    if (block_sent == NULL){
+        btstack_uart_posix_write_all(data, size);
+        return;
+    }
+#endif
 
     // setup async write
     btstack_uart_block_write_bytes_data = data;
