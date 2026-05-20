@@ -87,7 +87,9 @@ static void btstack_uart_cts_pulse(void){
 static int btstack_uart_embedded_init(const btstack_uart_config_t * config){
     btstack_uart_block_configuration = config;
     hal_uart_dma_set_block_received(&btstack_uart_block_received);
+#ifndef ENABLE_UART_SYNCHRONOUS_WRITE
     hal_uart_dma_set_block_sent(&btstack_uart_block_sent);
+#endif
     return 0;
 }
 
@@ -147,6 +149,18 @@ static void btstack_uart_embedded_set_block_received( void (*block_handler)(void
 
 static void btstack_uart_embedded_set_block_sent( void (*block_handler)(void)){
     block_sent = block_handler;
+
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+    send_complete = false;
+    if (block_handler == NULL){
+        hal_uart_dma_set_block_sent(NULL);
+    } else {
+        hal_uart_dma_set_block_sent(&btstack_uart_block_sent);
+    }
+#else
+    btstack_assert(block_handler != NULL);
+    hal_uart_dma_set_block_sent(&btstack_uart_block_sent);
+#endif
 }
 
 static void btstack_uart_embedded_set_wakeup_handler( void (*the_wakeup_handler)(void)){
