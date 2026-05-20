@@ -178,6 +178,15 @@ void hal_uart_dma_set_block_received( void (*callback)(void)) {
  * @param callback
  */
 void hal_uart_dma_set_block_sent( void (*callback)(void)) {
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+    if (callback == NULL){
+        tx_transfer.nbytes = 0;
+        uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
+        uart_ll_disable_intr_mask(uart, UART_TXFIFO_EMPTY_INT_ENA_M);
+    }
+#else
+    btstack_assert(callback != NULL);
+#endif
     send_callback = callback;
 }
 
@@ -246,6 +255,25 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
     }
 }
 
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+static void hal_uart_dma_send_block_sync(const uint8_t *buffer, uint16_t len) {
+    uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
+
+    while (len > 0) {
+        uint16_t space = uart_ll_get_txfifo_len(uart);
+        if (space == 0) {
+            taskYIELD();
+            continue;
+        }
+
+        uint16_t chunk = (uint16_t) btstack_min(space, len);
+        uart_ll_write_txfifo(uart, buffer, chunk);
+        buffer += chunk;
+        len -= chunk;
+    }
+}
+#endif
+
 /**
  * @brief Send block. When done, callback set by hal_uart_set_block_sent must be called
  * @param buffer
@@ -253,6 +281,13 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
  */
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len) {
     btstack_assert(tx_transfer.nbytes == 0);
+
+#ifdef ENABLE_UART_SYNCHRONOUS_WRITE
+    if (send_callback == NULL) {
+        hal_uart_dma_send_block_sync(buffer, len);
+        return;
+    }
+#endif
 
     // store transfer
     tx_transfer.buf = (uint8_t *)buffer;
