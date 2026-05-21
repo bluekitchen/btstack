@@ -3314,6 +3314,7 @@ static void l2cap_signaling_handle_unknown_option_type(l2cap_channel_t* channel,
 
 static bool l2cap_config_option_have_more_bytes(l2cap_channel_t * channel, uint16_t pos, uint16_t end_pos, uint16_t num_bytes){
     if ((pos + num_bytes) <= end_pos) return true;
+    UNUSED(channel);
     log_info("l2cap cid %u, malformed config option", channel->local_cid);
     return false;
 }
