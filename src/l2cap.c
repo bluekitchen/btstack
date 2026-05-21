@@ -884,12 +884,15 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, (uint8_t*) payload, size);
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+            if (size < 2) break;
             // read SDU len
             reassembly_sdu_length = little_endian_read_16(payload, 0);
             payload += 2;
             size    -= 2;
             // assert reassembled size <= our mtu
             if (reassembly_sdu_length > l2cap_channel->local_mtu) break;
+            // assert segment <= reassembled size
+            if (size > reassembly_sdu_length) break;
             // store start segment
             l2cap_channel->reassembly_sdu_length = reassembly_sdu_length;
             (void)memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
