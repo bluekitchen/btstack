@@ -5909,6 +5909,10 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid){
 #endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static uint8_t l2cap_ertm_fuzz_storage[512];
+#endif
+
 static void fuzz_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
 }
 void l2cap_setup_test_channels_fuzz(void) {
@@ -5929,6 +5933,35 @@ void l2cap_setup_test_channels_fuzz(void) {
     channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_ECBM,
         address, BD_ADDR_TYPE_LE_PUBLIC, 0x05, 100, LEVEL_4);
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // 0x44 setup classic ERTM
+    memset(l2cap_ertm_fuzz_storage, 0, sizeof(l2cap_ertm_fuzz_storage));
+    l2cap_ertm_config_t ertm_config;
+    ertm_config.ertm_mandatory = 1;
+    ertm_config.max_transmit = 1;
+    ertm_config.retransmission_timeout_ms = 2000;
+    ertm_config.monitor_timeout_ms = 12000;
+    ertm_config.local_mtu = 100;
+    ertm_config.num_tx_buffers = 2;
+    ertm_config.num_rx_buffers = 2;
+    ertm_config.fcs_option = 0;
+
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address,
+        BD_ADDR_TYPE_ACL, 0x07, ertm_config.local_mtu, LEVEL_4);
+    l2cap_ertm_configure_channel(channel, &ertm_config, l2cap_ertm_fuzz_storage, sizeof(l2cap_ertm_fuzz_storage));
+    channel->state = L2CAP_STATE_OPEN;
+    channel->con_handle = 0x0000;
+    channel->remote_cid = 0x0044;
+    channel->remote_mtu = 100;
+    channel->remote_mps = channel->local_mps;
+    channel->remote_tx_window_size = channel->num_tx_buffers;
+    channel->remote_max_transmit = channel->local_max_transmit;
+    channel->remote_retransmission_timeout_ms = channel->local_retransmission_timeout_ms;
+    channel->remote_monitor_timeout_ms = channel->local_monitor_timeout_ms;
+    channel->fcs_active = false;
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+#endif
 }
 
 void l2cap_free_channels_fuzz(void){
