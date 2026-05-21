@@ -1756,9 +1756,16 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
                 }
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
+                    // expand list of unknown options into { option_a, 0, option_b, 0, .., option_n, 0 }
+                    uint8_t unknown_options_response[MAX_NR_L2CAP_UNKNOWN_OPTIONS * 2];
+                    uint16_t unknown_options_len = 0;
+                    for (int i = 0; i < channel->unknown_options_count; i++){
+                        little_endian_store_16(unknown_options_response, unknown_options_len, channel->unknown_options_list[i]);
+                        unknown_options_len += 2;
+                    }
                     l2cap_send_classic_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id,
                                                         channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS,
-                                                        channel->unknown_options_count * 2, channel->unknown_options_list);
+                                                        unknown_options_len, unknown_options_response);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
@@ -3428,7 +3435,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 
     if (channel->unknown_options_count > 0) {
         log_info("Unknown options: %u\n", channel->unknown_options_count);
-        log_info_hexdump(channel->unknown_options_list, channel->unknown_options_count * 2);
+        log_info_hexdump(channel->unknown_options_list, channel->unknown_options_count);
     }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
