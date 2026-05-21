@@ -3305,6 +3305,12 @@ static void l2cap_signaling_handle_unknown_option_type(l2cap_channel_t* channel,
     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
 }
 
+static bool l2cap_config_option_have_more_bytes(l2cap_channel_t * channel, uint16_t pos, uint16_t end_pos, uint16_t num_bytes){
+    if ((pos + num_bytes) <= end_pos) return true;
+    log_info("l2cap cid %u, malformed config option", channel->local_cid);
+    return false;
+}
+
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
 
@@ -3324,11 +3330,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
     uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 8;
     while (pos < end_pos){
+        if (!l2cap_config_option_have_more_bytes(channel, pos, end_pos, 2u)) break;
         uint8_t option_hint = command[pos] >> 7;
         uint8_t option_type = command[pos] & 0x7f;
         // log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
         pos++;
         uint8_t length = command[pos++];
+        if (!l2cap_config_option_have_more_bytes(channel, pos, end_pos, length)) break;
         // MTU { type(8): 1, len(8):2, MTU(16) }
         if ((option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) && (length == 2)){
             channel->remote_mtu = little_endian_read_16(command, pos);
@@ -3443,11 +3451,13 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
     uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 10;
     while (pos < end_pos){
+        if (!l2cap_config_option_have_more_bytes(channel, pos, end_pos, 2u)) break;
         uint8_t option_hint = command[pos] >> 7;
         uint8_t option_type = command[pos] & 0x7f;
         // log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
         pos++;
         uint8_t length = command[pos++];
+        if (!l2cap_config_option_have_more_bytes(channel, pos, end_pos, length)) break;
 
         // Retransmission and Flow Control Option
         if (option_type == L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL && length == 9){

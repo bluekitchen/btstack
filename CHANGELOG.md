@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: avoid assert for outgoing connection to local Bluetooth address
 - AVDTP: fix serialization of MPEG-D USAC configuration
 - L2CAP: verify ERTM start frame
+- L2CAP: avoid out-of-bounds read during option parsing
 - btstack_crypto: fix DHKey calculation for newer mbedTLS that require f_rnd for ECC multiplications
 
 ### Changed
