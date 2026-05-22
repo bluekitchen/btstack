@@ -234,24 +234,25 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
     }
 
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-		if (buffer_size < 2u){
-			return ATT_ERROR_INVALID_OFFSET;
-		}
-		instance->measurement_client_configuration_descriptor_notify = little_endian_read_16(buffer, 0);
-		instance->con_handle = con_handle;
+        uint16_t new_value;
+		if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->measurement_client_configuration_descriptor_notify = new_value;
+            instance->con_handle = con_handle;
+        }
 		return 0;
 	}
 
 	if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-		if (buffer_size < 2u){
-			return ATT_ERROR_INVALID_OFFSET;
-		}
-		instance->control_point_client_configuration_descriptor_indicate = little_endian_read_16(buffer, 0);
-		instance->con_handle = con_handle;
+        uint16_t new_value;
+		if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->control_point_client_configuration_descriptor_indicate = new_value;
+            instance->con_handle = con_handle;
+        }
 		return 0;
 	}
 
 	if (attribute_handle == instance->control_point_value_handle){
+        if (buffer_size < 1u) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
 		if (instance->control_point_client_configuration_descriptor_indicate == 0u) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
 		if (instance->request_opcode != CSC_OPCODE_IDLE) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
         if (instance->wawiting_for_indication) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
@@ -262,6 +263,7 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 		switch (instance->request_opcode){
 			case CSC_OPCODE_SET_CUMULATIVE_VALUE:
 				if (instance->wheel_revolution_data_supported){
+                    if (buffer_size < 5u) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
 					instance->cumulative_wheel_revolutions = little_endian_read_32(buffer, 1);
 					break;
 				}
@@ -271,6 +273,7 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 				break;
 	 		case CSC_OPCODE_UPDATE_SENSOR_LOCATION:
 	 			if (instance->multiple_sensor_locations_supported){
+                    if (buffer_size < 2u) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
 					cycling_speed_and_cadence_sensor_location_t sensor_location = (cycling_speed_and_cadence_sensor_location_t) buffer[1];
 					if (sensor_location >= CSC_SERVICE_SENSOR_LOCATION_RESERVED){
 						instance->response_value = CSC_RESPONSE_VALUE_INVALID_PARAMETER;
