@@ -710,7 +710,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
 
     if (attribute_handle == instance->measurement_server_configuration_descriptor_handle){
         if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         instance->measurement_server_configuration_descriptor_broadcast = little_endian_read_16(buffer, 0);
         instance->con_handle = con_handle;
@@ -772,7 +772,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
 
     if (attribute_handle == instance->feature_value_handle){
         if (buffer_size < 4u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         instance->feature_flags = little_endian_read_32(buffer, 0);
         return 0;
