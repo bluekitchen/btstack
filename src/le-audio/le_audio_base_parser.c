@@ -96,7 +96,7 @@ bool le_audio_base_parser_init(le_audio_base_parser_t * parser, const uint8_t * 
         if ((offset+1) > size) {
             return false;
         }
-        int8_t meta_len = buffer[offset++];
+        uint8_t meta_len = buffer[offset++];
         offset += meta_len;
         if (offset > size) {
             return false;
