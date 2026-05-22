@@ -10846,11 +10846,16 @@ static void hci_iso_stream_requested_confirm(uint8_t big_handle){
 static bool hci_iso_sdu_complete(uint8_t * packet, uint16_t size){
     uint8_t  sdu_ts_flag = (packet[1] >> 6) & 1;
     uint16_t sdu_len_offset = 6 + (sdu_ts_flag * 4);
+    if ((sdu_len_offset + 2u) > size) return false;
     uint16_t sdu_len = little_endian_read_16(packet, sdu_len_offset) & 0x0fff;
     return (sdu_len_offset + 2 + sdu_len) == size;
 }
 
 static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet, uint16_t size) {
+    // size: validated in hci_incoming_packet_valid()
+    // => size >= 4
+    // => size = data_total_length + 4
+
     if (iso_stream == NULL){
         log_error("acl_handler called with non-registered handle %u!" , READ_ISO_CONNECTION_HANDLE(packet));
         return;
@@ -10864,11 +10869,6 @@ static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet
     uint16_t con_handle_and_flags = little_endian_read_16(packet, 0);
     uint16_t data_total_length = little_endian_read_16(packet, 2);
     uint8_t  pb_flag = (con_handle_and_flags >> 12) & 3;
-
-    // assert packet is complete
-    if ((data_total_length + 4u) != size){
-        return;
-    }
 
     if ((pb_flag & 0x01) == 0){
         if (pb_flag == 0x02){
