@@ -696,21 +696,27 @@ static void send_gatt_signed_write_request(gatt_client_t * gatt_client, uint32_t
 static uint16_t get_last_result_handle_from_service_list(uint8_t * packet, uint16_t size){
     if (size < 2) return 0xffff;
     uint8_t attr_length = packet[1];
+    if (attr_length < 4u) return 0xffff;
     if ((2 + attr_length) > size) return 0xffff;
+    if (((size - 2u) % attr_length) != 0u) return 0xffff;
     return little_endian_read_16(packet, size - attr_length + 2u);
 }
 
 static uint16_t get_last_result_handle_from_characteristics_list(uint8_t * packet, uint16_t size){
     if (size < 2) return 0xffff;
     uint8_t attr_length = packet[1];
+    if (attr_length < 5u) return 0xffff;
     if ((2 + attr_length) > size) return 0xffff;
+    if (((size - 2u) % attr_length) != 0u) return 0xffff;
     return little_endian_read_16(packet, size - attr_length + 3u);
 }
 
 static uint16_t get_last_result_handle_from_included_services_list(uint8_t * packet, uint16_t size){
     if (size < 2) return 0xffff;
     uint8_t attr_length = packet[1];
+    if (attr_length < 2u) return 0xffff;
     if ((2 + attr_length) > size) return 0xffff;
+    if (((size - 2u) % attr_length) != 0u) return 0xffff;
     return little_endian_read_16(packet, size - attr_length);
 }
 
@@ -1242,6 +1248,8 @@ setup_long_characteristic_value_packet(const gatt_client_t *gatt_client, uint8_t
 static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
     if (size < 2) return;
     uint8_t attr_length = packet[1];
+    if ((attr_length != 6u) && (attr_length != 20u)) return;
+    if (((size - 2u) % attr_length) != 0u) return;
     uint8_t uuid_length = attr_length - 4u;
 
     int i;
@@ -1528,11 +1536,16 @@ void gatt_client_stop_listening_for_service_characteristic_value_updates(gatt_cl
 }
 
 static bool is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t size){
+    if (size < 5u) return false;
+
     uint16_t attribute_handle = little_endian_read_16(packet, 1);
     uint16_t value_offset = little_endian_read_16(packet, 3);
+    uint16_t value_length = size - 5u;
     
     if (gatt_client->attribute_handle != attribute_handle) return false;
     if (gatt_client->attribute_offset != value_offset) return false;
+    if (gatt_client->attribute_offset > gatt_client->attribute_length) return false;
+    if (value_length > (gatt_client->attribute_length - gatt_client->attribute_offset)) return false;
     return memcmp(&gatt_client->attribute_value[gatt_client->attribute_offset], &packet[5], size - 5u) == 0u;
 }
 
@@ -2141,6 +2154,7 @@ static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_cli
         }
 #ifndef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
         case P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
+            if (size < 4u) break;
             gatt_client->client_characteristic_configuration_handle = little_endian_read_16(packet, 2);
             gatt_client->state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
             break;
@@ -2151,7 +2165,7 @@ static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_cli
             uint16_t last_result_handle = 0xffff;
             if (pair_size > 2) {
                 uint16_t offset;
-                for (offset = 2; offset < size; offset += pair_size) {
+                for (offset = 2; (offset + pair_size) <= size; offset += pair_size) {
                     uint16_t value_handle = little_endian_read_16(packet, offset);
                     report_gatt_characteristic_value(gatt_client, value_handle, &packet[offset + 2u],
                                                      pair_size - 2u);
@@ -2251,7 +2265,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
         case ATT_MULTIPLE_HANDLE_VALUE_NTF:
             if (size >= 5u) {
                 uint16_t offset = 1;
-                while (true){
+                while ((offset + 4u) <= size){
                     uint16_t value_handle = little_endian_read_16(packet, offset);
                     offset += 2;
                     uint16_t value_length = little_endian_read_16(packet, offset);
@@ -2361,6 +2375,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
             break;
         }
         case ATT_PREPARE_WRITE_RESPONSE:
+            if (size < 5u) break;
             switch (gatt_client->state) {
                 case P_W4_PREPARE_WRITE_SINGLE_RESULT:
                     if (is_value_valid(gatt_client, packet, size)) {
