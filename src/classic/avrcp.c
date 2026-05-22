@@ -1120,6 +1120,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             break;
 
         case L2CAP_DATA_PACKET:
+            if (size < 1u) break;
             switch (avrcp_get_frame_type(packet[0])){
                 case AVRCP_RESPONSE_FRAME:
                     (*avrcp_controller_packet_handler)(packet_type, channel, packet, size);
