@@ -436,7 +436,6 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
 
 static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(offset);
-    UNUSED(buffer_size);
 
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
         return 0;
@@ -447,16 +446,11 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
         return 0;
     }
 
-    battery_service_v1_server_connection_t * connection = battery_service_server_connection_for_con_handle(service, con_handle);
-    if (connection == NULL){
-        connection = battery_service_server_add_connection_for_con_handle(service, con_handle);
-        if (connection == NULL){
-            return 0;
-        }
-    }
-
     if (attribute_handle == service->battery_level_status_broadcast_configuration_handle){
-        uint8_t new_value = little_endian_read_16(buffer, 0);
+        if (buffer_size < 2u){
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+        }
+        uint16_t new_value = little_endian_read_16(buffer, 0);
         bool broadcast_old = (service->battery_level_status_broadcast_configuration & 1) != 0;
         bool broadcast_new = (new_value & 1) != 0;
         service->battery_level_status_broadcast_configuration = new_value;
@@ -479,7 +473,17 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
         if (attribute_handle != service->characteristics[index].client_configuration_handle){
             continue;
         }
-        connection->configurations[index] = little_endian_read_16(buffer, 0);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            battery_service_v1_server_connection_t * connection = battery_service_server_connection_for_con_handle(service, con_handle);
+            if (connection == NULL){
+                connection = battery_service_server_add_connection_for_con_handle(service, con_handle);
+                if (connection == NULL){
+                    return 0;
+                }
+            }
+            connection->configurations[index] = new_value;
+        }
         return 0;
     }
     return 0;
@@ -1002,4 +1006,3 @@ uint16_t battery_service_v1_server_get_broadcast_advertisement_single(battery_se
 
     return pos;
 }
-
