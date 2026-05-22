@@ -90,8 +90,11 @@ static int tx_power_service_write_callback(hci_con_handle_t con_handle, uint16_t
     }
 
     if (attribute_handle == tx_power_level_client_configuration_handle){
-        tx_power_level_client_configuration = little_endian_read_16(buffer, 0);
-        tx_power_level_client_configuration_con_handle = con_handle;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            tx_power_level_client_configuration = new_value;
+            tx_power_level_client_configuration_con_handle = con_handle;
+        }
     }
     return 0;
 }
