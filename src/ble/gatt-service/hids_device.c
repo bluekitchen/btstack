@@ -366,7 +366,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     
     if (att_handle == instance->hid_control_point_value_handle){
         if (buffer_size < 1u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         instance->hid_control_point_suspend = buffer[0];
         instance->con_handle = con_handle;
