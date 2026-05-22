@@ -133,15 +133,15 @@ static int mesh_proxy_service_write_callback(hci_con_handle_t con_handle, uint16
     }
 
     if (attribute_handle == instance->data_out_client_configuration_descriptor_handle){
-        if (buffer_size < 2){
-            return ATT_ERROR_INVALID_OFFSET;
-        }
-        instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-        log_info("mesh_proxy_service_write_callback: data out notify enabled %d, con handle 0x%02x", instance->data_out_client_configuration_descriptor_value, con_handle);
-        if (instance->data_out_client_configuration_descriptor_value){
-            mesh_proxy_service_emit_connected(con_handle);
-        } else {
-            mesh_proxy_service_emit_disconnected(con_handle);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->data_out_client_configuration_descriptor_value = new_value;
+            log_info("mesh_proxy_service_write_callback: data out notify enabled %d, con handle 0x%02x", instance->data_out_client_configuration_descriptor_value, con_handle);
+            if (instance->data_out_client_configuration_descriptor_value){
+                mesh_proxy_service_emit_connected(con_handle);
+            } else {
+                mesh_proxy_service_emit_disconnected(con_handle);
+            }
         }
         return 0;
     }
