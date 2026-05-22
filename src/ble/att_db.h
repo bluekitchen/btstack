@@ -383,6 +383,15 @@ uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16);
 
 /**
+ * @brief Decode GATT Client Characteristic Configuration write value.
+ * @param buffer from att_write_callback
+ * @param buffer_size from att_write_callback
+ * @param value decoded Client Characteristic Configuration value
+ * @return false for zero-length writes, true if value was decoded. For one-byte writes, the first byte is used as value. For longer writes, the first two bytes are decoded as little endian uint16_t.
+ */
+bool gatt_server_get_client_configuration_value(const uint8_t * buffer, uint16_t buffer_size, uint16_t * value);
+
+/**
  * @brief Get server configuration handle for characteristic.
  * @param start_handle
  * @param end_handle

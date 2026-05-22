@@ -1538,6 +1538,15 @@ uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
     return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION);
 }
+
+bool gatt_server_get_client_configuration_value(const uint8_t * buffer, uint16_t buffer_size, uint16_t * value){
+    if (buffer_size == 0u){
+        return false;
+    }
+    *value = (buffer_size == 1u) ? buffer[0] : little_endian_read_16(buffer, 0);
+    return true;
+}
+
 // returns 0 if not found
 
 uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
