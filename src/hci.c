@@ -5184,7 +5184,35 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 }
 #endif
 
+static bool hci_incoming_packet_valid(uint8_t packet_type, const uint8_t * packet, uint16_t size){
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            if (size < HCI_EVENT_HEADER_SIZE) return false;
+            return (READ_EVENT_LENGTH(packet) + HCI_EVENT_HEADER_SIZE) == size;
+        case HCI_ACL_DATA_PACKET:
+            if (size < HCI_ACL_HEADER_SIZE) return false;
+            return (READ_ACL_LENGTH(packet) + HCI_ACL_HEADER_SIZE) == size;
+#ifdef ENABLE_CLASSIC
+        case HCI_SCO_DATA_PACKET:
+            if (size < HCI_SCO_HEADER_SIZE) return false;
+            return (READ_SCO_LENGTH(packet) + HCI_SCO_HEADER_SIZE) == size;
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        case HCI_ISO_DATA_PACKET:
+            if (size < HCI_ISO_HEADER_SIZE) return false;
+            return (READ_ISO_LENGTH(packet) + HCI_ISO_HEADER_SIZE) == size;
+#endif
+        default:
+            return false;
+    }
+}
+
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (!hci_incoming_packet_valid(packet_type, packet, size)){
+        log_error("hci packet invalid: type 0x%02x, size %u", packet_type, size);
+        return;
+    }
+
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     // propagate ISO packets received as ACL
     hci_iso_stream_t * iso_stream = NULL;

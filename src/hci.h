@@ -178,12 +178,21 @@ extern "C" {
 // Code+Len=2, Pkts+Opcode=3; total=5
 #define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
 
+// Event Packet
+#define READ_EVENT_LENGTH( buffer )      ( buffer[1] )
+
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_SCO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ISO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
-#define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
+#define READ_ACL_LENGTH( buffer )     (  little_endian_read_16(buffer, 2)           )
+
+// SCO Packet
+#define READ_SCO_LENGTH( buffer )      ( buffer[2] )
+
+// ISO Packet
+#define READ_ISO_LENGTH( buffer )     ( (little_endian_read_16(buffer, 2)) & 0x3fff )
 
 // Sneak peak into L2CAP Packet
 #define READ_L2CAP_LENGTH(buffer)     ( little_endian_read_16(buffer, 4))
