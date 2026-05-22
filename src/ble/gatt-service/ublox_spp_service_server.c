@@ -177,7 +177,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     if (attribute_handle == instance->credits_value_handle){
         if (!ublox_spp_service_flow_control_enabled(instance)) return 0;
         if (buffer_size < 1u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         int8_t credits = (int8_t)buffer[0];
         if (credits <= 0) return 0;
