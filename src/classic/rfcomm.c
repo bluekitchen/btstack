@@ -1244,17 +1244,14 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     return 1;
 
                 case BT_RFCOMM_TEST_CMD: {
-                    if ((payload_offset + 1) >= size) return 0; // (1)
-                    log_info("Received test command");
-                    int len = packet[payload_offset+1] >> 1; // length < 125
-                    if (len > RFCOMM_TEST_DATA_MAX_LEN){
-                        len = RFCOMM_TEST_DATA_MAX_LEN;
-                    }
-                    // from (1) => (size - 1 - payload_offset) > 0
-                    len = btstack_min(len, size - 1 - payload_offset);  // avoid information leak
-                    multiplexer->test_data_len = len;
-                    (void)memcpy(multiplexer->test_data,
-                                 &packet[payload_offset + 2], len);
+                    // assert length available
+                    if ((payload_offset + 1) >= size) return 0;
+                    // get test data and limit by RFCOMM_TEST_DATA_MAX_LEN
+                    uint8_t len = packet[payload_offset+1] >> 1; // length < 125
+                    log_info("Received test command, data len %u", len);
+                    if ((payload_offset + 1 + len) >= size) return 0;
+                    multiplexer->test_data_len = btstack_min(len, RFCOMM_TEST_DATA_MAX_LEN);
+                    (void)memcpy(multiplexer->test_data, &packet[payload_offset + 2], multiplexer->test_data_len);
                     l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     return 1;
                 }
@@ -1392,11 +1389,17 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
 }
 
 static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer, uint8_t * packet, uint16_t size){
+    // caller asserts size >= 3
+
     const uint8_t frame_dlci = packet[0] >> 2;
     const uint8_t length_offset = (packet[2] & 1) ^ 1;  // to be used for pos >= 3
     const uint8_t credit_offset = ((packet[1] & BT_RFCOMM_UIH_PF) == BT_RFCOMM_UIH_PF) ? 1 : 0;   // credits for uih_pf frames
     const uint8_t payload_offset = 3 + length_offset + credit_offset;
     int request_can_send_now = 0;
+
+    if (payload_offset > size) return;
+    // => payload_offset <= size
+    // => payload_offset - size >= 0
 
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!channel) return;
@@ -1422,7 +1425,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
     
     // contains payload?
-    if ((size - 1) > payload_offset){
+    if ((size - payload_offset) > 0u){
 
         // log_info( "RFCOMM data UIH_PF, size %u, channel %p", size-payload_offset-1, rfChannel->connection);
 
@@ -1534,9 +1537,8 @@ static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multip
 }
 
 static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
+    // caller asserts size >= 3
 
-    UNUSED(size);   // ok: fixed format messages
-        
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
     const uint8_t frame_dlci = packet[0] >> 2;
     uint8_t message_dlci; // used by commands in UIH(_PF) packets 
@@ -1592,11 +1594,17 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
             
         case BT_RFCOMM_UIH_PF:
         case BT_RFCOMM_UIH:
-
+            if (payload_offset > size) break;
+            // assert command type + length available
+            if ((size - payload_offset) < 2) break;
+            // get command length
             message_len  = packet[payload_offset+1] >> 1;
+            // assert message available
+            if (message_len > (size - payload_offset - 2u)) break;
 
             switch (packet[payload_offset]) {
                 case BT_RFCOMM_PN_CMD:
+                    if (message_len < 8u) break;
                     message_dlci = packet[payload_offset+2];
                     event_pn.super.type = CH_EVT_RCVD_PN;
                     event_pn.priority = packet[payload_offset+4];
@@ -1608,6 +1616,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
                     
                 case BT_RFCOMM_PN_RSP:
+                    if (message_len < 8u) break;
                     message_dlci = packet[payload_offset+2];
                     event_pn.super.type = CH_EVT_RCVD_PN_RSP;
                     event_pn.priority = packet[payload_offset+4];
@@ -1619,14 +1628,16 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
                     
                 case BT_RFCOMM_MSC_CMD: 
+                    if (message_len < 2u) break;
                     message_dlci = packet[payload_offset+2] >> 2;
                     event_msc.super.type = CH_EVT_RCVD_MSC_CMD;
                     event_msc.modem_status = packet[payload_offset+3];
                     log_info("Received MSC CMD for #%u, ", message_dlci);
                     rfcomm_channel_state_machine_with_dlci(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_msc);
                     break;
-                    
+
                 case BT_RFCOMM_MSC_RSP:
+                    if (message_len < 1u) break;
                     message_dlci = packet[payload_offset+2] >> 2;
                     event.type = CH_EVT_RCVD_MSC_RSP;
                     log_info("Received MSC RSP for #%u", message_dlci);
@@ -1634,6 +1645,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
                     
                 case BT_RFCOMM_RPN_CMD:
+                    if (message_len < 1u) break;
                     message_dlci = packet[payload_offset+2] >> 2;
                     switch (message_len){
                         case 1:
@@ -1653,6 +1665,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
 
                 case BT_RFCOMM_RPN_RSP:
+                    if (message_len < 1u) break;
                     message_dlci = packet[payload_offset+2] >> 2;
                     if (message_len != 8) break;
                     event_rpn.super.type = CH_EVT_RCVD_RPN_RSP;
@@ -1661,6 +1674,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
 
                 case BT_RFCOMM_RLS_CMD: {
+                    if (message_len < 2u) break;
                     log_info("Received RLS command");
                     message_dlci = packet[payload_offset+2] >> 2;
                     rfcomm_channel_event_rls_t event_rls;
@@ -1716,6 +1730,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     // - channel over open multiplexer
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
     if ( (multiplexer == NULL) || (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN)) return;
+    if (size < 3u) return;
     
     // channel data ?
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
