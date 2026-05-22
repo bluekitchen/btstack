@@ -127,13 +127,12 @@ static int scan_parameters_service_write_callback(hci_con_handle_t con_handle, u
     }
 
     if (attribute_handle == scan_refresh_value_handle_client_configuration){
-        if (buffer_size == 2){
-            scan_refresh_value_client_configuration = little_endian_read_16(buffer, 0);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            scan_refresh_value_client_configuration = new_value;
             scan_refresh_value_client_configuration_connection = con_handle;
-            return ATT_ERROR_SUCCESS;
-        } else {
-            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
+        return ATT_ERROR_SUCCESS;
     }
 
     return ATT_ERROR_UNLIKELY_ERROR;
