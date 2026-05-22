@@ -817,6 +817,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
 {
     uint16_t uuid_size;
     uint16_t uuid_offset = 0; // avoid "may be unitialized when used" in clang
+    if (size < 2u) return 0;
     uuid_size = packet[1];
     uint16_t response_code = BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS;
     bnep_service_t * service;
@@ -1165,9 +1166,10 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
         log_info("BNEP_CONTROL: Type: %d, size: %d, is_extension: %d", bnep_control_type, size, is_extension);
         switch (bnep_control_type) {
             case BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD:
+                if (size < 2u) return 0;
                 /* The last command we send was not understood. We should close the connection */
                 log_error("BNEP_CONTROL: Received COMMAND_NOT_UNDERSTOOD: l2cap_cid: %d, cmd: %d", channel->l2cap_cid,
-                          packet[3]);
+                          packet[1]);
                 bnep_channel_finalize(channel);
                 len = 2; // Length of command not understood packet - bnep-type field
                 break;
