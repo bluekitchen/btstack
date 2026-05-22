@@ -118,15 +118,18 @@ static int heart_rate_service_write_callback(hci_con_handle_t con_handle, uint16
     }
 
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
-        if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            heart_rate.measurement_client_configuration_descriptor_notify = new_value;
+            heart_rate.con_handle = con_handle;
         }
-        heart_rate.measurement_client_configuration_descriptor_notify = little_endian_read_16(buffer, 0);
-        heart_rate.con_handle = con_handle;
         return 0;
     }
     
     if (attribute_handle == heart_rate.control_point_value_handle){
+        if (buffer_size < 2u){
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+        }
         uint16_t cmd = little_endian_read_16(buffer, 0);
         switch (cmd){
             case HEART_RATE_RESET_ENERGY_EXPENDED:
