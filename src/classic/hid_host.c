@@ -717,7 +717,6 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
 
 
 static void hid_host_handle_control_packet(hid_host_connection_t * connection, uint8_t *packet, uint16_t size){
-    UNUSED(size);
     uint8_t param;
     hid_message_type_t         message_type;
     hid_handshake_param_type_t message_status;
@@ -725,6 +724,8 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
 
     uint8_t * in_place_event;
     uint8_t status;
+
+    if (size < 1u) return;
 
     message_type   = (hid_message_type_t)(packet[0] >> 4);
     if (message_type == HID_MESSAGE_TYPE_HID_CONTROL){
@@ -811,6 +812,10 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
 
             switch (message_type){
                 case HID_MESSAGE_TYPE_DATA:
+                    if (size < 2u) {
+                        message_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+                        break;
+                    }
                     protocol_mode = (hid_protocol_mode_t)packet[1];
                     switch (protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT:
