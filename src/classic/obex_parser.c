@@ -182,7 +182,7 @@ obex_parser_object_state_t obex_parser_process_data(obex_parser_t *obex_parser, 
                 break;
             case OBEX_PARSER_STATE_W4_HEADER_VALUE:
                 bytes_to_consume = btstack_min(obex_parser->item_len - obex_parser->item_pos, data_len);
-                if (*obex_parser->callback != NULL){
+                if (obex_parser->callback != NULL){
                     (*obex_parser->callback)(obex_parser->user_data, obex_parser->header_id, obex_parser->item_len, obex_parser->item_pos, data_buffer, bytes_to_consume);
                 }
                 obex_parser->item_pos += bytes_to_consume;
