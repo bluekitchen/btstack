@@ -140,7 +140,7 @@ static void notify_client_simple(int event_type){
 }
 
 static void ancs_chunk_parser_init(void){
-    // skip comand id and notification uid
+    // skip command id and notification uid
     chunk_parser_state = W4_ATTRIBUTE_ID;
     ancs_bytes_received = 0;
     ancs_bytes_needed = 6;
@@ -163,6 +163,8 @@ const char * ancs_client_attribute_name_for_id(uint16_t id){
 }
 
 static void ancs_chunk_parser_handle_byte(uint8_t data){
+    if (ancs_bytes_received >= sizeof(ancs_notification_buffer)) return;
+
     ancs_notification_buffer[ancs_bytes_received++] = data;
     if (ancs_bytes_received < ancs_bytes_needed) return;
     switch (chunk_parser_state){
@@ -206,6 +208,7 @@ static void ancs_client_handle_notification(uint16_t value_handle, const uint8_t
             ancs_chunk_parser_handle_byte(value[i]);
         }
     } else if (value_handle == ancs_notification_source_characteristic.value_handle){
+        if (value_length < 8u) return;
         ancs_notification_uid = little_endian_read_32(value, 4);
         log_info("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x",
                  value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
