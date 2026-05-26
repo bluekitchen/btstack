@@ -182,6 +182,9 @@ static bool att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t 
     return little_endian_read_16(uuid, 12) == little_endian_read_16(it->uuid, 0);
 }
 
+static bool att_db_is_handle_range_valid(uint16_t start_handle, uint16_t end_handle){
+    return (start_handle <= end_handle) && (start_handle != 0u);
+}
 
 static bool att_find_handle(att_iterator_t *it, uint16_t handle){
     if (handle == 0u){
@@ -465,7 +468,7 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
     log_info("ATT_FIND_INFORMATION_REQUEST: from %04X to %04X", start_handle, end_handle);
     uint8_t request_type = ATT_FIND_INFORMATION_REQUEST;
     
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -569,7 +572,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
     log_info_hexdump(attribute_value, attribute_len);
     uint8_t request_type = ATT_FIND_BY_TYPE_VALUE_REQUEST;
 
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -637,7 +640,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_TYPE_REQUEST;
 
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -1016,7 +1019,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
     log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_GROUP_TYPE_REQUEST;
     
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
