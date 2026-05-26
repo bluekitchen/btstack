@@ -294,10 +294,10 @@ static int btstack_audio_portaudio_sink_init(
     int buffers_needed = (latency_samples + NUM_FRAMES_PER_PA_BUFFER - 1) / NUM_FRAMES_PER_PA_BUFFER;
     log_info("PortAudio: output latency of %f requires %u buffers, %u buffers available\n",
     stream_info->outputLatency, buffers_needed, NUM_OUTPUT_BUFFERS);
+    UNUSED(buffers_needed);
     if (latency_samples > buffer_samples) {
-        printf("PortAudio: output latency of %f requires %u buffers, but only %u buffers are available\n",
+        log_error("PortAudio: output latency of %f requires %u buffers, but only %u buffers are available\n",
             stream_info->outputLatency, buffers_needed, NUM_OUTPUT_BUFFERS);
-        log_error("PortAudio: need at least %u output buffers", buffers_needed);
     }
 
     playback_callback  = playback;
