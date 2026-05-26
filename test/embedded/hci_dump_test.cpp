@@ -178,6 +178,18 @@ TEST(hci_dump, header_setup_packetlogger){
     hci_dump_setup_header_packetlogger(buffer, 0, 0, 0x77, 0, 0);
 }
 
+TEST(hci_dump, header_setup_packetlogger_incoming_sco_and_iso){
+    uint8_t buffer[100];
+
+    memset(buffer, 0, sizeof(buffer));
+    hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_SCO_DATA_PACKET, 1, 0);
+    CHECK_EQUAL(0x09, buffer[12]);
+
+    memset(buffer, 0, sizeof(buffer));
+    hci_dump_setup_header_packetlogger(buffer, 0, 0, HCI_ISO_DATA_PACKET, 1, 0);
+    CHECK_EQUAL(0x0d, buffer[12]);
+}
+
 TEST(hci_dump, header_setup_bluez){
     uint8_t buffer[100];
     hci_dump_setup_header_bluez(buffer, 0, 0, HCI_COMMAND_DATA_PACKET, 0, 0);
@@ -199,6 +211,22 @@ TEST(hci_dump, header_setup_btsnoop){
     hci_dump_setup_header_btsnoop(buffer, 0, 0, 0, HCI_COMMAND_DATA_PACKET, 0, 0);
     hci_dump_setup_header_btsnoop(buffer, 0, 0, 0, LOG_MESSAGE_PACKET, 0, 0);
     hci_dump_setup_header_btsnoop(buffer, 0, 0, 0, 0x77, 0, 0);
+}
+
+TEST(hci_dump, header_setup_btsnoop_sco_and_iso_directions){
+    uint8_t buffer[100];
+
+    memset(buffer, 0, sizeof(buffer));
+    hci_dump_setup_header_btsnoop(buffer, 0, 0, 0, HCI_SCO_DATA_PACKET, 1, 0);
+    CHECK_EQUAL(0x0007, big_endian_read_32(buffer, 8));
+
+    memset(buffer, 0, sizeof(buffer));
+    hci_dump_setup_header_btsnoop(buffer, 0, 0, 0, HCI_ISO_DATA_PACKET, 0, 0);
+    CHECK_EQUAL(0x0012, big_endian_read_32(buffer, 8));
+
+    memset(buffer, 0, sizeof(buffer));
+    hci_dump_setup_header_btsnoop(buffer, 0, 0, 0, HCI_ISO_DATA_PACKET, 1, 0);
+    CHECK_EQUAL(0x0013, big_endian_read_32(buffer, 8));
 }
 
 TEST(hci_dump, buffered_explicit_flush){
