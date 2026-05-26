@@ -136,4 +136,4 @@ void adv_bearer_send_provisioning_pdu(const uint8_t * pb_adv_pdu, uint16_t size)
 }
 #endif
 
-#endif // __ADV_BEARER_H
+#endif // ADV_BEARER_H

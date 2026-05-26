@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_GENERIC_ON_OFF_CLIENT_H
-#define __MESH_GENERIC_ON_OFF_CLIENT_H
+#ifndef MESH_GENERIC_ON_OFF_CLIENT_H
+#define MESH_GENERIC_ON_OFF_CLIENT_H
 
 #include <stdint.h>
 

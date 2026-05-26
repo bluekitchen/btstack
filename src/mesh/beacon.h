@@ -36,8 +36,8 @@
  */
 
 
-#ifndef __BEACON_H
-#define __BEACON_H
+#ifndef BEACON_H
+#define BEACON_H
 
 #include <stdint.h>
 
@@ -86,4 +86,4 @@ void beacon_register_for_secure_network_beacons(btstack_packet_handler_t packet_
 }
 #endif
 
-#endif // __BEACON_H
+#endif // BEACON_H

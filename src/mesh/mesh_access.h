@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_ACCESS_H
-#define __MESH_ACCESS_H
+#ifndef MESH_ACCESS_H
+#define MESH_ACCESS_H
 
 #include <stdint.h>
 #include <stdarg.h>

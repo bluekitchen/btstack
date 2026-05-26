@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_PROXY_H
-#define __MESH_PROXY_H
+#ifndef MESH_PROXY_H
+#define MESH_PROXY_H
 
 #include <stdint.h>
 

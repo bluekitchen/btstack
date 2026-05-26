@@ -40,8 +40,8 @@
  * 
  */
 
-#ifndef __MESH_PROXY_SERVICE_SERVER_H
-#define __MESH_PROXY_SERVICE_SERVER_H
+#ifndef MESH_PROXY_SERVICE_SERVER_H
+#define MESH_PROXY_SERVICE_SERVER_H
 
 #include <stdint.h>
 

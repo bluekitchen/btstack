@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_IV_INDEX_SEQ_NUMBER_H
-#define __MESH_IV_INDEX_SEQ_NUMBER_H
+#ifndef MESH_IV_INDEX_SEQ_NUMBER_H
+#define MESH_IV_INDEX_SEQ_NUMBER_H
 
 #include <stdint.h>
 

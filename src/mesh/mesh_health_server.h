@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_HEALTH_SERVER_H
-#define __MESH_HEALTH_SERVER_H
+#ifndef MESH_HEALTH_SERVER_H
+#define MESH_HEALTH_SERVER_H
 
 #include <stdint.h>
 

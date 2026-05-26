@@ -36,8 +36,8 @@
  */
 
 
-#ifndef __PB_ADV_H
-#define __PB_ADV_H
+#ifndef PB_ADV_H
+#define PB_ADV_H
 
 #include <stdint.h>
 
@@ -91,4 +91,4 @@ uint16_t pb_adv_create_link(const uint8_t * device_uuid);
 }
 #endif
 
-#endif // __PB_ADV_H
+#endif // PB_ADV_H

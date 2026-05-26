@@ -39,8 +39,8 @@
  *  provisioning.h
  */
 
-#ifndef __PROVISIONING_H
-#define __PROVISIONING_H
+#ifndef PROVISIONING_H
+#define PROVISIONING_H
 
 #include <stdint.h>
 

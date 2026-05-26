@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_GENERIC_MODEL_H
-#define __MESH_GENERIC_MODEL_H
+#ifndef MESH_GENERIC_MODEL_H
+#define MESH_GENERIC_MODEL_H
 
 #include "mesh/mesh_access.h"
 

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_NETWORK
-#define __MESH_NETWORK
+#ifndef MESH_NETWORK_H
+#define MESH_NETWORK_H
 
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"

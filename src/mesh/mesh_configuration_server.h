@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_CONFIGURATION_SERVER_H
-#define __MESH_CONFIGURATION_SERVER_H
+#ifndef MESH_CONFIGURATION_SERVER_H
+#define MESH_CONFIGURATION_SERVER_H
 
 #include <stdint.h>
 

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_FOUNDATION_H
-#define __MESH_FOUNDATION_H
+#ifndef MESH_FOUNDATION_H
+#define MESH_FOUNDATION_H
 
 #include <stdint.h>
 

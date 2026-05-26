@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_PEER_H
-#define __MESH_PEER_H
+#ifndef MESH_PEER_H
+#define MESH_PEER_H
 
 #include "mesh/mesh_network.h"
 
@@ -71,4 +71,4 @@ void mesh_seq_auth_reset(void);
 }
 #endif
 
-#endif //__MESH_PEER_H
+#endif //MESH_PEER_H

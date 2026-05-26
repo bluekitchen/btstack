@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_VIRTUAL_ADDRESSES_H
-#define __MESH_VIRTUAL_ADDRESSES_H
+#ifndef MESH_VIRTUAL_ADDRESSES_H
+#define MESH_VIRTUAL_ADDRESSES_H
 
 #include <stdint.h>
 
