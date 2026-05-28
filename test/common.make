@@ -36,6 +36,8 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 build-%:
 	mkdir -p $@
 
+.PRECIOUS: build-%
+
 build-asan/%.h: %.gatt | build-asan
 	${PYTHON} ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
