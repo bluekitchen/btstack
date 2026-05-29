@@ -497,6 +497,7 @@ uint8_t mesh_pdu_control_opcode(mesh_pdu_t * pdu){
 // message parser
 
 static int mesh_access_get_opcode(uint8_t * buffer, uint16_t buffer_size, uint32_t * opcode, uint16_t * opcode_size){
+    if (buffer_size < 1u) return 0;
     switch (buffer[0] >> 6){
         case 0:
         case 1:
@@ -1089,4 +1090,3 @@ void mesh_access_state_changed(mesh_model_t * mesh_model){
     publication_model->state = MESH_MODEL_PUBLICATION_STATE_PUBLICATION_READY;
     mesh_model_publication_run(NULL);
 }
-
