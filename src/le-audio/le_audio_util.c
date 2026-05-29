@@ -259,7 +259,7 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 }
 
 // parse metadata, first unsupported type is stored in metadata.unsupported_type
-uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
+uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint16_t buffer_size, le_audio_metadata_t * metadata){
 
     // reset capabilities
     memset(metadata, 0, sizeof(le_audio_metadata_t));
@@ -270,7 +270,7 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
     }
 
     // parse config to get sampling frequency and frame duration
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     uint8_t metadata_config_length = buffer[offset++];
     uint16_t metadata_end = 1u + metadata_config_length;
     if (buffer_size < metadata_end){
@@ -603,4 +603,3 @@ le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(
             return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU;
     }
 }
-

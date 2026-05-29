@@ -65,7 +65,7 @@ uint16_t le_audio_util_virtual_memcpy_helper(
 
 uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metadata, uint8_t metadata_length, uint16_t * records_offset, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
 
-uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata);
+uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint16_t buffer_size, le_audio_metadata_t * metadata);
 
 /**
  * @brief Serialize Metadata
@@ -103,4 +103,3 @@ const le_audio_qos_configuration_t * le_audio_util_get_qos_setting(
 #endif
 
 #endif
-
