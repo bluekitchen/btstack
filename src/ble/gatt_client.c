@@ -4150,6 +4150,9 @@ static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t
             }
             break;
         case L2CAP_DATA_PACKET:
+            if (size < 1u){
+                break;
+            }
             gatt_client = gatt_client_le_enhanced_get_context_for_l2cap_cid(channel, &eatt_client);
             btstack_assert(gatt_client != NULL);
             btstack_assert(eatt_client != NULL);
