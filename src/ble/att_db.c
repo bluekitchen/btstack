@@ -1230,7 +1230,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     uint16_t bytes_to_echo = (uint16_t) btstack_min(request_len, response_buffer_size);
     (void)memcpy(response_buffer, request_buffer, bytes_to_echo);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
-    return request_len;
+    return bytes_to_echo;
 }
 
 /*
