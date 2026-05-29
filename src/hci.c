@@ -2974,7 +2974,12 @@ static void hci_init_report_minimum_supported_connection_interval(const uint8_t 
 #endif
 
 static void handle_command_complete_event(uint8_t * packet, uint16_t size){
-    uint8_t status = 0;
+    if (size < OFFSET_OF_DATA_IN_COMMAND_COMPLETE){
+        log_info("Malformed command complete event, size %u", size);
+        return;
+    }
+
+    uint8_t status = 0xff;
     if( size > OFFSET_OF_DATA_IN_COMMAND_COMPLETE ) {
         status = hci_event_command_complete_get_return_parameters(packet)[0];
     }
@@ -3002,12 +3007,18 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     uint16_t opcode = hci_event_command_complete_get_command_opcode(packet);
     switch (opcode){
         case HCI_OPCODE_HCI_READ_LOCAL_NAME:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1u)) break;
             if (status) break;
-            // terminate, name 248 chars
-            packet[6+248] = 0;
-            log_info("local name: %s", &packet[6]);
+            {
+                char local_name[249];
+                uint16_t local_name_len = btstack_min(size - (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1u), sizeof(local_name) - 1u);
+                (void)memcpy(local_name, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1u], local_name_len);
+                local_name[local_name_len] = '\0';
+                log_info("local name: %s", local_name);
+            }
             break;
         case HCI_OPCODE_HCI_READ_BUFFER_SIZE:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 8u)) break;
             // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
             if (hci_stack->state == HCI_STATE_INITIALIZING) {
                 uint16_t acl_len = little_endian_read_16(packet, 6);
@@ -3026,6 +3037,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             }
             break;
         case HCI_OPCODE_HCI_READ_RSSI:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 4u)) break;
             if (status == ERROR_CODE_SUCCESS){
                 uint8_t event[5];
                 event[0] = GAP_EVENT_RSSI_MEASUREMENT;
@@ -3036,6 +3048,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
 #ifdef ENABLE_BLE
         case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 7u)) break;
             hci_stack->le_iso_packets_length = little_endian_read_16(packet, 9);
             hci_stack->le_iso_packets_total_num = packet[11];
             log_info("hci_le_read_buffer_size_v2: iso size %u, iso count %u",
@@ -3044,6 +3057,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             /* fall through */
 
         case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 4u)) break;
             hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
             hci_stack->le_acl_packets_total_num = packet[8];
             // determine usable ACL payload size
@@ -3060,6 +3074,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 5u)) break;
             hci_stack->le_supported_max_tx_octets = little_endian_read_16(packet, 6);
             hci_stack->le_supported_max_tx_time = little_endian_read_16(packet, 8);
             log_info("hci_le_read_maximum_data_length: tx octets %u, tx time %u us", hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
@@ -3075,6 +3090,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_CENTRAL
         case HCI_OPCODE_HCI_LE_READ_WHITE_LIST_SIZE:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 2u)) break;
             hci_stack->le_whitelist_capacity = packet[6];
             log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             break;
@@ -3082,9 +3098,11 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         case HCI_OPCODE_HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u)) break;
             hci_stack->le_maximum_advertising_data_length = little_endian_read_16(packet, 6);
             break;
         case HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u)) break;
             if (hci_stack->le_advertising_set_in_current_command != 0) {
                 le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(hci_stack->le_advertising_set_in_current_command);
                 hci_stack->le_advertising_set_in_current_command = 0;
@@ -3113,6 +3131,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #endif
 #endif
         case HCI_OPCODE_HCI_READ_BD_ADDR:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 7u)) break;
             reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], hci_stack->local_bd_addr);
             log_info("Local Address, Status: 0x%02x: Addr: %s", status, bd_addr_to_str(hci_stack->local_bd_addr));
 #ifdef ENABLE_CLASSIC
@@ -3142,6 +3161,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
 #endif
         case HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_FEATURES:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 9u)) break;
             (void)memcpy(hci_stack->local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], 8);
 
 #ifdef ENABLE_CLASSIC
@@ -3157,6 +3177,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
             break;
         case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 7u)) break;
             manufacturer = little_endian_read_16(packet, 10);
             // map Cypress & Infineon to Broadcom
             switch (manufacturer){
@@ -3173,6 +3194,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
             break;
         case HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_COMMANDS:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 65u)) break;
             hci_store_local_supported_commands(packet);
             break;
 #ifdef ENABLE_CLASSIC
@@ -3181,6 +3203,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_stack->synchronous_flow_control_enabled = 1;
             break;
         case HCI_OPCODE_HCI_READ_ENCRYPTION_KEY_SIZE:
+            if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u)) break;
+            if ((status == ERROR_CODE_SUCCESS) && (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 4u))) break;
             handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
             conn   = hci_connection_for_handle(handle);
             if (conn != NULL) {
@@ -3210,6 +3234,13 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
         case HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA:
         case HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA:{
+            if (status == ERROR_CODE_SUCCESS){
+                if (opcode == HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA){
+                    if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 65u)) break;
+                } else {
+                    if (size < (OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 33u)) break;
+                }
+            }
             uint8_t event[67];
             event[0] = GAP_EVENT_LOCAL_OOB_DATA;
             event[1] = 65;
@@ -3243,6 +3274,10 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
             if (cig != NULL){
                 if (status == ERROR_CODE_SUCCESS){
+                    uint16_t min_size = OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u + (2u * cig->num_cis);
+                    if (size < min_size){
+                        break;
+                    }
                     uint8_t i;
                     for (i=0;i<cig->num_cis;i++) {
                         // assign CIS handles to pre-allocated CIS
@@ -3905,6 +3940,11 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
 
 static void event_handler(uint8_t *packet, uint16_t size){
 
+    if (size < 2u){
+        log_error("event_handler called with packet of wrong size %u, expected at least 2 => dropping packet", size);
+        return;
+    }
+
     uint16_t event_length = packet[1];
 
     // assert packet is complete
@@ -3939,10 +3979,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
     switch (hci_event_packet_get_type(packet)) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
+            if (size < OFFSET_OF_DATA_IN_COMMAND_COMPLETE) return;
             handle_command_complete_event(packet, size);
             break;
             
         case HCI_EVENT_COMMAND_STATUS:
+            if (size < 6u) return;
             handle_command_status_event(packet, size);
             break;
 
@@ -4025,6 +4067,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_FLUSH_OCCURRED:
+            if (size < 4u) break;
             // flush occurs only if automatic flush has been enabled by gap_enable_link_watchdog()
             handle = hci_event_flush_occurred_get_handle(packet);
             conn = hci_connection_for_handle(handle);
@@ -4035,6 +4078,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_INQUIRY_COMPLETE:
+            if (size < 3u) break;
             if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_ACTIVE){
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
@@ -4047,6 +4091,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
             break;
         case HCI_EVENT_CONNECTION_REQUEST:
+            if (size < 12u) break;
             reverse_bd_addr(&packet[2], addr);
             link_type = (hci_link_type_t) packet[11];
 
@@ -4097,6 +4142,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
             
         case HCI_EVENT_CONNECTION_COMPLETE:
+            if (size < 13u) break;
             // Connection management
             reverse_bd_addr(&packet[5], addr);
             log_info("Connection_complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
@@ -4156,6 +4202,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
+            if (size < 19u) break;
             reverse_bd_addr(&packet[5], addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             log_info("Synchronous Connection Complete for %p (status=%u) %s", (void *) conn, packet[2], bd_addr_to_str(addr));
@@ -4204,6 +4251,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
+            if (size < 13u) break;
             handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -4222,6 +4270,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE:
+            if (size < 15u) break;
             handle = little_endian_read_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -4258,6 +4307,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
+            if (size < 8u) break;
 #ifdef ENABLE_EXPLICIT_LINK_KEY_REPLY
             log_info("Await Link Key Reply from application");
 #else
@@ -4276,6 +4326,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
+            if (size < 25u) break;
             hci_event_link_key_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4315,6 +4366,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
         }
 
         case HCI_EVENT_PIN_CODE_REQUEST:
+            if (size < 8u) break;
             hci_event_pin_code_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4338,6 +4390,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_IO_CAPABILITY_RESPONSE:
+            if (size < 11u) break;
             hci_event_io_capability_response_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4353,6 +4406,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
+            if (size < 8u) break;
             hci_event_io_capability_response_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4364,6 +4418,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
         case HCI_EVENT_REMOTE_OOB_DATA_REQUEST:
+            if (size < 8u) break;
             hci_event_remote_oob_data_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4377,6 +4432,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+            if (size < 12u) break;
             hci_event_user_confirmation_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4396,6 +4452,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_USER_PASSKEY_REQUEST:
+            if (size < 8u) break;
             // Pairing using Passkey results in MITM protection. If Level 4 is required, support for SC is validated on IO Cap Request
             if (hci_stack->ssp_auto_accept){
                 hci_event_user_passkey_request_get_bd_addr(packet, addr);
@@ -4407,6 +4464,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_MODE_CHANGE:
+            if (size < 8u) break;
             handle = hci_event_mode_change_get_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -4417,6 +4475,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
         case HCI_EVENT_ENCRYPTION_CHANGE_V2:
+            if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE_V2){
+                if (size < 7u) break;
+            } else {
+                if (size < 6u) break;
+            }
             handle = hci_event_encryption_change_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -4510,6 +4573,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
 
         case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
+            if (size < 5u) break;
             handle = hci_event_encryption_key_refresh_complete_get_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -4530,6 +4594,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
+            if (size < 5u) break;
             handle = hci_event_authentication_complete_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
@@ -4555,6 +4620,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
+            if (size < 9u) break;
             hci_event_simple_pairing_complete_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
@@ -4572,6 +4638,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
         // has been split, to first notify stack before shutting connection down
         // see end of function, too.
         case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (size < 6u) break;
             if (packet[2]) break;   // status != 0
             handle = little_endian_read_16(packet, 3);
             // drop outgoing ACL fragments if it is for closed connection and release buffer if tx not active
@@ -4663,6 +4730,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_HARDWARE_ERROR:
+            if (size < 3u) break;
             log_error("Hardware Error: 0x%02x", packet[2]);
             if (hci_stack->hardware_error_callback){
                 (*hci_stack->hardware_error_callback)(packet[2]);
@@ -4675,6 +4743,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_ROLE_CHANGE:
+            if (size < 10u) break;
             if (packet[2]) break;   // status != 0
             reverse_bd_addr(&packet[3], addr);
             addr_type = BD_ADDR_TYPE_ACL;
@@ -4728,6 +4797,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_BLE
         case HCI_EVENT_LE_META:
+            if (size < 3u) break;
             switch (packet[2]){
 #ifdef ENABLE_LE_CENTRAL
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
@@ -4744,6 +4814,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     hci_stack->le_periodic_sync_state = LE_CONNECTING_IDLE;
                     break;
                 case HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED:
+                    if (size < 8u) break;
                     advertising_handle = hci_subevent_le_advertising_set_terminated_get_advertising_handle(packet);
                     if (advertising_handle == LE_EXTENDED_ADVERTISING_LEGACY_HANDLE){
                         // legacy advertisements
@@ -4777,13 +4848,21 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 #endif
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    if (size < 21u) break;
+                    hci_handle_le_connection_complete_event(packet);
+                    break;
                 case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+                    if (size < 33u) break;
+                    hci_handle_le_connection_complete_event(packet);
+                    break;
                 case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+                    if (size < 36u) break;
                     hci_handle_le_connection_complete_event(packet);
                     break;
 
                 // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
                 case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                    if (size < 12u) break;
                     handle = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
                     if (!conn) break;
@@ -4791,6 +4870,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
 
                 case HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE:
+                    if (size < 14u) break;
                     handle = hci_subevent_le_read_remote_features_complete_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
                     if (!conn) break;
@@ -4798,6 +4878,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
 
                 case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
+                    if (size < 7u) break;
                     handle = hci_subevent_le_phy_update_complete_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
                     if (!conn) break;
@@ -4806,6 +4887,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
                 case HCI_SUBEVENT_LE_FRAME_SPACE_UPDATE_COMPLETE:
+                    if (size < 12u) break;
                     handle = hci_subevent_le_frame_space_update_complete_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
                     if (!conn) break;
@@ -4813,6 +4895,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
 
                 case HCI_SUBEVENT_LE_CONNECTION_RATE_CHANGE:
+                    if (size < 16u) break;
                     handle = hci_subevent_le_connection_rate_change_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
                     if (!conn) break;
@@ -4821,6 +4904,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 
                 case HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST:
+                    if (size < 13u) break;
                     // connection
                     handle = hci_subevent_le_remote_connection_parameter_request_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
@@ -4848,6 +4932,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
 #ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
                 case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
+                    if (size < 13u) break;
                     handle = hci_subevent_le_data_length_change_get_connection_handle(packet);
                     conn = hci_connection_for_handle(handle);
                     if (conn) {
@@ -4857,6 +4942,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
                 case HCI_SUBEVENT_LE_CIS_REQUEST:
+                    if (size < 9u) break;
                     // incoming CIS request, allocate iso stream object and cache metadata
                     iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_ROLE_SLAVE,
                                                        HCI_ISO_STREAM_W4_USER,
@@ -4868,6 +4954,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_CIS_ESTABLISHED:
+                    if (size < 31u) break;
                     if (hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS){
                         handle = hci_subevent_le_cis_established_get_connection_handle(packet);
                         uint8_t status = hci_subevent_le_cis_established_get_status(packet);
@@ -4932,14 +5019,17 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
+                    if (size < 5u) break;
                     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big = hci_big_for_handle(packet[4]);
                     if (big != NULL){
                         uint8_t status = packet[3];
                         if (status == ERROR_CODE_SUCCESS){
-                            // store bis_con_handles and trigger iso path setup
+                            if (size < 21u) break;
                             uint8_t num_bis = btstack_min(big->num_bis, packet[20]);
+                            if (size < (21u + (2u * num_bis))) break;
 
+                            // store bis_con_handles and trigger iso path setup
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = (hci_con_handle_t) little_endian_read_16(packet, 21 + (2 * i));
                                 big->bis_con_handles[i] = bis_handle;
@@ -4966,6 +5056,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_TERMINATE_BIG_COMPLETE:
+                    if (size < 5u) break;
                     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big = hci_big_for_handle(hci_subevent_le_terminate_big_complete_get_big_handle(packet));
                     if (big != NULL){
@@ -4992,13 +5083,17 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED:
+                    if (size < 5u) break;
                     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
                         uint8_t status = packet[3];
                         if (status == ERROR_CODE_SUCCESS){
-                            // store bis_con_handles and trigger iso path setup
+                            if (size < 17u) break;
                             uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
+                            if (size < (17u + (2u * packet[16]))) break;
+
+                            // store bis_con_handles and trigger iso path setup
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = little_endian_read_16(packet, 17 + (2 * i));
                                 big_sync->bis_con_handles[i] = bis_handle;
@@ -5026,6 +5121,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                     break;
                 case HCI_SUBEVENT_LE_BIG_SYNC_LOST:
+                    if (size < 5u) break;
                     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                     big_sync = hci_big_sync_for_handle(hci_subevent_le_big_sync_lost_get_big_handle(packet));
                     if (big_sync != NULL){
@@ -5061,7 +5157,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 	hci_emit_event(packet, size, 0);   // don't dump, already happened in packet handler
 
     // moved here to give upper stack a chance to close down everything with hci_connection_t intact
-    if ((hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE) && (packet[2] == 0)){
+    if ((hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE) && (size >= 6u) && (packet[2] == 0)){
 		handle = little_endian_read_16(packet, 3);
 		hci_connection_t * aConn = hci_connection_for_handle(handle);
 		// discard connection if app did not trigger a reconnect in the event handler
