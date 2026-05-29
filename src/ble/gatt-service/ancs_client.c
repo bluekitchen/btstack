@@ -186,7 +186,6 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             chunk_parser_state  = W4_ATTRIBUTE_COMPLETE;
             break;
         case W4_ATTRIBUTE_COMPLETE:
-            ancs_notification_buffer[ancs_bytes_received] = 0;
             notify_client_text(ANCS_SUBEVENT_CLIENT_NOTIFICATION);
             ancs_bytes_received = 0;
             ancs_bytes_needed   = 1;
