@@ -192,5 +192,12 @@ void le_audio_base_parser_subgroup_next(le_audio_base_parser_t * parser){
     btstack_assert(parser->subgroup_index < parser->subgroup_count);
     parser->subgroup_offset = parser->bis_offset;
     parser->subgroup_index++;
+    if (parser->subgroup_index == parser->subgroup_count){
+        parser->subgroup_offset = 0;
+        parser->bis_offset = 0;
+        parser->bis_count = 0;
+        parser->bis_index = 0;
+        return;
+    }
     le_audio_base_parser_fetch_subgroup_info(parser);
 }
