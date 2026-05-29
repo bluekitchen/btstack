@@ -485,6 +485,20 @@ static void hci_transport_h5_emit_sleep_state(int sleep_active){
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
 }
 
+static bool hci_transport_h5_payload_matches(const uint8_t * payload, uint16_t payload_len, const uint8_t * expected, uint16_t expected_len){
+    if (payload_len != expected_len){
+        return false;
+    }
+    return memcmp(payload, expected, expected_len) == 0;
+}
+
+static bool hci_transport_h5_payload_has_prefix(const uint8_t * payload, uint16_t payload_len, const uint8_t * prefix, uint16_t prefix_len){
+    if (payload_len < prefix_len){
+        return false;
+    }
+    return memcmp(payload, prefix, prefix_len) == 0;
+}
+
 static void hci_transport_h5_process_frame(uint16_t frame_size){
 
     if (frame_size < 4) return;
@@ -541,12 +555,12 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     switch (link_state){
         case LINK_UNINITIALIZED:
             if (link_packet_type != LINK_CONTROL_PACKET_TYPE) break;
-            if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
+            if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_sync, sizeof(link_control_sync))){
                 log_debug("link received sync");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
                 break;
             }
-            if (memcmp(slip_payload, link_control_sync_response, sizeof(link_control_sync_response)) == 0){
+            if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_sync_response, sizeof(link_control_sync_response))){
                 log_debug("link received sync response");
                 link_state = LINK_INITIALIZED;
                 btstack_run_loop_remove_timer(&link_timer);
@@ -559,12 +573,12 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             break;
         case LINK_INITIALIZED:
             if (link_packet_type != LINK_CONTROL_PACKET_TYPE) break;
-            if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
+            if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_sync, sizeof(link_control_sync))){
                 log_debug("link received sync");
                 hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC_RESPONSE;
                 break;
             }
-            if (memcmp(slip_payload, link_control_config, link_control_config_prefix_len) == 0){
+            if (hci_transport_h5_payload_has_prefix(slip_payload, link_payload_len, link_control_config, link_control_config_prefix_len)){
                 if (link_payload_len == link_control_config_prefix_len){
                     log_debug("link received config, no config field");
                     hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
@@ -574,8 +588,8 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                 }
                 break;
             }
-            if (memcmp(slip_payload, link_control_config_response, link_control_config_response_prefix_len) == 0){
-                uint8_t config = slip_payload[2];
+            if (hci_transport_h5_payload_has_prefix(slip_payload, link_payload_len, link_control_config_response, link_control_config_response_prefix_len)){
+                uint8_t config = (link_payload_len > link_control_config_response_prefix_len) ? slip_payload[2] : 0;
                 link_peer_supports_data_integrity_check = (config & 0x10) != 0;
                 log_info("link received config response 0x%02x, data integrity check supported %u", config, link_peer_supports_data_integrity_check);
                 link_state = LINK_ACTIVE;
@@ -621,7 +635,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
-                    if (memcmp(slip_payload, link_control_config, sizeof(link_control_config)) == 0){
+                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_config, sizeof(link_control_config))){
                         if (link_payload_len == link_control_config_prefix_len){
                             log_debug("link received config, no config field");
                             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
@@ -631,12 +645,12 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                         }
                         break;
                     }
-                    if (memcmp(slip_payload, link_control_sync, sizeof(link_control_sync)) == 0){
+                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_sync, sizeof(link_control_sync))){
                         log_debug("link received sync in ACTIVE STATE!");
                         // TODO sync during active indicates peer reset -> full upper layer reset necessary
                         break;
                     }
-                    if (memcmp(slip_payload, link_control_sleep, sizeof(link_control_sleep)) == 0){
+                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_sleep, sizeof(link_control_sleep))){
                         if (btstack_uart_sleep_mode){
                             log_info("link: received sleep message. Enabling UART Sleep.");
                             btstack_uart->set_sleep(btstack_uart_sleep_mode);
@@ -647,13 +661,13 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                         link_peer_asleep = 1;
                         break;
                     }
-                    if (memcmp(slip_payload, link_control_wakeup, sizeof(link_control_wakeup)) == 0){
+                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_wakeup, sizeof(link_control_wakeup))){
                         log_info("link: received wakupe message -> send woken");
                         link_peer_asleep = 0;
                         hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_WOKEN;
                         break;
                     }
-                    if (memcmp(slip_payload, link_control_woken, sizeof(link_control_woken)) == 0){
+                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_woken, sizeof(link_control_woken))){
                         log_info("link: received woken message");
                         link_peer_asleep = 0;
                         // queued packet will be sent in hci_transport_link_run if needed
