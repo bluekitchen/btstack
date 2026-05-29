@@ -412,9 +412,21 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
                 return 1;
             }           
             break;
-        case AVDTP_MULTIPLEXING:                
+        case AVDTP_MULTIPLEXING:
+            if (cap_len < 7){
+                log_info("    ERROR: REJECT CATEGORY, BAD_MULTIPLEXING_FORMAT\n");
+                connection->reject_service_category = category;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_MULTIPLEXING_FORMAT;
+                return 1;
+            }
             break;
-        case AVDTP_MEDIA_CODEC:                
+        case AVDTP_MEDIA_CODEC:
+            if (cap_len < 2){
+                log_info("    ERROR: REJECT CATEGORY, BAD_CODEC_FORMAT\n");
+                connection->reject_service_category = category;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_PAYLOAD_FORMAT;
+                return 1;
+            }
             break;
         default:
             break;
