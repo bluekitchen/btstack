@@ -1291,17 +1291,27 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         uint8_t i;
                         for (i=0; i < attribute_count; i++){
                             uint32_t attr_id = big_endian_read_32(packet, pos);
+                            pos += 4;
 
+                            // Skip attributes we don't serve (e.g. Cover Art =
+                            // attr 8, AVRCP 1.6) or out-of-range ids rather than
+                            // rejecting the whole request: a controller (a car
+                            // head unit) legitimately enumerates the full
+                            // Title..Cover-Art set, and a reject drops ALL
+                            // metadata. Title(1)..PlayingTime(7) are served; the
+                            // rest are silently omitted from the response.
                             if ((attr_id < AVRCP_MEDIA_ATTR_TITLE) || (attr_id > AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
-                                // we do not support Cover Art in target
-                                avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
-                                return;
+                                continue;
                             }
-                            if (connection->next_attr_id == AVRCP_MEDIA_ATTR_NONE){
+                            // The responder emits by scanning next_attr_id
+                            // upward, so start from the LOWEST requested id --
+                            // tracking the minimum (not the first seen) keeps an
+                            // out-of-order enumeration from dropping ids below
+                            // the first. NONE (0x7FFF) is the empty sentinel.
+                            if (attr_id < (uint32_t) connection->next_attr_id){
                                 connection->next_attr_id = (avrcp_media_attribute_id_t) attr_id;
                             }
                             now_playing_info_attr_bitmap |= (1 << attr_id);
-                            pos += 4;
                         }
                         connection->target_now_playing_info_attr_bitmap = now_playing_info_attr_bitmap;
                     }
