@@ -1292,7 +1292,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         for (i=0; i < attribute_count; i++){
                             uint32_t attr_id = big_endian_read_32(packet, pos);
 
-                            if ((attr_id < AVRCP_MEDIA_ATTR_TITLE) || (attr_id >= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
+                            if ((attr_id < AVRCP_MEDIA_ATTR_TITLE) || (attr_id > AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
                                 // we do not support Cover Art in target
                                 avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                                 return;
