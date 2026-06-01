@@ -1399,7 +1399,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
 
     if (payload_offset > size) return;
     // => payload_offset <= size
-    // => payload_offset - size >= 0
+    // => size - payload_offset >= 0
 
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!channel) return;
@@ -1596,7 +1596,7 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
         case BT_RFCOMM_UIH:
             if (payload_offset > size) break;
             // assert command type + length available
-            if ((size - payload_offset) < 2) break;
+            if ((size - payload_offset) < 2u) break;
             // get command length
             message_len  = packet[payload_offset+1] >> 1;
             // assert message available
