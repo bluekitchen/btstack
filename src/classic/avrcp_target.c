@@ -1298,7 +1298,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 continue;
                             }
                             // start response with lowest valid requested id
-                            if (attr_id < (uint16_t) AVRCP_MEDIA_ATTR_NONE){
+                            if (attr_id < (uint16_t) connection->next_attr_id){
                                 connection->next_attr_id = (avrcp_media_attribute_id_t) attr_id;
                             }
                             now_playing_info_attr_bitmap |= (1 << attr_id);
