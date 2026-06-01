@@ -1305,6 +1305,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         }
                         connection->target_now_playing_info_attr_bitmap = now_playing_info_attr_bitmap;
                     }
+
+                    // AVRCP v1.6.3 gives the allowed values for the number of attributes in the response as 1-255.
+                    // To avoid an empty response, we require at least one supported attribute.
+                    if (connection->target_now_playing_info_attr_bitmap == 0u) {
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        break;
+                    }
+
                     log_info("target_now_playing_info_attr_bitmap 0x%02x", connection->target_now_playing_info_attr_bitmap);
                     connection->target_now_playing_info_response = true;
                     connection->state = AVCTP_W2_SEND_RESPONSE;
