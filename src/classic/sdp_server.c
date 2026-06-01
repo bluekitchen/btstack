@@ -409,6 +409,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     }
     // assert attributeIDList is contained in param_len
     if (!attributeIDListLen) return 0;
+    param_len -= attributeIDListLen;
     // assert continuation state len is contained in param_len
     if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
@@ -565,6 +566,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
+            if (size < 5u) return;
             pdu_id = (sdp_pdu_id_t) packet[0];
             transaction_id = big_endian_read_16(packet, 1);
             param_len = big_endian_read_16(packet, 3);

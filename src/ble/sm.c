@@ -5224,7 +5224,12 @@ void sm_init(void){
                                        | SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON;
 
     sm_max_encryption_key_size = 16;
-    sm_min_encryption_key_size = 7;
+    sm_min_encryption_key_size = 16;
+    sm_auth_req = 0;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    sm_sc_only_mode = true;
+    sm_auth_req |= SM_AUTHREQ_SECURE_CONNECTION;
+#endif
 
     sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;

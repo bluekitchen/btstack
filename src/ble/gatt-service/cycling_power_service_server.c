@@ -699,18 +699,18 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
     }
 
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-        if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->measurement_client_configuration_descriptor_notify = new_value;
+            instance->con_handle = con_handle;
+            log_info("cycling_power_service_write_callback: measurement enabled %d", instance->measurement_client_configuration_descriptor_notify);
         }
-        instance->measurement_client_configuration_descriptor_notify = little_endian_read_16(buffer, 0);
-        instance->con_handle = con_handle;
-        log_info("cycling_power_service_write_callback: measurement enabled %d", instance->measurement_client_configuration_descriptor_notify);
         return 0;
     }
 
     if (attribute_handle == instance->measurement_server_configuration_descriptor_handle){
         if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         instance->measurement_server_configuration_descriptor_broadcast = little_endian_read_16(buffer, 0);
         instance->con_handle = con_handle;
@@ -733,51 +733,55 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
     }
 
     if (attribute_handle == instance->vector_client_configuration_descriptor_handle){
-        if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
-        }
-        instance->con_handle = con_handle;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->con_handle = con_handle;
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE          
-        switch (instance->con_interval_status){
-            case CP_CONNECTION_INTERVAL_STATUS_REJECTED:
-                return CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS;
+            switch (instance->con_interval_status){
+                case CP_CONNECTION_INTERVAL_STATUS_REJECTED:
+                    return CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS;
         
-            case CP_CONNECTION_INTERVAL_STATUS_ACCEPTED:
-            case CP_CONNECTION_INTERVAL_STATUS_RECEIVED:
-                if ((instance->con_interval > instance->con_interval_max) || (instance->con_interval < instance->con_interval_min)){
-                    instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_W4_L2CAP_RESPONSE;
-                    gap_request_connection_parameter_update(instance->con_handle, instance->con_interval_min, instance->con_interval_max, 4, 100);    // 15 ms, 4, 1s
+                case CP_CONNECTION_INTERVAL_STATUS_ACCEPTED:
+                case CP_CONNECTION_INTERVAL_STATUS_RECEIVED:
+                    if ((instance->con_interval > instance->con_interval_max) || (instance->con_interval < instance->con_interval_min)){
+                        instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_W4_L2CAP_RESPONSE;
+                        gap_request_connection_parameter_update(instance->con_handle, instance->con_interval_min, instance->con_interval_max, 4, 100);    // 15 ms, 4, 1s
+                        return ATT_ERROR_WRITE_RESPONSE_PENDING;
+                    }
+                    instance->vector_client_configuration_descriptor_notify = new_value;
+                    return 0;
+                default:
                     return ATT_ERROR_WRITE_RESPONSE_PENDING;
-                }
-                instance->vector_client_configuration_descriptor_notify = little_endian_read_16(buffer, 0); 
-                return 0;
-            default:
-                return ATT_ERROR_WRITE_RESPONSE_PENDING;
                 
-        }
+            }
 #endif
+        }
+        return 0;
     }
 
     if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-        if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->control_point_client_configuration_descriptor_indicate = new_value;
+            instance->con_handle = con_handle;
+            log_info("cycling_power_service_write_callback: indication enabled %d", instance->control_point_client_configuration_descriptor_indicate);
         }
-        instance->control_point_client_configuration_descriptor_indicate = little_endian_read_16(buffer, 0);
-        instance->con_handle = con_handle;
-        log_info("cycling_power_service_write_callback: indication enabled %d", instance->control_point_client_configuration_descriptor_indicate);
         return 0;
     }
 
     if (attribute_handle == instance->feature_value_handle){
         if (buffer_size < 4u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         instance->feature_flags = little_endian_read_32(buffer, 0);
         return 0;
     }
 
     if (attribute_handle == instance->control_point_value_handle){
+        if (buffer_size < 1u){
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+        }
         if (instance->control_point_client_configuration_descriptor_indicate == 0u) return CYCLING_POWER_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
         if (instance->w4_indication_complete != 0u){
             return CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
@@ -789,6 +793,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
         switch (instance->request_opcode){
             case CP_OPCODE_SET_CUMULATIVE_VALUE:
                 if (!has_feature(CP_FEATURE_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED)) break;
+                if ((pos + 4) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 instance->cumulative_wheel_revolutions = little_endian_read_32(buffer, pos);
                 instance->response_value = CP_RESPONSE_VALUE_SUCCESS;
                 break;
@@ -800,6 +805,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
             
             case CP_OPCODE_UPDATE_SENSOR_LOCATION:
                 if (!has_feature(CP_FEATURE_FLAG_MULTIPLE_SENSOR_LOCATIONS_SUPPORTED)) break;
+                if ((pos + 1) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 location = (cycling_power_sensor_location_t) buffer[pos];
                 instance->response_value = CP_RESPONSE_VALUE_INVALID_PARAMETER;
                 for (i=0; i<instance->num_supported_sensor_locations; i++){
@@ -817,6 +823,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 break;
             case CP_OPCODE_SET_CRANK_LENGTH:
                 if (!has_feature(CP_FEATURE_FLAG_CRANK_LENGTH_ADJUSTMENT_SUPPORTED)) break;
+                if ((pos + 2) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 instance->crank_length_mm = little_endian_read_16(buffer, pos);
                 instance->response_value = CP_RESPONSE_VALUE_SUCCESS;
                 break;
@@ -827,6 +834,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 break;
             case CP_OPCODE_SET_CHAIN_LENGTH:
                 if (!has_feature(CP_FEATURE_FLAG_CHAIN_LENGTH_ADJUSTMENT_SUPPORTED)) break;
+                if ((pos + 2) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 instance->chain_length_mm = little_endian_read_16(buffer, pos);
                 instance->response_value = CP_RESPONSE_VALUE_SUCCESS;
                 break;
@@ -837,6 +845,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 break;
             case CP_OPCODE_SET_CHAIN_WEIGHT:
                 if (!has_feature(CP_FEATURE_FLAG_CHAIN_WEIGHT_ADJUSTMENT_SUPPORTED)) break;
+                if ((pos + 2) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 instance->chain_weight_g = little_endian_read_16(buffer, pos);
                 instance->response_value = CP_RESPONSE_VALUE_SUCCESS;
                 break;
@@ -847,6 +856,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 break;
             case CP_OPCODE_SET_SPAN_LENGTH:
                 if (!has_feature(CP_FEATURE_FLAG_SPAN_LENGTH_ADJUSTMENT_SUPPORTED)) break;
+                if ((pos + 2) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 instance->span_length_mm = little_endian_read_16(buffer, pos);
                 instance->response_value = CP_RESPONSE_VALUE_SUCCESS;
                 break;
@@ -881,6 +891,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
 
             case CP_OPCODE_MASK_CYCLING_POWER_MEASUREMENT_CHARACTERISTIC_CONTENT:{
                 if (!has_feature(CP_FEATURE_FLAG_CYCLING_POWER_MEASUREMENT_CHARACTERISTIC_CONTENT_MASKING_SUPPORTED)) break;
+                if ((pos + 2) > buffer_size) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 uint16_t mask_bitmap = little_endian_read_16(buffer, pos);
                 uint16_t masked_measurement_flags = instance->default_measurement_flags;
                 uint16_t index = 0;

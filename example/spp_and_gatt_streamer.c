@@ -86,6 +86,7 @@ const uint8_t adv_data[] = {
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 uint8_t adv_data_len = sizeof(adv_data);
 
@@ -207,18 +208,24 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case SM_EVENT_JUST_WORKS_REQUEST:
+                    printf("Just Works requested\n");
+                    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+                    break;
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
+                    // inform about legacy pairing with pin code - should only happen before Core v2.1
+                    printf("Pin code request for Legacy Pairing received -> abort pairing'\n");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
+                    gap_pin_code_negative(event_addr);
                     break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // inform about user confirmation request
                     printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
-                    printf("SSP User Confirmation Auto accept\n");
+                    printf("Accepting Pairing - TODO: require actual user action\n");
+                    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                    gap_ssp_confirmation_response(event_addr);
                     break;
 
                 case HCI_EVENT_META_GAP:
@@ -475,8 +482,10 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
 
-    // setup SM: Display only
+    // setup SM: Just Works pairing, without bonding
     sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
@@ -484,6 +493,10 @@ int btstack_main(int argc, const char * argv[]){
     // register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &hci_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);

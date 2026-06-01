@@ -398,14 +398,9 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
             printf("\n---> NEXT STEP expect from HF: %s\n", expected_cmd);
             while (has_more_hfp_hf_commands()){
                 char * ag_cmd = get_next_hfp_hf_command();
+                CHECK_TEXT(ag_cmd != NULL, "Missing HF command");
                 printf("HF response verify %s == %s[%d]\n", expected_cmd, ag_cmd, expected_cmd_len);
-
-                int equal_cmds = strncmp(ag_cmd, expected_cmd, expected_cmd_len) == 0;
-                if (!equal_cmds){
-                    printf("\nError: Expected:'%s', but got:'%s'\n", expected_cmd, ag_cmd);
-                    CHECK_EQUAL(equal_cmds,1);
-                    return;
-                } 
+                STRCMP_EQUAL(expected_cmd, ag_cmd);
                 printf("Verified: '%s'\n", expected_cmd);
                 i++;
                 if (i < test_item->len){

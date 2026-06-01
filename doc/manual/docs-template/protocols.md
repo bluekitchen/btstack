@@ -309,23 +309,147 @@ After returning from the packet handler, BTstack might need to send itself.
 
 ### LE Data Channels
 
-The full title for LE Data Channels is actually LE Connection-Oriented Channels with LE Credit-Based Flow-Control Mode. In this mode, data is sent as Service Data Units (SDUs) that can be larger than an individual HCI LE ACL packet.
+The full title for LE Data Channels is actually LE Connection-Oriented Channels with LE Credit-Based Flow-Control Mode.
+In this mode, data is sent as Service Data Units (SDUs) that can be larger than an individual HCI LE ACL packet.
 
 LE Data Channels are similar to Classic L2CAP Channels but also provide a credit-based flow control similar to RFCOMM Channels.
-Unless the LE Data Packet Extension of Bluetooth Core 4.2 specification is used, the maximum packet size for LE ACL packets is 27 bytes. In order to send larger packets, each packet will be split into multiple ACL LE packets and recombined on the receiving side. 
+Unless the LE Data Length Extension of Bluetooth Core 4.2 specification is used, the maximum packet size for LE ACL packets is 27 bytes. 
+In order to send larger packets, each packet will be split into multiple ACL LE packets and recombined on the receiving side. 
 
-Since multiple SDUs can be transmitted at the same time and the individual ACL LE packets can be sent interleaved, BTstack requires a dedicated receive buffer per channel that has to be passed when creating the channel or accepting it. Similarly, when sending SDUs, the data provided to the *l2cap_cbm_send_data* must stay valid until the *L2CAP_EVENT_LE_PACKET_SENT* is received.
+In BTstack, this feature is enabled with `ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE`.
 
-When creating an outgoing connection of accepting an incoming, the *initial_credits* allows to provide a fixed number of credits to the remote side. Further credits can be provided anytime with *l2cap_cbm_provide_credits*. If *L2CAP_LE_AUTOMATIC_CREDITS* is used, BTstack automatically provides credits as needed - effectively trading in the flow-control functionality for convenience.
+#### BTstack API
 
-The remainder of the API is similar to the one of L2CAP: 
+BTstack's current API for LE Credit-Based Flow-Control Mode uses the `l2cap_cbm_*` functions:
 
-  * *l2cap_cbm_register_service* and *l2cap_cbm_unregister_service* are used to manage local services.
-  * *l2cap_cbm_accept_connection* and *l2cap_cbm_decline_connection* are used to accept or deny an incoming connection request.
-  * *l2cap_cbm_create_channel* creates an outgoing connections.
-  * *l2cap_cbm_can_send_now* checks if a packet can be scheduled for transmission now.
-  * *l2cap_cbm_request_can_send_now_event* requests an *L2CAP_EVENT_LE_CAN_SEND_NOW* event as soon as possible.
-  * *l2cap_cbm_disconnect* closes the connection.
+- `l2cap_cbm_register_service` / `l2cap_cbm_unregister_service`
+- `l2cap_cbm_accept_connection` / `l2cap_cbm_decline_connection`
+- `l2cap_cbm_create_channel`
+- `l2cap_cbm_provide_credits`
+- `l2cap_cbm_available_credits`
+
+The older `l2cap_le_*` function names are still present as deprecated wrappers. New code should use the `l2cap_cbm_*` APIs.
+
+#### Dedicated Receive Buffer Per Channel
+
+Since multiple SDUs can be active at the same time and the individual ACL packets can be interleaved, BTstack requires a dedicated receive SDU buffer per channel.
+
+This buffer is provided:
+
+- by the server in `l2cap_cbm_accept_connection`
+- by the client in `l2cap_cbm_create_channel`
+
+The `mtu` parameter defines the maximal SDU size the local side is prepared to receive, and the receive buffer must match that size.
+
+#### Sending Data
+
+LE Credit-Based Flow-Control Mode still uses the normal `l2cap_send(...)` call to send SDUs once the channel is open.
+
+As with other BTstack transports, applications should not send blindly. Instead, they should first request a can-send-now event:
+
+- `l2cap_request_can_send_now_event(local_cid)`
+- wait for `L2CAP_EVENT_CAN_SEND_NOW`
+- send the SDU with `l2cap_send(local_cid, data, len)`
+
+For credit-based channels, the transmitted SDU buffer must remain valid until BTstack has finished using it.
+In practice, the examples only queue the next SDU after the the can-send-now event has been received.
+
+#### Credits
+
+When creating or accepting a channel, the `initial_credits` parameter controls how many SDU fragments the peer may 
+send before it has to wait for more credits.
+
+BTstack supports two modes:
+
+- fixed/manual credits
+- automatic credits via `L2CAP_LE_AUTOMATIC_CREDITS`
+
+With manual credits, the application can grant additional credits later via:
+
+    l2cap_cbm_provide_credits(local_cid, credits);
+
+The currently available outgoing credits granted by the peer can be queried with:
+
+    uint16_t credits = l2cap_cbm_available_credits(local_cid);
+
+If `L2CAP_LE_AUTOMATIC_CREDITS` is used, BTstack replenishes incoming credits automatically when they fall below 
+its internal watermark. This is convenient and is what the example applications use by default.
+
+#### Security
+
+For outgoing channels, `l2cap_cbm_create_channel(...)` includes a `security_level` parameter. 
+This lets the application require a minimum LE security level before the channel is established.
+
+For incoming channels, the security requirement is configured when registering the service:
+
+    l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
+
+If the current LE link security is insufficient, BTstack rejects the connection request with the corresponding L2CAP result code.
+
+#### Events Used by BTstack Applications
+
+The most important events for LE Credit-Based Flow-Control Mode are:
+
+- `L2CAP_EVENT_CBM_INCOMING_CONNECTION`
+- `L2CAP_EVENT_CBM_CHANNEL_OPENED`
+- `L2CAP_EVENT_CHANNEL_CLOSED`
+- `L2CAP_EVENT_CAN_SEND_NOW`
+- `L2CAP_DATA_PACKET`
+
+The server usually:
+
+1. waits for `L2CAP_EVENT_CBM_INCOMING_CONNECTION`
+2. calls `l2cap_cbm_accept_connection(...)`
+3. processes `L2CAP_DATA_PACKET`
+
+The client usually:
+
+1. establishes the LE ACL connection
+2. calls `l2cap_cbm_create_channel(...)`
+3. waits for `L2CAP_EVENT_CBM_CHANNEL_OPENED`
+4. starts sending on `L2CAP_EVENT_CAN_SEND_NOW`
+
+#### Existing Examples
+
+BTstack contains two examples that demonstrate the feature end-to-end:
+
+- `example/le_credit_based_flow_control_mode_server.c`
+- `example/le_credit_based_flow_control_mode_client.c`
+
+The server example:
+
+- registers the LE CBM service
+- accepts incoming channels
+- uses `L2CAP_LE_AUTOMATIC_CREDITS`
+- prints throughput and received data
+
+The client example:
+
+- scans for `LE CBM Server`
+- opens the LE CBM channel with `l2cap_cbm_create_channel(...)`
+- uses `LEVEL_2` as required security level
+- streams SDUs as fast as possible using `l2cap_request_can_send_now_event(...)`
+
+#### Typical Setup Pattern
+
+On the server side, the setup pattern is:
+
+    static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
+
+    l2cap_init();
+    l2cap_cbm_register_service(packet_handler, TSPX_le_psm, LEVEL_2);
+
+Then, after receiving `L2CAP_EVENT_CBM_INCOMING_CONNECTION`, it accepts the connections and provides the SDU buffer:
+
+    l2cap_cbm_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS);
+
+On the client side, after an LE connection is established:
+
+    l2cap_cbm_create_channel(&packet_handler, connection_handle, TSPX_le_psm,
+                             cbm_receive_buffer, sizeof(cbm_receive_buffer),
+                             L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
+
+This gives a good baseline for any application that wants reliable higher-throughput LE data transfer without building a GATT service around it.
 
 ## RFCOMM - Radio Frequency Communication Protocol
 
@@ -952,14 +1076,97 @@ As part of Bluetooth Core V4.2 specification, a device with a keyboard but no di
 
 ### Cross-transport Key Derivation (CTKD) for LE Secure Connections
 
-In a dual-mode configuration, BTstack  generates an BR/EDR Link Key from the LE LTK via the Link Key Conversion functions *h6* ,
-(or *h7* if supported) when *ENABLE_CROSS_TRANSPORT_KEY_DERIVATION* is defined.
-The derived key then stored in local LE Device DB. 
+Cross-transport Key Derivation (CTKD) allows a dual-mode device to derive bonding material for one Bluetooth transport from bonding material established on the other transport.
 
-The main use case for this is connections with smartphones. E.g. iOS provides APIs for LE scanning and connection, but none for BR/EDR. This allows an application to connect and pair with
-a device and also later setup a BR/EDR connection without the need for the smartphone user to use the system Settings menu.
+In BTstack, CTKD is enabled at compile time by defining `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION`.
 
-To derive an LE LTK from a BR/EDR link key, the Bluetooth controller needs to support Secure Connections via NIST P-256 elliptic curves. BTstack does not support LE Secure Connections via LE Transport currently.
+#### Prerequisites
+
+BTstack currently requires:
+
+- `ENABLE_CLASSIC`
+- `ENABLE_BLE`
+- `ENABLE_LE_SECURE_CONNECTIONS`
+- `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION`
+
+The implementation enforces the essential requirement that CTKD is only used together with LE Secure Connections and BR/EDR support.
+
+#### What BTstack Derives
+
+BTstack supports both directions defined for dual-mode Secure Connections:
+
+- derive a BR/EDR Link Key from an LE LTK after LE Secure Connections bonding
+- derive an LE LTK from a BR/EDR Link Key after BR/EDR Secure Connections bonding
+
+For the derivation, BTstack uses the Bluetooth-specified conversion functions `h6` or `h7` depending on the negotiated authentication flags.
+
+#### Main Use Case
+
+The main practical use case is pairing over LE first and then reusing that trust relationship for BR/EDR.
+
+This is particularly useful with smartphones. For example, iOS exposes APIs for LE discovery and pairing, but not for establishing arbitrary Classic pairings from an app. With CTKD, an application can pair over LE and later open a BR/EDR connection without sending the user through the system Bluetooth settings again.
+
+#### Storage in BTstack
+
+When CTKD derives a Classic Link Key from LE bonding material, BTstack stores it in the Classic Link Key database via the normal link key storage path.
+
+When CTKD derives an LE LTK from BR/EDR Secure Connections bonding, BTstack stores it in the LE device database via the normal LE bonding storage path.
+
+In other words, CTKD does not introduce a separate persistence mechanism. It feeds the derived keys into BTstack's existing:
+
+- Classic link key database
+- LE device database
+
+If either side is not persisted, that derived trust relationship will also be lost after reset.
+
+#### Setup from the Application Perspective
+
+From an application point of view, CTKD setup is simple:
+
+1. Enable the compile-time option `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION`.
+2. Initialize the LE Security Manager by calling `sm_init()`.
+3. Make sure persistent storage for both LE bonding data and Classic link keys is configured if the relationship should survive reboot.
+
+This is why a number of Classic examples call `sm_init()` when BLE is enabled and explicitly note that it is needed for cross-transport key derivation, for example:
+
+- `example/spp_counter.c`
+- `example/gap_dedicated_bonding.c`
+- `example/hid_keyboard_demo.c`
+
+Even if the primary profile in such an example is Classic-only, CTKD support still depends on the LE Security Manager being initialized.
+
+#### How to Tell if CTKD Was Used
+
+BTstack reports whether CTKD participated in the finished pairing via `SM_EVENT_PAIRING_COMPLETE`.
+
+The event contains the `ctkd_active` field, which can be queried with:
+
+    sm_event_pairing_complete_get_ctkd_active(packet)
+
+The pairing examples already print this field:
+
+- `example/sm_pairing_central.c`
+- `example/sm_pairing_peripheral.c`
+
+A value of `1` indicates that CTKD was active for the completed pairing.
+
+#### Security Restrictions and Rejection Cases
+
+BTstack does not blindly overwrite stronger existing bonding material.
+
+In particular, the implementation checks whether the derived key would lower the authentication level of an already stored key and avoids doing so. This is intended to reduce downgrade risk and reflects the stricter security guidance introduced after the BLURtooth discussion.
+
+BTstack also rejects CTKD in situations where it is not allowed, for example if BR/EDR Secure Connections requirements are not met. In this case, pairing can fail with:
+
+    SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED
+
+The implementation also rejects CTKD when the BR/EDR side falls back to P-192 based encryption instead of Secure Connections grade protection.
+
+#### Practical Notes
+
+- CTKD is about deriving transport keys, not merging transports. LE and BR/EDR still run their own connection and security procedures.
+- Attribute-level GATT permissions and Classic profile security still apply normally after derivation.
+- CTKD is most useful on dual-mode products that expose different features over LE and BR/EDR but want one pairing step to unlock both.
 
 ### Out-of-Band Data with LE Legacy Pairing
 

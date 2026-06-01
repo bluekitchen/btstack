@@ -119,6 +119,16 @@ static uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 };
 
+static uint8_t media_mpegd_usac_codec_capabilities[] = {
+    0xBF,   // object type + dynamic range control
+    0xFF,   // sampling frequencies [19:12]
+    0xFF,   // sampling frequencies [11:8] + channels
+    0xFF,   // VBR + bit rate [22:16]
+    0xFF,   // bit rate [15:8]
+    0xFF,   // bit rate [7:0]
+    0x00
+};
+
 // WAV File
 #ifdef STORE_TO_WAV_FILE
 static uint32_t audio_frame_count = 0;
@@ -202,9 +212,11 @@ typedef enum {
 
 typedef struct {
     uint8_t  a2dp_local_seid;
-    uint8_t  media_sbc_codec_configuration[4];
+    uint8_t  media_codec_configuration[7];
 } a2dp_sink_demo_stream_endpoint_t;
-static a2dp_sink_demo_stream_endpoint_t a2dp_sink_demo_stream_endpoint;
+static a2dp_sink_demo_stream_endpoint_t a2dp_sink_demo_sbc_stream_endpoint;
+static a2dp_sink_demo_stream_endpoint_t a2dp_sink_demo_usac_stream_endpoint;
+
 
 typedef struct {
     bd_addr_t addr;
@@ -280,14 +292,19 @@ static int setup_demo(void){
     // Configure A2DP Sink
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
-    a2dp_sink_demo_stream_endpoint_t * stream_endpoint = &a2dp_sink_demo_stream_endpoint;
     avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO,
                                                                                        AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities),
-                                                                                       stream_endpoint->media_sbc_codec_configuration, sizeof(stream_endpoint->media_sbc_codec_configuration));
+                                                                                       a2dp_sink_demo_sbc_stream_endpoint.media_codec_configuration, 4);
     btstack_assert(local_stream_endpoint != NULL);
     // - Store stream enpoint's SEP ID, as it is used by A2DP API to identify the stream endpoint
-    stream_endpoint->a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
+    a2dp_sink_demo_sbc_stream_endpoint.a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
 
+    // Add second endpoint for MPEG-D USAC
+    local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO,
+                                                             AVDTP_CODEC_MPEG_D_USAC, media_mpegd_usac_codec_capabilities, sizeof(media_mpegd_usac_codec_capabilities),
+                                                             a2dp_sink_demo_usac_stream_endpoint.media_codec_configuration, 7);
+    btstack_assert(local_stream_endpoint != NULL);
+    a2dp_sink_demo_usac_stream_endpoint.a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
 
     // Configure AVRCP Controller + Target
     avrcp_register_packet_handler(&avrcp_packet_handler);
@@ -345,6 +362,11 @@ static int setup_demo(void){
     // - Allow to show up in Bluetooth inquiry
     gap_discoverable_control(1);
 
+#ifdef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
+    // - Allow to connect
+    gap_connectable_control(1);
+#endif
+    
     // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Headphone
     gap_set_class_of_device(0x200404);
 
@@ -540,7 +562,11 @@ static int read_media_data_header(uint8_t * packet, int size, int * offset, avdt
 static int read_sbc_header(uint8_t * packet, int size, int * offset, avdtp_sbc_codec_header_t * sbc_header);
 
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
-    UNUSED(seid);
+    if (seid != a2dp_sink_demo_usac_stream_endpoint.a2dp_local_seid){
+        if (seid != a2dp_sink_demo_sbc_stream_endpoint.a2dp_local_seid) {
+            return;
+        }
+    }
     int pos = 0;
      
     avdtp_media_packet_header_t media_header;
@@ -666,11 +692,21 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
-        bd_addr_t address;
-        printf("Pin code request - using '0000'\n");
-        hci_event_pin_code_request_get_bd_addr(packet, address);
-        gap_pin_code_response(address, "0000");
+    bd_addr_t address;
+    link_key_t link_key = { 0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa,  0xaa, 0xaa, 0xaa, 0xaa};
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            printf("Pin code request - using '0000'\n");
+            hci_event_pin_code_request_get_bd_addr(packet, address);
+            gap_pin_code_response(address, "0000");
+            break;
+        case HCI_EVENT_LINK_KEY_REQUEST:
+            printf("Use dummyh link key\n");
+            hci_event_link_key_request_get_bd_addr(packet, address);
+            gap_send_link_key_response(address, link_key, AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256);
+            break;
+        default:
+            break;
     }
 }
 
@@ -1037,8 +1073,26 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
     a2dp_sink_demo_a2dp_connection_t * a2dp_conn = &a2dp_sink_demo_a2dp_connection;
+    bd_addr_t address;
+    uint16_t cid;
 
     switch (packet[2]){
+        case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+            a2dp_subevent_signaling_connection_established_get_bd_addr(packet, address);
+            cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
+            status = a2dp_subevent_signaling_connection_established_get_status(packet);
+
+            if (status != ERROR_CODE_SUCCESS){
+                printf("A2DP Source: Connection failed, status 0x%02x, cid 0x%02x, a2dp_cid 0x%02x \n", status, cid, a2dp_conn->a2dp_cid);
+                break;
+            }
+            a2dp_conn->a2dp_cid = cid;
+            printf("A2DP Source: Connected to address %s, a2dp cid 0x%02x, local seid 0x%02x.\n", bd_addr_to_str(address), a2dp_conn->a2dp_cid, a2dp_conn->a2dp_local_seid);
+            break;
+
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CONFIGURATION:
+            printf("A2DP  Sink      : Received MPEG_D_USAC codec - not implemented\n");
+            break;
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
             printf("A2DP  Sink      : Received non SBC codec - not implemented\n");
             break;
@@ -1077,6 +1131,16 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             dump_sbc_configuration(&a2dp_conn->sbc_configuration);
             break;
         }
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: SBC, remote seid %u\n", a2dp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet));
+            break;
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC: MPEG_D_USAC, remote seid %u\n", a2dp_subevent_signaling_media_codec_mpeg_d_usac_capability_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE:
+            printf("A2DP Source: All streamendpoints capabilities queried\n\n");
+            break;
 
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             status = a2dp_subevent_stream_established_get_status(packet);
@@ -1100,13 +1164,24 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
         case A2DP_SUBEVENT_START_STREAM_REQUESTED:
+            cid = a2dp_subevent_start_stream_requested_get_a2dp_cid(packet);
             printf("A2DP  Sink      : Explicit Accept to start stream, local_seid %d\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
-            a2dp_sink_start_stream_accept(a2dp_cid, a2dp_local_seid);
+            a2dp_sink_start_stream_accept(cid, a2dp_subevent_start_stream_requested_get_local_seid(packet));
             break;
 #endif
         case A2DP_SUBEVENT_STREAM_STARTED:
             printf("A2DP  Sink      : Stream started\n");
             a2dp_conn->stream_state = STREAM_STATE_PLAYING;
+
+            if (a2dp_conn->a2dp_local_seid == a2dp_sink_demo_usac_stream_endpoint.a2dp_local_seid){
+                printf("A2DP  Sink      : MPEG-D USAC stream selected (audio decode not implemented in this demo)\n");
+                return;
+            }
+            if (a2dp_conn->a2dp_local_seid == a2dp_sink_demo_sbc_stream_endpoint.a2dp_local_seid){
+                printf("A2DP  Sink      : SBC stream selected (audio decode not implemented in this demo)\n");
+                return;
+            }
+
             if (a2dp_conn->sbc_configuration.reconfigure){
                 media_processing_close();
             }
@@ -1212,6 +1287,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'b':
             status = a2dp_sink_establish_stream(device_addr, &a2dp_connection->a2dp_cid);
+            a2dp_connection->a2dp_local_seid = 2;
             printf(" - Create AVDTP connection to addr %s, and local seid %d, cid 0x%02x.\n",
                    bd_addr_to_str(device_addr), a2dp_connection->a2dp_local_seid, a2dp_connection->a2dp_cid);
             break;

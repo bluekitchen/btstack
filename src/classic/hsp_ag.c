@@ -76,6 +76,21 @@
 #define HSP_HS_MICROPHONE_GAIN "AT+VGM="
 #define HSP_HS_SPEAKER_GAIN "AT+VGS="
 
+static bool hsp_ag_packet_has_prefix(const uint8_t * packet, uint16_t size, const char * prefix){
+    size_t prefix_len = strlen(prefix);
+    return (size >= prefix_len) && (memcmp(packet, prefix, prefix_len) == 0);
+}
+
+static uint8_t hsp_ag_parse_gain(const uint8_t * packet, uint16_t size, size_t prefix_len){
+    uint16_t pos;
+    uint8_t gain = 0;
+    for (pos = (uint16_t) prefix_len; pos < size; pos++){
+        if ((packet[pos] < '0') || (packet[pos] > '9')) break;
+        gain = (uint8_t)((gain * 10u) + (packet[pos] - '0'));
+    }
+    return gain;
+}
+
 static const char hsp_ag_default_service_name[] = "Audio Gateway";
 
 typedef enum {
@@ -566,21 +581,21 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             packet++;
         }
 
-        if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, strlen(HSP_HS_BUTTON_PRESS)) == 0){
+        if (hsp_ag_packet_has_prefix(packet, size, HSP_HS_BUTTON_PRESS)){
             log_info("Received button press %s", HSP_HS_BUTTON_PRESS);
             hsp_ag_send_ok = 1;
             emit_event(HSP_SUBEVENT_BUTTON_PRESSED);
-        } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, strlen(HSP_HS_MICROPHONE_GAIN)) == 0){
-            uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_HS_MICROPHONE_GAIN)]);
+        } else if (hsp_ag_packet_has_prefix(packet, size, HSP_HS_MICROPHONE_GAIN)){
+            uint8_t gain = hsp_ag_parse_gain(packet, size, strlen(HSP_HS_MICROPHONE_GAIN));
             hsp_ag_send_ok = 1;
             emit_event_with_value(HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED, gain);
         
-        } else if (strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, strlen(HSP_HS_SPEAKER_GAIN)) == 0){
-            uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_HS_SPEAKER_GAIN)]);
+        } else if (hsp_ag_packet_has_prefix(packet, size, HSP_HS_SPEAKER_GAIN)){
+            uint8_t gain = hsp_ag_parse_gain(packet, size, strlen(HSP_HS_SPEAKER_GAIN));
             hsp_ag_send_ok = 1;
             emit_event_with_value(HSP_SUBEVENT_SPEAKER_GAIN_CHANGED, gain);
 
-        } else if (strncmp((char *)packet, "AT+", 3) == 0){
+        } else if (hsp_ag_packet_has_prefix(packet, size, "AT+")){
             hsp_ag_send_error = 1;
             if (!hsp_ag_callback) return;
 			if ((size + 4) > 255) return;
@@ -745,4 +760,3 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 void hsp_ag_set_sco_packet_types(uint16_t packet_types){
     hsp_ag_sco_packet_types = packet_types;
 }
-

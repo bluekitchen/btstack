@@ -102,10 +102,13 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	}
 
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
-		nordic_spp_tx_client_configuration_value = little_endian_read_16(buffer, 0);
-		bool enabled = (nordic_spp_tx_client_configuration_value != 0);
-        nordic_spp_con_handle = con_handle;
-        nordic_spp_service_emit_state(con_handle, enabled);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            nordic_spp_tx_client_configuration_value = new_value;
+            bool enabled = (nordic_spp_tx_client_configuration_value != 0);
+            nordic_spp_con_handle = con_handle;
+            nordic_spp_service_emit_state(con_handle, enabled);
+        }
 	}
 
 	return 0;
@@ -196,4 +199,3 @@ void nordic_spp_service_server_request_can_send_now(btstack_context_callback_reg
 int nordic_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size){
 	return att_server_notify(con_handle, nordic_spp_tx_value_handle, data, size);
 }
-

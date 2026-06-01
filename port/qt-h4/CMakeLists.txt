@@ -182,23 +182,19 @@ if (PkgConfig_FOUND)
     endif()
 endif()
 
-# create targets for all examples
-file(GLOB EXAMPLES_C    "${BTSTACK_ROOT}/example/*.c")
-list(SORT EXAMPLES_C)
-file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
-
-# remove some
-file(GLOB EXAMPLES_OFF  "${BTSTACK_ROOT}/example/panu_demo.c" "${BTSTACK_ROOT}/example/*demo_util*.c" "${BTSTACK_ROOT}/example/ant_test.c" "${BTSTACK_ROOT}/example/avrcp_browsing_client.c")
-list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
+# get list of examples
+include(${BTSTACK_ROOT}/example/CMakeLists.txt)
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
+list(REMOVE_DUPLICATES EXAMPLES)
+list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client")
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
 # create targets
-foreach(EXAMPLE_FILE ${EXAMPLES_C})
-    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-    set (SOURCES_EXAMPLE ${EXAMPLE_FILE})
+foreach(EXAMPLE ${EXAMPLES})
+    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
     # add qt main.cpp and run loop
     list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp main.cpp)
@@ -209,7 +205,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     endif()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
                     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
@@ -225,4 +221,4 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     endif()
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
     target_link_libraries(${EXAMPLE} btstack Qt5::Core)
-endforeach(EXAMPLE_FILE)
+endforeach(EXAMPLE)

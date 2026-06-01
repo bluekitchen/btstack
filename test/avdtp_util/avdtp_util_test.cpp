@@ -449,6 +449,31 @@ TEST(AvdtpUtil, avdtp_unpack_service_capabilities_test){
     MEMCMP_EQUAL(sbc_codec_capabilities, capabilities.media_codec.media_codec_information, 4);
 }
 
+TEST(AvdtpUtil, avdtp_unpack_service_capabilities_rejects_truncated_fixed_fields){
+    avdtp_capabilities_t capabilities;
+
+    {
+        static uint8_t packed_capabilities[] = {
+                AVDTP_MEDIA_CODEC, 0x01, 0x00
+        };
+        memset(&connection, 0, sizeof(connection));
+        CHECK_EQUAL(0, avdtp_unpack_service_capabilities(&connection, AVDTP_SI_GET_CONFIGURATION, &capabilities,
+                                                         packed_capabilities, sizeof(packed_capabilities)));
+        CHECK_EQUAL(AVDTP_ERROR_CODE_BAD_PAYLOAD_FORMAT, connection.error_code);
+        CHECK_EQUAL(AVDTP_MEDIA_CODEC, connection.reject_service_category);
+    }
+
+    {
+        static uint8_t packed_capabilities[] = {
+                AVDTP_MULTIPLEXING, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+        memset(&connection, 0, sizeof(connection));
+        CHECK_EQUAL(0, avdtp_unpack_service_capabilities(&connection, AVDTP_SI_GET_CONFIGURATION, &capabilities,
+                                                         packed_capabilities, sizeof(packed_capabilities)));
+        CHECK_EQUAL(AVDTP_ERROR_CODE_BAD_MULTIPLEXING_FORMAT, connection.error_code);
+        CHECK_EQUAL(AVDTP_MULTIPLEXING, connection.reject_service_category);
+    }
+}
 
 TEST(AvdtpUtil, avdtp_initiator_get_capabilities_reassembly_from_prepared_array){
     avdtp_signaling_packet_t prepared_capabilities_packet;

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_GENERIC_LEVEL_SERVER_H
-#define __MESH_GENERIC_LEVEL_SERVER_H
+#ifndef MESH_GENERIC_LEVEL_SERVER_H
+#define MESH_GENERIC_LEVEL_SERVER_H
 
 #include <stdint.h>
 

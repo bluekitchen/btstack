@@ -132,14 +132,15 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
                 word = va_arg(argptr, int);         // LCOV_EXCL_BR_LINE
                 ptr_u8  = va_arg(argptr, uint8_t *);   // LCOV_EXCL_BR_LINE
                 if (explode_config_options) {
+                    // format: option-a, 0, option-b, 0, .. option-n, 0
                     for (int i = 0; i < word; i++){
                         acl_buffer[pos++] = ptr_u8[i];
                         acl_buffer[pos++] = 0;
                     }
                 } else {
                     (void)memcpy(&acl_buffer[pos], ptr_u8, word);
+                    pos += word;
                 }
-                pos += word;
                 break;
             default:
                 btstack_unreachable();

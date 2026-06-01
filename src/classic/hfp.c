@@ -222,6 +222,16 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index){
     return "not defined";
 }
 
+static int hfp_get_hf_indicator_index(int assigned_number) {
+    uint8_t i;
+    for (i = 0; i < hfp_hf_indicators_nr ; i++) {
+        if (hfp_hf_indicators[i] == assigned_number) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
     uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
 
@@ -1165,9 +1175,9 @@ static hfp_command_entry_t hfp_ag_command_table[] = {
     { "AT+BCS=",   HFP_CMD_HF_CONFIRMED_CODEC },
     { "AT+BIA=",   HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, }, // +BIA:<enabled>,,<enabled>,,,<enabled>
     { "AT+BIEV=",  HFP_CMD_HF_INDICATOR_STATUS },
-    { "AT+BIND=",  HFP_CMD_LIST_GENERIC_STATUS_INDICATORS },
-    { "AT+BIND=?", HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS },
-    { "AT+BIND?",  HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE },
+    { "AT+BIND=",  HFP_CMD_LIST_HF_INDICATORS },
+    { "AT+BIND=?", HFP_CMD_RETRIEVE_HF_INDICATORS },
+    { "AT+BIND?",  HFP_CMD_RETRIEVE_HF_INDICATORS_STATE },
     { "AT+BINP=",  HFP_CMD_HF_REQUEST_PHONE_NUMBER },
     { "AT+BLDN",   HFP_CMD_REDIAL_LAST_NUMBER },
     { "AT+BRSF=",  HFP_CMD_SUPPORTED_FEATURES },
@@ -1183,7 +1193,7 @@ static hfp_command_entry_t hfp_ag_command_table[] = {
     { "AT+CLCC",   HFP_CMD_LIST_CURRENT_CALLS },
     { "AT+CLIP=",  HFP_CMD_ENABLE_CLIP},
     { "AT+CMEE=",  HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR},
-    { "AT+CMER=",  HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE },
+    { "AT+CMER=",  HFP_CMD_ENABLE_AG_INDICATOR_STATUS_UPDATE },
     { "AT+CNUM",   HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION },
     { "AT+COPS=",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT },
     { "AT+COPS?",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
@@ -1198,7 +1208,7 @@ static hfp_command_entry_t hfp_ag_command_table[] = {
 
 static hfp_command_entry_t hfp_hf_command_table[] = {
     { "+BCS:",  HFP_CMD_AG_SUGGESTED_CODEC },
-    { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
+    { "+BIND:", HFP_CMD_SET_HF_INDICATOR_ENABLED_STATUS },
     { "+BINP:", HFP_CMD_AG_SENT_PHONE_NUMBER },
     { "+BRSF:", HFP_CMD_SUPPORTED_FEATURES },
     { "+BSIR:", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING },
@@ -1407,10 +1417,10 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             // pick +CIND version based on connection state: descriptions during SLC vs. states later
             if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC){
                 switch(hfp_connection->state){
-                    case HFP_W4_RETRIEVE_INDICATORS_STATUS:
+                    case HFP_W4_RETRIEVE_AG_INDICATORS_STATUS:
                         hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
                         break;
-                    case HFP_W4_RETRIEVE_INDICATORS:
+                    case HFP_W4_RETRIEVE_AG_INDICATORS:
                         hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
                         break;
                     default:
@@ -1444,6 +1454,14 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 return true;
             }
 
+            // pick +BIND version based on opening brace
+            if ((hfp_connection->command == HFP_CMD_SET_HF_INDICATOR_ENABLED_STATUS) &&
+                (hfp_connection->line_size == 0) &&
+                (byte == '(')){
+                hfp_connection->command = HFP_CMD_LIST_HF_INDICATORS;
+                return true;
+            }
+
             hfp_parser_store_if_token(hfp_connection, byte);
             if (!hfp_parser_is_separator(byte)) return true;
 
@@ -1471,7 +1489,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
-                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
+                case HFP_CMD_RETRIEVE_HF_INDICATORS_STATE:
                 case HFP_CMD_HF_INDICATOR_STATUS:
                     hfp_connection->parser_state = HFP_PARSER_SECOND_ITEM;
                     break;
@@ -1493,11 +1511,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
                     log_info("format %s \n", hfp_connection->line_buffer);
                     hfp_connection->network_operator.format =  btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-                    break;
-                case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
-                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
-                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
-                    hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_item_index].state = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
                     break;
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].status = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
@@ -1584,31 +1597,25 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
 static void parse_sequence(hfp_connection_t * hfp_connection){
     int value;
     switch (hfp_connection->command){
-        case HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS:
+        case HFP_CMD_SET_HF_INDICATOR_ENABLED_STATUS:
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             int i;
             switch (hfp_connection->parser_item_index){
                 case 0:
-                    // find indicator index
-                    hfp_connection->parser_indicator_index = -1;
-                    for (i=0;i<hfp_hf_indicators_nr;i++){
-                        if (hfp_hf_indicators[i] == value){
-                            hfp_connection->parser_indicator_index = i;
-                            break;
-                        }
-                    }
+                    hfp_connection->parser_indicator_index = hfp_get_hf_indicator_index(value);
+                    hfp_connection->parser_item_index++;
                     break;
                 case 1:
                     if (hfp_connection->parser_indicator_index >= 0) {
-                        hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_indicator_index].state = value;
-                        log_info("HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS set indicator at index %u, to %u\n",
+                        hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_indicator_index].enabled = value;
+                        log_info("HFP_CMD_SET_HF_INDICATOR_ENABLED_STATUS set indicator at index %u, to %u\n",
                                  hfp_connection->parser_item_index, value);
                     }
+                    hfp_connection->parser_item_index++;
                     break;
                 default:
                     break;
             }
-            hfp_next_indicators_index(hfp_connection);
             break;
 
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
@@ -1724,7 +1731,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->ag_indicators[hfp_connection->parser_item_index].status = btstack_atoi((char *) hfp_connection->line_buffer);
             hfp_next_indicators_index(hfp_connection);
             break;
-        case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
+        case HFP_CMD_ENABLE_AG_INDICATOR_STATUS_UPDATE:
             hfp_next_indicators_index(hfp_connection);
             if (hfp_connection->parser_item_index != 4) break;
             log_info("Parsed Enable indicators: %s\n", hfp_connection->line_buffer);
@@ -1738,20 +1745,13 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
             hfp_next_remote_call_services_index(hfp_connection);
             break;
-        case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
-        case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
-            log_info("Parsed Generic status indicator: %s\n", hfp_connection->line_buffer);
-            hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_item_index].uuid = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
-            hfp_next_indicators_index(hfp_connection);
-            break;
-        case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
-            // HF parses initial AG gen. ind. state
-            log_info("Parsed List generic status indicator %s state: ", hfp_connection->line_buffer);
-            hfp_connection->parser_item_index = hfp_parse_indicator_index(hfp_connection);
-            break;
-        case HFP_CMD_HF_INDICATOR_STATUS:
-            hfp_connection->parser_indicator_index = hfp_parse_indicator_index(hfp_connection);
-            log_info("Parsed HF indicator index %u", hfp_connection->parser_indicator_index);
+        case HFP_CMD_LIST_HF_INDICATORS:
+            value = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->parser_indicator_index = hfp_get_hf_indicator_index(value);
+            log_info("Parsed HF Indicator %u -> index %d\n", value, hfp_connection->parser_indicator_index);
+            if (hfp_connection->parser_indicator_index >= 0) {
+                hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_indicator_index].supported = true;
+            }
             break;
         case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
             // AG parses new gen. ind. state
@@ -2422,6 +2422,7 @@ void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators) {
     hfp_hf_indicators_nr = indicators_nr;
     hfp_hf_indicators = indicators;
 }
+
 static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
 void hfp_init(void){

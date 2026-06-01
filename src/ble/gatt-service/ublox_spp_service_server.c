@@ -166,16 +166,19 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     }
 
     if (attribute_handle == instance->fifo_client_configuration_descriptor_handle){
-        if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->fifo_client_configuration_descriptor_value = new_value;
+            log_info("ublox spp service FIFO control: %d", instance->fifo_client_configuration_descriptor_value);
+            ublox_spp_service_emit_state(instance,  instance->fifo_client_configuration_descriptor_value != 0);
         }
-        instance->fifo_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-        log_info("ublox spp service FIFO control: %d", instance->fifo_client_configuration_descriptor_value);
-        ublox_spp_service_emit_state(instance,  instance->fifo_client_configuration_descriptor_value != 0);
     }
 
     if (attribute_handle == instance->credits_value_handle){
         if (!ublox_spp_service_flow_control_enabled(instance)) return 0;
+        if (buffer_size < 1u){
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+        }
         int8_t credits = (int8_t)buffer[0];
         if (credits <= 0) return 0;
         instance->outgoing_credits += credits;
@@ -192,12 +195,12 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     }
 
     if (attribute_handle == instance->credits_client_configuration_descriptor_handle){
-        if (buffer_size < 2u){
-            return ATT_ERROR_INVALID_OFFSET;
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->credits_client_configuration_descriptor_value = new_value;
+            log_info("ublox spp service Credits control: %d", instance->credits_client_configuration_descriptor_value);
+            ublox_spp_service_init_credits(instance);
         }
-        instance->credits_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-        log_info("ublox spp service Credits control: %d", instance->credits_client_configuration_descriptor_value);
-        ublox_spp_service_init_credits(instance);
     }
     
     return 0;
@@ -288,4 +291,3 @@ int ublox_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * d
     }
     return att_server_notify(con_handle, instance->fifo_value_handle, &data[0], size);
 }
-

@@ -41,7 +41,7 @@ System properties:
 |---------------------------------|--------------------------------------|
 | HAVE_AES128                     | Use platform AES128 engine                                            |
 | HAVE_BTSTACK_STDIN              | STDIN is available for CLI interface                                  |
-| HAVE_LWIP                       | lwIP is available                    |   
+| HAVE_LWIP                       | lwIP is available                    |
 | HAVE_MALLOC                     | Use dynamic memory                                                    |
 | HAVE_MBEDTLS_ECC_P256           | mbedTLS provides NIST P-256 operations e.g. for LE Secure Connections |
 
@@ -87,70 +87,71 @@ Chipset properties:
 BTstack properties:
 
 
-| \#define                                                                      | Description                                                                                                                 |
-|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| ENABLE_A2DP_EXPLICIT_CONFIG                                                   | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                                |
-| ENABLE_AIROC_DOWNLOAD_MODE                                                    | Enable AIROC (newer Infineon) Controller PatchRAM download mode                                                             |
-| ENABLE_ATT_DELAYED_RESPONSE                                                   | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)                               |
-| ENABLE_AVDTP_ACCEPTOR_<br>EXPLICIT_START_STREAM_<br>CONFIRMATION              | Allow accept or reject of stream start on A2DP_SUBEVENT_<br>START_STREAM_REQUESTED                                          |
-| ENABLE_BCM_PCM_WBS                                                            | Enable support for Wide-Band Speech codec in BCM controller, requires<br>ENABLE_SCO_OVER_PCM                                |
-| ENABLE_BLE                                                                    | Enable BLE related code in HCI and L2CAP                                                                                    |
-| ENABLE_CC256X_ASSISTED_HFP                                                    | Enable support for Assisted HFP mode in CC256x Controller, requires<br>ENABLE_SCO_OVER_PCM                                  |
-| ENABLE_CC256X_BAUDRATE_<br>CHANGE_FLOWCONTROL_<br>BUG_WORKAROUND              | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.                                 |
-| ENABLE_CLASSIC                                                                | Enable Classic related code in HCI and L2CAP                                                                                |
-| ENABLE_CLASSIC_OOB_PAIRING                                                    | Enable support for classic Out-of-Band (OOB) pairing                                                                        |
-| ENABLE_CONTROLLER_<br>DUMP_PACKETS                                            | Dump number of packets in Controller per type for debugging                                                                 |
-| ENABLE_CONTROLLER_<br>WARM_BOOT                                               | Enable stack startup without power cycle (if supported/possible)                                                            |
-| ENABLE_CROSS_TRANSPORT_<br>KEY_DERIVATION                                     | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections                                                         |
-| ENABLE_CYPRESS_BAUDRATE_<br>CHANGE_FLOWCONTROL_<br>BUG_WORKAROUND             | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.                              |
-| ENABLE_EHCILL                                                                 | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets                                                                   |
-| ENABLE_EXPLICIT_BR_EDR_<br>SECURITY_MANAGER                                   | Report BR/EDR Security Manager support in L2CAP Information Response                                                        |
-| ENABLE_EXPLICIT_<br>CONNECTABLE_MODE_CONTROL                                  | Disable calls to control Connectable Mode by L2CAP                                                                          |
-| ENABLE_EXPLICIT_DEDICATED_<br>BONDING_DISCONNECT                              | Keep connection after dedicated bonding is complete                                                                         |
-| ENABLE_EXPLICIT_IO_<br>CAPABILITIES_REPLY                                     | Let application trigger sending IO Capabilities (Negative) Reply                                                            |
-| ENABLE_EXPLICIT_LINK_<br>KEY_REPLY                                            | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup                       |
-| ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST                                   | Let application trigger LE Pairing upon SM_EVENT_SECURITY_REQUEST                                                           |
-| ENABLE_GATT_CLIENT_<br>PAIRING                                                | Enable GATT Client to start pairing and retry operation on security error                                                   |
-| ENABLE_GATT_CLIENT_<br>CACHING                                                | Enable GATT Service Client to cache Characteristics in TLV                                                                  |
-| ENABLE_H5                                                                     | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                     |
-| ENABLE_HCI_COMMAND_STATUS_<br>DISCARDED_FOR_FAILED_<br>CONNECTIONS WORKAROUND | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received        |
-| ENABLE_HCI_CONTROLLER_<br>TO_HOST_FLOW_CONTROL                                | Enable HCI Controller to Host Flow Control, see below                                                                       |
-| ENABLE_HCI_SERIALIZED_<br>CONTROLLER_OPERATIONS                               | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                    |
-| ENABLE_HFP_AT_MESSAGES                                                        | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events                                         |
-| ENABLE_HFP_WIDE_BAND_<br>PEECH                                                | Enable support for mSBC codec used in HFP profile for Wide-Band Speech                                                      |
-| ENABLE_L2CAP_ENHANCED_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                  | Enable Enhanced credit-based flow-control mode for L2CAP Channels                                                           |
-| ENABLE_L2CAP_ENHANCED_<br>RETRANSMISSION_MODE                                 | Enable Enhanced Retransmission Mode for L2CAP Channels. Mandatory for AVRCP Browsing                                        |
-| ENABLE_L2CAP_LE_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                        | Enable LE credit-based flow-control mode for L2CAP channels                                                                 |
-| ENABLE_LE_CENTRAL                                                             | Enable support for LE Central Role in HCI and Security Manager                                                              |
-| ENABLE_LE_DATA_<br>LENGTH_EXTENSION                                           | Enable LE Data Length Extension support                                                                                     |
-| ENABLE_LE_ENHANCED_<br>CONNECTION_COMPLETE_EVENT                              | Enable LE Enhanced Connection Complete Event v1 & v2                                                                        | 
-| ENABLE_LE_EXTENDED_<br>ADVERTISING                                            | Enable extended advertising and scanning                                                                                    |
-| ENABLE_LE_LIMIT_ACL_<br>FRAGMENT_BY_MAX_OCTETS                                | Force HCI to fragment ACL-LE packets to fit into over-the-air packet                                                        |
-| ENABLE_LE_PERIODIC_<br>ADVERTISING                                            | Enable periodic advertising and scanning                                                                                    |
-| ENABLE_LE_PERIPHERAL                                                          | Enable support for LE Peripheral Role in HCI and Security Manager                                                           |
-| ENABLE_LE_PRIVACY_<br>ADDRESS_RESOLUTION                                      | Enable address resolution for resolvable private addresses in Controller                                                    |
-| ENABLE_LE_PROACTIVE_<br>AUTHENTICATION                                        | Enable automatic encryption for bonded devices on re-connect                                                                |
-| ENABLE_LE_SECURE_<br>CONNECTIONS                                              | Enable LE Secure Connections                                                                                                |
-| ENABLE_LE_SECURE_<br>CONNECTIONS_DEBUG_KEY                                    | Enable support for LE Secure Connection debug keys for testing                                                              |
-| ENABLE_LE_SHORTER_CONNECTION_INTERVALS                                        | Enable LE Shorter Connection Intervals via Frame Space Update and Connection Rate Update                                    |
-| ENABLE_LE_SET_<br>ADV_PARAMS_ON_RANDOM_<br>ADDRESS_CHANGE                     | Send HCI LE Set Advertising Params after HCI LE Set Random Address - workaround for Controller Bug                          |
-| ENABLE_LE_SIGNED_WRITE                                                        | Enable LE Signed Writes in ATT/GATT                                                                                         |
-| ENABLE_LE_WHITELIST<br>_TOUCH_AFTER_<br>RESOLVING_LIST_UPDATE                 | Enable Workaround for Controller bug                                                                                        |
-| ENABLE_LOG_BTSTACK_<br>EVENTS                                                 | Log internal/custom BTstack events                                                                                          |
-| ENABLE_LOG_DEBUG                                                              | Enable log_debug messages                                                                                                   |
-| ENABLE_LOG_ERROR                                                              | Enable log_error messages                                                                                                   |
-| ENABLE_LOG_INFO                                                               | Enable log_info messages                                                                                                    |
-| ENABLE_MICRO_ECC_FOR_<br>LE_SECURE_CONNECTIONS                                | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations                                            |
-| ENABLE_MODPLAYER                                                              | Enable HXCMOD player in btstack_audio_generator and examples                                                                |
-| ENABLE_MUTUAL_<br>AUTHENTICATION_FOR_<br>LEGACY_SECURE_CONNECTIONS            | Re-authentication after connection was encrypted to avoid BIAS Attack. Not needed for min encryption key size of 16         |
-| ENABLE_PRINTF_TO_LOG                                                          | Log printf into packet log                                                                                                  |
-| ENABLE_RTK_PCM_WBS                                                            | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM                               |
-| ENABLE_SCO_OVER_HCI                                                           | Enable SCO over HCI for chipsets (if supported)                                                                             |
-| ENABLE_SCO_OVER_PCM                                                           | Enable SCO ofer PCM/I2S for chipsets (if supported)                                                                         |
-| ENABLE_SEGGER_RTT                                                             | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)                           |
-| ENABLE_TLV_FLASH_<br>EXPLICIT_DELETE_FIELD                                    | Enable use of explicit delete field in TLV Flash implementation - required when flash value cannot be overwritten with zero |
-| ENABLE_TLV_FLASH_<br>WRITE_ONCE                                               | Enable storing of emtpy tag instead of overwriting existing tag - required when flash value cannot be overwritten at all    |
-| ENABLE_VORBIS                                                                 | Enable OGG-Vorbis support in btstack_audio_genrator and examples                                                            |
+| \#define                                                                       | Description                                                                                                                 |
+|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| ENABLE_A2DP_EXPLICIT_CONFIG                                                    | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                                |
+| ENABLE_AIROC_DOWNLOAD_MODE                                                     | Enable AIROC (newer Infineon) Controller PatchRAM download mode                                                             |
+| ENABLE_ATT_DELAYED_RESPONSE                                                    | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)                               |
+| ENABLE_AVDTP_ACCEPTOR_<br>EXPLICIT_START_STREAM_<br>CONFIRMATION               | Allow accept or reject of stream start on A2DP_SUBEVENT_<br>START_STREAM_REQUESTED                                          |
+| ENABLE_BCM_PCM_WBS                                                             | Enable support for Wide-Band Speech codec in BCM controller, requires<br>ENABLE_SCO_OVER_PCM                                |
+| ENABLE_BLE                                                                     | Enable BLE related code in HCI and L2CAP                                                                                    |
+| ENABLE_CC256X_ASSISTED_HFP                                                     | Enable support for Assisted HFP mode in CC256x Controller, requires<br>ENABLE_SCO_OVER_PCM                                  |
+| ENABLE_CC256X_BAUDRATE_<br>CHANGE_FLOWCONTROL_<br>BUG_WORKAROUND               | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.                                 |
+| ENABLE_CLASSIC                                                                 | Enable Classic related code in HCI and L2CAP                                                                                |
+| ENABLE_CLASSIC_OOB_PAIRING                                                     | Enable support for classic Out-of-Band (OOB) pairing                                                                        |
+| ENABLE_CONTROLLER_<br>DUMP_PACKETS                                             | Dump number of packets in Controller per type for debugging                                                                 |
+| ENABLE_CONTROLLER_<br>WARM_BOOT                                                | Enable stack startup without power cycle (if supported/possible)                                                            |
+| ENABLE_CROSS_TRANSPORT_<br>KEY_DERIVATION                                      | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections. Requires BR/EDR plus LE Secure Connections support.    |
+| ENABLE_CYPRESS_BAUDRATE_<br>CHANGE_FLOWCONTROL_<br>BUG_WORKAROUND              | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.                              |
+| ENABLE_EHCILL                                                                  | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets                                                                   |
+| ENABLE_EXPLICIT_BR_EDR_<br>SECURITY_MANAGER                                    | Report BR/EDR Security Manager support in L2CAP Information Response                                                        |
+| ENABLE_EXPLICIT_<br>CONNECTABLE_MODE_CONTROL                                   | Disable calls to control Connectable Mode by L2CAP                                                                          |
+| ENABLE_EXPLICIT_DEDICATED_<br>BONDING_DISCONNECT                               | Keep connection after dedicated bonding is complete                                                                         |
+| ENABLE_EXPLICIT_IO_<br>CAPABILITIES_REPLY                                      | Let application trigger sending IO Capabilities (Negative) Reply                                                            |
+| ENABLE_EXPLICIT_LINK_<br>KEY_REPLY                                             | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup                       |
+| ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST                                    | Let application trigger LE Pairing upon SM_EVENT_SECURITY_REQUEST                                                           |
+| ENABLE_GATT_CLIENT_<br>PAIRING                                                 | Enable GATT Client to start pairing and retry operation on security error                                                   |
+| ENABLE_GATT_CLIENT_<br>CACHING                                                 | Enable GATT Service Client to cache Characteristics in TLV                                                                  |
+| ENABLE_H5                                                                      | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                     |
+| ENABLE_HCI_ACL_PACKET_RESERVATION                                              | Allow to reserve ACL packets independent from the stack                                                                     |                                                                    |
+| ENABLE_HCI_COMMAND_STATUS_<br>DISCARDED_FOR_FAILED_<br>CONNECTIONS WORKAROUND  | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received        |
+| ENABLE_HCI_CONTROLLER_<br>TO_HOST_FLOW_CONTROL                                 | Enable HCI Controller to Host Flow Control, see below                                                                       |
+| ENABLE_HCI_SERIALIZED_<br>CONTROLLER_OPERATIONS                                | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                    |
+| ENABLE_HFP_AT_MESSAGES                                                         | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events                                         |
+| ENABLE_HFP_WIDE_BAND_<br>SPEECH                                                | Enable support for mSBC codec used in HFP profile for Wide-Band Speech                                                      |
+| ENABLE_L2CAP_ENHANCED_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                   | Enable Enhanced credit-based flow-control mode for L2CAP Channels                                                           |
+| ENABLE_L2CAP_ENHANCED_<br>RETRANSMISSION_MODE                                  | Enable Enhanced Retransmission Mode for L2CAP Channels. Mandatory for AVRCP Browsing                                        |
+| ENABLE_L2CAP_LE_<br>CREDIT_BASED_FLOW_<br>CONTROL_MODE                         | Enable LE credit-based flow-control mode for L2CAP channels                                                                 |
+| ENABLE_LE_CENTRAL                                                              | Enable support for LE Central Role in HCI and Security Manager                                                              |
+| ENABLE_LE_DATA_<br>LENGTH_EXTENSION                                            | Enable LE Data Length Extension support                                                                                     |
+| ENABLE_LE_ENHANCED_<br>CONNECTION_COMPLETE_EVENT                               | Enable LE Enhanced Connection Complete Event v1 & v2                                                                        |
+| ENABLE_LE_EXTENDED_<br>ADVERTISING                                             | Enable extended advertising and scanning                                                                                    |
+| ENABLE_LE_LIMIT_ACL_<br>FRAGMENT_BY_MAX_OCTETS                                 | Force HCI to fragment ACL-LE packets to fit into over-the-air packet                                                        |
+| ENABLE_LE_PERIODIC_<br>ADVERTISING                                             | Enable periodic advertising and scanning                                                                                    |
+| ENABLE_LE_PERIPHERAL                                                           | Enable support for LE Peripheral Role in HCI and Security Manager                                                           |
+| ENABLE_LE_PRIVACY_<br>ADDRESS_RESOLUTION                                       | Enable address resolution for resolvable private addresses in Controller                                                    |
+| ENABLE_LE_PROACTIVE_<br>AUTHENTICATION                                         | Enable automatic encryption for bonded devices on re-connect                                                                |
+| ENABLE_LE_SECURE_<br>CONNECTIONS                                               | Enable LE Secure Connections                                                                                                |
+| ENABLE_LE_SECURE_<br>CONNECTIONS_DEBUG_KEY                                     | Enable support for LE Secure Connection debug keys for testing                                                              |
+| ENABLE_LE_SHORTER_CONNECTION_INTERVALS                                         | Enable LE Shorter Connection Intervals via Frame Space Update and Connection Rate Update                                    |
+| ENABLE_LE_SET_<br>ADV_PARAMS_ON_RANDOM_<br>ADDRESS_CHANGE                      | Send HCI LE Set Advertising Params after HCI LE Set Random Address - workaround for Controller Bug                          |
+| ENABLE_LE_SIGNED_WRITE                                                         | Enable LE Signed Writes in ATT/GATT                                                                                         |
+| ENABLE_LE_WHITELIST<br>_TOUCH_AFTER_<br>RESOLVING_LIST_UPDATE                  | Enable Workaround for Controller bug                                                                                        |
+| ENABLE_LOG_BTSTACK_<br>EVENTS                                                  | Log internal/custom BTstack events                                                                                          |
+| ENABLE_LOG_DEBUG                                                               | Enable log_debug messages                                                                                                   |
+| ENABLE_LOG_ERROR                                                               | Enable log_error messages                                                                                                   |
+| ENABLE_LOG_INFO                                                                | Enable log_info messages                                                                                                    |
+| ENABLE_MICRO_ECC_FOR_<br>LE_SECURE_CONNECTIONS                                 | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations                                            |
+| ENABLE_MODPLAYER                                                               | Enable HXCMOD player in btstack_audio_generator and examples                                                                |
+| ENABLE_MUTUAL_<br>AUTHENTICATION_FOR_<br>LEGACY_SECURE_CONNECTIONS             | Re-authentication after connection was encrypted to avoid BIAS Attack. Not needed for min encryption key size of 16         |
+| ENABLE_PRINTF_TO_LOG                                                           | Log printf into packet log                                                                                                  |
+| ENABLE_RTK_PCM_WBS                                                             | Enable support for Wide-Band Speech codec in Realtek controller, requires ENABLE_SCO_OVER_PCM                               |
+| ENABLE_SCO_OVER_HCI                                                            | Enable SCO over HCI for chipsets (if supported)                                                                             |
+| ENABLE_SCO_OVER_PCM                                                            | Enable SCO ofer PCM/I2S for chipsets (if supported)                                                                         |
+| ENABLE_SEGGER_RTT                                                              | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)                           |
+| ENABLE_TLV_FLASH_<br>EXPLICIT_DELETE_FIELD                                     | Enable use of explicit delete field in TLV Flash implementation - required when flash value cannot be overwritten with zero |
+| ENABLE_TLV_FLASH_<br>WRITE_ONCE                                                | Enable storing of emtpy tag instead of overwriting existing tag - required when flash value cannot be overwritten at all    |
+| ENABLE_VORBIS                                                                  | Enable OGG-Vorbis support in btstack_audio_genrator and examples                                                            |
 Notes:
 
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
@@ -267,11 +268,11 @@ When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_init()` can be called with a
 ### LE Audio Configuration
 
 The following list of directives are all set with default values. Modify them if you need support for different number of:
-- BASS subgroups, 
-- ASCS Sink and Source endpoints, 
+- BASS subgroups,
+- ASCS Sink and Source endpoints,
 - PACS Client Sink and Source Endpoint records,
 - number of services for VOCS, or
-- if you, in rare case, need to extend the buffers. 
+- if you, in rare case, need to extend the buffers.
 
 | \#define                                                 | Default | Description                                           |
 |----------------------------------------------------------|---------|-------------------------------------------------------|
@@ -307,12 +308,10 @@ _
 
 ## Run-time configuration
 
-To allow code-reuse with different platforms
-as well as with new ports, the low-level initialization of BTstack and
-the hardware configuration has been extracted to the various
-*platforms/PLATFORM/main.c* files. The examples only contain the
-platform-independent Bluetooth logic. But let’s have a look at the
-common init code.
+To allow code-reuse with different platforms as well as with new ports, the low-level initialization of BTstack and
+the hardware configuration has been extracted to the *main.c* or similar file in */port/PORT/* folder.
+The examples only contain platform-independent Bluetooth logic. 
+Let’s have a look at the common init code.
 
 Listing [below](#lst:btstackInit) shows a minimal platform setup for an
 embedded system with a Bluetooth chipset connected via UART.
@@ -327,7 +326,7 @@ embedded system with a Bluetooth chipset connected via UART.
 
       // select embedded run loop
       btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-          
+
       // enable logging
       hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
@@ -336,14 +335,14 @@ embedded system with a Bluetooth chipset connected via UART.
       hci_transport_t     * transport = hci_transport_h4_instance();
       hci_init(transport, NULL);
 
-      // setup example    
+      // setup example
       btstack_main(argc, argv);
 
       // go
-      btstack_run_loop_execute();    
+      btstack_run_loop_execute();
     }
-    
-~~~~ 
+
+~~~~
 
 First, BTstack’s memory pools are set up. Then, the standard run loop
 implementation for embedded systems is selected.
@@ -431,9 +430,10 @@ BTstack provides different run loop implementations that implement the *btstack_
 - Qt: implementation for the Qt applications
 - WICED: implementation for the Broadcom WICED SDK RTOS abstraction that wraps FreeRTOS or ThreadX.
 - Windows: implementation for Windows based on Event objects and WaitForMultipleObjects() call.
+- Zephyr: implementation for Zephyr based on k_poll().
 
 Depending on the platform, data sources are either polled (embedded, FreeRTOS), or the platform provides a way
-to wait for a data source to become ready for read or write (CoreFoundation, POSIX, Qt, Windows), or,
+to wait for a data source to become ready for read or write (CoreFoundation, POSIX, Qt, Windows, Zephyr), or,
 are not used as the HCI transport driver and the run loop is implemented in a different way (WICED).
 In any case, the callbacks must be explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
 
@@ -452,7 +452,7 @@ an instance of the actual run loop. E.g. for the embedded platform, it is:
 If the run loop allows to trigger polling of data sources from interrupt context,
 *btstack_run_loop_poll_data_sources_from_irq*.
 
-On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS, 
+On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS,
 *btstack_run_loop_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
 
 The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix).
@@ -497,7 +497,6 @@ In each iteration:
 
 It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
 
-
 ### Run Loop POSIX
 
 The data sources are standard File Descriptors. In the run loop execute implementation,
@@ -523,7 +522,7 @@ It currently only supports *btstack_run_loop_execute_code_on_main_thread*.
 ### Run Lop Qt
 
 This run loop directly maps BTstack's data source and timer source with Qt Core objects.
-It supports ready to read and write similar to the POSIX implementation. 
+It supports ready to read and write similar to the POSIX implementation.
 
 To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
@@ -550,6 +549,40 @@ blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
 
 It currently only supports *btstack_run_loop_execute_code_on_main_thread*.
+
+
+### Run Loop Zephyr
+
+The Zephyr run loop executes BTstack on a Zephyr thread and waits for registered
+data sources with *k_poll()*. A BTstack data source handle points to a
+*fat_variable_t*, which combines the Zephyr object to wait on, such as a FIFO,
+message queue, pipe, semaphore, or poll signal, with the matching
+*K_POLL_TYPE_...* identifier. The run loop converts the registered BTstack data
+sources into Zephyr *k_poll_event* entries and dispatches the BTstack data source
+handler when Zephyr reports the event as ready.
+
+In each iteration:
+
+- expired BTstack timers are processed using Zephyr's *k_uptime_get_32()* clock
+- all registered data sources are armed as Zephyr poll events
+- the timeout for *k_poll()* is set from the next BTstack timer, or *K_FOREVER*
+  if no timer is pending
+- ready poll events call the associated BTstack data source with
+  *DATA_SOURCE_CALLBACK_READ*
+
+The implementation also registers an internal Zephyr poll signal as a BTstack
+data source. This signal wakes the run loop for operations that are not tied to
+an external Zephyr object. *btstack_run_loop_poll_data_sources_from_irq* raises
+this signal and causes the run loop to poll BTstack data sources from the run
+loop thread. *btstack_run_loop_execute_code_on_main_thread* appends the callback
+registration to BTstack's callback list while holding a Zephyr mutex, raises the
+same signal with a different value, and then the run loop drains and executes the
+queued callbacks on the run loop thread.
+
+*btstack_run_loop_trigger_exit* sets an exit flag and raises the signal so that a
+run loop blocked in *k_poll()* wakes up and returns. 
+
+It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
 
 
 ## HCI Transport configuration
@@ -750,7 +783,7 @@ For this, BTstack provides a configurable packet logging mechanism via hci_dump.
 | Embedded | `hci_dump_segger_stdout.c`   | Console output via SEGGER RTT                      |
 | Embedded | `hci_dump_segger_binary.c`   | HCI log file for Apple PacketLogger via SEGGER RTT |
 
-On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and 
+On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and
 configure the path and output format with *hci_dump_posix_fs_open(const char * path, hci_dump_format_t format)*
 where format can be *HCI_DUMP_BLUEZ* or *HCI_DUMP_PACKETLOGGER*.
 The resulting file can be analyzed with Wireshark or the Apple's PacketLogger tool.
@@ -776,6 +809,647 @@ In addition to the HCI packets, you can also enable BTstack's debug information 
     #define ENABLE_LOG_ERROR
 
 to the btstack_config.h and recompiling your application.
+
+## LE Security Setup for GATT {#sec:leGattSecurityExamples}
+
+For Bluetooth LE, BTstack separates GATT access control from the actual pairing and encryption procedure:
+
+- the GATT database declares which Characteristics require encryption or authentication
+- the ATT server checks those permissions for each read and write request
+- the Security Manager performs pairing, bonding, re-encryption, identity resolving, and user interaction
+
+This means that a GATT application usually does not start by "making GATT secure" globally. 
+Instead, it marks the attributes that need protection and configures the LE Security Manager so BTstack can raise 
+the LE link security when those attributes are accessed.
+
+The main examples to look at are:
+
+- `example/gatt_counter.c` for a small GATT server baseline
+- `example/gatt_streamer_server.c` for a GATT server with notifications and higher throughput
+- `example/hog_keyboard_demo.c` for a GATT-based profile that requires bonding
+- `example/gatt_heart_rate_client.c` for a GATT client
+- `example/sm_pairing_central.c` and `example/sm_pairing_peripheral.c` for explicit pairing behavior
+
+### What BTstack Checks on the GATT Server
+
+The `.gatt` file can mark Characteristics with security permissions:
+
+- `READ_ENCRYPTED`
+- `READ_AUTHENTICATED`
+- `WRITE_ENCRYPTED`
+- `WRITE_AUTHENTICATED`
+- `AUTHENTICATION_REQUIRED`
+- `ENCRYPTION_KEY_SIZE_X`, where `X` is in the range 7..16
+
+For example:
+
+    CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY | READ_ENCRYPTED,
+
+When an ATT request arrives, BTstack checks the current LE link security before calling the application's read or write callback. 
+If the link is not secure enough, the ATT server returns the corresponding ATT security error. 
+The remote GATT client can then start pairing or encryption and retry the request.
+
+The important point is that the application callback should not be the first line of defense for normal GATT permissions.
+Express the required protection in the `.gatt` database, then keep the callback focused on producing or accepting the attribute value.
+
+### Security Manager Setup
+
+If any GATT Characteristic requires LE security or the remote might try to pair, e.g. when communicating with a smartphone,
+you should initialize the Security Manager:
+
+    sm_init();
+
+For production devices, support for LE Secure Connections should be enabled and you should 
+configure stable identity and encryption roots with `sm_set_ir()` and `sm_set_er()` as 
+described in [SMP - Security Manager Protocol](protocols.md#sec:smpProtocols). These values must survive reboot. 
+If they change, previously bonded peers may no longer be recognized correctly.
+
+To enable support for LE Secure Connections, add `ENABLE_LE_SECURE_CONNECTIONS` in `btstack_config.h`.
+
+If activated, BTstack will also enable "LE Secure Connections Only Mode", which will reject Legacy Pairing.
+If you need to support peer devices that do not support LE Secure Connections, you can disable Secure Connections
+Only Mode by calling:
+
+    sm_set_secure_connections_only_mode(false);
+
+By default, the the IO Capabilites are set to No Input/No Output, which leads to Just Works pairing.
+
+This allows pairing when needed but does not give MITM protection. It is acceptable for simple data where encryption 
+is useful but user authentication is not required.
+
+For a product that should remember peers across reconnects, request bonding with support for LE Secure Connections:
+
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING | SM_AUTHREQ_SECURE_CONNECTION);
+
+For a product that needs protection against active MITM attacks, also request MITM protection and configure IO capabilities 
+that can actually support it:
+
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING | SM_AUTHREQ_SECURE_CONNECTION);
+
+
+### Handling Pairing Events
+
+When `att_server` is used, Security Manager events are delivered through the ATT server packet handler. 
+The application should handle the events that match its security policy and user interface.
+
+For Just Works pairing:
+
+    case SM_EVENT_JUST_WORKS_REQUEST:
+        sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+        break;
+
+For Numeric Comparison:
+
+    case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+        printf("Confirm value %" PRIu32 "\n",
+               sm_event_numeric_comparison_request_get_passkey(packet));
+        sm_numeric_comparison_confirm(sm_event_numeric_comparison_request_get_handle(packet));
+        break;
+
+For Passkey Entry:
+
+    case SM_EVENT_PASSKEY_INPUT_NUMBER:
+        sm_passkey_input(sm_event_passkey_input_number_get_handle(packet), 123456);
+        break;
+
+If the user rejects pairing or the application policy does not allow it currenelty, e.g. because the user didn't put 
+it into some kind of 'pairing mode', the application can decline the bonding using the connection handle from the pairing event:
+
+    sm_bonding_decline(con_handle);
+
+After pairing finishes, BTstack reports `SM_EVENT_PAIRING_COMPLETE`.
+An applications that show a pairing dialog should close it there and check the status before treating the peer as trusted.
+
+
+### GATT Client Security
+
+By default, the GATT Client sends the requested operation and lets the remote GATT Server enforce security.
+If the remote Characteristic requires stronger security, the query completes with an ATT security error.
+
+There are three useful client-side modes:
+
+- reactive: send the GATT request first and handle an insufficient-security ATT error
+- reactive with retry: define `ENABLE_GATT_CLIENT_PAIRING` so the GATT Client starts pairing on insufficient-security errors and retries the request
+- mandatory: call `gatt_client_set_required_security_level()` so the link is encrypted or authenticated before GATT Client requests are sent
+
+For example, a client that should only talk to a server over an encrypted LE link can require:
+
+    gatt_client_set_required_security_level(LEVEL_2);
+
+Use a higher level if the peer and product need stronger guarantees:
+
+- `LEVEL_2` requires encryption
+- `LEVEL_3` requires authenticated pairing
+- `LEVEL_4` requires Secure Connections grade protection
+
+If the device is already bonded, `ENABLE_LE_PROACTIVE_AUTHENTICATION` can make BTstack try to re-encrypt the link before GATT Client traffic. If the remote device has lost its bonding information, the GATT query can complete with `ATT_ERROR_BONDING_INFORMATION_MISSING`, and the application should decide whether to delete the local bond and pair again.
+
+### Bonding and Persistence
+
+Pairing only survives reboot if the LE bonding data is stored persistently. For LE, BTstack stores values such as the Long Term Key, Identity Resolving Key, EDIV, random number, and signing counters in the LE device database.
+
+For GATT servers, persistent storage also matters for Client Characteristic Configuration values. Notifications and indications are enabled by clients via CCC descriptors, and bonded clients often expect those settings to survive reconnects. The number of stored CCC values is configured with `NVN_NUM_GATT_SERVER_CCC`.
+
+On embedded targets, LE device data and CCC data are commonly backed by TLV flash storage. On POSIX ports, file-backed storage is usually used.
+
+### Practical Rule
+
+For a secure LE GATT server:
+
+1. Mark protected Characteristics in the `.gatt` file.
+2. Call `sm_init()` and configure IO capabilities, bonding, MITM, and Secure Connections policy.
+3. Handle Security Manager user interaction events.
+4. Persist LE bonding data, and persist CCC values if bonded clients use notifications or indications.
+
+For a secure LE GATT client:
+
+1. Decide whether server-enforced security is enough, or whether the client should require a security level before requests.
+2. Use `ENABLE_GATT_CLIENT_PAIRING`, `ENABLE_LE_PROACTIVE_AUTHENTICATION`, and `gatt_client_set_required_security_level()` as appropriate.
+3. Handle bonding loss explicitly, especially for products that reconnect to known devices.
+
+## Classic Bluetooth Security Setup in Examples {#sec:classicSecurityExamples}
+
+For BR/EDR (Classic Bluetooth), BTstack uses Security Mode 4 by default:
+
+- `gap_get_security_mode()` defaults to `GAP_SECURITY_MODE_4`
+- `gap_get_security_level()` defaults to `LEVEL_2`
+
+From a BTstack application perspective, setting up Classic security consists of four parts:
+
+1. Select the global security policy before initializing services and profiles.
+2. Configure Secure Simple Pairing (SSP) IO capabilities and authentication requirements.
+3. Handle pairing-related HCI events in the application packet handler.
+4. Store link keys in persistent storage if bonding shall survive reboot.
+
+The examples handle pairing-related events explicitly in the application packet handler. Legacy PIN pairing is intentionally rejected by default and reported on stdio, while Secure Simple Pairing (SSP) confirmation requests are reported with the numeric value before the example accepts them. SPP is introduced with the Bluetooth 2.1 specification in 2007 to make device connections both faster and more secure.
+
+If `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` is enabled, `sm_init()` should also be called in dual-mode or Classic-oriented examples that want CTKD support. This allows BTstack to derive and store transport keys across LE and BR/EDR after Secure Connections pairing.
+
+The examples in `example/` already show the relevant building blocks:
+
+- `example/spp_counter.c` shows a basic Classic service with legacy PIN rejection and SSP handling.
+- `example/gap_dedicated_bonding.c` shows explicit dedicated bonding.
+- `example/hid_keyboard_demo.c` shows a profile that relies on pairing and bonding in practice.
+
+### Security Levels and Their Meaning
+
+BTstack exposes the Classic security target via `gap_set_security_level()`:
+
+- `LEVEL_0`: no security
+- `LEVEL_1`: no encryption, minimal user interaction
+- `LEVEL_2`: encryption required, no MITM protection
+- `LEVEL_3`: encryption and MITM protection required
+- `LEVEL_4`: encryption, MITM protection, and Secure Connections strength required
+
+For most Classic examples, these are the practical choices:
+
+- use `LEVEL_2` for standard encrypted pairing
+- use `LEVEL_3` if the remote user must confirm or enter a passkey
+- use `LEVEL_4` if only Secure Connections grade pairing is acceptable
+
+### Example 1: Use the Default Classic Security Setup
+
+The `spp_counter` example already uses the default Mode 4 behavior. The minimal setup is:
+
+    static void btstack_main_security_setup(void){
+        l2cap_init();
+
+    #ifdef ENABLE_BLE
+        // Needed if Cross-Transport Key Derivation is enabled
+        sm_init();
+    #endif
+
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_set_local_name("SPP Counter 00:00:00:00:00:00");
+        gap_discoverable_control(1);
+    }
+
+With this configuration, BTstack keeps Security Mode 4 and `LEVEL_2`. If the remote device is old, it may still request legacy PIN pairing. The examples reject this request instead of silently accepting a fixed PIN. Secure Simple Pairing was introduced with the Bluetooth 2.1 specification in 2007, so Bluetooth 2.1 and newer devices use SSP instead of legacy PIN pairing.
+
+The application should handle both cases in the packet handler:
+
+    static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        UNUSED(channel);
+        UNUSED(size);
+
+        bd_addr_t event_addr;
+
+        if (packet_type != HCI_EVENT_PACKET) return;
+
+        switch (hci_event_packet_get_type(packet)) {
+            case HCI_EVENT_PIN_CODE_REQUEST:
+                printf("Pin code request for Legacy Pairing received -> abort pairing\n");
+                hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                gap_pin_code_negative(event_addr);
+                break;
+
+            case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n",
+                       hci_event_user_confirmation_request_get_numeric_value(packet));
+                printf("Accepting Pairing - TODO: require actual user action\n");
+                hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                gap_ssp_confirmation_response(event_addr);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+This is the right baseline for examples like SPP that need encrypted Classic connections but do not need stronger authentication than standard SSP. Legacy PIN pairing is intentionally not accepted by default; an application that really needs to support pre-Bluetooth 2.1 devices must make that policy decision explicitly and provide its own PIN handling.
+
+If CTKD is enabled, this baseline is also sufficient to allow an LE Secure Connections bond to later create a usable Classic link key, as long as the LE Security Manager is initialized and bonding data is persisted.
+
+### Example 2: Require MITM Protection for a Classic Service
+
+If a service should require authenticated pairing, set the security level before the profile or service is initialized:
+
+    static void classic_security_setup_mitm(void){
+        gap_set_security_level(LEVEL_3);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    }
+
+Important points:
+
+- `gap_set_security_level()` must be called before BTstack registers Classic services that depend on `gap_get_security_level()`.
+- `LEVEL_3` requires MITM protection, so `SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT` is usually not appropriate.
+- The actual SSP association model depends on both devices' IO capabilities.
+
+Typical event handling then becomes:
+
+    case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+        hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+        printf("Numeric comparison %06"PRIu32"\n",
+               hci_event_user_confirmation_request_get_numeric_value(packet));
+        gap_ssp_confirmation_response(event_addr);
+        break;
+
+    case HCI_EVENT_USER_PASSKEY_REQUEST:
+        hci_event_user_passkey_request_get_bd_addr(packet, event_addr);
+        gap_ssp_passkey_response(event_addr, 123456);
+        break;
+
+This setup is appropriate for Classic HID, control channels, or administrative services where "Just Works" pairing is not sufficient.
+
+### Example 3: Force Secure Connections Quality
+
+If the application should only accept Secure Connections grade authentication for Classic pairing, use `LEVEL_4`. On top of that, BTstack can enforce Secure Connections Only mode:
+
+    static void classic_security_setup_secure_connections_only(void){
+        gap_set_security_level(LEVEL_4);
+        gap_set_secure_connections_only_mode(true);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    }
+
+Use this only when all intended peers support Secure Connections. Legacy peers will no longer be able to pair successfully.
+
+### Example 4: Start Dedicated Bonding Explicitly
+
+If bonding should happen before any profile connection is opened, use dedicated bonding as shown in `gap_dedicated_bonding.c`. In the current example, the application also handles SSP numeric confirmation explicitly:
+
+    static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+        UNUSED(channel);
+        UNUSED(size);
+
+        if (packet_type != HCI_EVENT_PACKET) return;
+
+        switch (hci_event_packet_get_type(packet)) {
+            case BTSTACK_EVENT_STATE:
+                if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                    gap_dedicated_bonding(device_addr, 1);
+                }
+                break;
+            case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n",
+                       hci_event_user_confirmation_request_get_numeric_value(packet));
+                gap_ssp_confirmation_response(event_addr);
+                break;
+            case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
+                printf("Dedicated bonding completed, status 0x%02x\n",
+                       gap_event_dedicated_bonding_completed_get_status(packet));
+                break;
+            default:
+                break;
+        }
+    }
+
+This is useful if the user interface has an explicit "pair device" action and the product should finish bonding before opening RFCOMM, HID, or other profile channels.
+
+### Example 5: Raise Security for a Specific Existing Connection
+
+If a connection already exists and the application now needs stronger protection, request it explicitly:
+
+    gap_request_security_level(con_handle, LEVEL_3);
+
+BTstack reports the result with `GAP_EVENT_SECURITY_LEVEL`. This is useful for outgoing Classic client roles that do not want to require authentication immediately after link setup.
+
+### Notes on Bonding Persistence
+
+Pairing is only useful across reboots if link keys are stored persistently.
+
+- On Classic, BTstack stores a link key plus its type.
+- If link keys are not persisted, the devices will have to pair again after reset.
+- The number of stored Classic bonds is limited by `NVM_NUM_LINK_KEYS`.
+
+On POSIX ports, persistent link key storage is typically provided by `platform/posix/btstack_link_key_db_fs.c`. On embedded targets, link keys are commonly stored in TLV-backed flash storage.
+
+For CTKD, persistence on both sides matters:
+
+- the Classic link key database must be available to retain derived BR/EDR keys
+- the LE device database must be available to retain derived LE keys
+
+If one side is not persisted, the corresponding CTKD-derived trust relationship will be lost after reset even if the other side is still stored.
+
+## GATT over Classic Bluetooth Security Setup in Examples {#sec:gattOverClassicSecurityExamples}
+
+When `ENABLE_GATT_OVER_CLASSIC` is enabled, BTstack can expose the same GATT database over BR/EDR and LE at the same time.
+
+From the application perspective, this creates two independent security domains:
+
+- Classic GATT security is controlled by Classic GAP and SSP configuration.
+- LE GATT security is controlled by the LE Security Manager configuration.
+
+This is why the dual-mode GATT examples contain both Classic security calls and LE security calls in the same setup function.
+
+The main examples to look at are:
+
+- `example/gatt_counter.c`
+- `example/gatt_streamer_server.c`
+- `example/spp_and_gatt_counter.c`
+- `example/spp_and_gatt_streamer.c`
+
+### What Is Secured by Which Stack Component
+
+For GATT over Classic:
+
+- discovery of the GATT service happens via Classic SDP
+- transport uses Classic L2CAP ATT
+- pairing and bonding use Classic GAP / SSP
+- link security level is controlled via `gap_set_security_level()` and related GAP APIs
+
+For GATT over LE:
+
+- discovery happens via LE advertisements and GATT procedures
+- transport uses LE ATT
+- pairing and bonding use the LE Security Manager
+- security requirements are configured with `sm_set_io_capabilities()` and `sm_set_authentication_requirements()`
+
+BTstack keeps the ATT database and ATT callbacks shared, but the security procedures are transport-specific.
+
+If `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` is enabled, the two security domains can still benefit from each other after Secure Connections bonding, but they are not merged. CTKD derives keys across transports; it does not replace Classic GAP/SSP policy or LE Security Manager policy.
+
+### Example 1: Default Dual-Mode GATT Server Security
+
+The `gatt_counter` and `gatt_streamer_server` examples use the simplest dual-mode security split:
+
+- LE side: Just Works, no bonding
+- Classic side: normal SSP configuration for BR/EDR reachability
+
+The setup looks like this:
+
+    static void gatt_counter_setup(void){
+        l2cap_init();
+
+        // LE security setup
+        sm_init();
+        sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+        sm_set_authentication_requirements(0);
+
+    #ifdef ENABLE_GATT_OVER_CLASSIC
+        // publish GATT service over Classic
+        sdp_init();
+        memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+        gatt_create_sdp_record(gatt_service_buffer,
+                               sdp_create_service_record_handle(),
+                               ATT_SERVICE_GATT_SERVICE_START_HANDLE,
+                               ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+        sdp_register_service(gatt_service_buffer);
+
+        // Classic SSP setup
+        gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_discoverable_control(1);
+    #endif
+
+        att_server_init(profile_data, att_read_callback, att_write_callback);
+    }
+
+This is the current baseline if you want one GATT server that is reachable via both transports without requiring authenticated pairing.
+
+If CTKD is enabled, this baseline also allows a successful LE Secure Connections pairing to seed a future Classic GATT connection with derived BR/EDR bonding material.
+
+### Example 2: Require Stronger Security for Classic GATT
+
+If the BR/EDR side of the GATT service should require encrypted or authenticated Classic links, configure the Classic security level before the GATT service is exposed:
+
+    static void gatt_over_classic_security_setup(void){
+        gap_set_security_level(LEVEL_3);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    }
+
+Important points:
+
+- `gap_set_security_level()` affects the Classic ATT bearer in the same way it affects other Classic services.
+- `LEVEL_2` requires encryption but not MITM protection.
+- `LEVEL_3` requires MITM protection and is the practical choice if the Classic GATT service carries sensitive control or configuration data.
+- `LEVEL_4` can be used if Secure Connections grade protection is required for Classic GATT as well.
+
+This configuration should be applied before `att_server_init()` registers the Classic ATT service and before the SDP record is published.
+
+### Example 3: Keep LE and Classic Security Policies Different
+
+In many products, LE and Classic do not need the same policy.
+
+For example:
+
+- LE side may use `sm_set_authentication_requirements(0)` for simple app access.
+- Classic side may use `gap_set_security_level(LEVEL_3)` because the BR/EDR GATT service exposes administrative features.
+
+This is a valid BTstack setup because the two transports negotiate security independently, even though they share the same ATT database.
+
+A mixed setup could look like this:
+
+    static void dual_mode_gatt_security_setup(void){
+        // LE: Just Works, no bonding
+        sm_init();
+        sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+        sm_set_authentication_requirements(0);
+
+    #ifdef ENABLE_GATT_OVER_CLASSIC
+        // Classic: authenticated and bondable
+        gap_set_security_level(LEVEL_3);
+        gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+        gap_ssp_set_authentication_requirement(
+            SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING);
+    #endif
+    }
+
+This is often the most practical way to think about security in dual-mode GATT examples: one shared application protocol, two transport-specific security policies.
+
+### Example 4: Characteristic Permissions and Transport Security
+
+The GATT database itself can also require security by marking characteristics with flags such as:
+
+- `READ_ENCRYPTED`
+- `READ_AUTHENTICATED`
+- `WRITE_ENCRYPTED`
+- `WRITE_AUTHENTICATED`
+- `AUTHENTICATION_REQUIRED`
+
+For dual-mode GATT servers, these permissions are evaluated against the current transport security state:
+
+- on LE, against LE pairing / encryption state
+- on Classic, against BR/EDR link security state
+
+This means that the same `.gatt` file can enforce protected reads and writes over both transports, while BTstack maps the check onto the appropriate underlying security mechanism.
+
+### Example 5: Event Handling in Dual-Mode GATT Servers
+
+A dual-mode GATT server often needs to handle both:
+
+- LE security events such as `SM_EVENT_JUST_WORKS_REQUEST`
+- Classic pairing events such as `HCI_EVENT_USER_CONFIRMATION_REQUEST`
+
+For example, the LE side of `gatt_counter.c` confirms Just Works pairing:
+
+    case SM_EVENT_JUST_WORKS_REQUEST:
+        sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+        break;
+
+If the application also wants explicit control over Classic SSP, it should additionally handle:
+
+    case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+        hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+        gap_ssp_confirmation_response(event_addr);
+        break;
+
+Without `gap_ssp_set_auto_accept(1)`, BTstack expects the application to answer Classic SSP confirmation or passkey requests itself.
+
+### Choosing an Example
+
+Start from these examples depending on the required security shape:
+
+- `gatt_counter.c` for the smallest dual-mode GATT server baseline.
+- `gatt_streamer_server.c` for a higher-throughput dual-mode GATT server.
+- `spp_and_gatt_counter.c` if Classic SPP and dual-mode GATT should coexist.
+- `spp_and_gatt_streamer.c` if throughput on both SPP and GATT matters.
+
+The main rule is:
+
+- configure LE security with Security Manager APIs
+- configure Classic GATT security with GAP / SSP APIs
+- use `.gatt` permissions to express which GATT attributes actually require protected access
+
+If CTKD is part of the product design, add these two checks:
+
+- initialize the LE Security Manager with `sm_init()` even if the visible product flow is primarily Classic
+- verify CTKD activity during testing via `SM_EVENT_PAIRING_COMPLETE` and `sm_event_pairing_complete_get_ctkd_active(packet)`
+
+## LE Credit-Based Flow Control Mode Security Setup in Examples {#sec:leCbmSecurityExamples}
+
+BTstack implements LE Credit-Based Flow Control Mode with the `l2cap_cbm_*` API family.
+
+From the security perspective, LE CBM is simpler than dual-mode GATT:
+
+- it always uses LE transport security
+- incoming channel policy is declared when registering the local service
+- outgoing channel policy is declared when creating the channel
+
+The current examples to look at are:
+
+- `example/le_credit_based_flow_control_mode_server.c`
+- `example/le_credit_based_flow_control_mode_client.c`
+
+### Incoming LE CBM Security
+
+For incoming LE CBM channels, the minimum required security level is configured at service registration time:
+
+    l2cap_cbm_register_service(packet_handler, psm, LEVEL_2);
+
+This means:
+
+- `LEVEL_0` allows an unencrypted LE link
+- `LEVEL_2` requires encryption
+- `LEVEL_3` requires authenticated pairing
+- `LEVEL_4` requires Secure Connections grade protection
+
+If a remote device tries to open an LE CBM channel and the current LE link security is too low, BTstack rejects the connection request with the corresponding L2CAP result code.
+
+The server example currently uses `LEVEL_2`, so the client must establish an encrypted LE link before the channel can be opened successfully.
+
+### Outgoing LE CBM Security
+
+For outgoing LE CBM channels, the minimum required security level is passed directly to `l2cap_cbm_create_channel(...)`:
+
+    l2cap_cbm_create_channel(&packet_handler, connection_handle, psm,
+                             receive_buffer, sizeof(receive_buffer),
+                             L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_2, &local_cid);
+
+This is the client-side equivalent of `l2cap_cbm_register_service(...)`.
+
+The LE CBM client example also uses `LEVEL_2`, which means it requests an encrypted LE connection before the channel is considered acceptable.
+
+### Security Manager Setup
+
+Because LE CBM relies on LE link security, applications that require any protected LE CBM service should initialize the LE Security Manager:
+
+    sm_init();
+
+This is the baseline requirement if:
+
+- the LE CBM service uses `LEVEL_2` or higher
+- the LE CBM client requests `LEVEL_2` or higher
+- the product should pair or bond automatically during connection setup
+
+Without `sm_init()`, BTstack cannot manage LE pairing for the protected LE CBM channel.
+
+### Pairing and Bonding Policy
+
+The chosen LE bonding and authentication policy still comes from the normal Security Manager configuration:
+
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
+
+or, for stronger protection:
+
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_BONDING);
+
+In other words:
+
+- `l2cap_cbm_register_service(..., LEVEL_X)` and `l2cap_cbm_create_channel(..., LEVEL_X, ...)` say how strong the link must be
+- `sm_set_authentication_requirements(...)` says how LE pairing should be performed when BTstack raises the link to that level
+
+### Practical Example
+
+The examples currently use this practical combination:
+
+- LE CBM channel requires `LEVEL_2`
+- LE Security Manager is initialized
+- Simple LE pairing is sufficient for the example throughput test
+
+This is a good default for products that need protected bulk transfer over LE without requiring user interaction.
+
+If the transferred data is sensitive, raise the LE CBM security level and adjust the Security Manager policy accordingly:
+
+- use `LEVEL_3` for authenticated pairing
+- use `LEVEL_4` if Secure Connections strength is required
+- configure `sm_set_authentication_requirements(...)` to match the desired pairing method
+
+### Main Rule
+
+For LE Credit-Based Flow Control Mode:
+
+- set the required link security with the `security_level` argument on service registration or channel creation
+- initialize and configure the LE Security Manager whenever the required level is above `LEVEL_0`
+- treat LE CBM security as LE link security, not as application-layer security
 
 ## Bluetooth Power Control {#sec:powerControl}
 

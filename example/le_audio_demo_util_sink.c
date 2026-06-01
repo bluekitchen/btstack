@@ -51,44 +51,76 @@
 #include "btstack_audio.h"
 #include "btstack_lc3_google.h"
 #include "btstack_lc3plus_fraunhofer.h"
-
-#include "btstack_sample_rate_compensation.h"
 #include "btstack_resample.h"
-#include "btstack_fsm.h"
-
-#include "hxcmod.h"
-#include "mods/mod.h"
+#include "btstack_sample_rate_compensation.h"
 
 #include "btstack_ring_buffer.h"
+
+#ifdef ENABLE_BOX_DEMO
+#include "demo_ui.h"
+#endif
+
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
 #endif
+
+// Featuresa
+#define ENABLE_SAMPLERATE_COMPENSATION
+
+// ANSI Colors
+#define ANSI_COLOR_RED     "\033[31m"
+#define ANSI_COLOR_YELLOW  "\033[33m"
+#define ANSI_COLOR_RESET   "\033[0m"
 
 #define MAX_CHANNELS 2
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
 // playback
-#define MAX_NUM_LC3_FRAMES   (15*2)
-#define MAX_BYTES_PER_SAMPLE 4
-#define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_CHANNELS * MAX_BYTES_PER_SAMPLE)
-#define PLAYBACK_START_MS (MAX_NUM_LC3_FRAMES * 20 / 3)
+#define MAX_NUM_LC3_FRAMES   (20)
+#define BYTES_PER_SAMPLE 2
 
-// analysis
-#define PACKET_PREFIX_LEN 10
+// sample rate compensation & resampler
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+// limit resampler to 10% more samples
+#define SAMPLERATE_COMPENSATION_MAX_FACTOR 0x11999
+#define MAX_PCM_BUFFER_SAMPLES ((MAX_SAMPLES_PER_FRAME * SAMPLERATE_COMPENSATION_MAX_FACTOR / 0x10000) + 1)
+#else
+#define MAX_PCM_BUFFER_SAMPLES MAX_SAMPLES_PER_FRAME
+#endif
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
 
-// statistics
-static uint16_t last_packet_sequence[MAX_CHANNELS];
-static uint32_t last_packet_time_ms[MAX_CHANNELS];
-static uint8_t  last_packet_prefix[MAX_CHANNELS * PACKET_PREFIX_LEN];
+// per channel data
+typedef struct {
+    uint32_t start_time_us;
+    uint32_t duration_us;
+    uint8_t  lc3_frame[MAX_LC3_FRAME_BYTES];
+    uint8_t  BFI;
+} lc3_packet_t;
+
+// ringbuffer full if (write_index + 1) == read_index
+typedef struct {
+    // index of lc3_packet that will be written next
+    uint8_t      write_index;
+    // index of lc3_packet that will be read next
+    uint8_t      read_index;
+    // received lc3 packets
+    lc3_packet_t lc3_packets[MAX_NUM_LC3_FRAMES];
+    // index of buffer that has been decoded in pcm_samples, or, 0xff
+    uint8_t      pcm_buffer_index;
+    // decoded pcm samples
+    int16_t      pcm_buffer_samples[MAX_PCM_BUFFER_SAMPLES];
+    uint16_t     pcm_buffer_samples_total;
+    // index of next sample to play (generic playback only
+    uint16_t     pcm_buffer_next_sample;
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+    // resampler
+    btstack_resample_t resampler;
+#endif
+} lc3_data_t;
+static lc3_data_t lc3_data[MAX_CHANNELS];
+
+// playback engine
 
 // SINK
 
@@ -99,12 +131,6 @@ static enum {
 } le_audio_demo_util_sink_state = LE_AUDIO_SINK_IDLE;
 
 static const char * le_audio_demo_sink_filename_wav;
-static btstack_sample_rate_compensation_t sample_rate_compensation;
-static uint32_t le_audio_demo_sink_received_samples;
-static btstack_resample_t resample_instance;
-static bool sink_receive_streaming;
-
-static int16_t pcm_resample[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME * 2];
 
 
 static btstack_lc3_frame_duration_t le_audio_demo_sink_frame_duration;
@@ -120,79 +146,15 @@ static uint16_t le_audio_demo_sink_iso_interval_1250us;
 static uint8_t  le_audio_demo_sink_flush_timeout;
 static uint8_t  le_audio_demo_sink_pre_transmission_offset;
 
-// playback
-static uint16_t              playback_start_threshold_bytes;
-static bool                  playback_active;
-static uint8_t               playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
-static btstack_ring_buffer_t playback_buffer;
-
 // PLC
-static uint32_t le_audio_demo_sink_lc3_frames;
 static uint32_t samples_received;
 static uint32_t samples_played;
-static uint32_t samples_dropped;
-
-// Audio FSM
-#define TRAN( target ) btstack_fsm_transit( &me->super, (btstack_fsm_state_handler_t)target )
-
-typedef struct {
-    btstack_fsm_t super;
-    uint32_t receive_time_ms;
-    uint32_t last_receive_time_ms;
-    uint32_t zero_frames;
-    uint32_t have_pcm;
-    uint32_t received_samples;
-} audio_processing_t;
-
-typedef struct {
-    btstack_fsm_event_t super;
-    uint16_t sequence_number;
-    uint16_t size;
-    uint32_t receive_time_ms;
-    uint8_t *data;
-    uint8_t stream;
-} data_event_t;
-
-typedef struct {
-    btstack_fsm_event_t super;
-    uint32_t time_ms;
-} time_event_t;
-
-audio_processing_t audio_processing;
-
-enum EventSignals {
-    DATA_SIG = BTSTACK_FSM_USER_SIG,
-    TIME_SIG
-};
-
-#define AUDIO_FSM_DEBUGx
-#ifdef AUDIO_FSM_DEBUG
-#define ENUM_TO_TEXT(sig) [sig] = #sig
-#define audio_fsm_debug(format, ...) \
-  printf( format __VA_OPT__(,) __VA_ARGS__)
-
-const char * const sigToString[] = {
-        ENUM_TO_TEXT(BTSTACK_FSM_INIT_SIG),
-        ENUM_TO_TEXT(BTSTACK_FSM_ENTRY_SIG),
-        ENUM_TO_TEXT(BTSTACK_FSM_EXIT_SIG),
-        ENUM_TO_TEXT(DATA_SIG),
-        ENUM_TO_TEXT(TIME_SIG),
-};
-#else
-#define audio_fsm_debug(...)
-#endif
-
-static btstack_fsm_state_t audio_processing_initial( audio_processing_t * const me, btstack_fsm_event_t const * const e );
-static btstack_fsm_state_t audio_processing_waiting( audio_processing_t * const me, btstack_fsm_event_t const * const e );
-static btstack_fsm_state_t audio_processing_streaming( audio_processing_t * const me, btstack_fsm_event_t const * const e );
-static bool audio_processing_is_streaming( audio_processing_t * const me );
-
-static btstack_timer_source_t next_packet_timer;
+static uint16_t frames_lost;
+static uint16_t frames_total;
 
 // lc3 decoder
 static bool le_audio_demo_lc3plus_decoder_requested = false;
 static const btstack_lc3_decoder_t * lc3_decoder;
-static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
 static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_CHANNELS];
 #ifdef HAVE_LC3PLUS
@@ -200,43 +162,325 @@ static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHAN
 #endif
 static void * decoder_contexts[MAX_CHANNELS];
 
+#ifdef HAVE_HAL_AUDIO_EXTERNAL_TRIGGER
+#define ENABLE_ACCURATE_PLAYBACK
+#endif
+
+// sample rate compensation & resample buffer
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+// TODO: not used with accurate playback yet
+#ifndef ENABLE_ACCURATE_PLAYBACK
+static int16_t  resample_buffer[MAX_SAMPLES_PER_FRAME];
+#endif
+static uint32_t resample_factor;
+static btstack_sample_rate_compensation_t sample_rate_compensation;
+static uint32_t playback_sample_rate;
+static uint32_t iso_receive_start_ms;
+static bool sample_rate_compensation_started;
+#endif
+
+// accurate playback
+static uint32_t le_audio_demo_util_sink_presentation_delay_us;
+static int32_t  le_audio_demo_util_sink_time_offset_us;
+
+// generic playback
+#ifndef ENABLE_ACCURATE_PLAYBACK
+#define PLAYBACK_START_MS (30)
+static uint16_t              playback_start_threshold_frames;
+static bool                  playback_active;
+#endif
+
+// visualizer
+static void (*le_audio_demo_util_sink_visualizer)(uint8_t num_channels, uint16_t num_samples, const int16_t * pcm);
+
+static void le_audio_demo_util_sink_ringbuffer_init(uint8_t channel) {
+    lc3_data[channel].read_index = 0;
+    lc3_data[channel].write_index = 0;
+    lc3_data[channel].pcm_buffer_index = 0xff;
+}
+
+static inline uint8_t le_audio_demo_util_ringbuffer_next(uint8_t index) {
+    return (index + 1) % MAX_NUM_LC3_FRAMES;
+}
+
+static inline bool le_audio_demo_util_sink_ringbuffer_empty(uint8_t channel) {
+    return lc3_data[channel].write_index == lc3_data[channel].read_index;
+}
+
+static bool le_audio_demo_util_sink_ringbuffer_full(uint8_t channel) {
+    return le_audio_demo_util_ringbuffer_next(lc3_data[channel].write_index) == lc3_data[channel].read_index;
+}
+
+static uint8_t le_audio_demo_util_sink_ringbuffer_available(uint8_t channel) {
+    if (lc3_data[channel].write_index >= lc3_data[channel].read_index) {
+        return lc3_data[channel].write_index - lc3_data[channel].read_index;
+    } else {
+        return MAX_NUM_LC3_FRAMES + lc3_data[channel].write_index - lc3_data[channel].read_index;
+    }
+}
+
+#ifdef ENABLE_ACCURATE_PLAYBACK
+
+// With external trigger, we can convert LE ISO timestamps to local time and provide sample accurate playback
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
-    UNUSED(context);
-    // called from lower-layer but guaranteed to be on main thread
-    log_info("Playback: need %u, have %" PRIu32 "", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
+    btstack_assert(context != NULL);
+
+    uint16_t original_num_samples = num_samples;
+    int16_t * original_buffer = buffer;
+    UNUSED(original_num_samples);
+    UNUSED(original_buffer);
+
+    // cache buffer playback end time to avoid division
+    static uint32_t buffer_playback_time_us = 0;
+    static uint32_t cached_num_samples = 0;
+    if (num_samples != cached_num_samples) {
+        buffer_playback_time_us = num_samples * 1000000 / le_audio_demo_sink_sampling_frequency_hz;
+        cached_num_samples = num_samples;
+        printf("Playback buffer: %u us\n", (unsigned) buffer_playback_time_us);
+    }
+    uint32_t playback_end_time_us = context->timestamp + buffer_playback_time_us;
 
     samples_played += num_samples;
 
-    uint32_t bytes_needed = num_samples * le_audio_demo_sink_num_channels * 2;
-    if (playback_active == false){
-        if (btstack_ring_buffer_bytes_available(&playback_buffer) >= playback_start_threshold_bytes) {
+    for (uint8_t channel = 0; channel < le_audio_demo_sink_num_channels; channel++) {
+        // reset values for channel
+        uint32_t playback_start_time_us = context->timestamp;
+        uint16_t num_samples_for_channel = num_samples;
+
+        // use pointer to avoid index calculation for each sample
+        int16_t * buffer_start = &buffer[channel];
+
+        // find earliest packet to play
+        while ((num_samples_for_channel > 0) && (le_audio_demo_util_sink_ringbuffer_empty(channel) == false)){
+
+            uint8_t index = lc3_data[channel].read_index;
+            const lc3_packet_t * packet = &lc3_data[channel].lc3_packets[index];
+            uint32_t packet_end_time_us = packet->start_time_us + packet->duration_us;
+
+            // drop stale packets
+            if (btstack_time_delta(playback_start_time_us, packet_end_time_us) >= 0){
+                // printf("Drop buffer %2u for %" PRIu32 " us - %" PRIu32 " us\n", index, packet->start_time_us, packet_end_time_us);
+                lc3_data[channel].read_index = le_audio_demo_util_ringbuffer_next(index);
+                continue;
+            }
+
+            // decode packet if not already decoded with stride = 1 (one channel)
+            if (lc3_data[channel].pcm_buffer_index != index) {
+                uint8_t tmp_BEC_detect;
+                (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], lc3_data[channel].lc3_packets[index].lc3_frame,
+                    lc3_data[channel].lc3_packets[index].BFI,
+                    lc3_data[channel].pcm_buffer_samples,
+                    1,
+                    &tmp_BEC_detect);
+                lc3_data[channel].pcm_buffer_index = index;
+            }
+
+            if (playback_end_time_us < packet->start_time_us){
+                // not ready to play - abort
+                // printf("Playback %u - %" PRIu32 " us: buffer %2u, start %" PRIu32 " us - in the future\n", channel, playback_start_time_us, index, packet->start_time_us);
+                break;
+            }
+
+            // silence until start of next packet
+            int32_t start_offset_us = btstack_time_delta(playback_start_time_us, packet->start_time_us);
+            if (start_offset_us < 0) {
+                // only later part of playback buffer can be filled
+                uint16_t silent_samples = -start_offset_us * le_audio_demo_sink_sampling_frequency_hz / 1000000;
+                if (silent_samples > 0) {
+                    // printf("Playback %u - %" PRIu32 " us: buffer %2u, start %" PRIu32 " us - silent samples %u\n", channel, playback_start_time_us, index, packet->start_time_us, silent_samples);
+                    for (uint16_t i = 0; i < silent_samples; i++){
+                        *buffer_start = 0;
+                        buffer_start += le_audio_demo_sink_num_channels;
+                    }
+                    num_samples_for_channel -= silent_samples;
+                }
+                playback_start_time_us = packet->start_time_us;
+            } else {
+                // copy samples
+                uint16_t sample_index = start_offset_us * le_audio_demo_sink_sampling_frequency_hz / 1000000;
+                btstack_assert(sample_index <= le_audio_demo_sink_num_samples_per_frame);
+                uint16_t samples_to_copy = btstack_min(le_audio_demo_sink_num_samples_per_frame - sample_index, num_samples_for_channel);
+                // printf("Playback %u - %" PRIu32 " us: buffer %2u, start %" PRIu32 " us - offset %" PRIu32 " us, sample %u -> copy %u\n", channel,
+                //    playback_start_time_us, index, packet->start_time_us, start_offset_us, sample_index, samples_to_copy);
+                for (uint16_t i = 0 ; i < samples_to_copy; i++) {
+                    *buffer_start = lc3_data[channel].pcm_buffer_samples[sample_index++];
+                    buffer_start += le_audio_demo_sink_num_channels;
+                }
+                num_samples_for_channel -= samples_to_copy;
+                if (num_samples_for_channel > 0) {
+                    // if there's still samples left, update playback_start_time_us to end of current packet
+                    // and continue with next packet
+                    playback_start_time_us = packet_end_time_us;
+                    lc3_data[channel].read_index = le_audio_demo_util_ringbuffer_next(index);
+                }
+                // otherwise, we are done
+            }
+        }
+
+        // silence
+        if (num_samples_for_channel > 0) {
+            for (uint16_t i = 0; i < num_samples_for_channel; i++){
+                *buffer_start = 0;
+                buffer_start += le_audio_demo_sink_num_channels;
+            }
+        }
+    }
+#ifdef HAVE_POSIX_FILE_IO
+    // write wav samples
+    wav_writer_write_int16(le_audio_demo_sink_num_channels * orignal_num_samples, original_buffer);
+#endif
+
+    if (le_audio_demo_util_sink_visualizer != NULL) {
+        (*le_audio_demo_util_sink_visualizer)(le_audio_demo_sink_num_channels, original_num_samples, original_buffer);
+    }
+}
+
+
+#else
+
+// Without external trigger, we start playback after a minimum number of frames have been received and
+// use sample rate compensation to control playback speed
+static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context) {
+    UNUSED(context);
+
+    uint16_t original_num_samples = num_samples;
+    int16_t * original_buffer = buffer;
+    UNUSED(original_num_samples);
+    UNUSED(original_buffer);
+
+    samples_played += num_samples;
+
+    log_info("Playback: %u samples, active %u, lc3 frames available %u (write %2u, read %2u)",
+        num_samples, playback_active, le_audio_demo_util_sink_ringbuffer_available(0),
+        lc3_data[0].write_index, lc3_data[0].read_index);
+
+    if( playback_active == false ) {
+        if( le_audio_demo_util_sink_ringbuffer_available(0) >= playback_start_threshold_frames ) {
             log_info("Playback started");
             printf("Playback started\n");
             playback_active = true;
         }
-    } else {
-        if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)) {
-            if( audio_processing_is_streaming( &audio_processing ) ) {
-                log_info("Playback underrun");
-                printf("Playback Underrun\n");
-            } else {
-                log_info("Playback stopped");
-                printf("Playback stopped\n");
+    }
+
+    if (playback_active) {
+        while (num_samples > 0) {
+            // if no samples available but lc3 frames available, decode next one
+            if (lc3_data[0].pcm_buffer_index == 0xff) {
+                if (le_audio_demo_util_sink_ringbuffer_empty(0)) {
+                    break;
+                }
+                // decode lc3 frame
+                for (uint8_t channel = 0; channel < le_audio_demo_sink_num_channels; channel++) {
+                    uint8_t index = lc3_data[channel].read_index;
+                    lc3_data[channel].read_index = le_audio_demo_util_ringbuffer_next(index);
+                    uint8_t tmp_BEC_detect;
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+                    int16_t * pcm_output = resample_buffer;
+#else
+                    int16_t * pcm_output = lc3_data[channel].pcm_buffer_samples;
+#endif
+                    (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], lc3_data[channel].lc3_packets[index].lc3_frame,
+                        lc3_data[channel].lc3_packets[index].BFI,
+                        pcm_output,
+                    1,
+                        &tmp_BEC_detect);
+                    lc3_data[channel].pcm_buffer_index = index;
+                    lc3_data[channel].pcm_buffer_next_sample = 0;
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+                    uint16_t pcm_samples_total = btstack_resample_block(&lc3_data[channel].resampler, pcm_output, le_audio_demo_sink_num_samples_per_frame, lc3_data[channel].pcm_buffer_samples);
+#else
+                    uint16_t pcm_samples_total = le_audio_demo_sink_num_samples_per_frame;
+#endif
+                    lc3_data[channel].pcm_buffer_samples_total = pcm_samples_total;
+                    if (tmp_BEC_detect || (lc3_data[channel].lc3_packets[index].BFI == 1)) {
+                        frames_lost++;
+                        // printf( ANSI_COLOR_YELLOW "predict audio channel %u\n" ANSI_COLOR_RESET, channel);
+                    }
+                    frames_total++;
+                }
             }
-            // empty buffer
-            uint32_t bytes_read;
-            btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
+
+            // copy samples
+            uint16_t samples_ready = lc3_data[0].pcm_buffer_samples_total - lc3_data[0].pcm_buffer_next_sample;
+            uint16_t samples_to_copy = btstack_min(samples_ready, num_samples);
+            for (uint16_t i = 0; i < samples_to_copy; i++){
+                for (uint8_t channel = 0; channel < le_audio_demo_sink_num_channels; channel++) {
+                    *buffer++ = lc3_data[channel].pcm_buffer_samples[lc3_data[channel].pcm_buffer_next_sample++];
+                }
+            }
+            num_samples -= samples_to_copy;
+
+            // discard buffer if all samples have been copied
+            if (lc3_data[0].pcm_buffer_next_sample == lc3_data[0].pcm_buffer_samples_total) {
+                lc3_data[0].pcm_buffer_index = 0xff;
+            }
+        }
+    }
+
+    // silence buffer
+    if (num_samples > 0) {
+        uint32_t bytes_needed = num_samples * le_audio_demo_sink_num_channels * BYTES_PER_SAMPLE;
+        memset(buffer, 0, bytes_needed);
+        if (playback_active == true) {
+            printf(ANSI_COLOR_RED "Playback underrun\n" ANSI_COLOR_RESET);
             playback_active = false;
         }
     }
 
-    if (playback_active){
-        uint32_t bytes_read;
-        btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
-        btstack_assert(bytes_read == bytes_needed);
-    } else {
-        memset(buffer, 0, bytes_needed);
+#ifdef HAVE_POSIX_FILE_IO
+    // write wav samples
+    wav_writer_write_int16(le_audio_demo_sink_num_channels * original_num_samples, original_buffer);
+#endif
+
+    if (le_audio_demo_util_sink_visualizer != NULL) {
+        (*le_audio_demo_util_sink_visualizer)(le_audio_demo_sink_num_channels, original_num_samples, original_buffer);
     }
+}
+
+#endif
+
+static void le_audio_demo_util_sink_store_packet(uint8_t stream_index, uint32_t sdu_sync_ref_us, const uint8_t * data, uint16_t len) {
+
+#ifdef ENABLE_ACCURATE_PLAYBACK
+    uint32_t start_time_us = sdu_sync_ref_us + le_audio_demo_util_sink_presentation_delay_us - le_audio_demo_util_sink_time_offset_us;
+    uint32_t duration_us = le_audio_demo_sink_frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US ? 10000 : 7500;
+    uint32_t end_time_us = start_time_us + duration_us;
+    UNUSED(end_time_us);
+#else
+    UNUSED(sdu_sync_ref_us);
+#endif
+
+    uint8_t BFI = len != le_audio_demo_sink_octets_per_frame * le_audio_demo_sink_num_channels_per_stream;
+    for (uint8_t i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
+        // unify one stream with two channels and two streams with one channel
+        uint8_t effective_channel = stream_index + i;
+        btstack_assert(effective_channel <= MAX_CHANNELS);
+        if (le_audio_demo_util_sink_ringbuffer_full(effective_channel)) {
+            log_info("Drop LC3 frame, ringbuffer full\n");
+            lc3_data[effective_channel].read_index = le_audio_demo_util_ringbuffer_next(lc3_data[effective_channel].read_index);
+        }
+        btstack_assert(le_audio_demo_util_sink_ringbuffer_full(effective_channel) == false);
+
+        uint8_t index = lc3_data[effective_channel].write_index;
+        lc3_packet_t * packet = &lc3_data[effective_channel].lc3_packets[index];
+#ifdef ENABLE_ACCURATE_PLAYBACK
+        packet->start_time_us  = start_time_us;
+        packet->duration_us    = duration_us;
+#endif
+        packet->BFI = BFI;
+        if (BFI == 0) {
+            // valid data
+            // printf("Store %u audio buffer %u for %" PRIu32 " us - %" PRIu32 " us\n", effective_channel, index, packet->start_time_us, end_time_us);
+            memcpy(packet->lc3_frame, data, le_audio_demo_sink_octets_per_frame);
+            data += le_audio_demo_sink_octets_per_frame;
+        } else {
+            // use PLC
+            // printf("Store %u empty buffer %u for %" PRIu32 " us - %" PRIu32 " us\n", effective_channel, index, packet->start_time_us, end_time_us);
+        }
+        lc3_data[effective_channel].write_index = le_audio_demo_util_ringbuffer_next(index);
+    }
+    log_info("Store: lc3 frames available %u (write %2u, read %2u)", le_audio_demo_util_sink_ringbuffer_available(0),
+        lc3_data[0].write_index, lc3_data[0].read_index);
 }
 
 void le_audio_demo_util_sink_enable_lc3plus(bool enable){
@@ -267,6 +511,13 @@ static void setup_lc3_decoder(bool use_lc3plus_decoder){
     btstack_assert(le_audio_demo_sink_num_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
+static void reset_counters(void) {
+    samples_received = 0;
+    samples_played = 0;
+    frames_lost = 0;
+    frames_total = 0;
+}
+
 void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_channels_per_stream,
                                                uint32_t sampling_frequency_hz,
                                                btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame,
@@ -278,13 +529,10 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     le_audio_demo_sink_num_streams = num_streams;
     le_audio_demo_sink_num_channels_per_stream = num_channels_per_stream;
 
-    sink_receive_streaming = false;
     le_audio_demo_util_sink_state = LE_AUDIO_SINK_CONFIGURED;
 
     le_audio_demo_sink_num_channels = le_audio_demo_sink_num_streams * le_audio_demo_sink_num_channels_per_stream;
     btstack_assert((le_audio_demo_sink_num_channels == 1) || (le_audio_demo_sink_num_channels == 2));
-
-    le_audio_demo_sink_lc3_frames = 0;
 
     le_audio_demo_sink_num_samples_per_frame = btstack_lc3_samples_per_frame(le_audio_demo_sink_sampling_frequency_hz, le_audio_demo_sink_frame_duration);
 
@@ -303,23 +551,52 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     wav_writer_open(le_audio_demo_sink_filename_wav, le_audio_demo_sink_num_channels, le_audio_demo_sink_sampling_frequency_hz);
 #endif
 
-    // init playback buffer
-    btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
+    for (uint8_t channel = 0; channel < le_audio_demo_sink_num_channels; channel++) {
+        le_audio_demo_util_sink_ringbuffer_init(channel);
+    }
 
-    // calc start threshold in bytes for PLAYBACK_START_MS
-    playback_start_threshold_bytes = (sampling_frequency_hz / 1000 * PLAYBACK_START_MS) * le_audio_demo_sink_num_channels * 2;
+#ifndef ENABLE_ACCURATE_PLAYBACK
+    // calc start threshold in frames for PLAYBACK_START_MS
+    if (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US) {
+        playback_start_threshold_frames = PLAYBACK_START_MS * 1000 / 10000;
+    } else {
+        playback_start_threshold_frames = PLAYBACK_START_MS * 1000 /  7500;
+    }
+    printf("Playback start threshold: %u frames\n", playback_start_threshold_frames);
+    playback_active = false;
+#endif
 
-    // sample rate compensation
-    le_audio_demo_sink_received_samples = 0;
+    reset_counters();
 
     // start playback
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
-        btstack_sample_rate_compensation_reset( &sample_rate_compensation, btstack_run_loop_get_time_ms() );
-        btstack_resample_init(&resample_instance, le_audio_demo_sink_num_channels);
+        // setup audio sink
         sink->init(le_audio_demo_sink_num_channels, le_audio_demo_sink_sampling_frequency_hz, le_audio_connection_sink_playback);
+        sink->set_volume(70);
+
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+        // setup resampler
+        for (uint8_t channel = 0; channel < le_audio_demo_sink_num_channels; channel++){
+            btstack_resample_init(&lc3_data[channel].resampler, 1);
+        }
+        // cache playback sample rate
+        playback_sample_rate = sink->get_samplerate();
+        // ignore first second
+        iso_receive_start_ms = 0;
+        sample_rate_compensation_started = false;
+#endif
+
+        // start playback
         sink->start_stream();
     }
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+    else {
+        // cache playback sample rate
+        playback_sample_rate = le_audio_demo_sink_sampling_frequency_hz;
+    }
+#endif
+
 }
 
 void le_audio_demo_util_sink_configure_unicast(uint8_t num_streams, uint8_t num_channels_per_stream, uint32_t sampling_frequency_hz,
@@ -327,12 +604,6 @@ void le_audio_demo_util_sink_configure_unicast(uint8_t num_streams, uint8_t num_
                                                uint32_t iso_interval_1250us, uint8_t flush_timeout){
     le_audio_demo_sink_type = HCI_ISO_TYPE_CIS;
     le_audio_demo_sink_flush_timeout = flush_timeout;
-
-    // set playback start: FT * ISO Interval + max(10 ms, 1/2 ISO Interval)
-    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us * 5 / 4) + btstack_max(10, iso_interval_1250us * 5 / 8);
-    uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
-    playback_start_threshold_bytes = playback_start_samples * num_streams * num_channels_per_stream * 2;
-    printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
 
     le_audio_demo_util_sink_configure_general(num_streams, num_channels_per_stream, sampling_frequency_hz,
                                               frame_duration, octets_per_frame, iso_interval_1250us);
@@ -344,290 +615,13 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
     le_audio_demo_sink_type = HCI_ISO_TYPE_BIS;
     le_audio_demo_sink_pre_transmission_offset = pre_transmission_offset;
 
-    // set playback start: ISO Interval + 10 ms
-    uint16_t playback_start_ms = (iso_interval_1250us * 5 / 4) + 10;
-    uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
-    playback_start_threshold_bytes = playback_start_samples * num_streams * num_channels_per_stream * 2;
-    printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
-
     le_audio_demo_util_sink_configure_general(num_streams, num_channels_per_stream, sampling_frequency_hz, frame_duration, octets_per_frame, iso_interval_1250us);
 }
 
 void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16_t size) {
+    UNUSED(stream_index);
     UNUSED(size);
-    // check for missing packet
-    uint16_t header = little_endian_read_16(packet, 0);
-    uint8_t ts_flag = (header >> 14) & 1;
-
-    uint16_t offset = 4;
-    uint32_t time_stamp = 0;
-    if (ts_flag){
-        time_stamp = little_endian_read_32(packet, offset);
-        offset += 4;
-    }
-
-    UNUSED(time_stamp);
-    uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
-
-    uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
-    offset += 4;
-
-    uint16_t last_seq_no = last_packet_sequence[stream_index];
-    bool packet_missed = (last_seq_no != 0) && ((last_seq_no + 1) != packet_sequence_number);
-    if (packet_missed){
-        // print last packet
-        printf("\n");
-        printf("%04x %10"PRIu32" %u ", last_seq_no, last_packet_time_ms[stream_index], stream_index);
-        printf_hexdump(&last_packet_prefix[le_audio_demo_sink_num_streams*PACKET_PREFIX_LEN], PACKET_PREFIX_LEN);
-        last_seq_no++;
-
-        printf(ANSI_COLOR_RED);
-        while (last_seq_no < packet_sequence_number){
-            printf("%04x            %u MISSING\n", last_seq_no, stream_index);
-            last_seq_no++;
-        }
-        printf(ANSI_COLOR_RESET);
-
-        // print current packet
-        printf("%04x %10"PRIu32" %u ", packet_sequence_number, receive_time_ms, stream_index);
-        printf_hexdump(&packet[offset], PACKET_PREFIX_LEN);
-    }
-
-    // cache current packet
-    memcpy(&last_packet_prefix[le_audio_demo_sink_num_streams*PACKET_PREFIX_LEN], &packet[offset], PACKET_PREFIX_LEN);
-}
-
-static btstack_fsm_state_t audio_processing_initial( audio_processing_t * const me, btstack_fsm_event_t const * const e ) {
-    UNUSED(e);
-    audio_fsm_debug("%s\n", __FUNCTION__ );
-    return TRAN(audio_processing_waiting);
-}
-
-static btstack_fsm_state_t audio_processing_waiting( audio_processing_t * const me, btstack_fsm_event_t const * const e ) {
-    audio_fsm_debug("%s - %s\n", __FUNCTION__, sigToString[e->sig]);
-    btstack_fsm_state_t status;
-    switch(e->sig) {
-        case BTSTACK_FSM_ENTRY_SIG: {
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case BTSTACK_FSM_EXIT_SIG: {
-            btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
-
-            btstack_sample_rate_compensation_init(&sample_rate_compensation, me->last_receive_time_ms,
-                                                  le_audio_demo_sink_sampling_frequency_hz, FLOAT_TO_Q15(1.f));
-            me->zero_frames = 0;
-            me->received_samples = 0;
-            btstack_resample_init( &resample_instance, le_audio_demo_sink_num_channels );
-            me->have_pcm = 0;
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case DATA_SIG: {
-            data_event_t *data_event = (data_event_t*)e;
-            // nothing to do here
-            if( data_event->data == NULL ) {
-                status = BTSTACK_FSM_IGNORED_STATUS;
-                break;
-            }
-
-            // ignore empty data at start
-            if( data_event->size == 0 ) {
-                status = BTSTACK_FSM_IGNORED_STATUS;
-                break;
-            }
-
-            // always start at first stream
-            if( data_event->stream > 0 ) {
-                status = BTSTACK_FSM_IGNORED_STATUS;
-                break;
-            }
-
-            me->last_receive_time_ms = data_event->receive_time_ms;
-            status = TRAN(audio_processing_streaming);
-            break;
-        }
-        default: {
-            status = BTSTACK_FSM_IGNORED_STATUS;
-            break;
-        }
-    }
-    return status;
-}
-
-static void audio_processing_resample( audio_processing_t * const me, data_event_t *e ) {
-    // mark current packet as handled
-    e->data = NULL;
-    if( me->have_pcm != (uint32_t)((1<<(le_audio_demo_sink_num_streams*le_audio_demo_sink_num_channels_per_stream))-1) ) {
-        return;
-    }
-
-    int16_t *data_in = pcm;
-    int16_t *data_out = pcm_resample;
-#ifdef HAVE_POSIX_FILE_IO
-    // write wav samples
-    wav_writer_write_int16(le_audio_demo_sink_num_channels * le_audio_demo_sink_num_samples_per_frame, data_in);
-#endif
-
-    // count for samplerate compensation
-    me->received_samples += le_audio_demo_sink_num_samples_per_frame;
-
-    // store samples in playback buffer
-    samples_received += le_audio_demo_sink_num_samples_per_frame;
-    uint32_t resampled_frames = btstack_resample_block(&resample_instance, data_in, le_audio_demo_sink_num_samples_per_frame, data_out);
-    uint32_t bytes_to_store = resampled_frames * le_audio_demo_sink_num_channels * 2;
-
-    if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-        btstack_ring_buffer_write(&playback_buffer, (uint8_t *)data_out, bytes_to_store);
-        log_info("Samples in playback buffer %5" PRIu32 "", btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
-    } else {
-        printf("Samples dropped\n");
-        samples_dropped += le_audio_demo_sink_num_samples_per_frame;
-    }
-    me->have_pcm = 0;
-}
-
-static btstack_fsm_state_t audio_processing_decode( audio_processing_t * const me, btstack_fsm_event_t const * const e ) {
-    audio_fsm_debug("%s - %s\n", __FUNCTION__, sigToString[e->sig]);
-    btstack_fsm_state_t status;
-    switch(e->sig) {
-        case BTSTACK_FSM_ENTRY_SIG: {
-            btstack_assert( (le_audio_demo_sink_num_streams*le_audio_demo_sink_num_channels_per_stream) < (sizeof(me->have_pcm)*8));
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case BTSTACK_FSM_EXIT_SIG: {
-            const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
-            if( sink == NULL ) {
-
-                status = BTSTACK_FSM_HANDLED_STATUS;
-                break;
-            }
-            uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, me->receive_time_ms,
-                                                                                  me->received_samples, sink->get_samplerate() );
-            btstack_resample_set_factor(&resample_instance, resampling_factor);
-            me->received_samples = 0;
-
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case DATA_SIG: {
-            data_event_t *data_event = (data_event_t*)e;
-            uint8_t *data_in = data_event->data;
-            int16_t *data_out = pcm;
-            uint16_t offset = 0;
-            uint8_t BFI = 0;
-            if (data_event->size != le_audio_demo_sink_num_channels_per_stream * le_audio_demo_sink_octets_per_frame) {
-                // incorrect size. we assume that we received this packet on time but cannot decode it, so we use PLC
-                BFI = 1;
-                printf("predict audio\n");
-            }
-            uint8_t i;
-            for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
-                uint8_t tmp_BEC_detect;
-                uint8_t effective_channel = (data_event->stream * le_audio_demo_sink_num_channels_per_stream) + i;
-                (void) lc3_decoder->decode_signed_16(decoder_contexts[effective_channel], &data_in[offset], BFI,
-                                                     &data_out[effective_channel], le_audio_demo_sink_num_channels,
-                                                     &tmp_BEC_detect);
-                offset += le_audio_demo_sink_octets_per_frame;
-                audio_fsm_debug("effective_channel: %d\n", effective_channel );
-                if( (me->have_pcm & (1<<effective_channel)) ) {
-                    audio_fsm_debug("de-syncroniced, resync\n");
-                    status = TRAN(audio_processing_waiting);
-                    break;
-                }
-                me->have_pcm |= (1<<effective_channel);
-            }
-            audio_processing_resample( me, data_event );
-            status = TRAN(audio_processing_streaming);
-            break;
-        }
-        default: {
-            status = BTSTACK_FSM_IGNORED_STATUS;
-            break;
-        }
-    }
-    return status;
-}
-
-static btstack_fsm_state_t audio_processing_streaming( audio_processing_t * const me, btstack_fsm_event_t const * const e ) {
-    audio_fsm_debug("%s - %s\n", __FUNCTION__, sigToString[e->sig]);
-
-    btstack_fsm_state_t status;
-    switch(e->sig) {
-        case BTSTACK_FSM_ENTRY_SIG: {
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case BTSTACK_FSM_EXIT_SIG: {
-            me->last_receive_time_ms = me->receive_time_ms;
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case TIME_SIG: {
-            time_event_t *time = (time_event_t*)e;
-            printf("time: %" PRId32 " - %" PRId32 " %" PRId32 "\n", time->time_ms, me->last_receive_time_ms, time->time_ms-me->last_receive_time_ms );
-            // we were last called ages ago, so just start waiting again
-            if( btstack_time_delta( time->time_ms, me->last_receive_time_ms ) > 100) {
-                status = TRAN(audio_processing_waiting);
-                break;
-            }
-            status = BTSTACK_FSM_HANDLED_STATUS;
-            break;
-        }
-        case DATA_SIG: {
-            data_event_t *data_event = (data_event_t*)e;
-            me->receive_time_ms = data_event->receive_time_ms;
-
-            // done processing this data
-            if( data_event->data == NULL ) {
-                status = BTSTACK_FSM_HANDLED_STATUS;
-                break;
-            }
-
-            if( btstack_time_delta( data_event->receive_time_ms, me->last_receive_time_ms ) > 100) {
-                status = TRAN(audio_processing_waiting);
-                break;
-            }
-
-            if( me->zero_frames > 10 ) {
-                status = TRAN(audio_processing_waiting);
-                break;
-            }
-
-            // track consecutive audio frames without data
-            if( data_event->size == 0 ) {
-                me->zero_frames++;
-            } else {
-                me->zero_frames = 0;
-            }
-
-            // will decode and/or predict missing data
-            status = TRAN(audio_processing_decode);
-            break;
-        }
-        default: {
-            status = BTSTACK_FSM_IGNORED_STATUS;
-            break;
-        }
-    }
-    return status;
-}
-
-static void audio_processing_constructor( audio_processing_t *me) {
-    btstack_fsm_constructor(&me->super, (btstack_fsm_state_handler_t)&audio_processing_initial);
-    btstack_fsm_init(&me->super, NULL);
-}
-
-static void audio_processing_task( audio_processing_t *me, btstack_fsm_event_t const *e ) {
-    btstack_fsm_dispatch_until(&me->super, e);
-}
-
-static bool audio_processing_is_streaming( audio_processing_t *me ) {
-    btstack_fsm_t *fsm = &me->super;
-    time_event_t const time_event = { { TIME_SIG }, btstack_run_loop_get_time_ms() };
-    audio_processing_task( me, &time_event.super );
-    return fsm->state == (btstack_fsm_state_handler_t)&audio_processing_streaming;
+    UNUSED(packet);
 }
 
 void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint16_t size) {
@@ -642,13 +636,11 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     uint16_t iso_load_len = little_endian_read_16(packet, 2);
 
     uint16_t offset = 4;
-    uint32_t time_stamp = 0;
+    uint32_t sdu_sync_ref_us = 0;
     if (ts_flag){
-        time_stamp = little_endian_read_32(packet, offset);
+        sdu_sync_ref_us = little_endian_read_32(packet, offset);
         offset += 4;
     }
-
-    uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
 
     uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
     offset += 2;
@@ -663,34 +655,58 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     UNUSED(pb_flag);
     UNUSED(iso_load_len);
     UNUSED(packet_status_flag);
-    UNUSED(time_stamp);
+    UNUSED(packet_sequence_number);
 
-    data_event_t const data_event = {
-            .super.sig = DATA_SIG,
-            .sequence_number = packet_sequence_number,
-            .stream = stream_index,
-            .data = &packet[offset],
-            .size = iso_sdu_length,
-            .receive_time_ms = receive_time_ms,
-    };
+    // store in ring buffer
+    le_audio_demo_util_sink_store_packet(stream_index, sdu_sync_ref_us, &packet[offset], iso_sdu_length);
 
-    audio_fsm_debug("new data\n stream_index: %d\n", stream_index);
-    audio_processing_task( &audio_processing, &data_event.super );
+    // correct for the fact that stereo will have two packets
+    samples_received += le_audio_demo_sink_num_samples_per_frame / le_audio_demo_sink_num_streams;
 
-    le_audio_demo_sink_lc3_frames++;
-
-    if (samples_received >= 10 * le_audio_demo_sink_sampling_frequency_hz){
-        printf("LC3 Frames: %4" PRIu32 " - samples received %5" PRIu32 ", played %5" PRIu32 ", dropped %5" PRIu32 "\n", le_audio_demo_sink_lc3_frames, samples_received, samples_played, samples_dropped);
-        samples_received = 0;
-        samples_dropped  =  0;
-        samples_played = 0;
+    int report_interval_s = 3;
+    if (samples_received >= report_interval_s * le_audio_demo_sink_sampling_frequency_hz){
+        int packet_loss_percentage = 0;
+        if (frames_total > 0) {
+            packet_loss_percentage = frames_lost * 100 / frames_total;
+        }
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+        printf("Frames lost %2u %%, LC3 frames queued %u, resample factor %f. Samples: received %5"PRIu32 " - played %5" PRIu32 "\n",
+            packet_loss_percentage, le_audio_demo_util_sink_ringbuffer_available(0), Q16_TO_FLOAT(resample_factor),
+            samples_received / report_interval_s, samples_played / report_interval_s);
+#else
+        printf("Frames lost %2u %%, LC3 frames queued %u. Samples received %5 "PRIu32 ", samples played %5" PRIu32 "\n",
+            packet_loss_percentage,  le_audio_demo_util_sink_ringbuffer_available(0),
+            samples_received / report_interval_s samples_played / report_interval_s);
+#endif
+        reset_counters();
     }
+
+#ifdef ENABLE_SAMPLERATE_COMPENSATION
+    uint32_t time_ms = btstack_run_loop_get_time_ms();
+    // only run sample rate compensation for first stream
+    if (stream_index == 0) {
+        if (sample_rate_compensation_started == false) {
+            if (iso_receive_start_ms == 0) {
+                // 1 - set start time
+                iso_receive_start_ms = time_ms;
+            } else {
+                // 2 - wait for one second
+                if (btstack_time_delta(time_ms, iso_receive_start_ms) > 1000) {
+                    // 3 - start sample rate compensation
+                    sample_rate_compensation_started = true;
+                    btstack_sample_rate_compensation_init(&sample_rate_compensation, time_ms, playback_sample_rate, FLOAT_TO_Q15(1.f));
+                }
+            }
+        } else {
+            resample_factor = btstack_sample_rate_compensation_update(&sample_rate_compensation, time_ms, le_audio_demo_sink_num_samples_per_frame, playback_sample_rate);
+        }
+    }
+#endif
 }
 
 void le_audio_demo_util_sink_init(const char * filename_wav){
     le_audio_demo_sink_filename_wav = filename_wav;
     le_audio_demo_util_sink_state = LE_AUDIO_SINK_INIT;
-    audio_processing_constructor( &audio_processing );
 }
 
 /**
@@ -705,9 +721,21 @@ void le_audio_demo_util_sink_close(void){
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
         sink->stop_stream();
+        sink->close();
     }
     le_audio_demo_util_sink_state = LE_AUDIO_SINK_INIT;
-    sink_receive_streaming = false;
-    // stop timer
-    btstack_run_loop_remove_timer(&next_packet_timer);
+}
+
+void le_audio_demo_util_sink_set_presentation_delay(uint32_t presentation_delay_us) {
+    le_audio_demo_util_sink_presentation_delay_us = presentation_delay_us;
+}
+
+void le_audio_demo_util_sink_process_sync_event(uint32_t bluetooth_time_us, uint32_t local_time_us) {
+    le_audio_demo_util_sink_time_offset_us = btstack_time_delta(bluetooth_time_us, local_time_us);
+    log_info("ISO timestamp %010"PRIu32" us, local timestamp %010" PRIu32 " => offset %10" PRIi32" us\n",
+        bluetooth_time_us, local_time_us, le_audio_demo_util_sink_time_offset_us);
+}
+
+void le_audio_demo_util_sink_set_visualizer( void (*callback)(uint8_t num_channels, uint16_t num_samples, const int16_t * pcm)) {
+    le_audio_demo_util_sink_visualizer = callback;
 }

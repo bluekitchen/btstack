@@ -23,3 +23,10 @@ List of ports with reason for move to this archive:
 - iOS port:
     - BTstack on iOS is not supported anymore.
 
+- raspi: it tries to directly access the built-in Bluetooth Controller which is wired differently with each version.
+  Please use the Linux port instead which accesses the Controller via the official kernel drivers.
+- 
+- POSIX-H4-Airoc: use POSIX-H4 with flag `--airoc-download-mode` instead
+ 
+- POSIX-H4-Zephyr: use POSIX-H4 with option `--baud 1000000' instead
+

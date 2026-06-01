@@ -412,9 +412,21 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
                 return 1;
             }           
             break;
-        case AVDTP_MULTIPLEXING:                
+        case AVDTP_MULTIPLEXING:
+            if (cap_len < 7){
+                log_info("    ERROR: REJECT CATEGORY, BAD_MULTIPLEXING_FORMAT\n");
+                connection->reject_service_category = category;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_MULTIPLEXING_FORMAT;
+                return 1;
+            }
             break;
-        case AVDTP_MEDIA_CODEC:                
+        case AVDTP_MEDIA_CODEC:
+            if (cap_len < 2){
+                log_info("    ERROR: REJECT CATEGORY, BAD_CODEC_FORMAT\n");
+                connection->reject_service_category = category;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_PAYLOAD_FORMAT;
+                return 1;
+            }
             break;
         default:
             break;
@@ -1529,7 +1541,7 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
     uint8_t  channels_bitmap            = (media_codec_information[3] >> 2) & 0x03;
     uint8_t  vbr                        = (media_codec_information[4] >> 7) & 0x01;
 
-    uint32_t bit_rate                  = ((media_codec_information[3] & 0x7f) << 16) | (media_codec_information[4] << 8) | media_codec_information[5];
+    uint32_t bit_rate                  = ((media_codec_information[4] & 0x7f) << 16) | (media_codec_information[5] << 8) | media_codec_information[6];
 
     if (count_set_bits_uint32(object_type_bitmap) != 1) {
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
@@ -1566,7 +1578,7 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
     }
 
     uint8_t object_type = 0;
-    if (object_type_bitmap & 0x10){
+    if (object_type_bitmap & 0x02){
         object_type = AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC;
     } else {
         object_type = AVDTP_USAC_OBJECT_TYPE_RFU;
@@ -2051,7 +2063,7 @@ uint8_t avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_
     config[0] = (config[0] & 0xC0) | (uint8_t)(sampling_frequency_bitmap >> 20);
     config[1] = (uint8_t) (sampling_frequency_bitmap >> 12);
     config[2] = (uint8_t) (sampling_frequency_bitmap >> 4);
-    config[3] = (sampling_frequency_bitmap & 0x0f) << 4;
+    config[3] = ((sampling_frequency_bitmap & 0x0f) << 4) | (config[3] & 0x0F);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -2072,9 +2084,9 @@ uint8_t avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuratio
         default:
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    config[3] = config[3] | channels_bitmap;
+    config[3] = channels_bitmap;
     config[4] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
     config[5] = (configuration->bit_rate >> 8) & 0xff;
-    config[6] =  configuration->bit_rate & 0xff;
+    config[6] = configuration->bit_rate & 0xff;
     return avdtp_config_mpegd_usac_set_sampling_frequency(config, configuration->sampling_frequency);
 }

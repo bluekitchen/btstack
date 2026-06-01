@@ -178,12 +178,21 @@ extern "C" {
 // Code+Len=2, Pkts+Opcode=3; total=5
 #define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
 
+// Event Packet
+#define READ_EVENT_LENGTH( buffer )      ( buffer[1] )
+
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_SCO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ISO_CONNECTION_HANDLE( buffer ) ( little_endian_read_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
-#define READ_ACL_LENGTH( buffer )     (little_endian_read_16(buffer, 2))
+#define READ_ACL_LENGTH( buffer )     (  little_endian_read_16(buffer, 2)           )
+
+// SCO Packet
+#define READ_SCO_LENGTH( buffer )      ( buffer[2] )
+
+// ISO Packet
+#define READ_ISO_LENGTH( buffer )     ( (little_endian_read_16(buffer, 2)) & 0x3fff )
 
 // Sneak peak into L2CAP Packet
 #define READ_L2CAP_LENGTH(buffer)     ( little_endian_read_16(buffer, 4))
@@ -237,10 +246,17 @@ typedef enum {
 #define GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT     0x0002u
 #define GAP_CONNECTION_TASK_READ_RSSI                     0x0004u
 #define GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES       0x0008u
-#ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
-#define GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST    0x0010u
+#define GAP_CONNECTION_TASK_LE_SET_PHY                    0x0010u
 #define GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE         0x0020u
-#endif
+#define GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST    0x0040u
+#define GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH            0x0080u
+
+#define GAP_CONNECTION_TASK_LE_ANY                   \
+    (GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES   | \
+     GAP_CONNECTION_TASK_LE_SET_PHY                | \
+     GAP_CONNECTION_TASK_LE_FRAME_SPACE_UPDATE     | \
+     GAP_CONNECTION_TASK_LE_CONNECTION_RATE_REQUEST | \
+     GAP_CONNECTION_TASK_LE_SET_DATA_LENGTH)
 
 /**
  * Connection State 
@@ -646,7 +662,8 @@ typedef struct {
     uint16_t authentication_flags;
 
     // gap connection tasks, see GAP_CONNECTION_TASK_x
-    uint16_t gap_connection_tasks;
+    uint16_t gap_connection_tasks_pending;
+    uint16_t gap_connection_tasks_active;
 
     btstack_timer_source_t timeout;
 
@@ -689,6 +706,11 @@ typedef struct {
     uint16_t le_subrate_max_latency;
     uint16_t le_subrate_continuation_number;
     uint16_t le_subrate_supervision_timeout;
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+    uint16_t le_set_data_length_tx_octets;
+    uint16_t le_set_data_length_tx_time;
+#endif
 
 #ifdef ENABLE_LE_SHORTER_CONNECTION_INTERVALS
     // LE Frame Space Update
@@ -765,6 +787,7 @@ typedef enum{
     HCI_ISO_STREAM_STATE_ACTIVE,
     HCI_ISO_STREAM_STATE_W2_CLOSE,
     HCI_ISO_STREAM_STATE_W4_DISCONNECTED,
+    HCI_ISO_STREAM_STATE_DISCONNECTED,
 } hci_iso_stream_state_t;
 
 typedef struct {
@@ -1072,6 +1095,9 @@ typedef struct {
     // chipset driver requires pre-init
     bool chipset_pre_init;
 
+    // use AIROC Download mode (same as ENABLE_AIROC_DOWNLOAD_MODE)
+    bool init_airoc_download_mode;
+
     // hardware power controller
     const btstack_control_t * control;
 
@@ -1194,6 +1220,10 @@ typedef struct {
     uint8_t  sco_waiting_for_can_send_now;
     bool     sco_can_send_now;
 
+#ifdef ENABLE_HCI_ACL_PACKET_RESERVATION
+    uint8_t  acl_packets_reserved;
+#endif
+
     /* local supported features */
     uint8_t local_supported_features[8];
 
@@ -1284,6 +1314,9 @@ typedef struct {
     // GAP Privacy
     btstack_linked_list_t gap_privacy_clients;
 
+    // track active LE LMP commands
+    hci_con_handle_t le_active_command_con_handle;
+
 #ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND
     hci_con_handle_t hci_command_con_handle;
 #endif
@@ -1369,6 +1402,8 @@ typedef struct {
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+    bool     le_set_data_length_max;
+
     // LE Data Length
     uint16_t le_supported_max_tx_octets;
     uint16_t le_supported_max_tx_time;
@@ -1417,6 +1452,13 @@ typedef struct {
  * @brief Set up HCI. Needs to be called before any other function.
  */
 void hci_init(const hci_transport_t *transport, const void *config);
+
+/**
+ * @brief Enable AIROC download mode during init. Has to be called before power on.
+ * @note Matches ENABLE_AIROC_DOWNLOAD_MODE if enabled
+ * @param enable
+ */
+void hci_set_airoc_download_mode(bool enable);
 
 /**
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information.
@@ -1481,6 +1523,21 @@ void hci_set_num_iso_packets_to_queue(uint8_t num_packets);
  * @param inquriy_mode see bluetooth_defines.h
  */
 void hci_set_inquiry_mode(inquiry_mode_t inquriy_mode);
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+/**
+ * @brief Set maximum LE Data Length during startup if enabled. Has to be called before power on.
+ * @param enable default: true
+ */
+void hci_le_set_max_data_length(bool enable);
+
+/**
+ * @brief Set default LE Data Length during startup. Has to be called before power on.
+ * @param tx_octets
+ * @param tx_time in us
+ */
+void hci_le_set_default_data_length(uint8_t tx_octets, uint16_t tx_time);
+#endif
 
 /**
  * @brief Requests the change of BTstack power mode.
@@ -1964,6 +2021,12 @@ void hci_disable_l2cap_timeout_check(void);
 
 // called from test/ble_client/advertising_data_parser.c
 void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size);
+
+#ifdef ENABLE_HCI_ACL_PACKET_RESERVATION
+// used by third-party LE Host stack
+void hci_acl_reserve_packets(uint8_t num_packets);
+void hci_acl_release_packets(uint8_t num_packets);
+#endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 // setup test connections, used for fuzzing

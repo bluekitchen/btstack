@@ -2,12 +2,74 @@ menu "BTstack Configuration"
 
 config BTSTACK_AUDIO
     bool "I2S Audio driver"
-    default y if CONFIG_IDF_TARGET_ESP32
-    default y if CONFIG_IDF_TARGET_ESP32C3
-    default y if CONFIG_IDF_TARGET_ESP32S3
+    default y if IDF_TARGET_ESP32
+    default y if IDF_TARGET_ESP32C3
+    default y if IDF_TARGET_ESP32S3
     default n
     help
         Select this option to enable BTstack's audio driver
         Enabled by default on ESP32, ESP32-C3 AND ESP32-S3
+
+config BTSTACK_INTERNAL_BT
+    visible if BT_CONTROLLER_ONLY
+    bool "Support for SoC Bluetooth"
+    default y if BT_CONTROLLER_ONLY
+    default n
+    help
+        Select this option to enable the chips build in
+        Bluetooth support
+
+config BTSTACK_HCI_DUMP_STDOUT
+    bool "Dump HCI traffic to stdout"
+    default n
+    help
+        For debugging purpose this will output all received
+        and send packages
+
+menuconfig BTSTACK_EXTERNAL_UART_BT
+    bool "Support for externally connected UART Bluetooth modules"
+    default y if IDF_TARGET_ESP32P4
+    default n
+    help
+        Select this option if you want to be able to connect
+        to a dedicated external Bluetooth module
+
+if BTSTACK_EXTERNAL_UART_BT
+    config BTSTACK_UART_NUM
+        int "UART to use"
+        default 1 if IDF_TARGET_ESP32P4
+        default 1 if IDF_TARGET_ESP32S3
+        default 0
+    config BTSTACK_UART_INVERT_RTS
+        bool "Invert RTS"
+        default y if IDF_TARGET_ESP32P4
+        default y if IDF_TARGET_ESP32S3
+        default n
+    config BTSTACK_UART_TX_PIN
+        int "Pin number for TX"
+        default 21 if IDF_TARGET_ESP32P4
+        default 6 if IDF_TARGET_ESP32S3
+        default -1
+    config BTSTACK_UART_RX_PIN
+        int "Pin number for RX"
+        default 20 if IDF_TARGET_ESP32P4
+        default 7 if IDF_TARGET_ESP32S3
+        default -1
+    config BTSTACK_UART_RTS_PIN
+        int "Pin number for RTS"
+        default 23 if IDF_TARGET_ESP32P4
+        default 9 if IDF_TARGET_ESP32S3
+        default -1
+    config BTSTACK_UART_CTS_PIN
+        int "Pin number for CTS"
+        default 22 if IDF_TARGET_ESP32P4
+        default 12 if IDF_TARGET_ESP32S3
+        default -1
+    config BTSTACK_UART_NRESET_PIN
+        int "Pin number for nReset"
+        default 1 if IDF_TARGET_ESP32S3
+        default -1
+    config BT
+endif
 
 endmenu

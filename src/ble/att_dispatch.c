@@ -140,6 +140,8 @@ static void att_dispatch_handle_att_pdu(uint8_t packet_type, uint16_t channel, u
     bool for_server;
     bool invalid;
 
+    if (size == 0u) return;
+
     // parse opcode
     opcode  = packet[0u];
     method  = opcode & 0x03fu;

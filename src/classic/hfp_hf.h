@@ -547,6 +547,24 @@ uint8_t hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle);
 uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
 
 /**
+ * @brief Check if a specific HF indicator is supported by the AG.
+ *
+ * @param acl_handle
+ * @param assigned_number
+ * @return true if supported, false if not supported or if acl_handle or assigned_number is unknown
+ */
+bool hfp_hf_is_hf_indicator_supported_by_ag(hci_con_handle_t acl_handle, uint8_t assigned_number);
+
+/**
+ * @brief Check if a specific HF indicator is enabled by the AG.
+ *
+ * @param acl_handle
+ * @param assigned_number
+ * @return true if enabled, false if not enabled or if acl_handle or assigned_number is unknown
+ */
+bool hfp_hf_is_hf_indicator_enabled_by_ag(hci_con_handle_t acl_handle, uint8_t assigned_number);
+
+/**
  * @brief Set HF indicator.
  *
  * @param acl_handle

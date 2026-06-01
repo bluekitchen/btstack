@@ -110,9 +110,30 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
 void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16_t size);
 
 /**
+ * @brief Set Presentation Delay for accurate playback
+ */
+void le_audio_demo_util_sink_set_presentation_delay(uint32_t presentation_delay_us);
+
+/**
+ * @brief Process time synchronization event
+ * @param bluetooth_time_us of event on Bluetooth Controller
+ * @param local_time_us of event on Bluetooth Host
+ */
+void le_audio_demo_util_sink_process_sync_event(uint32_t bluetooth_time_us, uint32_t local_time_us);
+
+/**
  * @brief Close sink: close wav file, stop playbacl
  */
 void le_audio_demo_util_sink_close(void);
+
+/**
+ * @brief Set callback for processing audio data
+ * @param num_channels
+ * @param num_samples
+ * @param pcm
+ * @param callback
+ */
+void le_audio_demo_util_sink_set_visualizer( void (*callback)(uint8_t num_channels, uint16_t num_samples, const int16_t * pcm));
 
 #if defined __cplusplus
 }

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_NODE_H
-#define __MESH_NODE_H
+#ifndef MESH_NODE_H
+#define MESH_NODE_H
 
 #include <stdint.h>
 
@@ -341,4 +341,4 @@ uint8_t mesh_heartbeat_period_log(uint16_t value);
 }
 #endif
 
-#endif //__MESH_NODE_H
+#endif //MESH_NODE_H

@@ -131,7 +131,10 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint16_t * avdtp_cid){
     }
 
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(outgoing_cid);
-    btstack_assert(connection != NULL);
+    if (connection == NULL) {
+        // if the remote addr matches our address, the SDP query fill fail, which finalizes the just created connection struct
+        return ERROR_CODE_UNSPECIFIED_ERROR;
+    }
 
     // setup state
     connection->a2dp_sink_config_process.outgoing_active = true;
@@ -194,6 +197,10 @@ uint8_t a2dp_sink_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, u
 
 uint8_t a2dp_sink_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration){
     return a2dp_config_process_set_mpeg_aac(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
+}
+
+uint8_t a2dp_sink_set_config_mpegd_usac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpegd_usac_t * configuration){
+    return a2dp_config_process_set_mpegd_usac(AVDTP_ROLE_SINK, a2dp_cid, local_seid, remote_seid, configuration);
 }
 
 uint8_t a2dp_sink_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration){

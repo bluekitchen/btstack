@@ -51,6 +51,131 @@
 extern "C" {
 #endif
 
+// DAEMON COMMANDS
+
+#define OGF_BTSTACK 0x3du
+
+// cmds for BTstack
+// get state: @return HCI_STATE
+#define BTSTACK_GET_STATE                                  0x01u
+
+// set power mode: param HCI_POWER_MODE
+#define BTSTACK_SET_POWER_MODE                             0x02u
+
+// set capture mode: param on
+#define BTSTACK_SET_ACL_CAPTURE_MODE                       0x03u
+
+// get BTstack version
+#define BTSTACK_GET_VERSION                                0x04u
+
+// get system Bluetooth state
+#define BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED               0x05u
+
+// set system Bluetooth state
+#define BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED               0x06u
+
+// enable inquiry scan for this client
+#define BTSTACK_SET_DISCOVERABLE                           0x07u
+
+// set global Bluetooth state
+#define BTSTACK_SET_BLUETOOTH_ENABLED                      0x08u
+
+// create l2cap channel: param bd_addr(48), psm (16)
+#define L2CAP_CREATE_CHANNEL                               0x20u
+
+// disconnect l2cap disconnect, param channel(16), reason(8)
+#define L2CAP_DISCONNECT                                   0x21u
+
+// register l2cap service: param psm(16), mtu (16)
+#define L2CAP_REGISTER_SERVICE                             0x22u
+
+// unregister l2cap disconnect, param psm(16)
+#define L2CAP_UNREGISTER_SERVICE                           0x23u
+
+// accept connection param bd_addr(48), dest cid (16)
+#define L2CAP_ACCEPT_CONNECTION                            0x24u
+
+// decline l2cap disconnect,param bd_addr(48), dest cid (16), reason(8)
+#define L2CAP_DECLINE_CONNECTION                           0x25u
+
+// create l2cap channel: param bd_addr(48), psm (16), mtu (16)
+#define L2CAP_CREATE_CHANNEL_MTU                           0x26u
+
+// request can send now event: l2cap_cid
+#define L2CAP_REQUEST_CAN_SEND_NOW                         0x27u
+
+// register SDP Service Record: service record (size)
+#define SDP_REGISTER_SERVICE_RECORD                        0x30u
+
+// unregister SDP Service Record
+#define SDP_UNREGISTER_SERVICE_RECORD                      0x31u
+
+// Get remote RFCOMM services
+#define SDP_CLIENT_QUERY_RFCOMM_SERVICES                   0x32u
+
+// Get remote SDP services
+#define SDP_CLIENT_QUERY_SERVICES                          0x33u
+
+// RFCOMM "HCI" Commands
+#define RFCOMM_CREATE_CHANNEL                              0x40u
+#define RFCOMM_DISCONNECT                                  0x41u
+#define RFCOMM_REGISTER_SERVICE                            0x42u
+#define RFCOMM_UNREGISTER_SERVICE                          0x43u
+#define RFCOMM_ACCEPT_CONNECTION                           0x44u
+#define RFCOMM_DECLINE_CONNECTION                          0x45u
+#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS                 0x47u
+#define RFCOMM_PERSISTENT_CHANNEL                          0x46u
+#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS               0x48u
+#define RFCOMM_GRANT_CREDITS                               0x49u
+// request can send now event: rfcomm_cid
+#define RFCOMM_REQUEST_CAN_SEND_NOW                        0x4Au
+
+// GAP Classic 0x50u
+#define GAP_DISCONNECT                0x50u
+#define GAP_INQUIRY_START             0x51u
+#define GAP_INQUIRY_STOP              0x52u
+#define GAP_REMOTE_NAME_REQUEST       0x53u
+#define GAP_DROP_LINK_KEY_FOR_BD_ADDR 0x54u
+#define GAP_DELETE_ALL_LINK_KEYS      0x55u
+#define GAP_PIN_CODE_RESPONSE         0x56u
+#define GAP_PIN_CODE_NEGATIVE         0x57u
+
+// GAP LE      0x60u
+#define GAP_LE_SCAN_START           0x60u
+#define GAP_LE_SCAN_STOP            0x61u
+#define GAP_LE_CONNECT              0x62u
+#define GAP_LE_CONNECT_CANCEL       0x63u
+#define GAP_LE_SET_SCAN_PARAMETERS  0x64u
+
+// GATT (Client) 0x70u
+#define GATT_DISCOVER_ALL_PRIMARY_SERVICES                       0x70u
+#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16                 0x71u
+#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128                0x72u
+#define GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE                  0x73u
+#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE                0x74u
+#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128     0x75u
+#define GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS                 0x76u
+#define GATT_READ_VALUE_OF_CHARACTERISTIC                        0x77u
+#define GATT_READ_LONG_VALUE_OF_CHARACTERISTIC                   0x78u
+#define GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE      0x79u
+#define GATT_WRITE_VALUE_OF_CHARACTERISTIC                       0x7Au
+#define GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC                  0x7Bu
+#define GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC         0x7Cu
+#define GATT_READ_CHARACTERISTIC_DESCRIPTOR                      0X7Du
+#define GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR                 0X7Eu
+#define GATT_WRITE_CHARACTERISTIC_DESCRIPTOR                     0X7Fu
+#define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80u
+#define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81u
+#define GATT_GET_MTU                                             0x82u
+
+// SM 0x90u
+#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90u
+#define SM_SET_IO_CAPABILITIES             0x92u
+#define SM_BONDING_DECLINE                 0x93u
+#define SM_JUST_WORKS_CONFIRM              0x94u
+#define SM_NUMERIC_COMPARISON_CONFIRM      0x95u
+#define SM_PASSKEY_INPUT                   0x96u
+
 // calculate daemon (hci) opcode for ocf value
 #define DAEMON_OPCODE(ocf) ((ocf) | ((OGF_BTSTACK) << 10))
 
@@ -172,12 +297,12 @@ extern const hci_cmd_t rfcomm_request_can_send_now_cmd;
 
 extern const hci_cmd_t gap_delete_all_link_keys_cmd;
 extern const hci_cmd_t gap_disconnect_cmd;
-extern const hci_cmd_t gap_drop_link_key_for_bd_addr_cmd;
+extern const hci_cmd_t gap_drop_link_key_cmd;
 extern const hci_cmd_t gap_inquiry_start_cmd;
 extern const hci_cmd_t gap_inquiry_stop_cmd;
 extern const hci_cmd_t gap_remote_name_request_cmd;
 extern const hci_cmd_t gap_pin_code_response_cmd;
-extern const hci_cmd_t gap_pin_code_response_cmd;
+extern const hci_cmd_t gap_pin_code_negative_cmd;
 
 extern const hci_cmd_t gap_le_scan_start;
 extern const hci_cmd_t gap_le_scan_stop;

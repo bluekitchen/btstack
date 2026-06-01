@@ -159,10 +159,8 @@ static uint16_t bond_management_service_read_callback(hci_con_handle_t con_handl
 #include <stdio.h>
 
 static int bond_management_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
     UNUSED(offset);
-    UNUSED(buffer_size);
-    
+
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
         return 0;
     } 
@@ -177,7 +175,7 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
 
         uint8_t remote_cmd = buffer[0];
         // check if command/auth is supported
-        if (remote_cmd > BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_LE) {
+        if ((remote_cmd == 0u) || (remote_cmd > BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_LE)) {
             return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
         }
         uint16_t authorisation_code_size = buffer_size - 1;
@@ -251,7 +249,8 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
                 bond_management_delete_bonding_information_le(connection, false, true);
                 break;
             default:
-                return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
+                btstack_unreachable();
+                break;
         }
 
         return 0;

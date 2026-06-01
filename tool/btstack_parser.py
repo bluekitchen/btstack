@@ -8,8 +8,6 @@ import sys
 # paths
 bluetooth_h_path = 'src/bluetooth.h'
 btstack_defines_h_path = 'src/btstack_defines.h'
-daemon_cmds_c_path = 'platform/daemon/src/daemon_cmds.c'
-daemon_cmds_h_path = 'platform/daemon/src/daemon_cmds.h'
 hci_cmds_c_path = 'src/hci_cmd.c'
 hci_cmds_h_path = 'src/hci_cmd.h'
 hci_h_path = 'src/hci.h'
@@ -27,6 +25,13 @@ def set_btstack_root(path):
 def assert_dir(path):
     if not os.access(path, os.R_OK):
         os.makedirs(path)
+
+def resolve_path(path):
+    if path is None:
+        return None
+    if os.path.isabs(path):
+        return path
+    return os.path.join(btstack_root, path)
 
 def cap(x):
     if x.lower() == 'btstack':
@@ -55,13 +60,15 @@ def read_defines(infile):
                 defines[key] = value.lower()
     return defines
 
-def parse_defines():
+def parse_defines(extra_header_path=None):
     global btstack_root
     defines = dict()
-    defines.update(read_defines(btstack_root + '/' + hci_cmds_h_path))
-    defines.update(read_defines(btstack_root + '/' + hci_h_path))
-    defines.update(read_defines(btstack_root + '/' + bluetooth_h_path))
-    defines.update(read_defines(btstack_root + '/' + btstack_defines_h_path))
+    defines.update(read_defines(resolve_path(hci_cmds_h_path)))
+    defines.update(read_defines(resolve_path(hci_h_path)))
+    defines.update(read_defines(resolve_path(bluetooth_h_path)))
+    defines.update(read_defines(resolve_path(btstack_defines_h_path)))
+    if extra_header_path is not None:
+        defines.update(read_defines(resolve_path(extra_header_path)))
     return defines
 
 def my_parse_events(path):
@@ -109,10 +116,10 @@ def parse_events():
     global btstack_root
     
     # parse bluetooth.h to get used events
-    (bluetooth_events, bluetooth_subevents, bluetooth_event_types) = my_parse_events(btstack_root + '/' + bluetooth_h_path)
+    (bluetooth_events, bluetooth_subevents, bluetooth_event_types) = my_parse_events(resolve_path(bluetooth_h_path))
 
     # parse btstack_defines to get events
-    (btstack_events, btstack_subevents, btstack_event_types) = my_parse_events(btstack_root + '/' + btstack_defines_h_path)
+    (btstack_events, btstack_subevents, btstack_event_types) = my_parse_events(resolve_path(btstack_defines_h_path))
 
     # concat lists
     (events, subvents, event_types) = (bluetooth_events + btstack_events, bluetooth_subevents + btstack_subevents, bluetooth_event_types | btstack_event_types)
@@ -122,11 +129,10 @@ def my_parse_opcodes(infile, convert_to_camel_case):
     opcodes = {}
     with open (infile, 'rt') as fin:
         for line in fin:
-            definition = re.match(r'\s*(DAEMON_OPCODE_\w+)\s*=\s*DAEMON_OPCODE\s*\(\s*(\w+)\s*\).*', line)
+            definition = re.match(r'\s*((?:BTSTACK|DAEMON)_OPCODE_\w+)\s*=\s*(?:BTSTACK|DAEMON)_OPCODE\s*\(\s*(\w+)\s*\).*', line)
             if definition:
-                (opcode, daemon_ocf) = definition.groups()
-                # opcodes.append((opcode, 'OGF_BTSTACK', daemon_ocf))
-                opcodes[opcode] = ('OGF_BTSTACK', daemon_ocf)
+                (opcode, extra_ocf) = definition.groups()
+                opcodes[opcode] = ('OGF_BTSTACK', extra_ocf)
             definition = re.match(r'\s*(HCI_OPCODE_\w+)\s*=\s*HCI_OPCODE\s*\(\s*(\w+)\s*,\s*(\w+)\s*\).*', line)
             if definition:
                 (opcode, ogf, ocf) = definition.groups()
@@ -134,11 +140,12 @@ def my_parse_opcodes(infile, convert_to_camel_case):
                 opcodes[opcode] = (ogf, ocf)
     return opcodes
 
-def parse_opcodes(camel_case=True):
+def parse_opcodes(camel_case=True, extra_header_path=None):
     global btstack_root
     opcodes = {}
-    opcodes.update(my_parse_opcodes(btstack_root + '/' + hci_cmds_h_path, camel_case))
-    opcodes.update(my_parse_opcodes(btstack_root + '/' + daemon_cmds_h_path, camel_case))
+    opcodes.update(my_parse_opcodes(resolve_path(hci_cmds_h_path), camel_case))
+    if extra_header_path is not None:
+        opcodes.update(my_parse_opcodes(resolve_path(extra_header_path), camel_case))
     return opcodes
 
 def my_parse_commands(infile, opcodes, convert_to_camel_case):
@@ -162,7 +169,7 @@ def my_parse_commands(infile, opcodes, convert_to_camel_case):
             declaration = re.match(r'const\s+hci_cmd_t\s+(\w+)[\s=]+', line)
             if declaration:
                 command_name = declaration.groups()[0]
-                # drop _cmd suffix for daemon commands
+                # drop _cmd suffix for BTstack commands
                 if command_name.endswith('_cmd'):
                     command_name = command_name[:-len('_cmd')]
                 if convert_to_camel_case:
@@ -171,8 +178,8 @@ def my_parse_commands(infile, opcodes, convert_to_camel_case):
                     command_name = command_name.lower()
                 continue
 
-            # HCI_OPCODE or DAEMON_OPCODE definition
-            definition = re.match(r'\s*(HCI_OPCODE_\w+|DAEMON_OPCODE_\w+)\s*,\s\"(\w*)\".*', line)
+            # HCI_OPCODE or extra BTstack opcode definition
+            definition = re.match(r'\s*(HCI_OPCODE_\w+|(?:BTSTACK|DAEMON)_OPCODE_\w+)\s*,\s\"(\w*)\".*', line)
             if definition:
                 (opcode, format) = definition.groups()
                 if len(params) != len(format):
@@ -189,23 +196,26 @@ def my_parse_commands(infile, opcodes, convert_to_camel_case):
 
     return commands
 
-def parse_commands(camel_case=True):
+def parse_commands(camel_case=True, extra_commands_c_path=None, extra_commands_h_path=None):
     global btstack_root
-    opcodes = parse_opcodes(camel_case)
+    opcodes = parse_opcodes(camel_case, extra_commands_h_path)
 
     commands = []
-    commands += my_parse_commands(btstack_root + '/' + hci_cmds_c_path, opcodes, camel_case)
-    commands += my_parse_commands(btstack_root + '/' + daemon_cmds_c_path, opcodes, camel_case)
+    commands += my_parse_commands(resolve_path(hci_cmds_c_path), opcodes, camel_case)
+    if extra_commands_c_path is not None:
+        commands += my_parse_commands(resolve_path(extra_commands_c_path), opcodes, camel_case)
     return commands
 
-def parse_daemon_commands(camel_case=True):
+def parse_daemon_commands(camel_case=True, commands_c_path=None, commands_h_path=None):
     global btstack_root
-    opcodes = parse_opcodes(camel_case)
-    return my_parse_commands(btstack_root + '/' + daemon_cmds_c_path, opcodes, camel_case)
+    if commands_c_path is None or commands_h_path is None:
+        return []
+    opcodes = parse_opcodes(camel_case, commands_h_path)
+    return my_parse_commands(resolve_path(commands_c_path), opcodes, camel_case)
 
 def print_opcode_enum(commands):
     print("typedef enum {")
     for command in commands:
         (name, ogf, ocf, format, params) = command
-        print("    DAEMON_OPCODE_%s = HCI_OPCODE (%s, %s)," % (name.upper(), ogf, ocf))
-    print("} daemon_opcode_t;")
+        print("    BTSTACK_OPCODE_%s = HCI_OPCODE (%s, %s)," % (name.upper(), ogf, ocf))
+    print("} btstack_opcode_t;")

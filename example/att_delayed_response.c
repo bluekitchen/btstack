@@ -84,6 +84,9 @@ static hci_con_handle_t con_handle;
 static int value_ready;
 #endif
 
+static btstack_packet_callback_registration_t sm_event_callback_registration;
+
+static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 
@@ -101,11 +104,17 @@ static void example_setup(void){
 
     l2cap_init();
 
-    // setup SM: Display only
+    // setup SM: Just Works pairing, without bonding
     sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &sm_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -118,6 +127,22 @@ static void example_setup(void){
     gap_advertisements_enable(1);
 }
 /* LISTING_END */
+
+static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        default:
+            break;
+    }
+}
 
 /*
  * @section att_invalidate_value Handler

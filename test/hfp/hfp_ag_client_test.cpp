@@ -325,15 +325,8 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
             while (has_more_hfp_ag_commands()){
                 printf("- expect from AG: '%s'\n", expected_cmd);
                 char * ag_cmd = get_next_hfp_ag_command();
-
-                bool equal_cmds = strncmp(ag_cmd, expected_cmd, expected_cmd_len) == 0;
-                if (!equal_cmds){
-                    printf("Error:\n");
-                    printf("++ Expected:'%s'\n", expected_cmd);
-                    printf("++ but got: '%s'\n", ag_cmd);
-                    CHECK_EQUAL(equal_cmds,1);
-                    return;
-                } 
+                CHECK_TEXT(ag_cmd != NULL, "Missing AG command");
+                STRCMP_EQUAL(expected_cmd, ag_cmd);
                 printf("- Verified:       '%s'\n", expected_cmd);
                
                 i++;

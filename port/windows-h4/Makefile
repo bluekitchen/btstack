@@ -15,6 +15,7 @@ COMMON  += \
 			btstack_chipset_em9301.c \
 			btstack_chipset_stlc2500d.c \
 			btstack_chipset_tc3566x.c \
+			btstack_chipset_zephyr.c \
 			btstack_chipset_bcm.c \
             rijndael.c \
             wav_util.c 					\
@@ -40,6 +41,7 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I$(BTSTACK_ROOT)/chipset/em9301 \
 		  -I$(BTSTACK_ROOT)/chipset/stlc2500d \
 		  -I$(BTSTACK_ROOT)/chipset/tc3566x \
+		  -I$(BTSTACK_ROOT)/chipset/zephyr \
           -I${BTSTACK_ROOT}/3rd-party/rijndael \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir
 
@@ -54,6 +56,7 @@ VPATH += ${BTSTACK_ROOT}/chipset/csr
 VPATH += ${BTSTACK_ROOT}/chipset/em9301
 VPATH += ${BTSTACK_ROOT}/chipset/stlc2500d
 VPATH += ${BTSTACK_ROOT}/chipset/tc3566x
+VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
 EXAMPLES += pan_lwip_http_server

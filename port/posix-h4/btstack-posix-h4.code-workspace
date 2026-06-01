@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "btstack",
+      "path": "../.."
+    }
+  ],
+  "settings": {
+    "cmake.sourceDirectory": "${workspaceFolder}/port/posix-h4",
+    "cmake.buildDirectory": "${workspaceFolder}/port/posix-h4/build",
+    }
+  }
+}

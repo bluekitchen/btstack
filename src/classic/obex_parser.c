@@ -182,7 +182,7 @@ obex_parser_object_state_t obex_parser_process_data(obex_parser_t *obex_parser, 
                 break;
             case OBEX_PARSER_STATE_W4_HEADER_VALUE:
                 bytes_to_consume = btstack_min(obex_parser->item_len - obex_parser->item_pos, data_len);
-                if (*obex_parser->callback != NULL){
+                if (obex_parser->callback != NULL){
                     (*obex_parser->callback)(obex_parser->user_data, obex_parser->header_id, obex_parser->item_len, obex_parser->item_pos, data_buffer, bytes_to_consume);
                 }
                 obex_parser->item_pos += bytes_to_consume;
@@ -245,12 +245,21 @@ void obex_parser_get_operation_info(obex_parser_t * obex_parser, obex_parser_ope
 }
 obex_parser_header_state_t obex_parser_header_store(uint8_t * header_buffer, uint16_t buffer_size, uint16_t total_len,
                                                     uint16_t data_offset,  const uint8_t * data_buffer, uint16_t data_len){
-    uint16_t bytes_to_store = btstack_min(buffer_size - data_offset, data_len);
-    memcpy(&header_buffer[data_offset], data_buffer, bytes_to_store);
-    uint16_t new_offset = data_offset + bytes_to_store;
-    if (new_offset > buffer_size){
+    // validate chunk offset inside header_buffer
+    if (data_offset > buffer_size){
         RETURN_OBEX_STATE(OBEX_PARSER_HEADER_OVERRUN);
-    } else if (new_offset == total_len) {
+    }
+    // get remaining space in buffer
+    uint16_t space_in_buffer = buffer_size - data_offset;
+    // assert chunk fits into buffer
+    if (space_in_buffer < data_len) {
+        RETURN_OBEX_STATE(OBEX_PARSER_HEADER_OVERRUN);
+    }
+    // => space_in_buffer >= data_len
+    memcpy(&header_buffer[data_offset], data_buffer, data_len);
+    // header complete?
+    uint16_t end_offset = data_offset + data_len;
+    if (end_offset == total_len) {
         RETURN_OBEX_STATE(OBEX_PARSER_HEADER_COMPLETE);
     } else {
         RETURN_OBEX_STATE(OBEX_PARSER_HEADER_INCOMPLETE);
@@ -332,12 +341,21 @@ obex_app_param_parser_params_state_t obex_app_param_parser_process_data(obex_app
 
 obex_app_param_parser_tag_state_t obex_app_param_parser_tag_store(uint8_t * header_buffer, uint8_t buffer_size, uint8_t total_len,
                                                                          uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
-    uint16_t bytes_to_store = btstack_min(buffer_size - data_offset, data_len);
-    memcpy(&header_buffer[data_offset], data_buffer, bytes_to_store);
-    uint16_t new_offset = data_offset + bytes_to_store;
-    if (new_offset > buffer_size){
+    // validate chunk offset inside header_buffer
+    if (data_offset > buffer_size){
         RETURN_OBEX_STATE(OBEX_APP_PARAM_PARSER_TAG_OVERRUN);
-    } else if (new_offset == total_len) {
+    }
+    // get remaining space in buffer
+    uint16_t space_in_buffer = buffer_size - data_offset;
+    // assert chunk fits into buffer
+    if (space_in_buffer < data_len) {
+        RETURN_OBEX_STATE(OBEX_APP_PARAM_PARSER_TAG_OVERRUN);
+    }
+    // => space_in_buffer >= data_len
+    memcpy(&header_buffer[data_offset], data_buffer, data_len);
+    // header complete?
+    uint16_t end_offset = data_offset + data_len;
+    if (end_offset == total_len) {
         RETURN_OBEX_STATE(OBEX_APP_PARAM_PARSER_TAG_COMPLETE);
     } else {
         RETURN_OBEX_STATE(OBEX_APP_PARAM_PARSER_TAG_INCOMPLETE);

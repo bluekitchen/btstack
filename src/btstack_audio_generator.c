@@ -69,6 +69,7 @@ static void generator_base_init(btstack_audio_generator_t * base, uint16_t sampl
 }
 
 // duplicate audio channels in a round-robin fashion
+#if defined(ENABLE_MODPLAYER) || defined(ENABLE_VORBIS)
 static void duplicate_audio_channels(int16_t* pcm_buffer, uint16_t num_samples, uint8_t channels_have, uint8_t channels_need) {
     for (int16_t i = num_samples - 1; i >= 0; i--) {
         for (uint16_t channel_dst=0; channel_dst < channels_need; channel_dst++){
@@ -77,6 +78,7 @@ static void duplicate_audio_channels(int16_t* pcm_buffer, uint16_t num_samples, 
         }
     }
 }
+#endif
 
 // ---- Silence ----
 static void silence_generate(btstack_audio_generator_t * self, int16_t * pcm_buffer, uint16_t num_samples){

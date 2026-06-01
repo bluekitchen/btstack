@@ -60,7 +60,7 @@ include_directories(${BTSTACK_ROOT}/platform/lwip)
 include_directories(${BTSTACK_ROOT}/platform/lwip/port)
 include_directories(${BTSTACK_ROOT}/platform/posix)
 
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/example/audio_player_demo_util.c")
+file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/*_demo_util*.c")
 file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
 file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
@@ -68,6 +68,7 @@ file(GLOB SOURCES_MESH      "${BTSTACK_ROOT}/src/mesh/*.c")
 file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
 file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
@@ -140,6 +141,8 @@ set(SOURCES
   ${SOURCES_GATT}
   ${SOURCES_HXCMOD}
   ${SOURCES_HXCMOD}
+  ${SOURCES_LC3_GOOGLE}
+  ${SOURCES_LE_AUDIO}
   ${SOURCES_LIBUSB}
   ${SOURCES_MD5}
   ${SOURCES_MESH}
@@ -191,9 +194,23 @@ include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 # Add BCM Support and download PatchRAM files
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
+set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0233.0117.hcd)
+message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware")
+file(
+    DOWNLOAD
+    https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CYW55310_PATCHRAM_NAME}
+    STATUS CYW55310_PATCHRAM_STATUS
+)
+list(GET CYW55310_PATCHRAM_STATUS 0 CYW55310_PATCHRAM_STATUS_CODE)
+if (NOT CYW55310_PATCHRAM_STATUS_CODE EQUAL 0)
+    list(GET CYW55310_PATCHRAM_STATUS 1 CYW55310_PATCHRAM_STATUS_MESSAGE)
+    message(FATAL_ERROR "Failed to download ${CYW55310_PATCHRAM_NAME}: ${CYW55310_PATCHRAM_STATUS_MESSAGE}")
+endif()
+
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_LE_AUDIO} ${EXAMPLES_DUAL_MODE})
 list(REMOVE_DUPLICATES EXAMPLES)
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 

@@ -215,6 +215,16 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid,
 uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration);
 
 /**
+ * @brief Select and configure MPEG-D USAC endpoint
+ * @param a2dp_cid          A2DP channel identifier.
+ * @param local_seid        ID of a local stream endpoint.
+ * @param remote_seid       ID of a remote stream endpoint.
+ * @param configuration     MPEG-D USAC Configuration
+ * @return status
+ */
+uint8_t a2dp_source_set_config_mpegd_usac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpegd_usac_t * configuration);
+
+/**
  * @brief Select and configure ATRAC endpoint
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.

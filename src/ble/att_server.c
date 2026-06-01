@@ -867,6 +867,8 @@ static void att_server_handle_can_send_now(void){
 
 static void att_server_handle_att_pdu(att_server_t * att_server, att_connection_t * att_connection, uint8_t * packet, uint16_t size){
 
+    if (size == 0u) return;
+
     uint8_t opcode  = packet[0u];
     uint8_t method  = opcode & 0x03fu;
     bool invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;

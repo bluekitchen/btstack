@@ -86,6 +86,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     switch (packet_type) {
         case PROVISIONING_DATA_PACKET:
+            if (size < 1u) return;
             pos = 0;
             // on provisioning PDU call packet handler with PROVISIONG_DATA type
             msg_sar_field = (mesh_msg_sar_field_t) (packet[pos] >> 6);
@@ -95,6 +96,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (!pb_gatt_packet_handler) return;
             
             pdu_segment_len = size - pos;
+            if (pdu_segment_len == 0u) return;
 
             if (sizeof(sar_buffer.reassembly_buffer) - reassembly_offset < pdu_segment_len) {
                 log_error("sar buffer too small left %d, new to store %d", MESH_PROV_MAX_PROXY_PDU - reassembly_offset, pdu_segment_len);

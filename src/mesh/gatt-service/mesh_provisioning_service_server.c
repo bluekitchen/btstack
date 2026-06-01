@@ -134,6 +134,7 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
 
     if (attribute_handle == instance->data_in_client_value_handle){
         if (!mesh_provisioning_service_packet_handler) return 0;
+        if (buffer_size < 1u) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         mesh_msg_type_t msg_type = buffer[0] & 0x3f;
         switch (msg_type){
             case MESH_MSG_TYPE_PROXY_CONFIGURATION:
@@ -150,22 +151,21 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     }
 
     if (attribute_handle == instance->data_out_client_configuration_descriptor_handle){
-        if (buffer_size < 2){
-            return ATT_ERROR_INVALID_OFFSET;
+        uint16_t enable_data_out_notify;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &enable_data_out_notify)){
+            if (enable_data_out_notify){
+                if (instance->data_out_client_configuration_descriptor_value) return 0;
+                instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
+                instance->link_open = 1;
+                mesh_provisioning_service_emit_link_open(con_handle, 0);
+            } else {
+                if (!instance->data_out_client_configuration_descriptor_value) return 0;
+                instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
+                instance->link_open = 1;
+                mesh_provisioning_service_emit_link_open(con_handle, 0);
+            }
+            log_info("mesh_provisioning_service_write_callback: enable_data_out_notify %d, con handle 0x%02x", enable_data_out_notify, con_handle);
         }
-        uint16_t enable_data_out_notify = little_endian_read_16(buffer, 0);
-        if (enable_data_out_notify){
-            if (instance->data_out_client_configuration_descriptor_value) return 0;
-            instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
-            instance->link_open = 1;
-            mesh_provisioning_service_emit_link_open(con_handle, 0);
-        } else {
-            if (!instance->data_out_client_configuration_descriptor_value) return 0;
-            instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
-            instance->link_open = 1;
-            mesh_provisioning_service_emit_link_open(con_handle, 0);
-        }
-        log_info("mesh_provisioning_service_write_callback: enable_data_out_notify %d, con handle 0x%02x", enable_data_out_notify, con_handle);
         return 0;
     }
     log_info("mesh_provisioning_service_write_callback: not handled write on handle 0x%02x, buffer size %d", attribute_handle, buffer_size);

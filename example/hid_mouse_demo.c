@@ -230,13 +230,16 @@ static void hid_embedded_start_mousing(void){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
     UNUSED(packet_size);
+    bd_addr_t event_addr;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
                     log_info("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
-                    log_info("SSP User Confirmation Auto accept\n");
+                    log_info("Accepting Pairing - TODO: require actual user action\n");
+                    hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                    gap_ssp_confirmation_response(event_addr);
                     break;
 
                 case HCI_EVENT_HID_META:

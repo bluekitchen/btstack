@@ -333,8 +333,17 @@ They commonly require to download a patch and a configuration file. Patch and co
 **Init script** is required.
 
 **BTstack integration**: H4/H5 Controller require firmware upload. 'rtk_attach' can be used for this on Embedded Linux. For H4 and USB Controllers, 
-*btstack_chipset_realtek.c* implements the patch and config upload mechanism. See port/libusb for details on how to use it.
+*btstack_chipset_realtek.c* implements the patch and config upload mechanism. The current implementation requires POSIX support and a file system. Please get in touch if your project requires an MCU without POSIX/File system.
 
+### Systems with an Operating System and a File System
+
+When `HAVE_POSIX_FILE_IO` is enabled, BTstack can load the Realtek patch and configuration files from the file system during Controller initialization. Store the Realtek `*_fw` and `*_config` files from the Linux driver in a directory that is accessible to the application. By default, the Realtek driver looks in the current directory. Applications can override this with `btstack_chipset_realtek_set_firmware_folder_path()` and `btstack_chipset_realtek_set_config_folder_path()`, or set explicit files with `btstack_chipset_realtek_set_firmware_file_path()` and `btstack_chipset_realtek_set_config_file_path()`.
+
+For Realtek USB Controllers, the USB transport reports the Vendor/Product ID. If the vendor ID is Realtek (`0x0bda`), the libusb port calls `btstack_chipset_realtek_set_product_id()`, and the Realtek driver maps the USB Product ID to the expected patch and configuration file names. The selected files are then uploaded before the regular HCI startup continues.
+
+For Realtek UART H4 Controllers, the POSIX H4 port reads the Controller's HCI Local Version Information and calls `btstack_chipset_realtek_set_local_info()` with HCI Version, HCI Revision, and LMP Subversion. The Realtek driver uses these values to select the matching patch and configuration file names from its UART table. The configuration file also defines the vendor baud rate; after the config has been parsed, `btstack_chipset_realtek_get_config_baudrate()` returns the main baud rate that the port should use.
+
+Embedded Linux systems can also use Realtek's `rtk_attach` tool to upload firmware before BTstack starts. In that setup, BTstack can then use the Controller after the operating system side has completed the Realtek initialization without specific support for Realtek chipsets.
 
 ## Renesas Electronics
 

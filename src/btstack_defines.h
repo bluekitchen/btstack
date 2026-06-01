@@ -92,12 +92,6 @@
 #define UNUSED(x) (void)(x)
 #endif
 
-
-// Get the number of entries in an array ('x' must NOT be a pointer!)
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(x) (sizeof(x)/sizeof((x)[0]))
-#endif
-
 // TYPES
 
 // packet handler
@@ -194,134 +188,18 @@ typedef SSIZE_T ssize_t;
 // Mesh Network PDU
 #define MESH_BEACON_PACKET       0x14u
 
+// A2DP media payload packet
+#define A2DP_MEDIA_PAYLOAD_PACKET 0x15u
+
+#define A2DP_MEDIA_PACKET_HEADER_OFFSET_LOCAL_SEID 0u
+#define A2DP_MEDIA_PACKET_HEADER_OFFSET_MARKER     1u
+#define A2DP_MEDIA_PACKET_HEADER_OFFSET_TIMESTAMP  2u
+#define A2DP_MEDIA_PACKET_HEADER_SIZE              6u
+#define A2DP_MEDIA_PACKET_PAYLOAD_OFFSET           A2DP_MEDIA_PACKET_HEADER_SIZE
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfcu
 
-
-// DAEMON COMMANDS
-
-#define OGF_BTSTACK 0x3du
-
-// cmds for BTstack 
-// get state: @return HCI_STATE
-#define BTSTACK_GET_STATE                                  0x01u
-
-// set power mode: param HCI_POWER_MODE
-#define BTSTACK_SET_POWER_MODE                             0x02u
-
-// set capture mode: param on
-#define BTSTACK_SET_ACL_CAPTURE_MODE                       0x03u
-
-// get BTstack version
-#define BTSTACK_GET_VERSION                                0x04u
-
-// get system Bluetooth state
-#define BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED               0x05u
-
-// set system Bluetooth state
-#define BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED               0x06u
-
-// enable inquiry scan for this client
-#define BTSTACK_SET_DISCOVERABLE                           0x07u
-
-// set global Bluetooth state
-#define BTSTACK_SET_BLUETOOTH_ENABLED                      0x08u
-
-// create l2cap channel: param bd_addr(48), psm (16)
-#define L2CAP_CREATE_CHANNEL                               0x20u
-
-// disconnect l2cap disconnect, param channel(16), reason(8)
-#define L2CAP_DISCONNECT                                   0x21u
-
-// register l2cap service: param psm(16), mtu (16)
-#define L2CAP_REGISTER_SERVICE                             0x22u
-
-// unregister l2cap disconnect, param psm(16)
-#define L2CAP_UNREGISTER_SERVICE                           0x23u
-
-// accept connection param bd_addr(48), dest cid (16)
-#define L2CAP_ACCEPT_CONNECTION                            0x24u
-
-// decline l2cap disconnect,param bd_addr(48), dest cid (16), reason(8)
-#define L2CAP_DECLINE_CONNECTION                           0x25u
-
-// create l2cap channel: param bd_addr(48), psm (16), mtu (16)
-#define L2CAP_CREATE_CHANNEL_MTU                           0x26u
-
-// request can send now event: l2cap_cid
-#define L2CAP_REQUEST_CAN_SEND_NOW                         0x27u
-
-// register SDP Service Record: service record (size)
-#define SDP_REGISTER_SERVICE_RECORD                        0x30u
-
-// unregister SDP Service Record
-#define SDP_UNREGISTER_SERVICE_RECORD                      0x31u
-
-// Get remote RFCOMM services
-#define SDP_CLIENT_QUERY_RFCOMM_SERVICES                   0x32u
-
-// Get remote SDP services
-#define SDP_CLIENT_QUERY_SERVICES                          0x33u
-
-// RFCOMM "HCI" Commands
-#define RFCOMM_CREATE_CHANNEL                              0x40u
-#define RFCOMM_DISCONNECT                                  0x41u
-#define RFCOMM_REGISTER_SERVICE                            0x42u
-#define RFCOMM_UNREGISTER_SERVICE                          0x43u
-#define RFCOMM_ACCEPT_CONNECTION                           0x44u
-#define RFCOMM_DECLINE_CONNECTION                          0x45u
-#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS                 0x47u
-#define RFCOMM_PERSISTENT_CHANNEL                          0x46u
-#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS               0x48u
-#define RFCOMM_GRANT_CREDITS                               0x49u
-// request can send now event: rfcomm_cid
-#define RFCOMM_REQUEST_CAN_SEND_NOW                        0x4Au
-
-// GAP Classic 0x50u
-#define GAP_DISCONNECT                0x50u
-#define GAP_INQUIRY_START             0x51u
-#define GAP_INQUIRY_STOP              0x52u
-#define GAP_REMOTE_NAME_REQUEST       0x53u
-#define GAP_DROP_LINK_KEY_FOR_BD_ADDR 0x54u
-#define GAP_DELETE_ALL_LINK_KEYS      0x55u
-#define GAP_PIN_CODE_RESPONSE         0x56u
-#define GAP_PIN_CODE_NEGATIVE         0x57u
-
-// GAP LE      0x60u
-#define GAP_LE_SCAN_START           0x60u
-#define GAP_LE_SCAN_STOP            0x61u
-#define GAP_LE_CONNECT              0x62u
-#define GAP_LE_CONNECT_CANCEL       0x63u
-#define GAP_LE_SET_SCAN_PARAMETERS  0x64u
-
-// GATT (Client) 0x70u
-#define GATT_DISCOVER_ALL_PRIMARY_SERVICES                       0x70u
-#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16                 0x71u
-#define GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128                0x72u
-#define GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE                  0x73u
-#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE                0x74u
-#define GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128     0x75u
-#define GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS                 0x76u
-#define GATT_READ_VALUE_OF_CHARACTERISTIC                        0x77u
-#define GATT_READ_LONG_VALUE_OF_CHARACTERISTIC                   0x78u
-#define GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE      0x79u
-#define GATT_WRITE_VALUE_OF_CHARACTERISTIC                       0x7Au
-#define GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC                  0x7Bu
-#define GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC         0x7Cu
-#define GATT_READ_CHARACTERISTIC_DESCRIPTOR                      0X7Du
-#define GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR                 0X7Eu
-#define GATT_WRITE_CHARACTERISTIC_DESCRIPTOR                     0X7Fu
-#define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80u
-#define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81u
-#define GATT_GET_MTU                                             0x82u
-
-// SM 0x90u
-#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90u
-#define SM_SET_IO_CAPABILITIES             0x92u
-#define SM_BONDING_DECLINE                 0x93u
-#define SM_JUST_WORKS_CONFIRM              0x94u
-#define SM_NUMERIC_COMPARISON_CONFIRM      0x95u
-#define SM_PASSKEY_INPUT                   0x96u
 
 // ATT
 
@@ -2785,13 +2663,22 @@ typedef SSIZE_T ssize_t;
 #define HFP_SUBEVENT_HF_INDICATOR                                    0x27u
 
 /**
+ * @format 1H21
+ * @param subevent_code
+ * @param acl_handle
+ * @param uuid
+ * @param enabled
+ */
+#define HFP_SUBEVENT_HF_INDICATOR_STATE                              0x28u
+
+/**
  * @format 1H2T
  * @param subevent_code
  * @param acl_handle
  * @param command_id
  * @param command_string
  */
-#define HFP_SUBEVENT_CUSTOM_AT_COMMAND                               0x28u
+#define HFP_SUBEVENT_CUSTOM_AT_COMMAND                               0x29u
 
 /**
  * @format 1H1
@@ -2799,7 +2686,7 @@ typedef SSIZE_T ssize_t;
  * @param acl_handle
  * @param status 0 == OK
  */
-#define HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT                          0x29u
+#define HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT                          0x2Au
 
 /**
  * @format 1H1
@@ -2807,7 +2694,7 @@ typedef SSIZE_T ssize_t;
  * @param acl_handle
  * @param supported
  */
-#define HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED                       0x2Au
+#define HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED                       0x2Bu
 
 /**
  * @format 1H221JV
@@ -2819,7 +2706,7 @@ typedef SSIZE_T ssize_t;
  * @param version_len
  * @param version
  */
-#define HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION                     0x2Bu
+#define HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION                     0x2Cu
 
 /**
  * @format 1H1
@@ -2827,7 +2714,7 @@ typedef SSIZE_T ssize_t;
  * @param acl_handle
  * @param battery_level range:0..9
  */
-#define HFP_SUBEVENT_APPLE_BATTERY_LEVEL                             0x2Cu
+#define HFP_SUBEVENT_APPLE_BATTERY_LEVEL                             0x2Du
 
 /**
  * @format 1H1
@@ -2835,7 +2722,7 @@ typedef SSIZE_T ssize_t;
  * @param acl_handle
  * @param docket 0 = undocked, 1 = docked
  */
-#define HFP_SUBEVENT_APPLE_DOCKED_STATE                              0x2Du
+#define HFP_SUBEVENT_APPLE_DOCKED_STATE                              0x2Eu
 
 
 // ANCS Client
@@ -3343,6 +3230,22 @@ typedef SSIZE_T ssize_t;
 #define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x05u
 
 /**
+ * @format 12111113113
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param object_type
+ * @param sampling_frequency
+ * @param num_channels
+ * @param vbr
+ * @param bit_rate
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CONFIGURATION        0x6u
+
+/**
  * @format 1211112LV
  * @param subevent_code
  * @param a2dp_cid
@@ -3354,7 +3257,7 @@ typedef SSIZE_T ssize_t;
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x06u
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x07u
 
 /**
  * @format 12B111          Stream is opened but not started.
@@ -3365,7 +3268,7 @@ typedef SSIZE_T ssize_t;
  * @param remote_seid
  * @param status
  */
-#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x07u
+#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x08u
 
 /**
  * @format 121            If ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION, user must explicitly accept stream start.
@@ -3373,7 +3276,7 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_START_STREAM_REQUESTED                       0x08u
+#define A2DP_SUBEVENT_START_STREAM_REQUESTED                       0x09u
 
 /**
  * @format 121            Indicates that media transfer is started.
@@ -3381,7 +3284,7 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_STARTED                               0x09u
+#define A2DP_SUBEVENT_STREAM_STARTED                               0x0Au
 
 /**
  * @format 121           Stream is paused.
@@ -3389,7 +3292,7 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x0Au
+#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x0Bu
 
 /**
  * @format 121           Stream is stopped or aborted.
@@ -3397,7 +3300,7 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_STOPPED                                0x0Bu
+#define A2DP_SUBEVENT_STREAM_STOPPED                                0x0Cu
 
 /**
  * @format 121            Stream is released.
@@ -3405,7 +3308,7 @@ typedef SSIZE_T ssize_t;
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_RELEASED                               0x0Cu
+#define A2DP_SUBEVENT_STREAM_RELEASED                               0x0Du
 
 /**
  * @format 1211
@@ -3414,7 +3317,7 @@ typedef SSIZE_T ssize_t;
  * @param local_seid
  * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x0Du
+#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x0Eu
 
 /**
  * @format 12111
@@ -3424,7 +3327,7 @@ typedef SSIZE_T ssize_t;
  * @param is_initiator
  * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0Eu
+#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0Fu
 
 /**
  * @format 12B21
@@ -3434,14 +3337,14 @@ typedef SSIZE_T ssize_t;
  * @param con_handle
  * @param status 0 == OK
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0Fu
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x10u
 
 /**
  * @format 12            Signaling channel is released.
  * @param subevent_code
  * @param a2dp_cid
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x10u
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x11u
 
 /**
  * @format 1211          Stream was reconfigured

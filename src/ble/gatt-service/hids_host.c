@@ -620,6 +620,8 @@ static void hids_host_handle_notification_event(uint8_t packet_type, uint16_t ch
 
     if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) return;
 
+    if (size <= 12u) return;
+
     hids_host_t * client = hids_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
     if (client == NULL) return;
 
@@ -627,6 +629,9 @@ static void hids_host_handle_notification_event(uint8_t packet_type, uint16_t ch
     if (report_index == HIDS_HOST_INVALID_REPORT_INDEX){
         return;
     }
+
+    uint16_t value_len = gatt_event_notification_get_value_length(packet);
+    if (value_len == 0u) return;
 
     // GATT_EVENT_NOTIFICATION has HID report data at offset 12
     // - see gatt_event_notification_get_value()
@@ -639,7 +644,7 @@ static void hids_host_handle_notification_event(uint8_t packet_type, uint16_t ch
 
     uint8_t * in_place_event = &packet[offset];
     hids_host_setup_report_event_with_report_id(client, report_index, in_place_event,
-                                                  gatt_event_notification_get_value_length(packet));
+                                                  value_len);
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size - offset);
 }
 
@@ -648,6 +653,8 @@ static void hids_host_handle_report_event(uint8_t packet_type, uint16_t channel,
     UNUSED(channel);
 
     if (hci_event_packet_get_type(packet) != GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT) return;
+
+    if (size <= 12u) return;
 
     hids_host_t * client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
     if (client == NULL) return;
@@ -662,6 +669,9 @@ static void hids_host_handle_report_event(uint8_t packet_type, uint16_t channel,
         return;
     }
 
+    uint16_t value_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
+    if (value_len == 0u) return;
+
     // GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT has HID report data at offset 12
     // - see gatt_event_characteristic_value_query_result_get_value()
     //
@@ -673,7 +683,7 @@ static void hids_host_handle_report_event(uint8_t packet_type, uint16_t channel,
 
     uint8_t * in_place_event = &packet[offset];
     hids_host_setup_report_event_with_report_id(client, report_index, in_place_event,
-                                                  gatt_event_characteristic_value_query_result_get_value_length(packet));
+                                                  value_len);
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size - offset);
 }
 

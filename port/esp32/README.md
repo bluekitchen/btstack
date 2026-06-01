@@ -52,6 +52,11 @@ You can quit the monitor with CTRL-].
 The configuration file 'btstack_config.h' is provided by the main project via the `btstack_config` component in
 `components/btstack_config/btstack_config.h`
 
+By default, BTstack routes SCO over HCI. This can be changed via menu config entry:
+
+    Component config -> Bluetooth -> Controller Options -> BR/EDR Sync(SCO/eSCO) default data path.
+
+
 ### Integration into custom projects
 
 The esp32 port (this folder) contains the components 'btstack' and 'btstack_config'. 

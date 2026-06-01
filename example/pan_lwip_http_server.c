@@ -106,16 +106,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch (hci_event_packet_get_type(packet)) {            
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
+                    // inform about legacy pairing with pin code - should only happen before Core v2.1
+                    printf("Pin code request for Legacy Pairing received -> abort pairing'\n");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
+                    gap_pin_code_negative(event_addr);
                     break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // inform about user confirmation request
-                    printf("SSP User Confirmation Auto accept\n");
+                    printf("Accepting Pairing - TODO: require actual user action\n");
                     hci_event_user_confirmation_request_get_bd_addr(packet, event_addr);
+                    gap_ssp_confirmation_response(event_addr);
                     break;
 
                 /* @text BNEP_EVENT_CHANNEL_OPENED is received after a BNEP connection was established or 

@@ -55,6 +55,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 #include "sco_demo_util.h"
@@ -497,6 +498,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case GAP_EVENT_INQUIRY_COMPLETE:
                     printf("Inquiry scan complete.\n");
+                    break;
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(event));
+                    printf("Accepting Pairing - TODO: require actual user action\n");
+                    hci_event_user_confirmation_request_get_bd_addr(event, addr);
+                    gap_ssp_confirmation_response(addr);
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(hci_event_sco_can_send_now_get_handle(event));

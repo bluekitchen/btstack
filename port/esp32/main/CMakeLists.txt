@@ -12,7 +12,7 @@ if( NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/${EXAMPLE}.c" )
     set(BUILD_MESSAGE  "Building example: \"${EXAMPLE}\"")
     list(TRANSFORM EXAMPLE PREPEND ${BTSTACK_ROOT}/example/ OUTPUT_VARIABLE EXAMPLE_SOURCE)
 else()
-    set(BUILD_MESSAGE  "Building custom application")
+    set(BUILD_MESSAGE  "Building custom application \"${EXAMPLE}\"")
     list(TRANSFORM EXAMPLE PREPEND ${CMAKE_CURRENT_LIST_DIR}/ OUTPUT_VARIABLE EXAMPLE_SOURCE)
 endif()
 
@@ -25,7 +25,7 @@ endif()
 
 idf_component_register(
     SRCS "main.c" "${EXAMPLE_SOURCE}"
-    REQUIRES btstack esp_phy bt)
+    REQUIRES btstack esp_phy bt esp_driver_gpio esp_driver_i2s)
 
 include(BTstackUtils)
 
@@ -43,16 +43,19 @@ message("===\n")
 set(SCO_EXAMPLES hfp_ag_demo hfp_hf_demo hsp_ag_demo hsp_hs_demo )
 if( ${EXAMPLE} IN_LIST SCO_EXAMPLES )
     list(APPEND SRCS ${BTSTACK_ROOT}/example/sco_demo_util.c )
+    target_include_directories(${COMPONENT_LIB} PRIVATE ${BTSTACK_ROOT}/example/)
 endif()
 
-set(LE_AUDIO_SINK_EXAMPLES le_audio_unicast_headset le_audio_unicast_gateway le_audio_broadcast_sink)
+set(LE_AUDIO_SINK_EXAMPLES le_audio_unicast_headset le_audio_unicast_gateway le_audio_broadcast_sink le_audio_broadcast_sink_lite le_audio_unicast_gateway_lite le_audio_unicast_headset_lite)
 if( ${EXAMPLE} IN_LIST LE_AUDIO_SINK_EXAMPLES )
     list(APPEND SRCS ${BTSTACK_ROOT}/example/le_audio_demo_util_sink.c )
+    target_include_directories(${COMPONENT_LIB} PRIVATE ${BTSTACK_ROOT}/example/)
 endif()
 
-set(LE_AUDIO_SOURCE_EXAMPLES le_audio_unicast_gateway le_audio_broadcast_source)
+set(LE_AUDIO_SOURCE_EXAMPLES le_audio_unicast_gateway le_audio_broadcast_source le_audio_broadcast_source_lite le_audio_unicast_gateway_lite le_audio_unicast_headset_lite)
 if( ${EXAMPLE} IN_LIST LE_AUDIO_SOURCE_EXAMPLES )
     list(APPEND SRCS ${BTSTACK_ROOT}/example/le_audio_demo_util_source.c )
+    target_include_directories(${COMPONENT_LIB} PRIVATE ${BTSTACK_ROOT}/example/)
 endif()
 
 # define sources for main component

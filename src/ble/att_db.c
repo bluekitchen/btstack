@@ -182,6 +182,9 @@ static bool att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t 
     return little_endian_read_16(uuid, 12) == little_endian_read_16(it->uuid, 0);
 }
 
+static bool att_db_is_handle_range_valid(uint16_t start_handle, uint16_t end_handle){
+    return (start_handle <= end_handle) && (start_handle != 0u);
+}
 
 static bool att_find_handle(att_iterator_t *it, uint16_t handle){
     if (handle == 0u){
@@ -465,7 +468,7 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
     log_info("ATT_FIND_INFORMATION_REQUEST: from %04X to %04X", start_handle, end_handle);
     uint8_t request_type = ATT_FIND_INFORMATION_REQUEST;
     
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -569,7 +572,7 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
     log_info_hexdump(attribute_value, attribute_len);
     uint8_t request_type = ATT_FIND_BY_TYPE_VALUE_REQUEST;
 
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -637,7 +640,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_TYPE_REQUEST;
 
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -1016,7 +1019,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
     log_info_hexdump(attribute_type, attribute_type_len);
     uint8_t request_type = ATT_READ_BY_GROUP_TYPE_REQUEST;
     
-    if ((start_handle > end_handle) || (start_handle == 0u)){
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
         return setup_error_invalid_handle(response_buffer, request_type, start_handle);
     }
 
@@ -1227,7 +1230,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     uint16_t bytes_to_echo = (uint16_t) btstack_min(request_len, response_buffer_size);
     (void)memcpy(response_buffer, request_buffer, bytes_to_echo);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
-    return request_len;
+    return bytes_to_echo;
 }
 
 /*
@@ -1538,6 +1541,15 @@ uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
     return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION);
 }
+
+bool gatt_server_get_client_configuration_value(const uint8_t * buffer, uint16_t buffer_size, uint16_t * value){
+    if (buffer_size == 0u){
+        return false;
+    }
+    *value = (buffer_size == 1u) ? buffer[0] : little_endian_read_16(buffer, 0);
+    return true;
+}
+
 // returns 0 if not found
 
 uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){

@@ -36,8 +36,8 @@
  */
 
 
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#ifndef PB_GATT_H
+#define PB_GATT_H
 
 #include <stdint.h>
 
@@ -87,4 +87,4 @@ void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
 }
 #endif
 
-#endif // __PB_GATT_H
+#endif // PB_GATT_H

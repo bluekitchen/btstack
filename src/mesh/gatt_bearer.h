@@ -36,8 +36,8 @@
  */
 
 
-#ifndef __GATT_BEARER_H
-#define __GATT_BEARER_H
+#ifndef GATT_BEARER_H
+#define GATT_BEARER_H
 
 #include <stdint.h>
 
@@ -79,4 +79,4 @@ void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * proxy_configurati
 }
 #endif
 
-#endif // __GATT_BEARER_H
+#endif // GATT_BEARER_H

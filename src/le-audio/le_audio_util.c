@@ -259,41 +259,53 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 }
 
 // parse metadata, first unsupported type is stored in metadata.unsupported_type
-uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
+uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint16_t buffer_size, le_audio_metadata_t * metadata){
 
     // reset capabilities
     memset(metadata, 0, sizeof(le_audio_metadata_t));
 
+    // check size
+    if (buffer_size < 1u) {
+        return 0;
+    }
+
     // parse config to get sampling frequency and frame duration
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     uint8_t metadata_config_length = buffer[offset++];
-    if (buffer_size < metadata_config_length){
+    uint16_t metadata_end = 1u + metadata_config_length;
+    if (buffer_size < metadata_end){
         return 0;
     }
 
     metadata->metadata_mask = 0;
 
-    while ((offset + 1) < metadata_config_length){
+    while (offset < metadata_end){
         uint8_t ltv_len = buffer[offset++];
+        // ltv len includes the type field
+        if (ltv_len == 0u) return 0;
+        if (((uint16_t) offset + ltv_len) > metadata_end) return 0;
 
         le_audio_metadata_type_t ltv_type = (le_audio_metadata_type_t)buffer[offset];
         le_audio_parental_rating_t parental_rating; 
 
         switch (ltv_type){
             case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
+                if (ltv_len < 3u) break;
                 metadata->preferred_audio_contexts_mask = little_endian_read_16(buffer, offset+1);
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
             case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
+                if (ltv_len < 3u) break;
                 metadata->streaming_audio_contexts_mask = little_endian_read_16(buffer, offset+1);
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
             case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
-                metadata->program_info_length = btstack_min(ltv_len, LE_AUDIO_PROGRAM_INFO_MAX_LENGTH);
+                metadata->program_info_length = btstack_min(ltv_len - 1u, LE_AUDIO_PROGRAM_INFO_MAX_LENGTH);
                 memcpy(metadata->program_info, &buffer[offset+1], metadata->program_info_length);
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
             case LE_AUDIO_METADATA_TYPE_LANGUAGE:
+                if (ltv_len < 4u) break;
                 metadata->language_code = little_endian_read_24(buffer, offset+1);
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
@@ -305,29 +317,30 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
                 }
                 break;
             case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
+                if (ltv_len < 2u) break;
                 parental_rating = (le_audio_parental_rating_t)buffer[offset+1];
                 metadata->parental_rating = parental_rating;
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
             case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
-                metadata->program_info_uri_length = btstack_min(ltv_len, LE_AUDIO_PROGRAM_INFO_URI_MAX_LENGTH);
+                metadata->program_info_uri_length = btstack_min(ltv_len - 1u, LE_AUDIO_PROGRAM_INFO_URI_MAX_LENGTH);
                 memcpy(metadata->program_info_uri, &buffer[offset+1], metadata->program_info_uri_length);
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
             case LE_AUDIO_METADATA_TYPE_EXTENDED_METADATA:
-                if (ltv_len < 2){
+                if (ltv_len < 3u){
                     break;
                 }
-                metadata->extended_metadata_length = btstack_min(ltv_len - 2, LE_AUDIO_EXTENDED_METADATA_MAX_LENGHT);
+                metadata->extended_metadata_length = btstack_min(ltv_len - 3u, LE_AUDIO_EXTENDED_METADATA_MAX_LENGHT);
                 metadata->extended_metadata_type = little_endian_read_16(buffer, offset+1);
                 memcpy(metadata->extended_metadata, &buffer[offset+3], metadata->extended_metadata_length);
                 metadata->metadata_mask |= (1 << LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION);
                 break;
             case LE_AUDIO_METADATA_TYPE_VENDOR_SPECIFIC_METADATA:
-                if (ltv_len < 2){
+                if (ltv_len < 3u){
                     break;
                 }
-                metadata->vendor_specific_metadata_length = btstack_min(ltv_len - 2, LE_AUDIO_VENDOR_SPECIFIC_METADATA_MAX_LENGTH);
+                metadata->vendor_specific_metadata_length = btstack_min(ltv_len - 3u, LE_AUDIO_VENDOR_SPECIFIC_METADATA_MAX_LENGTH);
                 metadata->vendor_specific_company_id = little_endian_read_16(buffer, offset+1);
                 memcpy(metadata->vendor_specific_metadata, &buffer[offset+3], metadata->vendor_specific_metadata_length);
                 metadata->metadata_mask |= (1 << LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION);
@@ -590,4 +603,3 @@ le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(
             return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU;
     }
 }
-

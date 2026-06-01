@@ -39,8 +39,8 @@
  *  provisioning.h
  */
 
-#ifndef __MESH_CRYPTO_H
-#define __MESH_CRYPTO_H
+#ifndef MESH_CRYPTO_H
+#define MESH_CRYPTO_H
 
 #include <stdint.h>
 

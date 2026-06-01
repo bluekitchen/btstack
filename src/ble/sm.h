@@ -107,7 +107,7 @@ void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_meth
 
 /**
  * @brief Set the accepted encryption key size range. Bonding is stopped if the result isn't within the range
- * @param min_size (default 7)
+ * @param min_size (default 16)
  * @param max_size (default 16)
  */
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
@@ -126,7 +126,7 @@ void sm_set_io_capabilities(io_capability_t io_capability);
 
 /**
  * @brief Enable/disable Secure Connections Mode only
- * @param enable secure connections only mode
+ * @param enable secure connections only mode (default: true, if ENABLE_LE_SECURE_CONNECTIONS enabled)
  */
 void sm_set_secure_connections_only_mode(bool enable);
 

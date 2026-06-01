@@ -17,13 +17,16 @@
 
 #define HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
 
-// HCI Controller to Host Flow Control
+#if defined(CONFIG_BTSTACK_INTERNAL_BT)
+// HCI Controller to Host Flow Control - required for VHCI
 #define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+#endif
 
 // BTstack features that can be enabled
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_PRINTF_HEXDUMP
+#define ENABLE_MODPLAYER
 
 // Enable Classic/LE based on esp-idf sdkconfig
 #include "sdkconfig.h"
@@ -41,11 +44,7 @@
 // Classic configuration
 #ifdef ENABLE_CLASSIC
 
-#define ENABLE_MODPLAYER
-
 #define ENABLE_HFP_WIDE_BAND_SPEECH
-
-#define ENABLE_SCO_OVER_HCI
 
 // mainly needed for AVRCP Browsing, can be removed otherwise to reduce code size
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -104,20 +103,24 @@
 // ACL buffer large enough for Ethernet frame in BNEP/PAN
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 #define HCI_HOST_ACL_PACKET_LEN 1024
 #define HCI_HOST_ACL_PACKET_NUM 20
 #define HCI_HOST_SCO_PACKET_LEN 60
 #define HCI_HOST_SCO_PACKET_NUM 10
+#endif
 
 #else
 
 // ACL buffer large enough to allow for 512 byte Characteristic
 #define HCI_ACL_PAYLOAD_SIZE (512 + 4 + 3)
 
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 #define HCI_HOST_ACL_PACKET_LEN HCI_ACL_PAYLOAD_SIZE
 #define HCI_HOST_ACL_PACKET_NUM 20
 #define HCI_HOST_SCO_PACKET_LEN 0
 #define HCI_HOST_SCO_PACKET_NUM 0
+#endif
 
 #endif
 

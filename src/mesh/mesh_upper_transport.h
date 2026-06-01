@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_TRANSPORT_H
-#define __MESH_TRANSPORT_H
+#ifndef MESH_UPPER_TRANSPORT_H
+#define MESH_UPPER_TRANSPORT_H
 
 #include <stdint.h>
 

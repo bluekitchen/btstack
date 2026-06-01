@@ -48,7 +48,7 @@ include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
 
-file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/*_demo_util.c")
+file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/*_demo_util*.c")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
@@ -168,14 +168,11 @@ target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(btstack m)
 
 
-# create targets for all examples
-file(GLOB EXAMPLES_C    "../../example/*.c")
-list(SORT EXAMPLES_C)
-file(GLOB EXAMPLES_GATT "../../example/*.gatt")
-
-# remove some
-file(GLOB EXAMPLES_OFF  "../../example/*demo_util*.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
-list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
+# get list of examples
+include(${BTSTACK_ROOT}/example/CMakeLists.txt)
+set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
+list(REMOVE_DUPLICATES EXAMPLES)
+list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client")
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
@@ -185,9 +182,7 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 
 # create targets
-foreach(EXAMPLE_FILE ${EXAMPLES_C})
-    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-
+foreach(EXAMPLE ${EXAMPLES})
     # get c file
     set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
 
@@ -197,7 +192,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     endif()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
@@ -211,4 +206,4 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     endif()
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
     target_link_libraries(${EXAMPLE} btstack)
-endforeach(EXAMPLE_FILE)
+endforeach(EXAMPLE)

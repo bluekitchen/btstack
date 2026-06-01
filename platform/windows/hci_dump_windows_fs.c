@@ -101,7 +101,7 @@ static void hci_dump_windows_fs_log_packet(uint8_t packet_type, uint8_t in, uint
     static union {
         uint8_t header_bluez[HCI_DUMP_HEADER_SIZE_BLUEZ];
         uint8_t header_packetlogger[HCI_DUMP_HEADER_SIZE_PACKETLOGGER];
-        uint8_t header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP+1];
+        uint8_t header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP];
     } header;
 
     uint32_t tv_sec = 0;
@@ -137,13 +137,9 @@ static void hci_dump_windows_fs_log_packet(uint8_t packet_type, uint8_t in, uint
             header_len = HCI_DUMP_HEADER_SIZE_PACKETLOGGER;
             break;
         case HCI_DUMP_BTSNOOP:
-            // log messages not supported
-            if (packet_type == LOG_MESSAGE_PACKET) return;
             ts_usec = 0xdcddb30f2f8000LLU + 1000000LLU * tv_sec + tv_us;
-            // append packet type to pcap header
-            hci_dump_setup_header_btsnoop(header.header_btsnoop, ts_usec >> 32, ts_usec & 0xFFFFFFFF, 0, packet_type, in, len+1);
-            header.header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP] = packet_type;
-            header_len = HCI_DUMP_HEADER_SIZE_BTSNOOP + 1;
+            hci_dump_setup_header_btsnoop(header.header_btsnoop, ts_usec >> 32, ts_usec & 0xFFFFFFFF, 0, packet_type, in, len);
+            header_len = HCI_DUMP_HEADER_SIZE_BTSNOOP;
             break;
         default:
             btstack_unreachable();
@@ -201,8 +197,8 @@ int hci_dump_windows_fs_open(const char *filename, hci_dump_format_t format){
             0x62, 0x74, 0x73, 0x6E, 0x6F, 0x6F, 0x70, 0x00,
             // Version: 1
             0x00, 0x00, 0x00, 0x01,
-            // Datalink Type: 1002 - H4
-            0x00, 0x00, 0x03, 0xEA,
+            // Datalink Type: 2001 - Linux Monitor
+            0x00, 0x00, 0x07, 0xD1,
         };
 
 		DWORD dwBytesWritten = 0;

@@ -22,15 +22,21 @@ COMMON = \
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+COMMON_CODEC = $(filter-out avdtp_initiator.c,${COMMON})
+COMMON_CODEC_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON_CODEC:.c=.o))
+COMMON_CODEC_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON_CODEC:.c=.o))
 
 all: coverage test
 
 build-coverage/avdtp_util_test: ${COMMON_OBJ_COVERAGE}
+build-coverage/codec_serialization_test: ${COMMON_CODEC_OBJ_COVERAGE}
 
 build-asan/avdtp_util_test: ${COMMON_OBJ_ASAN}
+build-asan/codec_serialization_test: ${COMMON_CODEC_OBJ_ASAN}
 
-test: build-asan/avdtp_util_test
-	$<
+test: build-asan/avdtp_util_test build-asan/codec_serialization_test
+	build-asan/avdtp_util_test
+	build-asan/codec_serialization_test
 
 coverage: build-coverage/avdtp_util_test.info
 

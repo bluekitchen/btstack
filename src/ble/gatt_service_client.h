@@ -177,8 +177,9 @@ const uuid128_t * gatt_service_client_characteristic_uuid128_for_index(const gat
 /**
  * @brief Unregister GATT Service Client
  * @param client
+ * @return status
  */
-void gatt_service_client_unregister_client(gatt_service_client_t * client);
+uint8_t gatt_service_client_unregister_client(gatt_service_client_t * client);
 
 /**
  * @brief Connect to the first instance of Primary GATT Service with UUID16

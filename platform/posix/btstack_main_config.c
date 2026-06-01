@@ -45,6 +45,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "btstack_config.h"
 #include "btstack_audio.h"
 #include "btstack_debug.h"
 #include "btstack_memory.h"
@@ -56,7 +57,7 @@
 #include "hci_dump_posix_stdout.h"
 #include "hci_transport.h"
 
-static char short_options[] = "+hu:l:rb:a:f:";
+static char short_options[] = "+hu:l:rb:a:f:d";
 
 static struct option long_options[] = {
     {"help",      no_argument,       NULL, 'h'},
@@ -66,6 +67,9 @@ static struct option long_options[] = {
     {"tty",       required_argument, NULL, 'u'},
     {"bd-addr",   required_argument, NULL, 'm'},
     {"baudrate",  required_argument, NULL, 'b'},
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    {"airoc-download-mode",  no_argument, NULL, 'd'},
+#endif
     {0, 0, 0, 0}
 };
 
@@ -77,6 +81,9 @@ static const char *help_options[] = {
     "set path to Bluetooth Controller.",
     "set random static Bluetooth address.",
     "set initial baudrate.",
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    "enable AIROC Download Mode for newer CYW55xx Controller.",
+#endif
 };
 
 static const char *option_arg_name[] = {
@@ -87,6 +94,9 @@ static const char *option_arg_name[] = {
     "TTY",
     "BD_ADDR",
     "BAUDRATE",
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+    ""
+#endif
 };
 
 static void usage(const char *name){
@@ -94,7 +104,7 @@ static void usage(const char *name){
     printf( "usage:\n\t%s [options]\n", name );
     printf("valid options:\n");
     for( i=0; long_options[i].name != 0; i++) {
-        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
+        printf("--%-20s| -%c  %-12s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
     }
 }
 
@@ -129,7 +139,8 @@ static const char *get_file_ext(const char *filename) {
     return dot + 1;
 }
 
-int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t *transport_config, bd_addr_t address, bool *tlv_reset ){
+int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t *transport_config,
+    bd_addr_t address, bool *tlv_reset, bool *airoc_download_mode){
     btstack_assert(transport_config != NULL);
     const char * log_file_path = NULL;
     hci_dump_format_t dump_format = HCI_DUMP_PACKETLOGGER;
@@ -167,10 +178,13 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
             case 'f':
                 dump_format = dump_format_name_to_enum( optarg );
                 break;
+            case 'd':
+                *airoc_download_mode = true;
+                break;
             case 'h':
             default:
                 usage(argv[0]);
-                break;
+                return -1;
         }
     }
     // reset getopt parsing, so it works as intended from btstack_main

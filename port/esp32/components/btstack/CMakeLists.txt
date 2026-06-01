@@ -29,11 +29,11 @@ set(include_dirs
     ${BTSTACK_ROOT}/3rd-party/md5
     ${BTSTACK_ROOT}/3rd-party/qr-code-generator
     ${BTSTACK_ROOT}/3rd-party/yxml
+    ${BTSTACK_ROOT}/chipset/zephyr
     ${BTSTACK_ROOT}/src/classic
     ${BTSTACK_ROOT}/src/ble/gatt-service
     ${BTSTACK_ROOT}/src/ble
     ${BTSTACK_ROOT}/src/le-audio
-    ${BTSTACK_ROOT}/src/le-audio/gatt-service
     ${BTSTACK_ROOT}/src/classic
     ${BTSTACK_ROOT}/src
     ${BTSTACK_ROOT}/platform/embedded
@@ -54,16 +54,15 @@ set(src_dirs
     ${BTSTACK_ROOT}/3rd-party/qr-code-generator
     ${BTSTACK_ROOT}/3rd-party/yxml
     ${BTSTACK_ROOT}/src/ble/gatt-service
+    ${BTSTACK_ROOT}/chipset/zephyr
     ${BTSTACK_ROOT}/src/ble
     ${BTSTACK_ROOT}/src/le-audio
-    ${BTSTACK_ROOT}/src/le-audio/gatt-service
     ${BTSTACK_ROOT}/src/mesh
     ${BTSTACK_ROOT}/src
     ${BTSTACK_ROOT}/platform/embedded
     ${BTSTACK_ROOT}/platform/freertos
     ${BTSTACK_ROOT}/platform/lwip
-    ${IDF_PATH}/components/lwip/lwip/src/apps/http
-    .)
+    ${IDF_PATH}/components/lwip/lwip/src/apps/http)
 
 set( exclude_srcs
     ${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c
@@ -78,22 +77,30 @@ set( srcs btstack_port_esp32.c btstack_stdio_esp32.c btstack_tlv_esp32.c )
 
 if(${CONFIG_BTSTACK_AUDIO})
     if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
-        list(APPEND exclude_srcs "btstack_audio_esp32_v4.c")
+        list(APPEND srcs "btstack_audio_esp32_v5.c")
     else()
-        list(APPEND exclude_srcs "btstack_audio_esp32_v5.c")
+        list(APPEND srcs "btstack_audio_esp32_v4.c")
     endif()
-else()
-    list(APPEND exclude_srcs "btstack_audio_esp32_v4.c" "btstack_audio_esp32_v5.c")
 endif()
 
-if(CONFIG_ESP_HOSTED_ENABLE_BT_BLUEDROID)
-    list(APPEND exclude_srcs "btstack_transport_vhci.c")
-else()
-    list(APPEND exclude_srcs "btstack_transport_hosted.c")
+if(CONFIG_BTSTACK_INTERNAL_BT)
+    list(APPEND srcs "hci_transport_esp32_vhci.c")
 endif()
 
-if(CONFIG_IDF_TARGET_ESP32)
-    list(APPEND src_dirs ${BTSTACK_ROOT}/src/classic)
+if(CONFIG_BTSTACK_EXTERNAL_UART_BT)
+    list(APPEND srcs
+        hal_uart_dma_esp32.c
+        ${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c)
+endif()
+
+if(CONFIG_BTSTACK_HCI_DUMP_STDOUT)
+    list( APPEND srcs
+        ${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c)
+endif()
+
+if(CONFIG_BTDM_CTRL_MODE_BTDM)
+    list(APPEND src_dirs
+        ${BTSTACK_ROOT}/src/classic)
 endif()
 
 set(priv_include_dirs
@@ -116,3 +123,5 @@ idf_component_register(
     PRIV_REQUIRES "${priv_requires}"
     REQUIRES btstack_config
 )
+
+target_sources(${COMPONENT_LIB} PRIVATE ${srcs})

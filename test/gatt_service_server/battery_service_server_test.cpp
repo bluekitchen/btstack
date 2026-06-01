@@ -43,6 +43,9 @@ TEST_GROUP(BATTERY_SERVICE_SERVER){
 
         service = mock_att_server_get_service();
         con_handle = 0x00;
+
+        const uint8_t disable_notify[] = { 0x00, 0x00 };
+        mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, disable_notify, sizeof(disable_notify));
     }
 
     void teardown(){
@@ -102,6 +105,34 @@ TEST(BATTERY_SERVICE_SERVER, set_wrong_handle_battery_value){
     mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration + 10, ATT_TRANSACTION_MODE_VALIDATE, 0, enable_notify, sizeof(enable_notify));
     battery_service_server_set_battery_value(60);
     mock().checkExpectations();
+}
+
+TEST(BATTERY_SERVICE_SERVER, write_client_configuration_short_lengths){
+    uint8_t response[2];
+    uint16_t response_len;
+
+    const uint8_t enable_notify[] = { 0x01 };
+    CHECK_EQUAL(0, mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify)));
+
+    response_len = mock_att_service_read_callback(con_handle, battery_value_handle_client_configuration, 0, response, sizeof(response));
+    CHECK_EQUAL(2, response_len);
+    CHECK_EQUAL(0x01, response[0]);
+    CHECK_EQUAL(0x00, response[1]);
+
+    CHECK_EQUAL(0, mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, NULL, 0));
+
+    response_len = mock_att_service_read_callback(con_handle, battery_value_handle_client_configuration, 0, response, sizeof(response));
+    CHECK_EQUAL(2, response_len);
+    CHECK_EQUAL(0x01, response[0]);
+    CHECK_EQUAL(0x00, response[1]);
+
+    const uint8_t two_byte_value[] = { 0x00, 0x01 };
+    CHECK_EQUAL(0, mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, two_byte_value, sizeof(two_byte_value)));
+
+    response_len = mock_att_service_read_callback(con_handle, battery_value_handle_client_configuration, 0, response, sizeof(response));
+    CHECK_EQUAL(2, response_len);
+    CHECK_EQUAL(0x00, response[0]);
+    CHECK_EQUAL(0x01, response[1]);
 }
 
 

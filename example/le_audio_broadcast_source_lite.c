@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "le_audio_broadcast_source.c"
+#define BTSTACK_FILE__ "le_audio_broadcast_source_lite.c"
 
 /*
  * LE Audio Broadcast Source
@@ -43,10 +43,15 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include <btstack_debug.h>
+#include <inttypes.h>
+#include <string.h>
 
+#include "audio_player_demo_util.h"
+#include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
+#include "btstack_audio_player.h"
 #include "btstack_stdin.h"
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
@@ -56,21 +61,29 @@
 #include "hci_dump.h"
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
-#include "le-audio/le_audio_base_builder.h"
 
-#include "hxcmod.h"
 #include "mods/mod.h"
+
 #include "le_audio_demo_util_source.h"
 
-// Interoperability with Nordic LE Audio demo
-//#define NRF5340_BROADCAST_MODE
-
 // max config
-#define MAX_NUM_BIS 2
+#define MAX_NUM_BIS 4
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
-static const uint8_t adv_sid = 0;
+#define ADVERTISING_SID  0
+
+typedef enum {
+    BROADCAST_SOURCE_PLAYER = 0,
+    BROADCAST_SOURCE_COUNTER,
+    BROADCAST_SOURCE_LOOPBACK,
+} broadcast_source_t;
+static broadcast_source_t broadcast_source = BROADCAST_SOURCE_PLAYER;
+
+static btstack_audio_player_t audio_player[MAX_NUM_BIS];;
+
+static int num_iso_generators;
+static le_audio_demo_source_generator_t iso_gen[MAX_NUM_BIS];
 
 static le_advertising_set_t le_advertising_set;
 
@@ -87,27 +100,43 @@ static le_extended_advertising_parameters_t extended_params = {
         .primary_advertising_phy = 1, // LE 1M PHY
         .secondary_advertising_max_skip = 0,
         .secondary_advertising_phy = 1, // LE 1M PHY
-        .advertising_sid = adv_sid,
+        .advertising_sid = ADVERTISING_SID,
         .scan_request_notification_enable = 0,
 };
 
 // Random Broadcast ID, valid for lifetime of BIG
 #define BROADCAST_ID (0x112233u)
 
-static const uint8_t extended_adv_data[] = {
+enum {
+    BROADCAST_LITE_ADV_FIELD_LEN = 9,
+    BROADCAST_LITE_ADV_OFFSET_SUBTYPE = 11,
+    BROADCAST_LITE_ADV_OFFSET_FLAGS,
+    BROADCAST_LITE_ADV_OFFSET_NUM_BIS,
+    BROADCAST_LITE_ADV_OFFSET_SAMPLING_FREQUENCY,
+    BROADCAST_LITE_ADV_OFFSET_FRAME_DURATION,
+    BROADCAST_LITE_ADV_OFFSET_OCTETS_PER_FRAME,
+};
+
+static uint8_t extended_adv_data[] = {
         // 16 bit service data, ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE, Broadcast ID
         6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18,
         BROADCAST_ID >> 16,
         (BROADCAST_ID >> 8) & 0xff,
         BROADCAST_ID & 0xff,
+        // Manufacturer Specific Data to indicate codec
+        BROADCAST_LITE_ADV_FIELD_LEN,
+        BLUETOOTH_DATA_TYPE_MANUFACTURER_SPECIFIC_DATA,
+        BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH & 0xff,
+        BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH >> 8,
+        1, // subtype: LE Audio Broadcast Source Lite
+        0, // flags
+        1, // num bis
+        8, // LC3 sampling frequency index
+        0, // frame duration
+        26, // octets per frame
         // name
-#if defined(NRF5340_BROADCAST_MODE)
-        20, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'N','R','F','5','3','4','0','_','B','R','O','A','D','C','A','S','T','E','R',
-        20, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'N','R','F','5','3','4','0','_','B','R','O','A','D','C','A','S','T','E','R',
-#else
          7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'o', 'u', 'r', 'c', 'e',
          7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'S', 'o', 'u', 'r', 'c', 'e',
-#endif
 };
 
 static const le_periodic_advertising_parameters_t periodic_params = {
@@ -117,14 +146,14 @@ static const le_periodic_advertising_parameters_t periodic_params = {
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static uint8_t period_adv_data[255];
-static uint16_t period_adv_data_len;
-
 static uint8_t adv_handle = 0;
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
+static bool bis_read_tx_time[MAX_NUM_BIS];
 
 static le_audio_big_t big_storage;
 static le_audio_big_params_t big_params;
+static bd_addr_t local_addr;
+static uint8_t local_addr_type;
 
 // time stamping
 #ifdef COUNT_MODE
@@ -133,12 +162,17 @@ static uint32_t send_time_bins[MAX_PACKET_INTERVAL_BINS_MS];
 static uint32_t send_last_ms;
 #endif
 
+static uint16_t counter_packet_sequence_number;
+
 // lc3 codec config
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
-static uint8_t  num_bis = 1;
+
+static uint8_t num_stereo_streams = 0;
+static uint8_t num_mono_streams   = 1;
+static uint8_t num_bis            = 1;
 
 // codec menu
 static uint8_t menu_sampling_frequency;
@@ -147,13 +181,6 @@ static uint8_t menu_variant;
 // encryption
 static uint8_t encryption = 0;
 static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
-
-// audio producer
-#ifdef COUNT_MODE
-static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_COUNTER;
-#else
-static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_MODPLAYER;
-#endif
 
 static enum {
     APP_IDLE,
@@ -220,35 +247,35 @@ static struct {
     },
 };
 
+static uint32_t measurement_disconnect_time_ms = 15000;
+static btstack_timer_source_t measurement_disconnect_timer;
+static btstack_timer_source_t loopback_single_packet_timer;
 static void show_usage(void);
 
 static void print_config(void) {
-    static const char * generator[] = { "Sine", "Modplayer", "Recording"};
+    printf("Stereo streams: %2d Mono streams: %2d\n", num_stereo_streams, num_mono_streams);
+    static const char * generator[] = { "Audio Player", "Counter Mode (test)", "Loopback (test)"};
     printf("Config '%s_%u': %u, %s ms, %u octets - %s%s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_bis,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
-           generator[audio_source - AUDIO_SOURCE_SINE],
+           generator[broadcast_source],
            encryption ? " (encrypted)" : "");
 }
 
 static void setup_advertising() {
-    bd_addr_t local_addr;
-    gap_local_bd_addr(local_addr);
-    bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
-    if( local_address_invalid ) {
-        extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
-    }
+    gap_le_get_own_address(&local_addr_type, local_addr);
+
+    extended_params.own_address_type = local_addr_type;
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
-    if( local_address_invalid ) {
-        bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
-        gap_extended_advertising_set_random_address( adv_handle, random_address );
+    if( local_addr_type == BD_ADDR_TYPE_LE_RANDOM ) {
+        gap_extended_advertising_set_random_address( adv_handle, local_addr );
     }
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
     gap_periodic_advertising_set_params(adv_handle, &periodic_params);
-    gap_periodic_advertising_set_data(adv_handle, period_adv_data_len, period_adv_data);
+    gap_periodic_advertising_set_data(adv_handle, 0, NULL);
     gap_periodic_advertising_start(adv_handle, 0);
     gap_extended_advertising_start(adv_handle, 0, 0);
 }
@@ -260,7 +287,7 @@ static void setup_big(void){
     big_params.num_bis = num_bis;
     big_params.max_sdu = octets_per_frame;
     big_params.max_transport_latency_ms = 31;
-    big_params.rtn = 2;
+    big_params.rtn = 1;
     big_params.phy = 2;
     big_params.packing = 0;
     big_params.encryption = encryption;
@@ -281,80 +308,183 @@ static void setup_big(void){
     gap_big_create(&big_storage, &big_params);
 }
 
+static void stop_broadcast(void) {
+    printf("Terminate BIG\n");
+    gap_big_terminate(big_params.big_handle);
+}
 
-static void start_broadcast() {// use values from table
+static void measurement_disconnect_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    stop_broadcast();
+}
+
+static void update_demo_util_source(int i) {
+    le_audio_demo_source_generator_t *gen = &iso_gen[i];
+
+    switch (broadcast_source) {
+        case BROADCAST_SOURCE_PLAYER:
+            le_audio_demo_util_source_set_audio_generator(gen, btstack_audio_player_get_generator(&audio_player[i]));
+            break;
+        case BROADCAST_SOURCE_COUNTER:
+            printf("BROADCAST_SOURCE_COUNTER not supported yet\n");
+            btstack_unreachable();
+            break;
+        case BROADCAST_SOURCE_LOOPBACK:
+            printf("BROADCAST_SOURCE_LOOPBACK not supported yet\n");
+            btstack_unreachable();
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    };
+    // prepare first frame
+    le_audio_demo_util_source_generate_iso_frame(gen);
+}
+
+static void start_broadcast() {
+    // use values from table
     sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
     octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
     frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
 
+    extended_adv_data[BROADCAST_LITE_ADV_OFFSET_SUBTYPE] = 1; // LE Audio Broadcast Source Lite
+    extended_adv_data[BROADCAST_LITE_ADV_OFFSET_FLAGS] = 0;
+    extended_adv_data[BROADCAST_LITE_ADV_OFFSET_NUM_BIS] = num_bis;
+    extended_adv_data[BROADCAST_LITE_ADV_OFFSET_SAMPLING_FREQUENCY] = codec_configurations[menu_sampling_frequency].samplingrate_index;
+    extended_adv_data[BROADCAST_LITE_ADV_OFFSET_FRAME_DURATION] = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 0 : 1;
+    extended_adv_data[BROADCAST_LITE_ADV_OFFSET_OCTETS_PER_FRAME] = octets_per_frame;
+
     number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
 
-    le_audio_demo_util_source_configure(num_bis, 1, sampling_frequency_hz, frame_duration, octets_per_frame);
-    le_audio_demo_util_source_generate_iso_frame(audio_source);
+    // generate playlist for audio player
+    btstack_linked_list_t playlist = audio_player_demo_util_get_playlist_instance();
 
-    // setup base
-    uint8_t codec_id[] = { 0x06, 0x00, 0x00, 0x00, 0x00 };
-    uint8_t subgroup_codec_specific_configuration[] = {
-            0x02, 0x01, 0x01,
-            0x02, 0x02, 0x01,
-            0x03, 0x04, 0x1E, 0x00,
-    };
-    subgroup_codec_specific_configuration[2] = codec_configurations[menu_sampling_frequency].samplingrate_index;
-    subgroup_codec_specific_configuration[5] =  (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0 : 1;;
-    uint8_t subgroup_metadata[] = {
-            0x03, 0x02, 0x04, 0x00, // Metadata[i]
-    };
-    little_endian_store_16(subgroup_codec_specific_configuration, 8, octets_per_frame);
-    uint8_t bis_codec_specific_configuration_1[] = {
-            0x05, 0x03, 0x01, 0x00, 0x00, 0x00
-    };
-    uint8_t bis_codec_specific_configuration_2[] = {
-            0x05, 0x03, 0x02, 0x00, 0x00, 0x00
-    };
-    le_audio_base_builder_t builder;
-    le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), 20000);
-    le_audio_base_builder_add_subgroup(&builder, codec_id,
-                                       sizeof(subgroup_codec_specific_configuration),
-                                       subgroup_codec_specific_configuration,
-                                       sizeof(subgroup_metadata), subgroup_metadata);
-    le_audio_base_builder_add_bis(&builder, 1, sizeof(bis_codec_specific_configuration_1),
-                                  bis_codec_specific_configuration_1);
-    if (num_bis == 2){
-        le_audio_base_builder_add_bis(&builder, 2, sizeof(bis_codec_specific_configuration_2),
-                                      bis_codec_specific_configuration_2);
+    num_iso_generators = 0;
+    for( int i=0, bis_count=num_bis, stereo_stream=num_stereo_streams; bis_count>0; ++i ) {
+        uint8_t channels = (stereo_stream>0)?2:1;
+        printf("gen[%d]( %d ) ", i, channels);
+        btstack_audio_player_init(&audio_player[i], sampling_frequency_hz, channels, playlist);
+        btstack_audio_player_play(&audio_player[i]);
+
+        le_audio_demo_source_generator_t *gen = &iso_gen[i];
+        le_audio_demo_util_source_configure(gen, channels, 1, sampling_frequency_hz, frame_duration, octets_per_frame);
+        num_iso_generators++;
+
+        printf(" %" PRIu32 "Hz\n", gen->sampling_frequency_hz);
+
+        // configure and prepare first iso frame
+        update_demo_util_source(i);
+
+        if( stereo_stream > 0 ) {
+            --stereo_stream;
+        }
+        bis_count -= channels;
     }
-    period_adv_data_len = le_audio_base_builder_get_ad_data_size(&builder);
+    printf("Song: %s\n", btstack_audio_player_get_current_song(&audio_player[0])->title);
+
 
     // setup extended and periodic advertising
     setup_advertising();
 
     // setup big
     setup_big();
+
+    // set timer for counter mode
+    switch (broadcast_source) {
+        case BROADCAST_SOURCE_COUNTER:
+        case BROADCAST_SOURCE_LOOPBACK:
+            btstack_run_loop_set_timer_handler(&measurement_disconnect_timer, measurement_disconnect_handler);
+            btstack_run_loop_set_timer(&measurement_disconnect_timer, measurement_disconnect_time_ms);
+            printf("Terminate BIG after %" PRIu32 " s\n", measurement_disconnect_time_ms / 1000);
+            btstack_run_loop_add_timer(&measurement_disconnect_timer);
+            break;
+        default:
+            break;
+    }
+}
+
+static void loopback_source_count_send( hci_con_handle_t con_handle ) {
+    hci_reserve_packet_buffer();
+
+    uint16_t frame_len = octets_per_frame;
+
+    //    printf("%s\n", __func__);
+    uint8_t * buffer = hci_get_outgoing_packet_buffer();
+    // complete SDU, no TimeStamp
+    little_endian_store_16(buffer, 0, ((uint16_t) con_handle) | (2 << 12));
+    // len
+    little_endian_store_16(buffer, 2, 0 + 4 + frame_len);
+    // TimeStamp if TS flag is set
+    // packet seq nr
+    little_endian_store_16(buffer, 4, counter_packet_sequence_number);
+    // iso sdu len
+    little_endian_store_16(buffer, 6, frame_len);
+    uint16_t offset = 8;
+    // copy encoded payload
+    memset( &buffer[offset], (uint8_t) counter_packet_sequence_number, frame_len );
+    offset += frame_len;
+    counter_packet_sequence_number += 1;
+    //    printf("iso_packet_size: %d\n", offset );
+    // send
+    hci_send_iso_packet_buffer(offset);
+}
+
+static void looback_single_packet_handler(btstack_timer_source_t * ts) {
+    UNUSED(ts);
+    hci_request_bis_can_send_now_events(big_params.big_handle);
+}
+
+static void handle_bis_can_send_now_event(const uint8_t * packet, uint16_t size) {
+    UNUSED(size);
+    uint8_t bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
+    le_audio_demo_source_generator_t *gen = NULL;
+    int channels = 0;
+    uint8_t stream_index = 0;
+    for(int i=0;i<num_bis;++i) {
+        gen = &iso_gen[i];
+        // calculate stream index relative to generator
+        stream_index = bis_index - channels;
+        channels += gen->num_channels;
+        if( bis_index < channels ) {
+            break;
+        }
+    }
+    switch (broadcast_source) {
+        case BROADCAST_SOURCE_LOOPBACK:
+            loopback_source_count_send(bis_con_handles[bis_index]);
+            break;
+        default:
+            le_audio_demo_util_source_send(gen, stream_index, bis_con_handles[bis_index]);
+            break;
+    }
+    if ((bis_index+1) == channels ){
+        // HCI LE Read TX ISO Sync does not work on NCS 2.7 or 2.7
+        // bis_read_tx_time[0] = true;
+        // we use timer to send individual packets
+		if (broadcast_source == BROADCAST_SOURCE_LOOPBACK) {
+            btstack_run_loop_set_timer_handler(&loopback_single_packet_timer, &looback_single_packet_handler);
+            btstack_run_loop_set_timer(&loopback_single_packet_timer, 50);
+            btstack_run_loop_add_timer(&loopback_single_packet_timer);
+        } else {
+            le_audio_demo_util_source_generate_iso_frame(gen);
+            hci_request_bis_can_send_now_events(big_params.big_handle);
+        }
+    }
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
+    UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t bis_index;
+    uint8_t i;
 
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
-#ifdef ENABLE_DEMO_MODE
-                    // start broadcast automatically, mod player, 48_5_1
-                    num_bis = 1;
-                    menu_sampling_frequency = 5;
-                    menu_variant = 4;
-                    start_broadcast();
-#elif defined( NRF5340_BROADCAST_MODE )
-                    num_bis = 1;
-                    menu_sampling_frequency = 5;
-                    menu_variant = 1;
-#else
                     show_usage();
                     printf("Please select sample frequency and variation, then start broadcast\n");
-#endif
                     break;
                 case HCI_STATE_OFF:
                     printf("Goodbye\n");
@@ -362,6 +492,21 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                 default:
                     break;
+            }
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if ((hci_event_command_complete_get_command_opcode(packet)) == HCI_OPCODE_HCI_LE_READ_ISO_TX_SYNC) {
+                const uint8_t * return_params = hci_event_command_complete_get_return_parameters(packet);
+                hci_con_handle_t handle = little_endian_read_16(return_params, 1);
+                uint16_t packet_sequence_number = little_endian_read_16(return_params, 3);
+                // we sent READ ISO TX after sending a packet. We expect it to return the packet sequence number
+                // of the previously sent packet, so we'll use this number + 1 as the new outgoing sequence number
+                for (i=0;i<num_bis;i++) {
+                    if (handle == bis_con_handles[i]) {
+                        log_info("our seq %u, tx seq %u", counter_packet_sequence_number, packet_sequence_number);
+                        counter_packet_sequence_number = packet_sequence_number + 1;
+                    }
+                }
             }
             break;
         case HCI_EVENT_META_GAP:
@@ -374,24 +519,43 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
 
                     app_state = APP_STREAMING;
+
                     printf("Start streaming\n");
                     hci_request_bis_can_send_now_events(big_params.big_handle);
+                    break;
+                case GAP_SUBEVENT_BIG_TERMINATED:
+                    printf("BIG TERMINATED\n");
+
+                    switch (broadcast_source) {
+                        case BROADCAST_SOURCE_COUNTER:
+                        case BROADCAST_SOURCE_LOOPBACK:
+                            // shut down
+                            printf("EXIT\n");
+                            btstack_run_loop_trigger_exit();
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
             }
             break;
         case HCI_EVENT_BIS_CAN_SEND_NOW:
-            bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
-            le_audio_demo_util_source_send(bis_index, bis_con_handles[bis_index]);
-            bis_index++;
-            if (bis_index == num_bis){
-                le_audio_demo_util_source_generate_iso_frame(audio_source);
-                hci_request_bis_can_send_now_events(big_params.big_handle);
-            }
+            handle_bis_can_send_now_event(packet, size);
             break;
         default:
             break;
+    }
+
+    // Read TX ISO Time
+    for (i=0;i<num_bis;i++) {
+        if (bis_read_tx_time[i]) {
+            if (hci_can_send_command_packet_now()) {
+                bis_read_tx_time[i] = false;
+                hci_send_cmd(&hci_le_read_iso_tx_sync, bis_con_handles[i]);
+            }
+        }
     }
 }
 
@@ -399,22 +563,48 @@ static void show_usage(void){
     printf("\n--- LE Audio Broadcast Source Test Console ---\n");
     print_config();
     printf("---\n");
-    printf("c - toggle channels\n");
+    printf("m - add mono subgroup\n");
+    printf("r - add stereo subgroup (reset mono subgroups)\n");
     printf("e - toggle encryption\n");
     printf("f - next sampling frequency\n");
     printf("v - next codec variant\n");
-    printf("x - toggle sine / modplayer / recording\n");
+    printf("x - next song\n");
     printf("s - start broadcast\n");
+    printf("q - stop broadcast\n");
     printf("---\n");
 }
+
+static void update_num_bis(void) {
+    num_bis = num_mono_streams + 2 * num_stereo_streams;
+    if (num_bis > MAX_NUM_BIS) {
+        num_mono_streams = 0;
+        num_stereo_streams = 0;
+        num_bis = 0;
+    }
+}
+
 static void stdin_process(char c){
     switch (c){
-        case 'c':
+        case 'm':
             if (app_state != APP_IDLE){
                 printf("Codec configuration can only be changed in idle state\n");
                 break;
             }
-            num_bis = 3 - num_bis;
+            num_mono_streams++;
+            update_num_bis();
+            print_config();
+            break;
+        case 'r':
+            if (app_state != APP_IDLE){
+                printf("Codec configuration can only be changed in idle state\n");
+                break;
+            }
+            if (num_mono_streams) {
+                printf("Reset Mono subgroups\n");
+                num_mono_streams = 0;
+            }
+            num_stereo_streams++;
+            update_num_bis();
             print_config();
             break;
         case 'e':
@@ -458,21 +648,13 @@ static void stdin_process(char c){
             start_broadcast();
             break;
         case 'x':
-            switch (audio_source){
-                case AUDIO_SOURCE_MODPLAYER:
-                    audio_source = AUDIO_SOURCE_SINE;
-                    break;
-                case AUDIO_SOURCE_SINE:
-                    audio_source = AUDIO_SOURCE_RECORDING;
-                    break;
-                case AUDIO_SOURCE_RECORDING:
-                    audio_source = AUDIO_SOURCE_MODPLAYER;
-                    break;
-                default:
-                    btstack_unreachable();
-                    break;
+            for (int i=0;i<num_iso_generators;i++) {
+                btstack_audio_player_next_song(&audio_player[i]);
             }
-            print_config();
+            printf("Next song: %s\n", btstack_audio_player_get_current_song(&audio_player[0])->title);
+            break;
+        case 'q':
+            stop_broadcast();
             break;
         case '\n':
         case '\r':
@@ -483,17 +665,35 @@ static void stdin_process(char c){
     }
 }
 
-int btstack_main(int argc, const char * argv[]);
-int btstack_main(int argc, const char * argv[]){
-    (void) argv;
+int btstack_main(int argc, char * argv[]);
+int btstack_main(int argc, char * argv[]){
     (void) argc;
-    
+    (void) argv;
+
+    // default config: 48_4_2
+    menu_sampling_frequency = 5;
+    menu_variant = 3;
+    num_bis = 2;
+    num_stereo_streams = 1;
+    num_mono_streams = 0;
+
+    print_config();
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // register for BIS Can Send Now events
+    hci_register_iso_packet_handler(&packet_handler);
+
     // setup audio processing
-    le_audio_demo_util_source_init();
+    for( int i=0; i<MAX_NUM_BIS; ++i) {
+        le_audio_demo_source_generator_t *gen = &iso_gen[i];
+        le_audio_demo_util_source_init(gen);
+    }
+
+    // queue upt to 2 iso packets
+    hci_set_num_iso_packets_to_queue(2);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

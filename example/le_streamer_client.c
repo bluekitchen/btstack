@@ -78,6 +78,7 @@ typedef enum {
     TC_IDLE,
     TC_W4_SCAN_RESULT,
     TC_W4_CONNECT,
+    TC_W4_PAIRING,
     TC_W4_SERVICE_CONNECTED,
     TC_W4_TEST_DATA
 } gc_state_t;
@@ -103,7 +104,9 @@ static hci_con_handle_t connection_handle;
 static gc_state_t state = TC_OFF;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void le_streamer_handle_can_write_without_response(void * context);
+static void le_streamer_client_connect_service(void);
 static void le_streamer_client_request_to_send(le_streamer_client_connection_t * connection);
 static void le_streamer_client_connection_and_notification_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -157,6 +160,25 @@ static void le_streamer_client_request_to_send(le_streamer_client_connection_t *
     connection->write_without_response_request.callback = &le_streamer_handle_can_write_without_response;
     connection->write_without_response_request.context = connection;
     gatt_client_request_to_write_without_response(&connection->write_without_response_request, connection_handle);
+}
+
+static void le_streamer_client_connect_service(void){
+    uint8_t status;
+
+    if (state != TC_W4_PAIRING) return;
+
+    printf("Search for LE Streamer service.\n");
+    state = TC_W4_SERVICE_CONNECTED;
+    status = gatt_service_client_connect_primary_service_with_uuid128(connection_handle, &le_streamer_client, &le_streamer_client_connection.basic_connection,
+                                                                      &LE_STREAMER_SERVICE_UUID, &le_streamer_client_connection.characteristics_storage[0],
+                                                                      LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
+    if (status != ERROR_CODE_SUCCESS){
+        state = TC_OFF;
+        gap_disconnect(connection_handle);
+        printf("GATT Service Client connection failed %02x\n", status);
+    } else {
+        printf("GATT Service Client discovery process started\n");
+    }
 }
 
 // returns true if name is found in advertisement
@@ -240,7 +262,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     hci_con_handle_t con_handle;
     const uint8_t * adv_data;
     uint8_t         adv_len;
-    uint8_t status;
 
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
@@ -294,20 +315,9 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                     printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
                     printf("Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
-                    // initialize gatt client context with handle, and add it to the list of active clients
-                    // query primary services
-                    printf("Search for LE Streamer service .\n");
-                    state = TC_W4_SERVICE_CONNECTED;
-                    status = gatt_service_client_connect_primary_service_with_uuid128(connection_handle, &le_streamer_client, &le_streamer_client_connection.basic_connection,
-                                                                                              &LE_STREAMER_SERVICE_UUID, &le_streamer_client_connection.characteristics_storage[0],
-                                                                                              LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
-                    if (status != ERROR_CODE_SUCCESS){
-                        state = TC_OFF;
-                        gap_disconnect(connection_handle);
-                        printf("GATT Service Client connection failed %02x\n", status);
-                    } else {
-                        printf("GATT Service Client discovery process started\n");
-                    }
+                    printf("Request pairing before connecting to LE Streamer service.\n");
+                    state = TC_W4_PAIRING;
+                    sm_request_pairing(connection_handle);
                     break;
 
                 default:
@@ -328,6 +338,47 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
                 default:
                     break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void sm_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        case SM_EVENT_PAIRING_COMPLETE:
+            switch (sm_event_pairing_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    printf("Pairing complete, success\n");
+                    le_streamer_client_connect_service();
+                    break;
+                case ERROR_CODE_CONNECTION_TIMEOUT:
+                    printf("Pairing failed, timeout\n");
+                    break;
+                case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                    printf("Pairing failed, disconnected\n");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                    printf("Pairing failed, authentication failure with reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            if (sm_event_reencryption_complete_get_status(packet) == ERROR_CODE_SUCCESS){
+                printf("Re-encryption complete, success\n");
+                le_streamer_client_connect_service();
             }
             break;
         default:
@@ -435,6 +486,9 @@ int btstack_main(int argc, const char * argv[]){
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    sm_event_callback_registration.callback = &sm_event_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // use different connection parameters: conn interval min/max (* 1.25 ms), slave latency, supervision timeout, CE len min/max (* 0.6125 ms) 
     // gap_set_connection_parameters(0x06, 0x06, 4, 1000, 0x01, 0x06 * 2);

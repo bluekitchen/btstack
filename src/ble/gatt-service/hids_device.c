@@ -204,7 +204,7 @@ static void hids_device_emit_report(hci_con_handle_t con_handle, const uint8_t r
     pos += 2;
     event[pos++] = report_id;
     event[pos++] = report_type;
-    uint8_t length_to_copy = btstack_min(buffer_size, 250);
+    uint8_t length_to_copy = btstack_min(buffer_size, sizeof(event) - pos - 1u);
     event[pos++] = length_to_copy;
     memcpy(&event[pos], buffer, length_to_copy);
     pos += length_to_copy;
@@ -338,19 +338,26 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     }
 
     if (att_handle == instance->hid_boot_mouse_input_client_configuration_handle){
-        uint16_t new_value = little_endian_read_16(buffer, 0);
-        instance->hid_boot_mouse_input_client_configuration_value = new_value;
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->hid_boot_mouse_input_client_configuration_value = new_value;
+            hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+        }
         return 0;
     }
     if (att_handle == instance->hid_boot_keyboard_input_client_configuration_handle){
-        uint16_t new_value = little_endian_read_16(buffer, 0);
-        instance->hid_boot_keyboard_input_client_configuration_value = new_value;
-        hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            instance->hid_boot_keyboard_input_client_configuration_value = new_value;
+            hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+        }
         return 0;
     }
 
     if (att_handle == instance->hid_protocol_mode_value_handle){
+        if (buffer_size < 1u){
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+        }
         instance->hid_protocol_mode = buffer[0];
         log_info("Set protocol mode: %u", instance->hid_protocol_mode);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_PROTOCOL_MODE, con_handle, instance->hid_protocol_mode);
@@ -359,7 +366,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     
     if (att_handle == instance->hid_control_point_value_handle){
         if (buffer_size < 1u){
-            return ATT_ERROR_INVALID_OFFSET;
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
         instance->hid_control_point_suspend = buffer[0];
         instance->con_handle = con_handle;
@@ -386,23 +393,25 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 
     report = hids_device_get_report_for_client_configuration_handle(instance, att_handle);
     if (report != NULL){
-        uint16_t new_value = little_endian_read_16(buffer, 0);
-        report->client_configuration_value = new_value;
-        log_info("Enable Report (type %u) notifications: %x", (uint8_t) report->type, new_value);
+        uint16_t new_value;
+        if (gatt_server_get_client_configuration_value(buffer, buffer_size, &new_value)){
+            report->client_configuration_value = new_value;
+            log_info("Enable Report (type %u) notifications: %x", (uint8_t) report->type, new_value);
 
-        switch (report->type){
-            case HID_REPORT_TYPE_INPUT:
-                hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
-                break;
-            case HID_REPORT_TYPE_OUTPUT:
-                hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
-                break;
-            case HID_REPORT_TYPE_FEATURE:
-                hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
-                break;
-            default:
-                btstack_unreachable();
-                break;
+            switch (report->type){
+                case HID_REPORT_TYPE_INPUT:
+                    hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
+                    break;
+                case HID_REPORT_TYPE_OUTPUT:
+                    hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
+                    break;
+                case HID_REPORT_TYPE_FEATURE:
+                    hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
+                    break;
+                default:
+                    btstack_unreachable();
+                    break;
+            }
         }
     }
     return 0;

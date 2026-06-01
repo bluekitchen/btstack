@@ -12,6 +12,7 @@ CFLAGS += ${INCLUDES} ${DEFINES}
 CXXFLAGS += ${INCLUDES} ${DEFINES}
 
 VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -29,6 +30,7 @@ COMMON = \
 	btstack_run_loop_embedded.c \
 	hci_dump.c \
 	hci_dump_posix_stdout.c \
+	sdp_util.c \
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))

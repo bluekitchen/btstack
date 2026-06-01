@@ -39,8 +39,8 @@
  *  provisioning_device.h
  */
 
-#ifndef __PROVISIONING_PROVISIONER_H
-#define __PROVISIONING_PROVISIONER_H
+#ifndef PROVISIONING_PROVISIONER_H
+#define PROVISIONING_PROVISIONER_H
 
 #include <stdint.h>
 

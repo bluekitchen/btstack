@@ -6,12 +6,65 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 ## Unreleased
-
 ### Added
 ### Fixed
 - A2DP: get capabilities of all streamendpoints
 
 ### Changed
+
+
+## Release v1.8.2
+
+### Added
+- Chipset BCM: btstack_chipset_bcm_set_patchram() allows to provide dynamic PatchRAM buffer
+- ATT DB/GATT Server: add gatt_server_get_client_configuration_value to decode Client Characteristic Configuration writes
+- HCI: configure default LE Data Length with hci_le_set_max_data_length and hci_le_set_default_data_length
+- HCI Dump: add `hci_dump_buffered` to buffer packets in memory and flush on timeout, full buffer, or explicit request
+- HCI Dump: use Linux Monitor (data link 2001) for BTSnoop which allows for debug messages as System Notes
+- GAP: set LE Data Length for connection with gap_le_set_data_length
+- A2DP: support MPEG-D USAC configuration
+- HFP HF: add APIs and event for HF Indicator supported/enabled state
+- LE Audio: add Broadcast Sink/Source Lite examples and Unicast Gateway/Headset Lite demos
+- POSIX-H4: support newer CYW55xxx Controllers with --airoc-download-mode flag
+- POSIX-H4 and Windows-H4: support Zephyr-based Controllers
+- Windows-H4: support AIROC download mode
+- Web-H4: support CYW55310 and package .hcd files
+- ESP32: support external Bluetooth Controller
+- Tool: compile_gatt.py adds verbose mode and OpenSSL fallback if PyCryptodome is not installed
+
+### Fixed
+- HCI: clear pending CIS send requests when a CIG is removed or a CIS disconnects
+- HCI: validate incoming HCI packets before dispatch and avoid out-of-bounds reads for malformed ISO packets
+- GAP: emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for timeout of directed advertising
+- GAP: avoid sending HCI Authenticate a second time in some cases
+- L2CAP: verify ERTM start frame
+- L2CAP: avoid out-of-bounds read during option parsing
+- L2CAP: fix configuration response for multiple unknown options
+- A2DP: get capabilities of all streamendpoints
+- A2DP: avoid assert for outgoing connection to local Bluetooth address
+- AVDTP: fix serialization of MPEG-D USAC configuration
+- AVRCP Target: fix response for GetEllementAttributes with attribute Song Length
+- Classic profiles: improve packet parser in AVRCP, BNEP, HID Host, HSP, OBEX, RFCOMM, and SDP Server
+- GATT Service Client: reject disconnect/unregister while connection setup or active connections are in progress
+- Mesh and LE Audio: improve parsers
+- btstack_crypto: fix DHKey calculation for newer mbedTLS that require f_rnd for ECC multiplications
+
+### Changed
+- Chipset BCM: ENABLE_AIROC_DOWNLOAD_MODE enables support, hci_set_airoc_download_mode activates it
+- GAP: LE link layer commands are sent sequentially
+- GAP: set default minimum encryption key size to 16. Can be reduced with gap_set_required_encryption_key_size()
+- SM: set default minimum encryption key size to 16. Can be reduced with sm_set_encryption_key_size_range()
+- SM: enable Secure Connections Only mode by default. Can be disabled with sm_set_secure_connections_only_mode()
+- GAP: set default for automatic accept of SSP numeric comparison or just works to off. Can be enabled with gap_ssp_set_auto_accept()
+- RFCOMM: send initial credits after modem status has been exchanged
+- GATT Service Client: gatt_service_client_unregister_client returns a status
+- HFP: rework HF Indicator handling to track supported and enabled state per AG
+- LE Audio: remove BASS client/server implementation
+- posix-h4-zephyr: deprecated. Zephyr-based Controllers are supported by posix-h4 port
+- posix-h4-airoc: moved to port/archive. Use posix-h4 with --airoc-download-mode
+- raspi: moved to port/archive. Use port/linux
+- windows-h4-zephyr: moved to port/archive. Zephyr-based Controllers are supported by windows-h4
+- example: require encryption for all LE demos
 
 
 ## Release v1.8.1

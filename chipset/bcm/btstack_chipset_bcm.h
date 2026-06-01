@@ -59,6 +59,13 @@ extern const uint8_t brcm_patchram_buf[];
 extern const int     brcm_patch_ram_length;
 extern const char    brcm_patch_version[];
 
+/**
+ * @brief Set PatchRAM buffer used for the init script on non-POSIX systems
+ * @param data init script buffer, or NULL to fall back to the generated symbols
+ * @param size size of init script buffer in bytes
+ */
+void btstack_chipset_bcm_set_patchram(const uint8_t * data, uint32_t size);
+
 
 // Support for loading .hcd init files on POSIX systems
 

@@ -60,7 +60,9 @@ COMMON += \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
 	btstack_audio.c             \
+	btstack_ltv_builder.c       \
 	btstack_tlv.c               \
+	btstack_tlv_builder.c       \
 	btstack_crypto.c            \
 	uECC.c                      \
 	sm.c                        \

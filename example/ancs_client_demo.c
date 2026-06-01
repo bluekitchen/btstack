@@ -124,10 +124,10 @@ int btstack_main(int argc, const char * argv[]){
     // set up l2cap_le
     l2cap_init();
     
-    // setup SM: Display only
+    // setup SM: Just Works pairing, without bonding
     sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(0);
 
     // register for HCI events
     hci_event_callback_registration.callback = &app_packet_handler;
