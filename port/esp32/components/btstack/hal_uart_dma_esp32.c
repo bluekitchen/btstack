@@ -161,7 +161,7 @@ void hal_uart_dma_init(void) {
 
     // configure TX Empty threshold
     uart_ll_set_txfifo_empty_thr(uart, 10);
-
+    printf("UART #%u, baud %u\n", UART_NO, uart_config.baud_rate);
     printf("Initial txfifo len: %lu\n", uart_ll_get_txfifo_len(uart));
 }
 
