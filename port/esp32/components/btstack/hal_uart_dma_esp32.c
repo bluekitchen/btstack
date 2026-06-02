@@ -135,6 +135,10 @@ void hal_uart_dma_init(void) {
     // Configure UART - UART controls RTS
     ESP_ERROR_CHECK(uart_param_config(UART_NO, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(UART_NO, UART_TX_PIN, UART_RX_PIN, UART_RTS_PIN, UART_CTS_PIN));
+    ESP_LOGI(TAG, "UART #%u TX=%d RX=%d RTS=%d CTS=%d baud=%lu flowcontrol=%s",
+             UART_NO, UART_TX_PIN, UART_RX_PIN, UART_RTS_PIN, UART_CTS_PIN,
+             (unsigned long) uart_config.baud_rate,
+             uart_config.flow_ctrl == UART_HW_FLOWCTRL_DISABLE ? "off" : "on");
 
 #ifdef CONFIG_EXAMPLE_HCI_UART_INVERT_RTS
     // On ESP32-P4, RTS is HIGH when we're ready to receive
@@ -206,6 +210,7 @@ void hal_uart_dma_set_sleep(uint8_t sleep) {
 int  hal_uart_dma_set_baud(uint32_t baud) {
     uart_config.baud_rate = baud;
     ESP_ERROR_CHECK(uart_param_config(UART_NO, &uart_config));
+    ESP_LOGI(TAG, "UART #%u set_baud %lu", UART_NO, (unsigned long) baud);
     return 0;
 }
 
@@ -221,6 +226,7 @@ int  hal_uart_dma_set_flowcontrol(int flowcontrol) {
         uart_config.flow_ctrl = UART_HW_FLOWCTRL_DISABLE;
     }
     ESP_ERROR_CHECK(uart_param_config(UART_NO, &uart_config));
+    ESP_LOGI(TAG, "UART #%u set_flowcontrol %s", UART_NO, flowcontrol == BTSTACK_UART_FLOWCONTROL_ON ? "on" : "off");
     return 0;
 }
 #endif
