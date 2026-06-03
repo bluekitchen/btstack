@@ -264,13 +264,25 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
 #ifdef ENABLE_UART_SYNCHRONOUS_WRITE
 static void hal_uart_dma_send_block_sync(const uint8_t *buffer, uint16_t len) {
     uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
+    TickType_t blocked_since = 0;
 
     while (len > 0) {
         uint16_t space = uart_ll_get_txfifo_len(uart);
         if (space == 0) {
-            taskYIELD();
+            if (blocked_since == 0){
+                blocked_since = xTaskGetTickCount();
+            } else {
+                TickType_t blocked_ticks = xTaskGetTickCount() - blocked_since;
+                if ((blocked_ticks % pdMS_TO_TICKS(1000)) == 0){
+                    ESP_LOGW(TAG, "UART #%u TX stalled for %lu ms, waiting for remote to resume",
+                             UART_NO, (unsigned long) (blocked_ticks * portTICK_PERIOD_MS));
+                }
+            }
+            vTaskDelay(1);
             continue;
         }
+
+        blocked_since = 0;
 
         uint16_t chunk = (uint16_t) btstack_min(space, len);
         uart_ll_write_txfifo(uart, buffer, chunk);
