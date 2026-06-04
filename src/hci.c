@@ -4292,6 +4292,188 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
 
 #endif
 
+static bool hci_handle_number_of_completed_packets(uint8_t * packet, uint16_t size){
+    if (size < 3) return false;
+    uint16_t num_handles = packet[2];
+    if (size != (3u + num_handles * 4u)) return false;
+#ifdef ENABLE_CLASSIC
+    bool notify_sco = false;
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    bool notify_iso = false;
+#endif
+    uint16_t offset = 3;
+    uint16_t i;
+    for (i=0; i<num_handles;i++){
+        hci_con_handle_t handle = little_endian_read_16(packet, offset) & 0x0fffu;
+        offset += 2u;
+        uint16_t num_packets = little_endian_read_16(packet, offset);
+        offset += 2u;
+
+        hci_connection_t * conn = hci_connection_for_handle(handle);
+        if (conn != NULL) {
+
+            if (conn->num_packets_sent >= num_packets) {
+                conn->num_packets_sent -= num_packets;
+            } else {
+                log_error("hci_number_completed_packets, more packet slots freed then sent.");
+                conn->num_packets_sent = 0;
+            }
+            // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
+#ifdef ENABLE_CLASSIC
+            if (conn->address_type == BD_ADDR_TYPE_SCO){
+                notify_sco = true;
+            }
+#endif
+        }
+
+#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
+        hci_controller_dump_packets();
+#endif
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        if (conn == NULL){
+            hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(handle);
+            if (iso_stream != NULL){
+                if (iso_stream->num_packets_sent >= num_packets) {
+                    iso_stream->num_packets_sent -= num_packets;
+                } else {
+                    log_error("hci_number_completed_packets, more packet slots freed then sent.");
+                    iso_stream->num_packets_sent = 0;
+                }
+#ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
+                if (iso_stream->iso_type == HCI_ISO_TYPE_BIS){
+                    le_audio_big_t * big = hci_big_for_handle(iso_stream->group_id);
+                    if (big != NULL){
+                        big->num_completed_timestamp_current_valid = true;
+                        big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
+                    }
+                }
+#endif
+                //  log_info("hci_number_completed_packet %u processed for handle %04x, outstanding %u", num_packets, handle, iso_stream->num_packets_sent);
+                notify_iso = true;
+            }
+        }
+#endif
+    }
+
+#ifdef ENABLE_CLASSIC
+    if (notify_sco){
+        hci_notify_if_sco_can_send_now();
+    }
+#endif
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    if (notify_iso){
+        hci_iso_notify_can_send_now();
+    }
+#endif
+    return true;
+}
+
+static void hci_handle_disconnection_complete_event(uint8_t * packet, uint16_t size){
+    if (size < 6u) return;
+    if (packet[2]) return;   // status != 0
+    hci_con_handle_t handle = little_endian_read_16(packet, 3);
+    // drop outgoing ACL fragments if it is for closed connection and release buffer if tx not active
+    if (hci_stack->acl_fragmentation_total_size > 0u) {
+        if (handle == READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer)){
+            int release_buffer = hci_stack->acl_fragmentation_tx_active == 0u;
+            log_info("drop fragmented ACL data for closed connection, release buffer %u", release_buffer);
+            hci_stack->acl_fragmentation_total_size = 0;
+            hci_stack->acl_fragmentation_pos = 0;
+            if (release_buffer){
+                hci_release_packet_buffer();
+            }
+        }
+    }
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    // drop outgoing ISO fragments if it is for closed connection and release buffer if tx not active
+    if (hci_stack->iso_fragmentation_total_size > 0u) {
+        if (handle == READ_ISO_CONNECTION_HANDLE(hci_stack->hci_packet_buffer)){
+            int release_buffer = hci_stack->iso_fragmentation_tx_active == 0u;
+            log_info("drop fragmented ISO data for closed connection, release buffer %u", release_buffer);
+            hci_stack->iso_fragmentation_total_size = 0;
+            hci_stack->iso_fragmentation_pos = 0;
+            if (release_buffer){
+                hci_release_packet_buffer();
+            }
+        }
+    }
+
+    // finalize iso stream for CIS handle
+    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(handle);
+    if (iso_stream != NULL){
+        if (iso_stream->role == HCI_ROLE_MASTER) {
+            // Central: mark as disconnected (and ready) if pending request to send, otherwise
+            if (iso_stream->can_send_now_requested) {
+                log_info("CIS #%u with handle %04x has send request, set to DISCONNECTED", iso_stream->stream_id, handle);
+                iso_stream->state = HCI_ISO_STREAM_STATE_DISCONNECTED;
+                iso_stream->num_packets_sent = 0;
+                // Maybe next round
+                hci_iso_notify_can_send_now();
+            } else {
+                // set state to idle, gap_cig_remove will handle the rest
+                iso_stream->state = HCI_ISO_STREAM_STATE_IDLE;
+            }
+        } else {
+            // Peripheral: remove iso stream
+           hci_iso_stream_finalize(iso_stream);
+        }
+        return;
+    }
+#endif
+
+#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
+    if ((handle != HCI_CON_HANDLE_INVALID) && (handle == hci_stack->hci_command_con_handle)){
+        // we did not receive a HCI Command Complete or HCI Command Status event for the disconnected connection
+        // if needed, we could also track the hci command opcode and simulate a hci command complete with status
+        // but the connection has failed anyway, so for now, we only set the num hci commands back to 1
+        log_info("Disconnect for conn handle 0x%04x in pending HCI command, assume command failed", handle);
+        hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
+        hci_stack->num_cmd_packets = 1;
+    }
+#endif
+
+    hci_connection_t * conn = hci_connection_for_handle(handle);
+    if (!conn) return;
+#ifdef ENABLE_CLASSIC
+    // pairing failed if it was ongoing
+    hci_pairing_complete(conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+#endif
+
+    // emit dedicated bonding event
+    if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
+        hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
+    }
+
+    // mark connection for shutdown, stop timers, reset state
+    conn->state = RECEIVED_DISCONNECTION_COMPLETE;
+    hci_connection_stop_timer(conn);
+    hci_connection_init(conn);
+
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_PERIPHERAL
+    // re-enable advertisements for le connections if active
+    if (hci_is_le_connection(conn)){
+        hci_update_advertisements_enabled_for_current_roles();
+    }
+#endif
+#endif
+}
+
+static void hci_handle_hardware_error_event(uint8_t * packet, uint16_t size){
+    if (size < 3u) return;
+    log_error("Hardware Error: 0x%02x", packet[2]);
+    if (hci_stack->hardware_error_callback){
+        (*hci_stack->hardware_error_callback)(packet[2]);
+    } else {
+        // if no special requests, just reboot stack
+        hci_power_control_off();
+        hci_power_control_on();
+    }
+}
+
 static void event_handler(uint8_t *packet, uint16_t size){
 
     if (size < 2u){
@@ -4309,16 +4491,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
     hci_con_handle_t handle;
     hci_connection_t * conn;
-    int i;
 
 #ifdef ENABLE_CLASSIC
     hci_link_type_t link_type;
     bd_addr_t addr;
     bd_addr_type_t addr_type;
-#endif
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-    hci_iso_stream_t * iso_stream;
-    le_audio_big_t   * big;
 #endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
@@ -4335,82 +4512,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             handle_command_status_event(packet, size);
             break;
 
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
-            if (size < 3) return;
-            uint16_t num_handles = packet[2];
-            if (size != (3u + num_handles * 4u)) return;
-#ifdef ENABLE_CLASSIC
-            bool notify_sco = false;
-#endif
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-            bool notify_iso = false;
-#endif
-            uint16_t offset = 3;
-            for (i=0; i<num_handles;i++){
-                handle = little_endian_read_16(packet, offset) & 0x0fffu;
-                offset += 2u;
-                uint16_t num_packets = little_endian_read_16(packet, offset);
-                offset += 2u;
-                
-                conn = hci_connection_for_handle(handle);
-                if (conn != NULL) {
-
-                    if (conn->num_packets_sent >= num_packets) {
-                        conn->num_packets_sent -= num_packets;
-                    } else {
-                        log_error("hci_number_completed_packets, more packet slots freed then sent.");
-                        conn->num_packets_sent = 0;
-                    }
-                    // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
-#ifdef ENABLE_CLASSIC
-                    if (conn->address_type == BD_ADDR_TYPE_SCO){
-                        notify_sco = true;
-                    }
-#endif
-                }
-
-#ifdef ENABLE_CONTROLLER_DUMP_PACKETS
-                hci_controller_dump_packets();
-#endif
-
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-                if (conn == NULL){
-                    iso_stream = hci_iso_stream_for_con_handle(handle);
-                    if (iso_stream != NULL){
-                        if (iso_stream->num_packets_sent >= num_packets) {
-                            iso_stream->num_packets_sent -= num_packets;
-                        } else {
-                            log_error("hci_number_completed_packets, more packet slots freed then sent.");
-                            iso_stream->num_packets_sent = 0;
-                        }
-#ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
-                        if (iso_stream->iso_type == HCI_ISO_TYPE_BIS){
-                            big = hci_big_for_handle(iso_stream->group_id);
-                            if (big != NULL){
-                                big->num_completed_timestamp_current_valid = true;
-                                big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
-                            }
-                        }
-#endif
-                        //  log_info("hci_number_completed_packet %u processed for handle %04x, outstanding %u", num_packets, handle, iso_stream->num_packets_sent);
-                        notify_iso = true;
-                    }
-                }
-#endif
-            }
-
-#ifdef ENABLE_CLASSIC
-            if (notify_sco){
-                hci_notify_if_sco_can_send_now();
-            }
-#endif
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-            if (notify_iso){
-                hci_iso_notify_can_send_now();
-            }
-#endif
+        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+            if (!hci_handle_number_of_completed_packets(packet, size)) return;
             break;
-        }
 
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_FLUSH_OCCURRED:
@@ -4985,107 +5089,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
         // has been split, to first notify stack before shutting connection down
         // see end of function, too.
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            if (size < 6u) break;
-            if (packet[2]) break;   // status != 0
-            handle = little_endian_read_16(packet, 3);
-            // drop outgoing ACL fragments if it is for closed connection and release buffer if tx not active
-            if (hci_stack->acl_fragmentation_total_size > 0u) {
-                if (handle == READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer)){
-                    int release_buffer = hci_stack->acl_fragmentation_tx_active == 0u;
-                    log_info("drop fragmented ACL data for closed connection, release buffer %u", release_buffer);
-                    hci_stack->acl_fragmentation_total_size = 0;
-                    hci_stack->acl_fragmentation_pos = 0;
-                    if (release_buffer){
-                        hci_release_packet_buffer();
-                    }
-                }
-            }
-
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-            // drop outgoing ISO fragments if it is for closed connection and release buffer if tx not active
-            if (hci_stack->iso_fragmentation_total_size > 0u) {
-                if (handle == READ_ISO_CONNECTION_HANDLE(hci_stack->hci_packet_buffer)){
-                    int release_buffer = hci_stack->iso_fragmentation_tx_active == 0u;
-                    log_info("drop fragmented ISO data for closed connection, release buffer %u", release_buffer);
-                    hci_stack->iso_fragmentation_total_size = 0;
-                    hci_stack->iso_fragmentation_pos = 0;
-                    if (release_buffer){
-                        hci_release_packet_buffer();
-                    }
-                }
-            }
-
-            // finalize iso stream for CIS handle
-            iso_stream = hci_iso_stream_for_con_handle(handle);
-            if (iso_stream != NULL){
-                if (iso_stream->role == HCI_ROLE_MASTER) {
-                    // Central: mark as disconnected (and ready) if pending request to send, otherwise
-                    if (iso_stream->can_send_now_requested) {
-                        log_info("CIS #%u with handle %04x has send request, set to DISCONNECTED", iso_stream->stream_id, handle);
-                        iso_stream->state = HCI_ISO_STREAM_STATE_DISCONNECTED;
-                        iso_stream->num_packets_sent = 0;
-                        // Maybe next round
-                        hci_iso_notify_can_send_now();
-                    } else {
-                        // set state to idle, gap_cig_remove will handle the rest
-                        iso_stream->state = HCI_ISO_STREAM_STATE_IDLE;
-                    }
-                } else {
-                    // Peripheral: remove iso stream
-                   hci_iso_stream_finalize(iso_stream);
-                }
-                break;
-            }
-#endif
-
-#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
-            if ((handle != HCI_CON_HANDLE_INVALID) && (handle == hci_stack->hci_command_con_handle)){
-                // we did not receive a HCI Command Complete or HCI Command Status event for the disconnected connection
-                // if needed, we could also track the hci command opcode and simulate a hci command complete with status
-                // but the connection has failed anyway, so for now, we only set the num hci commands back to 1
-                log_info("Disconnect for conn handle 0x%04x in pending HCI command, assume command failed", handle);
-                hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
-                hci_stack->num_cmd_packets = 1;
-            }
-#endif
-
-            conn = hci_connection_for_handle(handle);
-            if (!conn) break;
-#ifdef ENABLE_CLASSIC
-            // pairing failed if it was ongoing
-            hci_pairing_complete(conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
-#endif
-
-            // emit dedicated bonding event
-            if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
-                hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
-            }
-
-            // mark connection for shutdown, stop timers, reset state
-            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
-            hci_connection_stop_timer(conn);
-            hci_connection_init(conn);
-
-#ifdef ENABLE_BLE
-#ifdef ENABLE_LE_PERIPHERAL
-            // re-enable advertisements for le connections if active
-            if (hci_is_le_connection(conn)){
-                hci_update_advertisements_enabled_for_current_roles();
-            }
-#endif
-#endif
+            hci_handle_disconnection_complete_event(packet, size);
             break;
 
         case HCI_EVENT_HARDWARE_ERROR:
-            if (size < 3u) break;
-            log_error("Hardware Error: 0x%02x", packet[2]);
-            if (hci_stack->hardware_error_callback){
-                (*hci_stack->hardware_error_callback)(packet[2]);
-            } else {
-                // if no special requests, just reboot stack
-                hci_power_control_off();
-                hci_power_control_on();
-            }
+            hci_handle_hardware_error_event(packet, size);
             break;
 
 #ifdef ENABLE_CLASSIC
