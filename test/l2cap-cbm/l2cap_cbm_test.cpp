@@ -11,7 +11,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){}
 
 // mock_hci_transport.h
 #include "hci_transport.h"
-static void mock_hci_transport_receive_packet(uint8_t packet_type, uint8_t * packet, uint16_t size);
+static void mock_hci_transport_receive_packet(uint8_t packet_type, const uint8_t * packet, uint16_t size);
 static const hci_transport_t * mock_hci_transport_mock_get_instance(void);
 static int mock_hci_transport_can_send_packet_now(uint8_t packet_type);
 
@@ -326,6 +326,62 @@ TEST(L2CAP_CHANNELS, incoming_decline){
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // print_acl("le_data_channel_conn_response_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // TODO: verify data
+}
+
+TEST(L2CAP_CHANNELS, le_signaling_command_too_short){
+    hci_setup_test_connections_fuzz();
+    uint8_t packet[sizeof(le_data_channel_conn_request_1)];
+    memcpy(packet, le_data_channel_conn_request_1, sizeof(packet));
+
+    // Signal header says LE Credit Based Connection Request, but payload is shorter than 10 bytes.
+    packet[10] = 0x09;
+    packet[11] = 0x00;
+    little_endian_store_16(packet, 2, 17);
+    little_endian_store_16(packet, 4, 13);
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet) - 1);
+    CHECK_EQUAL(0, l2cap_channel_opened);
+    CHECK(mock_hci_transport_outgoing_packet_size > 0);
+}
+
+TEST(L2CAP_CHANNELS, le_signaling_command_incomplete){
+    hci_setup_test_connections_fuzz();
+    uint8_t packet[sizeof(le_data_channel_conn_request_1)];
+    memcpy(packet, le_data_channel_conn_request_1, sizeof(packet));
+
+    // L2CAP PDU is complete, but the signaling command length extends beyond it.
+    packet[10] = 0xff;
+    packet[11] = 0x00;
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    CHECK_EQUAL(0, l2cap_channel_opened);
+    CHECK_EQUAL(0, mock_hci_transport_outgoing_packet_size);
+}
+
+TEST(L2CAP_CHANNELS, le_signaling_unknown_command_rejected){
+    hci_setup_test_connections_fuzz();
+    uint8_t packet[sizeof(le_data_channel_conn_request_1)];
+    memcpy(packet, le_data_channel_conn_request_1, sizeof(packet));
+
+    packet[8] = 0xff;
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    CHECK_EQUAL(0, l2cap_channel_opened);
+    CHECK(mock_hci_transport_outgoing_packet_size > 0);
+}
+
+TEST(L2CAP_CHANNELS, le_credit_indication_too_short){
+    hci_setup_test_connections_fuzz();
+    uint8_t packet[] = {
+        0x05, 0x20, 0x0b, 0x00,
+        0x07, 0x00, 0x05, 0x00,
+        L2CAP_FLOW_CONTROL_CREDIT_INDICATION, 0x01, 0x03, 0x00,
+        0x41, 0x00, 0x05
+    };
+
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    CHECK(mock_hci_transport_outgoing_packet_size > 0);
 }
 TEST(L2CAP_CHANNELS, fuzz) {
     l2cap_setup_test_channels_fuzz();
