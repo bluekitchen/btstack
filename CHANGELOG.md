@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: get capabilities of all streamendpoints
 - A2DP: avoid assert for outgoing connection to local Bluetooth address
 - AVDTP: fix serialization of MPEG-D USAC configuration
-- AVRCP Target: fix response for GetEllementAttributes with attribute Song Length
+- AVRCP Target: fix response for GetElementAttributes with attribute Song Length
 - Classic profiles: improve packet parser in AVRCP, BNEP, HID Host, HSP, OBEX, RFCOMM, and SDP Server
 - GATT Service Client: reject disconnect/unregister while connection setup or active connections are in progress
 - Mesh and LE Audio: improve parsers
