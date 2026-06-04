@@ -692,6 +692,7 @@ uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_ad
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
 
     // configure ERTM
     l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
@@ -2577,6 +2578,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     channel->mode = L2CAP_CHANNEL_MODE_BASIC;
@@ -5937,6 +5939,9 @@ void l2cap_setup_test_channels_fuzz(void) {
     // 0x41 1setup classic basic
     channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address,
         BD_ADDR_TYPE_ACL, 0x01, 100, LEVEL_4);
+#ifdef ENABLE_CLASSIC
+    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
+#endif
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // 0x42 setup le cbm
@@ -5964,6 +5969,7 @@ void l2cap_setup_test_channels_fuzz(void) {
 
     channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address,
         BD_ADDR_TYPE_ACL, 0x07, ertm_config.local_mtu, LEVEL_4);
+    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
     l2cap_ertm_configure_channel(channel, &ertm_config, l2cap_ertm_fuzz_storage, sizeof(l2cap_ertm_fuzz_storage));
     channel->state = L2CAP_STATE_OPEN;
     channel->con_handle = 0x0000;
