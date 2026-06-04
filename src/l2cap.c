@@ -2532,7 +2532,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->con_handle = HCI_CON_HANDLE_INVALID;
 
     // set initial state
-    channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
+    channel->state = L2CAP_STATE_CLOSED;
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
