@@ -1070,7 +1070,7 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
             break;
 #ifdef ENABLE_ECC_P256
         case BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY:
-            btstack_assert((btstack_crypto_ecc_p256_random_len + 8) <= sizeof(btstack_crypto_ecc_p256_random));
+            btstack_assert((btstack_crypto_ecc_p256_random_len + 8) <= (uint16_t) sizeof(btstack_crypto_ecc_p256_random));
             (void)memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len], data, 8);
             btstack_crypto_ecc_p256_random_len += 8u;
             if (btstack_crypto_ecc_p256_random_len >= sizeof(btstack_crypto_ecc_p256_random)) {
