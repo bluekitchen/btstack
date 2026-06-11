@@ -26,6 +26,13 @@
 #define UART_CTS_PIN             (CONFIG_BTSTACK_UART_CTS_PIN)
 #define UART_NRESET              (CONFIG_BTSTACK_UART_NRESET_PIN)
 
+#define HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD   120u
+#define HAL_UART_DMA_RX_THRESHOLD              (HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD / 2)
+
+#if HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD <= HAL_UART_DMA_RX_THRESHOLD
+#error "HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD must be larger than HAL_UART_DMA_RX_THRESHOLD to prevent hang"
+#endif
+
 static uart_config_t uart_config = {
     .source_clk = UART_SCLK_DEFAULT,
     .baud_rate  = 1000000,
@@ -33,7 +40,7 @@ static uart_config_t uart_config = {
     .parity     = UART_PARITY_DISABLE,
     .stop_bits  = UART_STOP_BITS_1,
     .flow_ctrl  = UART_HW_FLOWCTRL_CTS_RTS,
-    .rx_flow_ctrl_thresh = 120,
+    .rx_flow_ctrl_thresh = HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD,
 };
 
 typedef void (*callback_t)();
@@ -49,6 +56,22 @@ typedef struct {
 
 static io_cb_t rx_transfer;
 static io_cb_t tx_transfer;
+
+/*
+ * Receive path:
+ * - hal_uart_dma_receive_block() stores the target buffer/length and first drains any
+ *   bytes already present in the hardware RX FIFO.
+ * - If the block is still incomplete, the driver programs RXFIFO_FULL to
+ *   min(HAL_UART_DMA_RX_THRESHOLD, remaining_bytes) and enables RX interrupts.
+ * - The ISR drains FIFO contents into rx_transfer until the full block has been copied,
+ *   then it disables RX interrupts and calls receive_callback().
+ *
+ * The RX threshold must stay below the hardware flow-control threshold. Otherwise RTS
+ * could stop the remote sender before RXFIFO_FULL fires, which would leave bytes queued
+ * in the FIFO without triggering the ISR to drain them.
+ */
+#define HAL_UART_DMA_RX_INTS           UART_RXFIFO_FULL_INT_ENA_M
+#define HAL_UART_DMA_RX_INT_CLEARS     UART_RXFIFO_FULL_INT_CLR_M
 
 static void IRAM_ATTR hal_uart_dma_fill_tx_fifo(uart_dev_t *uart) {
     uint16_t space = uart_ll_get_txfifo_len(uart);
@@ -77,14 +100,14 @@ static void IRAM_ATTR hal_uart_dma_isr(void *arg) {
 
     // RX
     if ((status & UART_RXFIFO_FULL_INT_ST_M) != 0) {
-        uart_ll_clr_intsts_mask(uart, UART_RXFIFO_FULL_INT_CLR_M);
+        uart_ll_clr_intsts_mask(uart, HAL_UART_DMA_RX_INT_CLEARS);
         hal_uart_dma_read_rx_fifo(uart);
         if (rx_transfer.nbytes == 0) {
-            uart_ll_disable_intr_mask(uart, UART_RXFIFO_FULL_INT_ENA_M);
+            uart_ll_disable_intr_mask(uart, HAL_UART_DMA_RX_INTS);
             receive_callback();
         } else {
             // get length of next chunk
-            uint16_t chunk = (uint16_t) btstack_min(UART_LL_FIFO_DEF_LEN - 1, rx_transfer.nbytes);
+            uint16_t chunk = (uint16_t) btstack_min(HAL_UART_DMA_RX_THRESHOLD, rx_transfer.nbytes);
             uart_ll_set_rxfifo_full_thr(uart, chunk);
         }
     }
@@ -251,10 +274,10 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
     if (rx_transfer.nbytes > 0) {
         // enable interrupt if we need more data
         uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
-        uint16_t chunk = (uint16_t) btstack_min(UART_LL_FIFO_DEF_LEN - 1, rx_transfer.nbytes);
+        uint16_t chunk = (uint16_t) btstack_min(HAL_UART_DMA_RX_THRESHOLD, rx_transfer.nbytes);
         uart_ll_set_rxfifo_full_thr(uart, chunk);
-        uart_ll_clr_intsts_mask(uart, UART_RXFIFO_FULL_INT_CLR_M);
-        uart_ll_ena_intr_mask(uart, UART_RXFIFO_FULL_INT_ENA_M);
+        uart_ll_clr_intsts_mask(uart, HAL_UART_DMA_RX_INT_CLEARS);
+        uart_ll_ena_intr_mask(uart, HAL_UART_DMA_RX_INTS);
     } else {
         // notify higher layer that block has been sent
         receive_callback();
