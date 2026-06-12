@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - MSP432P401LP-CC256x port: ise `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas EK-RA6M4A-DA14531 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas TB-S1JA-CC256x port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- STM32 L073RZ Nucleo EM9304 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 
 ### Changed
 - HCI: align synchronous transport with asynchronous by simulating a deferred packet sent event 

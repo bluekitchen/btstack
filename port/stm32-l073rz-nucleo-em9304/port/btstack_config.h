@@ -10,6 +10,7 @@
 // Port related features
 #define HAVE_EM9304_PATCH_CONTAINER
 #define HAVE_EMBEDDED_TIME_MS
+#define HAVE_HAL_UART_BUFFERS
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
