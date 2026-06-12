@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
 - RFCOMM: only deliver RFCOMM data with size > 0
 - Renesas EK-RA6M4A-DA14531 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- Renesas TB-S1JA-CC256x port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 
 ### Changed
 - HCI: align synchronous transport with asynchronous by simulating a deferred packet sent event 
