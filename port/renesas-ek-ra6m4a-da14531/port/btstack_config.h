@@ -1,5 +1,5 @@
 //
-// btstack_config.h for STM32 F4 Discovery + TI CC256x port
+// btstack_config.h for Renesas EK-RA6M4A-DA14531 + Renesas DA14531 port
 //
 // Documentation: https://bluekitchen-gmbh.com/btstack/#how_to/
 //
@@ -10,6 +10,7 @@
 // Port related features
 #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
+#define HAVE_HAL_UART_BUFFERS
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

@@ -22,6 +22,7 @@
 
 #include "hal_data.h"
 
+#include "btstack_config.h"
 #include "bluetooth.h"
 #include "bluetooth_company_id.h"
 #include "btstack_defines.h"
@@ -98,6 +99,10 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #include "btstack_debug.h"
 #include "btstack_ring_buffer.h"
 #include "btstack_util.h"
+
+#ifndef HAVE_HAL_UART_BUFFERS
+#error "The Renesas EK-RA6M4A UART HAL buffers received data and must be built with HAVE_HAL_UART_BUFFERS enabled in btstack_config.h."
+#endif
 
 // handlers
 static void (*rx_done_handler)(void);
@@ -180,18 +185,18 @@ int  hal_uart_dma_set_baud(uint32_t baud){
     return 0;
 }
 
-void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
+bool hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
     (void) R_SCI_UART_Write(&g_uart0_ctrl, data, size);
+    return false;
 }
 
-void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
+bool hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
     uint32_t number_of_bytes_read = 0;
     btstack_ring_buffer_read(&rx_ring_buffer, data, size, &number_of_bytes_read);
     size -= number_of_bytes_read;
     data += number_of_bytes_read;
     if (size == 0){
-        (*rx_done_handler)();
-        return;
+        return true;
     }
 
     // Clear RTS and read from UART
@@ -200,6 +205,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 #ifdef HAL_UART_RTS_MANUAL
     R_IOPORT_PinWrite(&g_ioport_ctrl, BLUETOOTH_PIN_RTS, BSP_IO_LEVEL_LOW);
 #endif
+    return false;
 }
 
 // assert implementation
