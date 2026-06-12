@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: ignore unexpected responses, keep state for Delay Report response
 - GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
 - RFCOMM: only deliver RFCOMM data with size > 0
+- ESP32 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - MSP432P401LP-CC256x port: ise `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas EK-RA6M4A-DA14531 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas TB-S1JA-CC256x port: use `HAVE_HAL_UART_BUFFERS` in UART HAL

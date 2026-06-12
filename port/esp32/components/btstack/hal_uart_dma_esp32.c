@@ -7,6 +7,10 @@
 #include "btstack_defines.h"
 #include "btstack_util.h"
 
+#ifndef HAVE_HAL_UART_BUFFERS
+#error "The ESP32 UART HAL buffers data in hardware FIFOs and must be built with HAVE_HAL_UART_BUFFERS enabled in btstack_config.h."
+#endif
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -259,7 +263,7 @@ int  hal_uart_dma_set_flowcontrol(int flowcontrol) {
  * @param buffer
  * @param lengh
  */
-void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
+bool hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
 
     btstack_assert(rx_transfer.nbytes == 0);
 
@@ -271,17 +275,16 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
     uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
     hal_uart_dma_read_rx_fifo(uart);
 
-    if (rx_transfer.nbytes > 0) {
-        // enable interrupt if we need more data
+    // enable interrupt if we need more data
+    bool transfer_complete = rx_transfer.nbytes == 0;
+    if (transfer_complete == false) {
         uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
         uint16_t chunk = (uint16_t) btstack_min(HAL_UART_DMA_RX_THRESHOLD, rx_transfer.nbytes);
         uart_ll_set_rxfifo_full_thr(uart, chunk);
         uart_ll_clr_intsts_mask(uart, HAL_UART_DMA_RX_INT_CLEARS);
         uart_ll_ena_intr_mask(uart, HAL_UART_DMA_RX_INTS);
-    } else {
-        // notify higher layer that block has been sent
-        receive_callback();
     }
+    return transfer_complete;
 }
 
 #ifdef ENABLE_UART_SYNCHRONOUS_WRITE
@@ -320,13 +323,13 @@ static void hal_uart_dma_send_block_sync(const uint8_t *buffer, uint16_t len) {
  * @param buffer
  * @param lengh
  */
-void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len) {
+bool hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len) {
     btstack_assert(tx_transfer.nbytes == 0);
 
 #ifdef ENABLE_UART_SYNCHRONOUS_WRITE
     if (send_callback == NULL) {
         hal_uart_dma_send_block_sync(buffer, len);
-        return;
+        return true;
     }
 #endif
 
@@ -338,13 +341,12 @@ void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len) {
     uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
     hal_uart_dma_fill_tx_fifo(uart);
 
-    if (tx_transfer.nbytes > 0) {
-        // enable interrupt if there's more data (in this case, the tx fifo is full and we're above the threshold)
+    // enable interrupt if there's more data (in this case, the tx fifo is full and we're above the threshold)
+    bool transfer_complete = tx_transfer.nbytes == 0;
+    if (transfer_complete == false) {
         uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
         uart_ll_clr_intsts_mask(uart, UART_TXFIFO_EMPTY_INT_CLR_M);
         uart_ll_ena_intr_mask(uart, UART_TXFIFO_EMPTY_INT_ENA_M);
-    } else {
-        // notify higher layer that block has been sent
-        send_callback();
     }
+    return transfer_complete;
 }
