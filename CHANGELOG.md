@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - esp32: support micro-ecc from tinycrypt
+- HAL UART DMA: `HAVE_HAL_UART_BUFFERS` allows `hal_uart_dma_send_block` and `hal_uart_dma_receive_block` to
+  return true to indicate that buffer has been sent/received, without a completion callback
 
 ### Fixed
 - L2CAP: reject MTU smaller than 48 bytes for basic channels
@@ -20,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: align synchronous transport with asynchronous by simulating a deferred packet sent event 
 - esp32: use individual drivers for esp-idf 5.3 and later
 - esp32: select large app partition for esp32-s31 binaries
+- Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread
+- FreeRTOS UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
 
 ## Release v1.8.2
 

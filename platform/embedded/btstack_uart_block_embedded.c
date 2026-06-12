@@ -63,11 +63,31 @@ static bool send_complete;
 static bool receive_complete;
 static bool wakeup_event;
 
+#ifdef HAVE_HAL_UART_BUFFERS
+static btstack_context_callback_registration_t send_complete_callback;
+static btstack_context_callback_registration_t receive_complete_callback;
+#endif
+
 // callbacks
 static void (*block_sent)(void);
 static void (*block_received)(void);
 static void (*wakeup_handler)(void);
 
+#ifdef HAVE_HAL_UART_BUFFERS
+static void btstack_uart_block_embedded_send_complete(void * context){
+    UNUSED(context);
+    if (block_sent != NULL){
+        block_sent();
+    }
+}
+
+static void btstack_uart_block_embedded_receive_complete(void * context){
+    UNUSED(context);
+    if (block_received != NULL){
+        block_received();
+    }
+}
+#endif
 
 static void btstack_uart_block_received(void){
     receive_complete = true;
@@ -86,6 +106,10 @@ static void btstack_uart_cts_pulse(void){
 
 static int btstack_uart_embedded_init(const btstack_uart_config_t * config){
     btstack_uart_block_configuration = config;
+#ifdef HAVE_HAL_UART_BUFFERS
+    send_complete_callback.callback = &btstack_uart_block_embedded_send_complete;
+    receive_complete_callback.callback = &btstack_uart_block_embedded_receive_complete;
+#endif
     hal_uart_dma_set_block_received(&btstack_uart_block_received);
 #ifndef ENABLE_UART_SYNCHRONOUS_WRITE
     hal_uart_dma_set_block_sent(&btstack_uart_block_sent);
@@ -176,11 +200,25 @@ static int btstack_uart_embedded_set_parity(int parity){
 }
 
 static void btstack_uart_embedded_send_block(const uint8_t *data, uint16_t size){
+#ifdef HAVE_HAL_UART_BUFFERS
+    bool complete = hal_uart_dma_send_block(data, size);
+    if (complete){
+        btstack_run_loop_execute_on_main_thread(&send_complete_callback);
+    }
+#else
     hal_uart_dma_send_block(data, size);
+#endif
 }
 
 static void btstack_uart_embedded_receive_block(uint8_t *buffer, uint16_t len){
+#ifdef HAVE_HAL_UART_BUFFERS
+    bool complete = hal_uart_dma_receive_block(buffer, len);
+    if (complete){
+        btstack_run_loop_execute_on_main_thread(&receive_complete_callback);
+    }
+#else
     hal_uart_dma_receive_block(buffer, len);
+#endif
 }
 
 static int btstack_uart_embedded_get_supported_sleep_modes(void){

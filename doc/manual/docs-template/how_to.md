@@ -386,6 +386,14 @@ The core of BTstack, including all protocol and profiles, is in *src/*.
 
 Support for a particular platform is provided by the *platform/* subfolder. For most embedded ports, *platform/embedded/* provides *btstack_run_loop_embedded* and the *hci_transport_h4_embedded* implementation that require *hal_cpu.h*, *hal_led.h*, and *hal_uart_dma.h* plus *hal_tick.h* or *hal_time_ms* to be implemented by the user.
 
+`hal_uart_dma.h` normally uses block sent and block received callbacks
+to report transfer completion from interrupt context. Ports with local
+UART buffering can define `HAVE_HAL_UART_BUFFERS`; in that case,
+`hal_uart_dma_send_block` and `hal_uart_dma_receive_block` return a
+boolean. `true` means the requested block was completed immediately and
+no block callback will follow for that request, while `false` means the
+HAL must report completion later via the configured callback.
+
 To accommodate a particular Bluetooth chipset, the *chipset/* subfolders provide various btstack_chipset_* implementations.
 Please have a look at the existing ports in *port/*.
 

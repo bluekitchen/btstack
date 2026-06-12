@@ -111,6 +111,18 @@ API:
     int  hal_uart_dma_set_baud(uint32_t baud);
     void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len);
     void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+
+If `HAVE_HAL_UART_BUFFERS` is defined, the send and receive functions
+return a boolean instead:
+
+    bool hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len);
+    bool hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+
+In this mode, a return value of `true` means that the requested block
+has already been sent or received and that the corresponding block
+callback will not be called for this request. A return value of `false`
+means that the transfer is pending and the HAL must call the configured
+block callback from interrupt context when the transfer completes.
      
 
 The main HCI H4 implementations for embedded system is
