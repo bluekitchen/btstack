@@ -193,6 +193,10 @@ void hal_led_toggle(void){
 // HAL UART DMA
 #include "hal_uart_dma.h"
 
+#ifndef HAVE_HAL_UART_BUFFERS
+#error "The MSP432 UART HAL buffers received data and must be built with HAVE_HAL_UART_BUFFERS enabled in btstack_config.h."
+#endif
+
 // DMA Control Table
 // 8 channels are implemented => 16 channel control data structures (a 16 bytes) are needed
 // GCC
@@ -338,14 +342,14 @@ static void hal_uart_dma_update_rts(void){
 }
 
 // directly called from timer or similar interrupt. to call from non-isr context, interrupts must be disabled
-static void hal_uart_dma_harvest(void){
+static bool hal_uart_dma_harvest(void){
     if (bytes_to_read == 0) {
-        return;
+        return false;
     }
 
     uint16_t bytes_avail = hal_dma_rx_bytes_avail(hal_dma_rx_active_buffer, hal_dma_rx_offset);
     if (bytes_avail == 0) {
-        return;
+        return false;
     }
 
     // fetch bytes from current buffer
@@ -363,7 +367,11 @@ static void hal_uart_dma_harvest(void){
         hal_uart_dma_update_rts();
     }
 
-    if (bytes_to_read == 0){
+    return bytes_to_read == 0;
+}
+
+static void hal_uart_dma_harvest_and_notify(void){
+    if (hal_uart_dma_harvest()){
         (*rx_done_handler)();
     }
 }
@@ -382,7 +390,7 @@ void DMA_INT2_IRQHandler(void){
 #ifdef BLUETOOTH_DEBUG_PORT
     MAP_GPIO_setOutputHighOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
 #endif
-    hal_uart_dma_harvest();
+    hal_uart_dma_harvest_and_notify();
 #ifdef BLUETOOTH_DEBUG_PORT
     MAP_GPIO_setOutputLowOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
 #endif
@@ -474,13 +482,15 @@ void hal_uart_dma_init(void){
             test_tx[pos] = value++;
         }
         // trigger receive
-        hal_uart_dma_receive_block(test_rx, block_size);
+        if (hal_uart_dma_receive_block(test_rx, block_size)){
+            test_rx_complete();
+        }
         // trigger send
         printf_hexdump(test_tx, block_size);
         hal_uart_dma_send_block(test_tx, block_size);
         while (test_rx_flag == 0){
             hal_cpu_disable_irqs();
-            hal_uart_dma_harvest();
+            hal_uart_dma_harvest_and_notify();
             hal_cpu_enable_irqs();
         };
         test_rx_flag = 0;
@@ -520,20 +530,22 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
     tx_done_handler = the_block_handler;
 }
 
-void hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
+bool hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
     MAP_DMA_setChannelTransfer(DMA_CH4_EUSCIA2TX | UDMA_PRI_SELECT, UDMA_MODE_BASIC, (uint8_t *) data,
                                (void *) MAP_UART_getTransmitBufferAddressForDMA(EUSCI_A2_BASE),
                                len);
     MAP_DMA_enableChannel(DMA_CH4_EUSCIA2TX & 0x0F);
+    return false;
 }
 
 // int used to indicate a request for more new data
-void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
+bool hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
     rx_buffer_ptr = buffer;
     bytes_to_read = len;
     hal_cpu_disable_irqs();
-    hal_uart_dma_harvest();
+    bool complete = hal_uart_dma_harvest();
     hal_cpu_enable_irqs();
+    return complete;
 }
 
 // HAL TIME MS Implementation
@@ -546,7 +558,7 @@ void SysTick_Handler(void){
 #ifdef BLUETOOTH_DEBUG_PORT
     MAP_GPIO_setOutputHighOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
 #endif
-    hal_uart_dma_harvest();
+    hal_uart_dma_harvest_and_notify();
 #ifdef BLUETOOTH_DEBUG_PORT
     MAP_GPIO_setOutputLowOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
 #endif
