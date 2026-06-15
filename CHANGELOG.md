@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Service Client: reject disconnect/unregister while connection setup or active connections are in progress
 - Mesh and LE Audio: improve parsers
 - btstack_crypto: fix DHKey calculation for newer mbedTLS that require f_rnd for ECC multiplications
+- a2dp_sink_demo: avoid buffer overrun for HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
 
 ### Changed
 - Chipset BCM: ENABLE_AIROC_DOWNLOAD_MODE enables support, hci_set_airoc_download_mode activates it
