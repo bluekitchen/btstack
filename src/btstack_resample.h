@@ -72,8 +72,19 @@ void btstack_resample_init(btstack_resample_t * context, int num_channels);
 /**
  * @brief Set resampling factor
  * @param factor as fixed point value, identity is 0x10000
+ * @note factor is used as step size over input data, smaller values result in more output samples
  */
 void btstack_resample_set_factor(btstack_resample_t * context, uint32_t factor);
+
+/**
+ * @brief Get minimum resampling factor to fit resampled output into output buffer
+ * @param input_frames number of input frames passed to btstack_resample_block
+ * @param output_capacity_frames number of frames that fit into the output buffer
+ * @return minimum factor as fixed point value
+ * @note Use this value as lower bound for the resampling factor, e.g. factor = btstack_max(factor, minimum_factor)
+ * @note This calculation includes the extra frame that can be emitted between two input blocks.
+ */
+uint32_t btstack_resample_get_min_factor_for_output_capacity(uint16_t input_frames, uint16_t output_capacity_frames);
 
 /**
  * @brief Process block of input samples

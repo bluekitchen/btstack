@@ -95,6 +95,9 @@
 #define NUM_CHANNELS 2
 #define BYTES_PER_FRAME     (2*NUM_CHANNELS)
 #define MAX_SBC_FRAME_SIZE 120
+#define SBC_MAX_AUDIO_FRAMES_PER_BLOCK 128
+#define RESAMPLE_ADDITIONAL_FRAMES     16
+#define RESAMPLE_OUTPUT_FRAMES         (SBC_MAX_AUDIO_FRAMES_PER_BLOCK + RESAMPLE_ADDITIONAL_FRAMES)
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "00:1A:7D:DA:71:06"; // pts v5.0
@@ -149,7 +152,7 @@ static btstack_ring_buffer_t sbc_frame_ring_buffer;
 static unsigned int sbc_frame_size;
 
 // overflow buffer for not fully used sbc frames, with additional frames for resampling
-static uint8_t decoded_audio_storage[(128+16) * BYTES_PER_FRAME];
+static uint8_t decoded_audio_storage[RESAMPLE_OUTPUT_FRAMES * BYTES_PER_FRAME];
 static btstack_ring_buffer_t decoded_audio_ring_buffer;
 
 static int media_initialized = 0;
@@ -158,6 +161,7 @@ static int audio_stream_started;
 static int l2cap_stream_started;
 #endif
 static btstack_resample_t resample_instance;
+static uint32_t resampling_min_factor;
 
 // temp storage of lower-layer request for audio samples
 static int16_t * request_buffer;
@@ -449,7 +453,7 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
     }
 
     // resample into request buffer - add some additional space for resampling
-    int16_t  output_buffer[(128+16) * NUM_CHANNELS]; // 16 * 8 * 2
+    int16_t  output_buffer[RESAMPLE_OUTPUT_FRAMES * NUM_CHANNELS];
     uint32_t resampled_frames = btstack_resample_block(&resample_instance, data, num_audio_frames, output_buffer);
 
     // store data in btstack_audio buffer first
@@ -480,6 +484,7 @@ static int media_processing_init(media_codec_configuration_sbc_t * configuration
     btstack_ring_buffer_init(&sbc_frame_ring_buffer, sbc_frame_storage, sizeof(sbc_frame_storage));
     btstack_ring_buffer_init(&decoded_audio_ring_buffer, decoded_audio_storage, sizeof(decoded_audio_storage));
     btstack_resample_init(&resample_instance, configuration->num_channels);
+    resampling_min_factor = btstack_resample_get_min_factor_for_output_capacity(SBC_MAX_AUDIO_FRAMES_PER_BLOCK, RESAMPLE_OUTPUT_FRAMES);
 
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
@@ -601,7 +606,8 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     }
     // update sample rate compensation
     if( audio_stream_started && (audio != NULL)) {
-        uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, btstack_run_loop_get_time_ms(), sbc_header.num_frames*128, audio->get_samplerate() );
+        uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, btstack_run_loop_get_time_ms(), sbc_header.num_frames * SBC_MAX_AUDIO_FRAMES_PER_BLOCK, audio->get_samplerate() );
+        resampling_factor = btstack_max(resampling_factor, resampling_min_factor);
         btstack_resample_set_factor(&resample_instance, resampling_factor);
 //        printf("sbc buffer level :            %"PRIu32"\n", btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer));
     }
@@ -620,6 +626,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     	resampling_factor = nominal_factor + compensation;    // compress samples
     }
 
+    resampling_factor = btstack_max(resampling_factor, resampling_min_factor);
     btstack_resample_set_factor(&resample_instance, resampling_factor);
 #endif
     // start stream if enough frames buffered
