@@ -18,6 +18,7 @@ SUBDIRS :=  \
 	btstack-event \
 	btstack_link_key_db \
 	btstack_util \
+	btstack_resample \
 	btstack_memory \
 	classic-oob-pairing \
 	crypto \
@@ -60,6 +61,7 @@ SUBDIRS_BLE := \
 	ble_client \
 	btstack-event \
 	btstack_memory \
+	btstack_resample \
 	btstack_util \
 	crypto \
 	embedded \

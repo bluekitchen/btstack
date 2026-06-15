@@ -1,0 +1,33 @@
+cmake_minimum_required (VERSION 3.5)
+
+project(test-btstack-resample)
+
+set (BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../../)
+
+# pkgconfig required to link cpputest
+find_package(PkgConfig REQUIRED)
+
+# CppuTest
+pkg_check_modules(CPPUTEST REQUIRED cpputest)
+include_directories(${CPPUTEST_INCLUDE_DIRS})
+link_directories(${CPPUTEST_LIBRARY_DIRS})
+link_libraries(${CPPUTEST_LIBRARIES})
+
+include_directories(../../src)
+include_directories(..)
+
+# Enable ASAN
+add_compile_options( -g -fsanitize=address)
+add_link_options(       -fsanitize=address)
+
+# create test targets
+file(GLOB TARGETS_CPP "*_test.cpp")
+
+foreach(TARGET_FILE ${TARGETS_CPP})
+        get_filename_component(TEST ${TARGET_FILE} NAME_WE)
+        message("test/btstack_resample: ${TEST}")
+        add_executable(${TEST}
+                ${TARGET_FILE}
+                ${BTSTACK_ROOT}/src/btstack_resample.c
+        )
+endforeach(TARGET_FILE)
