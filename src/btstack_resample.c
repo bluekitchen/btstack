@@ -57,6 +57,15 @@ void btstack_resample_set_factor(btstack_resample_t * context, uint32_t src_step
     context->src_step = src_step;
 }
 
+uint32_t btstack_resample_get_min_factor_for_output_capacity(uint16_t input_frames, uint16_t output_capacity_frames){
+    btstack_assert(input_frames > 0);
+    btstack_assert(output_capacity_frames > 0);
+
+    uint32_t min_factor = ((uint32_t) input_frames << 16) + output_capacity_frames - 1u;
+    min_factor /= output_capacity_frames;
+    return min_factor;
+}
+
 uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer){
     btstack_assert(context->num_channels > 0);
 

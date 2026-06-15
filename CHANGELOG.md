@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Windows-H4: support AIROC download mode
 - Web-H4: support CYW55310 and package .hcd files
 - ESP32: support external Bluetooth Controller
+- btstack_resample: add btstack_resample_get_min_factor_for_output_capacity
 - Tool: compile_gatt.py adds verbose mode and OpenSSL fallback if PyCryptodome is not installed
 
 ### Fixed
