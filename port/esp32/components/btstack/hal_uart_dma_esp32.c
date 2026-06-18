@@ -7,6 +7,8 @@
 #include "btstack_defines.h"
 #include "btstack_util.h"
 
+// #define ENABLE_HAL_UART_DEBUG
+
 #ifndef HAVE_HAL_UART_BUFFERS
 #error "The ESP32 UART HAL buffers data in hardware FIFOs and must be built with HAVE_HAL_UART_BUFFERS enabled in btstack_config.h."
 #endif
@@ -27,8 +29,12 @@
 #endif
 #include "soc/uart_struct.h"
 
-#define UART_NO                  (CONFIG_BTSTACK_UART_NUM)
+#ifdef ENABLE_HAL_UART_DEBUG
+#include "esp_timer.h"
+#include "hal/gpio_ll.h"
+#endif
 
+#define UART_NO                  (CONFIG_BTSTACK_UART_NUM)
 #define UART_TX_PIN              (CONFIG_BTSTACK_UART_TX_PIN)
 #define UART_RX_PIN              (CONFIG_BTSTACK_UART_RX_PIN)
 #define UART_RTS_PIN             (CONFIG_BTSTACK_UART_RTS_PIN)
@@ -37,6 +43,13 @@
 
 #define HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD   120u
 #define HAL_UART_DMA_RX_THRESHOLD              (HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD / 2)
+
+#ifdef ENABLE_HAL_UART_DEBUG
+#define HAL_UART_DMA_DEBUG_RX_RECEIVE_GPIO     25u
+#define HAL_UART_DMA_DEBUG_RX_ISR_GPIO         26u
+#define HAL_UART_DMA_DEBUG_RX_STALLED_GPIO     27u
+#define HAL_UART_DMA_RX_STALLED_TIMEOUT_US     1000000ULL
+#endif
 
 #if HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD <= HAL_UART_DMA_RX_THRESHOLD
 #error "HAL_UART_DMA_RX_FLOW_CTRL_THRESHOLD must be larger than HAL_UART_DMA_RX_THRESHOLD to prevent hang"
@@ -65,6 +78,112 @@ typedef struct {
 
 static io_cb_t rx_transfer;
 static io_cb_t tx_transfer;
+
+#ifdef ENABLE_HAL_UART_DEBUG
+static uint16_t hal_uart_dma_rx_transfer_total_size;
+static esp_timer_handle_t hal_uart_dma_rx_watchdog_timer;
+static volatile bool hal_uart_dma_rx_watchdog_armed;
+
+static void hal_uart_dma_debug_init(void){
+    const uint64_t debug_gpio_mask =
+        (1ULL << HAL_UART_DMA_DEBUG_RX_RECEIVE_GPIO) |
+        (1ULL << HAL_UART_DMA_DEBUG_RX_ISR_GPIO) |
+        (1ULL << HAL_UART_DMA_DEBUG_RX_STALLED_GPIO);
+    gpio_config_t debug_config = {
+        .pin_bit_mask = debug_gpio_mask,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&debug_config);
+    gpio_set_level(HAL_UART_DMA_DEBUG_RX_RECEIVE_GPIO, 0);
+    gpio_set_level(HAL_UART_DMA_DEBUG_RX_ISR_GPIO, 0);
+    gpio_set_level(HAL_UART_DMA_DEBUG_RX_STALLED_GPIO, 0);
+}
+
+static inline void IRAM_ATTR hal_uart_dma_debug_set_rx_receive_gpio(uint32_t level){
+    gpio_ll_set_level(&GPIO, HAL_UART_DMA_DEBUG_RX_RECEIVE_GPIO, level);
+}
+
+static inline void IRAM_ATTR hal_uart_dma_debug_set_rx_isr_gpio(uint32_t level){
+    gpio_ll_set_level(&GPIO, HAL_UART_DMA_DEBUG_RX_ISR_GPIO, level);
+}
+
+static inline void IRAM_ATTR hal_uart_dma_debug_set_rx_stalled_gpio(uint32_t level){
+    gpio_ll_set_level(&GPIO, HAL_UART_DMA_DEBUG_RX_STALLED_GPIO, level);
+}
+
+static void hal_uart_dma_rx_watchdog_timeout(void * arg){
+    UNUSED(arg);
+    if ((hal_uart_dma_rx_watchdog_armed == false) || (rx_transfer.nbytes == 0u)){
+        return;
+    }
+    uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
+    uint16_t fifo_bytes = uart_ll_get_rxfifo_len(uart);
+    uint16_t rx_threshold = uart->conf1.rxfifo_full_thrhd;
+    uint32_t intr_raw = uart_ll_get_intraw_mask(uart);
+    uint32_t intr_st = uart_ll_get_intsts_mask(uart);
+    uint32_t intr_ena = uart_ll_get_intr_ena_status(uart);
+    gpio_set_level(HAL_UART_DMA_DEBUG_RX_STALLED_GPIO, 1);
+    printf("UART RX stalled: total %u, fifo %u, need %u, thr %u, raw 0x%08lx, st 0x%08lx, ena 0x%08lx\n",
+           hal_uart_dma_rx_transfer_total_size,
+           fifo_bytes,
+           rx_transfer.nbytes,
+           rx_threshold,
+           (unsigned long) intr_raw,
+           (unsigned long) intr_st,
+           (unsigned long) intr_ena);
+}
+
+static void hal_uart_dma_rx_watchdog_init(void){
+    if (hal_uart_dma_rx_watchdog_timer != NULL){
+        return;
+    }
+    const esp_timer_create_args_t timer_args = {
+        .callback = &hal_uart_dma_rx_watchdog_timeout,
+        .arg = NULL,
+        .dispatch_method = ESP_TIMER_TASK,
+        .name = "uart_rx_watchdog"
+    };
+    ESP_ERROR_CHECK(esp_timer_create(&timer_args, &hal_uart_dma_rx_watchdog_timer));
+}
+
+static void hal_uart_dma_rx_watchdog_start(void){
+    hal_uart_dma_rx_watchdog_armed = true;
+    gpio_set_level(HAL_UART_DMA_DEBUG_RX_STALLED_GPIO, 0);
+    if (hal_uart_dma_rx_watchdog_timer != NULL){
+        esp_timer_stop(hal_uart_dma_rx_watchdog_timer);
+        ESP_ERROR_CHECK(esp_timer_start_once(hal_uart_dma_rx_watchdog_timer, HAL_UART_DMA_RX_STALLED_TIMEOUT_US));
+    }
+}
+
+static inline void IRAM_ATTR hal_uart_dma_rx_watchdog_complete(void){
+    hal_uart_dma_rx_watchdog_armed = false;
+    hal_uart_dma_rx_transfer_total_size = 0u;
+    hal_uart_dma_debug_set_rx_stalled_gpio(0);
+}
+#else
+static inline void hal_uart_dma_debug_init(void){
+}
+
+static inline void IRAM_ATTR hal_uart_dma_debug_set_rx_receive_gpio(uint32_t level){
+    UNUSED(level);
+}
+
+static inline void IRAM_ATTR hal_uart_dma_debug_set_rx_isr_gpio(uint32_t level){
+    UNUSED(level);
+}
+
+static inline void hal_uart_dma_rx_watchdog_init(void){
+}
+
+static inline void hal_uart_dma_rx_watchdog_start(void){
+}
+
+static inline void IRAM_ATTR hal_uart_dma_rx_watchdog_complete(void){
+}
+#endif
 
 /*
  * Receive path:
@@ -109,16 +228,19 @@ static void IRAM_ATTR hal_uart_dma_isr(void *arg) {
 
     // RX
     if ((status & UART_RXFIFO_FULL_INT_ST_M) != 0) {
+        hal_uart_dma_debug_set_rx_isr_gpio(1);
         uart_ll_clr_intsts_mask(uart, HAL_UART_DMA_RX_INT_CLEARS);
         hal_uart_dma_read_rx_fifo(uart);
         if (rx_transfer.nbytes == 0) {
             uart_ll_disable_intr_mask(uart, HAL_UART_DMA_RX_INTS);
+            hal_uart_dma_rx_watchdog_complete();
             receive_callback();
         } else {
             // get length of next chunk
             uint16_t chunk = (uint16_t) btstack_min(HAL_UART_DMA_RX_THRESHOLD, rx_transfer.nbytes);
             uart_ll_set_rxfifo_full_thr(uart, chunk);
         }
+        hal_uart_dma_debug_set_rx_isr_gpio(0);
     }
 
     // TX
@@ -137,6 +259,8 @@ static void IRAM_ATTR hal_uart_dma_isr(void *arg) {
  * @brief Init and open device
  */
 void hal_uart_dma_init(void) {
+    hal_uart_dma_debug_init();
+    hal_uart_dma_rx_watchdog_init();
 
 #if defined(UART_NRESET) && (UART_NRESET >= 0)
     // Configure GPIO15 as output
@@ -269,27 +393,48 @@ int  hal_uart_dma_set_flowcontrol(int flowcontrol) {
  * @param lengh
  */
 bool hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len) {
+    hal_uart_dma_debug_set_rx_receive_gpio(1);
 
     btstack_assert(rx_transfer.nbytes == 0);
 
     // store transfer
     rx_transfer.buf = (uint8_t *)buffer;
     rx_transfer.nbytes = len;
+#ifdef ENABLE_HAL_UART_DEBUG
+    hal_uart_dma_rx_transfer_total_size = len;
+#endif
 
-    // RX interrupts are off, we can fill buffer from fifo
     uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
-    hal_uart_dma_read_rx_fifo(uart);
+    uart_ll_disable_intr_mask(uart, HAL_UART_DMA_RX_INTS);
 
-    // enable interrupt if we need more data
-    bool transfer_complete = rx_transfer.nbytes == 0;
-    if (transfer_complete == false) {
-        uart_dev_t *uart = UART_LL_GET_HW(UART_NO);
+    while (true){
+        // RX interrupts are off here, so receive_block owns FIFO draining.
+        hal_uart_dma_read_rx_fifo(uart);
+
+        // hanlde request complete
+        if (rx_transfer.nbytes == 0u) {
+            hal_uart_dma_rx_watchdog_complete();
+            hal_uart_dma_debug_set_rx_receive_gpio(0);
+            return true;
+        }
+
+        // setup RX Threshold for next chunk
         uint16_t chunk = (uint16_t) btstack_min(HAL_UART_DMA_RX_THRESHOLD, rx_transfer.nbytes);
         uart_ll_set_rxfifo_full_thr(uart, chunk);
         uart_ll_clr_intsts_mask(uart, HAL_UART_DMA_RX_INT_CLEARS);
-        uart_ll_ena_intr_mask(uart, HAL_UART_DMA_RX_INTS);
+
+        // if no data has arrived since we drained it, the RX Threshold interrupt flag cannot have been set,
+        // we're all good and can exit.
+        // Otherwise, data has arrived, and we might have lost the RX Threshold interrupt flag
+        if (uart_ll_get_rxfifo_len(uart) == 0u){
+            break;
+        }
     }
-    return transfer_complete;
+
+    hal_uart_dma_rx_watchdog_start();
+    uart_ll_ena_intr_mask(uart, HAL_UART_DMA_RX_INTS);
+    hal_uart_dma_debug_set_rx_receive_gpio(0);
+    return false;
 }
 
 #ifdef ENABLE_UART_SYNCHRONOUS_WRITE
