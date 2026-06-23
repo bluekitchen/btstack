@@ -1008,7 +1008,7 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
         hci_stack->acl_fragmentation_tx_active = 0;
-        hci_release_packet_buffer();
+        hci_schedule_transport_packet_sent();
     }
 
     return status;
