@@ -210,7 +210,6 @@ static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
 static void hci_halting_timeout_handler(btstack_timer_source_t * ds);
-static void hci_emit_transport_packet_sent(void);
 static void hci_schedule_transport_packet_sent(void);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
@@ -871,7 +870,6 @@ void hci_reserve_packet_buffer(void){
 void hci_release_packet_buffer(void){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
     hci_stack->hci_packet_buffer_reserved = false;
-    hci_emit_transport_packet_sent();
 }
 
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
@@ -8926,12 +8924,6 @@ static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_
 }
 #endif
 #endif
-
-static void hci_emit_transport_packet_sent(void){
-    // notify upper stack that it might be possible to send again
-    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
-}
 
 static void hci_emit_transport_packet_sent_on_main_thread(void * context){
     UNUSED(context);
