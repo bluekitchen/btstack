@@ -20,7 +20,7 @@ if( NOT DEFINED ${BTSTACK_ROOT} )
 endif()
 message("BTstack root: ${BTSTACK_ROOT}")
 
-set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0233.0117.hcd)
+set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0211.0125.hcd)
 
 # Downloaded web assets, format: "URL|relative/output/path"
 set(WEB_H4_DOWNLOADED_ASSETS
