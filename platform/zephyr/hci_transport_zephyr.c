@@ -198,14 +198,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
  * @return Newly allocated buffer or NULL if allocation failed.
  */
 struct net_buf *bt_hci_cmd_alloc(k_timeout_t timeout) {
-    struct net_buf *buf;
-    buf = bt_buf_get_tx(BT_BUF_CMD, timeout, NULL, 0);
-    if (!buf) {
-        log_error("No available command buffers!\n");
-        btstack_assert(false);
-        return NULL;
-    }
-    return buf;
+    return bt_buf_get_tx(BT_BUF_CMD, timeout, NULL, 0);
 }
 
 /** Send a HCI command synchronously.
@@ -235,22 +228,29 @@ struct net_buf *bt_hci_cmd_alloc(k_timeout_t timeout) {
 int bt_hci_cmd_send_sync(uint16_t opcode, struct net_buf *buf, struct net_buf **rsp){
     // create packet if needed from opcode
     if (!buf) {
-        buf = bt_hci_cmd_alloc( K_NO_WAIT );
+        struct bt_hci_cmd_hdr hdr = {
+            .opcode = sys_cpu_to_le16(opcode),
+            .param_len = 0,
+        };
+
+        buf = bt_buf_get_tx(BT_BUF_CMD, K_NO_WAIT, &hdr, sizeof(hdr));
         if (!buf) {
             return -ENOBUFS;
         }
+    } else {
+        struct bt_hci_cmd_hdr *hdr;
+
+        if (net_buf_tailroom(buf) < sizeof(*hdr)) {
+            return -ENOBUFS;
+        }
+
+        // [BT_HCI_H4_CMD][payload] -> [BT_HCI_H4_CMD][HDR][payload]
+        net_buf_add(buf, sizeof(*hdr));
+        memmove(&buf->data[1 + sizeof(*hdr)], &buf->data[1], buf->len - 1 - sizeof(*hdr));
+        hdr = (struct bt_hci_cmd_hdr *) &buf->data[1];
+        hdr->opcode = sys_cpu_to_le16(opcode);
+        hdr->param_len = buf->len - sizeof(*hdr) - 1;
     }
-
-    struct bt_hci_cmd_hdr *hdr;
-
-    // thanks to bt_buf_get_tx buf is now sizeof(*hdr) + 1 byte big, with the following layout
-    // [BT_HCI_H4_CMD][payload]
-    uint8_t *bytes = net_buf_push(buf, sizeof(*hdr));
-    // [HDR][BT_HCI_H4_CMD][payload]
-    bytes[0] = BT_HCI_H4_CMD;
-    hdr = (struct bt_hci_cmd_hdr*)&bytes[1];
-    hdr->opcode = sys_cpu_to_le16(opcode);
-    hdr->param_len = buf->len - sizeof(*hdr) - 1;
 
     // hci dump packet
 #ifdef SYNC_SEND_PACKETLOG
@@ -297,5 +297,3 @@ static const hci_transport_t transport = {
 const hci_transport_t * hci_transport_zephyr_get_instance(void){
     return &transport;
 }
-
-
