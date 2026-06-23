@@ -5109,11 +5109,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 
         case HCI_EVENT_TRANSPORT_PACKET_SENT:
-            // release packet buffer only for asynchronous transport and if there are not further fragments
-            if (hci_transport_synchronous()) {
-                log_error("Synchronous HCI Transport shouldn't send HCI_EVENT_TRANSPORT_PACKET_SENT");
-                return; // instead of break: to avoid re-entering hci_run()
-            }
+            // release packet buffer only if there are not further ACL or ISO fragments
             hci_stack->acl_fragmentation_tx_active = 0;
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
             hci_stack->iso_fragmentation_tx_active = 0;
