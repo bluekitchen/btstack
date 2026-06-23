@@ -1196,7 +1196,7 @@ static uint8_t hci_send_iso_packet_fragments(void){
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
         hci_stack->iso_fragmentation_tx_active = false;
-        hci_release_packet_buffer();
+        hci_schedule_transport_packet_sent();
     }
 
     return status;
