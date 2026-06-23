@@ -37,11 +37,12 @@ Console output is disabled by default. Add one of these configuration fragments 
 
 - `debug-segger.conf` enables console output via SEGGER RTT
 - `debug-usb.conf` enables console output via USB CDC ACM on boards whose devicetree routes `zephyr,console` to a CDC ACM UART; the IF310 board definition provides this routing
+- `debug-fault.conf` enables extra fault diagnostics, assertions, thread names, and stack checks for debugger sessions
 
 For example, to build IF310 with no console output:
 
 ```sh
-west build -b if310
+west build --pristine -b if310
 ```
 
 To build IF310 with SEGGER RTT console output:
@@ -54,6 +55,12 @@ To build IF310 with USB CDC console output:
 
 ```sh
 west build -b if310 -- -DEXTRA_CONF_FILE=debug-usb.conf
+```
+
+To build IF310 with SEGGER RTT console output and extra fault diagnostics:
+
+```sh
+west build -b if310 -- -DEXTRA_CONF_FILE="debug-segger.conf;debug-fault.conf"
 ```
 
 When a board already needs another fragment, pass both as a semicolon-separated list, for example:
