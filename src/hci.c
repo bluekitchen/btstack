@@ -1110,7 +1110,7 @@ uint8_t hci_send_sco_packet_buffer(int size){
 
 #ifdef HAVE_SCO_TRANSPORT
     hci_stack->sco_transport->send_packet(packet, size);
-    hci_release_packet_buffer();
+    hci_schedule_transport_packet_sent();
 
     return 0;
 #else
