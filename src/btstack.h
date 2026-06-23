@@ -191,4 +191,8 @@
 #include "mesh/provisioning_provisioner.h"
 #endif
 
+#include "ble/gatt-service/object_transfer_service_client.h"
+#include "ble/gatt-service/object_transfer_service_server.h"
+#include "ble/gatt-service/object_transfer_service_util.h"
+
 #endif  // __BTSTACK_H 
