@@ -937,7 +937,7 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     log_debug("hci_send_acl_packet_fragments entered");
 
-    uint8_t status = ERROR_CODE_SUCCESS;
+    int err = 0;
     // multiple packets could be sent on a synchronous HCI transport
     while (true){
 
@@ -983,10 +983,8 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
         const int size = current_acl_data_packet_length + 4;
         hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
         hci_stack->acl_fragmentation_tx_active = 1;
-        int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+        err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
         if (err != 0){
-            // no error from HCI Transport expected
-            status = ERROR_CODE_HARDWARE_FAILURE;
             break;
         }
 
@@ -1000,18 +998,23 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
         if (!more_fragments) break;
 
         // can send more?
-        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return status;
+        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return ERROR_CODE_SUCCESS;
     }
 
     log_debug("hci_send_acl_packet_fragments loop over");
 
-    // release buffer now for synchronous transport
-    if (hci_transport_synchronous()){
+    // release buffer on error or schedule sent event for synchronous transport
+    if (err != 0) {
+        // no error from HCI Transport expected
+        hci_stack->acl_fragmentation_tx_active = 0;
+        log_error("ACL Packet sent failed, error = %d", err);
+        hci_release_packet_buffer();
+        return ERROR_CODE_HARDWARE_FAILURE;
+    } else if (hci_transport_synchronous()){
         hci_stack->acl_fragmentation_tx_active = 0;
         hci_schedule_transport_packet_sent();
     }
-
-    return status;
+    return ERROR_CODE_SUCCESS;
 }
 
 // pre: caller has reserved the packet buffer
@@ -1112,21 +1115,17 @@ uint8_t hci_send_sco_packet_buffer(int size){
     hci_stack->sco_transport->send_packet(packet, size);
     hci_schedule_transport_packet_sent();
 
-    return 0;
+    return ERROR_CODE_SUCCESS;
 #else
     int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
-    uint8_t status;
-    if (err == 0){
-        status = ERROR_CODE_SUCCESS;
-    } else {
-        status = ERROR_CODE_HARDWARE_FAILURE;
-    }
-    if (status != ERROR_CODE_SUCCESS){
+    if (err != 0){
+        log_error("SCO packet sent failed, error = %d", err);
         hci_release_packet_buffer();
+        return ERROR_CODE_HARDWARE_FAILURE;
     } else if (hci_transport_synchronous()){
         hci_schedule_transport_packet_sent();
     }
-    return status;
+    return ERROR_CODE_SUCCESS;
 #endif
 }
 #endif
@@ -1135,7 +1134,7 @@ uint8_t hci_send_sco_packet_buffer(int size){
 static uint8_t hci_send_iso_packet_fragments(void){
 
     uint16_t max_iso_data_packet_length = hci_stack->le_iso_packets_length;
-    uint8_t status = ERROR_CODE_SUCCESS;
+    int err = 0;
     // multiple packets could be send on a synchronous HCI transport
     while (true){
 
@@ -1182,26 +1181,31 @@ static uint8_t hci_send_iso_packet_fragments(void){
         const int size = current_iso_data_packet_length + 4;
         hci_dump_packet(HCI_ISO_DATA_PACKET, 0, packet, size);
         hci_stack->iso_fragmentation_tx_active = true;
-        int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
+        err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
         if (err != 0){
-            // no error from HCI Transport expected
-            status = ERROR_CODE_HARDWARE_FAILURE;
+            break;
         }
 
         // done yet?
         if (!more_fragments) break;
 
         // can send more?
-        if (!hci_transport_can_send_prepared_packet_now(HCI_ISO_DATA_PACKET)) return false;
+        if (!hci_transport_can_send_prepared_packet_now(HCI_ISO_DATA_PACKET)) return ERROR_CODE_SUCCESS;
     }
 
-    // release buffer now for synchronous transport
-    if (hci_transport_synchronous()){
+    // release buffer on error or schedule sent event for synchronous transport
+    // no error from HCI Transport expected
+    if (err != 0){
+        hci_stack->iso_fragmentation_tx_active = false;
+        log_error("ISO packet sent failed, error = %d", err);
+        hci_release_packet_buffer();
+        return ERROR_CODE_HARDWARE_FAILURE;
+    } else if (hci_transport_synchronous()){
         hci_stack->iso_fragmentation_tx_active = false;
         hci_schedule_transport_packet_sent();
     }
 
-    return status;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t hci_send_iso_packet_buffer(uint16_t size){
@@ -6463,10 +6467,13 @@ static void hci_host_num_completed_packets(void){
     hci_stack->host_completed_packets = 0;
 
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+    int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 
-    // release packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous()){
+    // release buffer on error or schedule sent event for synchronous transport
+    if (err != 0){
+        log_error("Host Completed failed to send, error = %d", err);
+        hci_release_packet_buffer();
+    } else if (hci_transport_synchronous()){
         hci_schedule_transport_packet_sent();
     }
 }
@@ -8391,6 +8398,7 @@ static uint8_t hci_send_prepared_cmd_packet(void) {
     uint8_t status = hci_send_cmd_packet(hci_stack->hci_packet_buffer, size);
     // release packet buffer on error or for synchronous transport implementations
     if (status != ERROR_CODE_SUCCESS){
+        log_error("Command packet sent failed, error = %d", status);
         hci_release_packet_buffer();
     } else if (hci_transport_synchronous()){
         hci_schedule_transport_packet_sent();
