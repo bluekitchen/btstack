@@ -1121,8 +1121,10 @@ uint8_t hci_send_sco_packet_buffer(int size){
     } else {
         status = ERROR_CODE_HARDWARE_FAILURE;
     }
-    if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
+    if (status != ERROR_CODE_SUCCESS){
         hci_release_packet_buffer();
+    } else if (hci_transport_synchronous()){
+        hci_schedule_transport_packet_sent();
     }
     return status;
 #endif
