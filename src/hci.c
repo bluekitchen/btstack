@@ -211,6 +211,7 @@ static void hci_power_control_off(void);
 static void hci_state_reset(void);
 static void hci_halting_timeout_handler(btstack_timer_source_t * ds);
 static void hci_emit_transport_packet_sent(void);
+static void hci_schedule_transport_packet_sent(void);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
@@ -270,6 +271,7 @@ static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
 static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
+static btstack_context_callback_registration_t hci_transport_packet_sent_callback;
 
 #ifdef ENABLE_CLASSIC
 // default name
@@ -8921,6 +8923,19 @@ static void hci_emit_transport_packet_sent(void){
     // notify upper stack that it might be possible to send again
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
     hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
+}
+
+static void hci_emit_transport_packet_sent_on_main_thread(void * context){
+    UNUSED(context);
+
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+}
+
+static void hci_schedule_transport_packet_sent(void){
+    hci_transport_packet_sent_callback.callback = &hci_emit_transport_packet_sent_on_main_thread;
+    hci_transport_packet_sent_callback.context = NULL;
+    btstack_run_loop_execute_on_main_thread(&hci_transport_packet_sent_callback);
 }
 
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
