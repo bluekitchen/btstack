@@ -6467,7 +6467,7 @@ static void hci_host_num_completed_packets(void){
 
     // release packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous()){
-        hci_release_packet_buffer();
+        hci_schedule_transport_packet_sent();
     }
 }
 #endif
