@@ -1109,7 +1109,6 @@ uint8_t hci_send_sco_packet_buffer(int size){
 #ifdef HAVE_SCO_TRANSPORT
     hci_stack->sco_transport->send_packet(packet, size);
     hci_release_packet_buffer();
-    hci_emit_transport_packet_sent();
 
     return 0;
 #else
@@ -1196,7 +1195,6 @@ static uint8_t hci_send_iso_packet_fragments(void){
     if (hci_transport_synchronous()){
         hci_stack->iso_fragmentation_tx_active = false;
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
     }
 
     return status;
@@ -6470,7 +6468,6 @@ static void hci_host_num_completed_packets(void){
     // release packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
     }
 }
 #endif
