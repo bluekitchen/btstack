@@ -133,7 +133,7 @@ TEST(AvdtpAcceptor, reject_start_for_unknown_seid_contains_acp_seid_and_error_co
     connection.l2cap_signaling_cid = signaling_cid;
     connection.acceptor_local_seid = local_seid;
     connection.acceptor_transaction_label = transaction_label;
-    connection.acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+    connection.acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
     connection.reject_signal_identifier = AVDTP_SI_START;
     connection.error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
 
