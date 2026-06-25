@@ -5931,6 +5931,10 @@ static uint8_t l2cap_ertm_fuzz_storage[512];
 #endif
 
 static void fuzz_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
 }
 void l2cap_setup_test_channels_fuzz(void) {
     bd_addr_t address;
