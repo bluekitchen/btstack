@@ -935,71 +935,53 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     log_debug("hci_send_acl_packet_fragments entered");
 
-    int err = 0;
-    // multiple packets could be sent on a synchronous HCI transport
-    while (true){
+    // get current data
+    const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4u;
+    int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
+    bool more_fragments = false;
 
-        log_debug("hci_send_acl_packet_fragments loop entered");
+    // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
+    if (current_acl_data_packet_length > max_acl_data_packet_length){
+        more_fragments = true;
+        current_acl_data_packet_length = max_acl_data_packet_length & (~(HCI_ACL_CHUNK_SIZE_ALIGNMENT-1));
+    }
 
-        // get current data
-        const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4u;
-        int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
-        bool more_fragments = false;
+    // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragment)
+    if (acl_header_pos > 0u){
+        uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+        handle_and_flags = (handle_and_flags & 0xcfffu) | (1u << 12u);
+        little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
+    }
 
-        // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
-        if (current_acl_data_packet_length > max_acl_data_packet_length){
-            more_fragments = true;
-            current_acl_data_packet_length = max_acl_data_packet_length & (~(HCI_ACL_CHUNK_SIZE_ALIGNMENT-1));
-        }
+    // update header len
+    little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2u, current_acl_data_packet_length);
 
-        // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragment)
-        if (acl_header_pos > 0u){
-            uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
-            handle_and_flags = (handle_and_flags & 0xcfffu) | (1u << 12u);
-            little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
-        }
+    // count packet
+    connection->num_packets_sent++;
+    log_debug("hci_send_acl_packet_fragments before send (more fragments %d)", (int) more_fragments);
 
-        // update header len
-        little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2u, current_acl_data_packet_length);
-        
-        // count packet
-        connection->num_packets_sent++;
-        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", (int) more_fragments);
+    // update state for next fragment (if any) as "transport done" might be sent during send_packet already
+    if (more_fragments){
+        // update start of next fragment to send
+        hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
+    } else {
+        // done
+        hci_stack->acl_fragmentation_pos = 0;
+        hci_stack->acl_fragmentation_total_size = 0;
+    }
 
-        // update state for next fragment (if any) as "transport done" might be sent during send_packet already
-        if (more_fragments){
-            // update start of next fragment to send
-            hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
-        } else {
-            // done
-            hci_stack->acl_fragmentation_pos = 0;
-            hci_stack->acl_fragmentation_total_size = 0;
-        }
-
-        // send packet
-        uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
-        const int size = current_acl_data_packet_length + 4;
-        hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
-        hci_stack->acl_fragmentation_tx_active = 1;
-        err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
-        if (err != 0){
-            break;
-        }
-
+    // send packet
+    uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
+    const int size = current_acl_data_packet_length + 4;
+    hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
+    hci_stack->acl_fragmentation_tx_active = 1;
+    int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+    if (err == 0){
 #ifdef ENABLE_CONTROLLER_DUMP_PACKETS
         hci_controller_dump_packets();
 #endif
-
-        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", (int) more_fragments);
-
-        // done yet?
-        if (!more_fragments) break;
-
-        // can send more?
-        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return ERROR_CODE_SUCCESS;
+        log_debug("hci_send_acl_packet_fragments after send (more fragments %d)", (int) more_fragments);
     }
-
-    log_debug("hci_send_acl_packet_fragments loop over");
 
     // release buffer on error or schedule sent event for synchronous transport
     if (err != 0) {
