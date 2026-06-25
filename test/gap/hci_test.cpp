@@ -20,6 +20,7 @@
 #include "hci_dump_posix_fs.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
+#include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 
 typedef struct {
@@ -118,6 +119,10 @@ void CHECK_HCI_COMMAND(const hci_cmd_t * expected_hci_command){
     CHECK_EQUAL(expected_hci_command->opcode, actual_opcode);
 }
 
+static void hci_test_execute_pending_callbacks(void){
+    btstack_run_loop_base_execute_callbacks();
+}
+
 static void test_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(packet);
@@ -201,12 +206,14 @@ TEST(HCI, gap_whitelist_add_remove){
 
     uint8_t status = gap_whitelist_add(addr_type, addr);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    hci_test_execute_pending_callbacks();
 
     status = gap_whitelist_add(addr_type, addr);
     CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
 
     status = gap_whitelist_remove(addr_type, addr);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    hci_test_execute_pending_callbacks();
 
     status = gap_whitelist_remove(addr_type, addr);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
@@ -319,6 +326,7 @@ TEST(HCI, hci_send_cmd_packet){
 
     uint8_t status = hci_send_cmd(&hci_write_loopback_mode, 1);
     CHECK_EQUAL(0, status);
+    hci_test_execute_pending_callbacks();
 
     uint8_t i;
     for (i = 0; i < 3; i++){
@@ -337,6 +345,7 @@ TEST(HCI, hci_send_cmd_packet){
             1000       // max ce length
         );
         CHECK_EQUAL(0, status);
+        hci_test_execute_pending_callbacks();
     }
 }
 
