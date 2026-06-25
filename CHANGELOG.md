@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Fixed
 ### Changed
+- HCI: align synchronouse transport with asynchronous by simulating a deferred packet sent event 
 - esp32: use individual drivers for esp-idf 5.3 and later
 
 ## Release v1.8.2
