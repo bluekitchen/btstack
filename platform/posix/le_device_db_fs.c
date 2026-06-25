@@ -251,11 +251,11 @@ void le_device_db_init(void){
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
         le_devices[i].addr_type = BD_ADDR_TYPE_UNKNOWN;
     }
-    sprintf(db_path, DB_PATH_TEMPLATE, "00-00-00-00-00-00");
+    snprintf(db_path, sizeof(db_path), DB_PATH_TEMPLATE, "00-00-00-00-00-00");
 }
 
 void le_device_db_set_local_bd_addr(bd_addr_t addr){
-    sprintf(db_path, DB_PATH_TEMPLATE, bd_addr_to_dash_str(addr));
+    snprintf(db_path, sizeof(db_path), DB_PATH_TEMPLATE, bd_addr_to_dash_str(addr));
     log_info("le_device_db_fs: path %s", db_path);
     le_device_db_read();
     le_device_db_dump();
