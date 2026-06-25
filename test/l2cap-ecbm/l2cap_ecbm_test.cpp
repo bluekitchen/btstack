@@ -11,6 +11,7 @@ void sm_add_event_handler(btstack_packet_callback_registration_t * callback_hand
 void sm_request_pairing(hci_con_handle_t con_handle){}
 
 // mock_hci_transport.h
+#include "btstack_run_loop_embedded.h"
 #include "hci_transport.h"
 void mock_hci_transport_receive_packet(uint8_t packet_type, const uint8_t * packet, uint16_t size);
 const hci_transport_t * mock_hci_transport_mock_get_instance(void);
@@ -46,6 +47,7 @@ const hci_transport_t * mock_hci_transport_mock_get_instance(void){
 }
 void mock_hci_transport_receive_packet(uint8_t packet_type, const uint8_t * packet, uint16_t size){
     (*mock_hci_transport_packet_handler)(packet_type, (uint8_t *) packet, size);
+    btstack_run_loop_embedded_execute_once();
 }
 
 // copy from hci.c
@@ -74,7 +76,6 @@ static void mock_hci_emit_disconnection_complete(hci_con_handle_t con_handle, ui
 #include "btstack_debug.h"
 #include "l2cap.h"
 #include "btstack_memory.h"
-#include "btstack_run_loop_embedded.h"
 #include "hci_dump_posix_stdout.h"
 #include "btstack_event.h"
 
