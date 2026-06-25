@@ -10,7 +10,7 @@ LCOV_UTIL          = ${BTSTACK_ROOT}/tool/lcov_util.py
 
 GENERIC_FLAGS    := -O2 -g -Wall -Wextra
 CPPUTEST_CFLAGS  := ${shell pkg-config --cflags cpputest}
-CPPUTEST_LDFLAGS := ${shell pkg-config --libs   cpputest}
+CPPUTEST_LDFLAGS := $(filter-out -lstdc++ -lc++,${shell pkg-config --libs cpputest})
 
 # CppuTest from pkg-config
 CFLAGS   += ${CPPUTEST_CFLAGS}
@@ -30,8 +30,6 @@ LDFLAGS_COVERAGE  = ${LDFLAGS} -fprofile-instr-generate
 CFLAGS_ASAN     = ${CFLAGS} -Ibuild-asan -fsanitize=address -DHAVE_ASSERT
 CXXFLAGS_ASAN   = ${CXXFLAGS} -Ibuild-asan -DCPPUTEST_MEM_LEAK_DETECTION_DISABLED -fsanitize=address -DHAVE_ASSERT
 LDFLAGS_ASAN    = ${LDFLAGS} -fsanitize=address
-
-LDFLAGS += -lCppUTest -lCppUTestExt
 
 build-%:
 	mkdir -p $@
