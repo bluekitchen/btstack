@@ -223,6 +223,9 @@ static int find_h2_sync(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, int * 
 
 #ifdef OI_DEBUG
 void OI_AssertFail(const char* file, int line, const char* reason){
+    UNUSED(file);
+    UNUSED(line);
+    UNUSED(reason);
     log_error("AssertFail file %s, line %d, reason %s", file, line, reason);
 }
 #endif
