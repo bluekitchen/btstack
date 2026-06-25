@@ -95,6 +95,8 @@ static hci_transport_t dummy_transport = {
   /*  .transport.can_send_packet_now           = */  NULL,
   /*  .transport.send_packet                   = */  NULL,
   /*  .transport.set_baudrate                  = */  NULL,
+  /*  .transport.reset_link                    = */  NULL,
+  /*  .transport.set_sco_config                = */  NULL,
 };
 
 

@@ -250,7 +250,7 @@ TEST_GROUP(AvdtpUtil){
         CHECK_TRUE(prepared_uses_sbc);
     }
 
-    void track_events(uint16_t categories_bitmap) {
+    void track_events(void) {
         filtered_count = 0;
         memset(filtered_indices, 0, sizeof(filtered_indices));
 
@@ -310,7 +310,7 @@ TEST_GROUP(AvdtpUtil){
     }
 
     void validate_events(uint16_t categories_bitmap){
-        track_events(categories_bitmap);
+        track_events();
 
         if ((categories_bitmap & (1 << AVDTP_MEDIA_TRANSPORT)) > 0){
             CHECK_TRUE(event_info.saw_media_transport);

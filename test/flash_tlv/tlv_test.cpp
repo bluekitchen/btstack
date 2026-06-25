@@ -54,8 +54,9 @@ TEST_GROUP(HAL_FLASH_bank){
 TEST(HAL_FLASH_bank, TestErased){
 	uint8_t buffer;
 	int offsets[] = { 0, 10, 100};
+	int offsets_count = sizeof(offsets) / sizeof(offsets[0]);
 	int i;
-	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
+	for (i=0;i<offsets_count;i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			hal_flash_bank_impl->read(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
@@ -67,15 +68,16 @@ TEST(HAL_FLASH_bank, TestErased){
 TEST(HAL_FLASH_bank, TestWrite){
 	uint8_t buffer;
 	int offsets[] = { 0, 10, 100};
+	int offsets_count = sizeof(offsets) / sizeof(offsets[0]);
 	int i;
-	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
+	for (i=0;i<offsets_count;i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			buffer = i;
 			hal_flash_bank_impl->write(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
 		}
 	}
-	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
+	for (i=0;i<offsets_count;i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			hal_flash_bank_impl->read(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
