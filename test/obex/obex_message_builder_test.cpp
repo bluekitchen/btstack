@@ -7,7 +7,10 @@
 #include "classic/obex_message_builder.h"
 
 // mock hci_dump.c
-extern "C" void hci_dump_log(int log_level, const char * format, ...){}
+extern "C" void hci_dump_log(int log_level, const char * format, ...){
+    UNUSED(log_level);
+    UNUSED(format);
+}
 
 static const uint8_t  service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
 static const uint8_t  application_parameters[] = {0x29, 4, 0, 0, 0xFF, 0xFF};

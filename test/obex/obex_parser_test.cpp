@@ -18,9 +18,13 @@ static uint8_t  test_header_buffer[100];
 static uint16_t test_header_len;
 
 // mock hci_dump.c
-extern "C" void hci_dump_log(int log_level, const char * format, ...){}
+extern "C" void hci_dump_log(int log_level, const char * format, ...){
+    UNUSED(log_level);
+    UNUSED(format);
+}
 
 static void parser_callback(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
+    UNUSED(user_data);
     if (obex_parser_header_store(test_header_buffer, sizeof(test_header_buffer), total_len, data_offset, data_buffer, data_len) == OBEX_PARSER_HEADER_COMPLETE){
         test_header_len = total_len;
         test_header_id  = header_id;
@@ -144,7 +148,8 @@ static uint8_t  test_tag_buffer[100];
 static uint16_t test_tag_len;
 
 void app_param_parser_callback(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
-    if (obex_app_param_parser_tag_store(test_header_buffer, sizeof(test_header_buffer), total_len, data_offset, data_buffer, data_len) == OBEX_APP_PARAM_PARSER_TAG_COMPLETE){
+    UNUSED(user_data);
+    if (obex_app_param_parser_tag_store(test_tag_buffer, sizeof(test_tag_buffer), total_len, data_offset, data_buffer, data_len) == OBEX_APP_PARAM_PARSER_TAG_COMPLETE){
         test_tag_len = total_len;
         test_tag_id  = tag_id;
     }

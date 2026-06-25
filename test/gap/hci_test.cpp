@@ -65,6 +65,7 @@ static int hci_transport_test_can_send_now(uint8_t packet_type){
 #endif
 
 static int hci_transport_test_set_baudrate(uint32_t baudrate){
+    UNUSED(baudrate);
     return 0;
 }
 
@@ -78,6 +79,7 @@ static int hci_transport_test_send_packet(uint8_t packet_type, uint8_t * packet,
 }
 
 static void hci_transport_test_init(const void * transport_config){
+    UNUSED(transport_config);
 }
 
 static int hci_transport_test_open(void){
@@ -376,10 +378,12 @@ TEST(HCI, RemovePacketHandler){
     hci_remove_event_handler(NULL);
 }
 
-static void dummy_fn(const void * config){};
+static void dummy_fn(const void * config){
+    UNUSED(config);
+}
 TEST(HCI, SetChipset){
     hci_set_chipset(NULL);
-    btstack_chipset_t chipset_driver = { 0 };
+    btstack_chipset_t chipset_driver = { NULL, NULL, NULL, NULL, NULL };
     hci_set_chipset(NULL);
     chipset_driver.init = dummy_fn;
 }
@@ -835,6 +839,7 @@ TEST(HCI, handle_command_complete_event) {
 }
 
 static void simulate_hci_command_status(uint16_t opcode, uint8_t status, uint8_t variant) {
+    UNUSED(variant);
     uint8_t packet[2 + 255];
     packet[0] = HCI_EVENT_COMMAND_STATUS;
     packet[1] = sizeof(packet) - 2;
