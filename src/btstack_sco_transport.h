@@ -39,6 +39,8 @@
  * @title SCO Transport
  *
  * Hardware abstraction for PCM/I2S Inteface used for HSP/HFP profiles.
+ * SCO transports are synchronous: send_packet copies the packet before returning.
+ * They must not emit HCI_EVENT_TRANSPORT_PACKET_SENT.
  *
  */
 
@@ -66,7 +68,7 @@ typedef enum {
 typedef struct {
 
     /**
-     * register packet handler for SCO HCI packets
+     * register packet handler for received SCO HCI packets
      */
     void (*register_packet_handler)(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
@@ -78,7 +80,8 @@ typedef struct {
     void (*open)(hci_con_handle_t con_handle, sco_format_t sco_format);
 
     /**
-     * send SCO packet
+     * send SCO packet. The packet is consumed synchronously and must not be
+     * referenced after this function returns.
      */
     void (*send_packet)(const uint8_t *buffer, uint16_t length);
 

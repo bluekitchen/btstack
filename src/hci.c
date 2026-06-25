@@ -210,7 +210,7 @@ static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
 static void hci_halting_timeout_handler(btstack_timer_source_t * ds);
-static void hci_emit_transport_packet_sent(void);
+static void hci_schedule_transport_packet_sent(void);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
@@ -270,6 +270,7 @@ static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
 static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
+static btstack_context_callback_registration_t hci_transport_packet_sent_callback;
 
 #ifdef ENABLE_CLASSIC
 // default name
@@ -765,6 +766,16 @@ static int hci_transport_can_send_prepared_packet_now(uint8_t packet_type){
     return hci_stack->hci_transport->can_send_packet_now(packet_type);
 }
 
+#ifdef ENABLE_CLASSIC
+static bool hci_sco_transport_can_send_prepared_packet_now(void){
+#ifdef HAVE_SCO_TRANSPORT
+    return hci_stack->sco_transport != NULL;
+#else
+    return hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET);
+#endif
+}
+#endif
+
 static bool hci_can_send_prepared_acl_packet_for_address_type(bd_addr_type_t address_type){
     if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return false;
     return hci_number_free_acl_slots_for_connection_type(address_type) > 0;
@@ -803,7 +814,7 @@ static bool hci_controller_can_send_sco_for_connection(hci_connection_t * connec
 
 // Old
 bool hci_can_send_prepared_sco_packet_now(void){
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
+    if (!hci_sco_transport_can_send_prepared_packet_now()) return false;
     if (hci_have_usb_transport()){
         return hci_stack->sco_can_send_now;
     } else {
@@ -824,7 +835,7 @@ void hci_request_sco_can_send_now_event(void){
 // New
 bool hci_can_send_sco_packet_now_for_con_handle(hci_con_handle_t con_handle) {
     if (hci_stack->hci_packet_buffer_reserved) return false;
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
+    if (!hci_sco_transport_can_send_prepared_packet_now()) return false;
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (connection == NULL)  return false;
 
@@ -869,7 +880,6 @@ void hci_reserve_packet_buffer(void){
 void hci_release_packet_buffer(void){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
     hci_stack->hci_packet_buffer_reserved = false;
-    hci_emit_transport_packet_sent();
 }
 
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
@@ -935,81 +945,66 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     log_debug("hci_send_acl_packet_fragments entered");
 
-    uint8_t status = ERROR_CODE_SUCCESS;
-    // multiple packets could be sent on a synchronous HCI transport
-    while (true){
+    // get current data
+    const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4u;
+    int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
+    bool more_fragments = false;
 
-        log_debug("hci_send_acl_packet_fragments loop entered");
+    // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
+    if (current_acl_data_packet_length > max_acl_data_packet_length){
+        more_fragments = true;
+        current_acl_data_packet_length = max_acl_data_packet_length & (~(HCI_ACL_CHUNK_SIZE_ALIGNMENT-1));
+    }
 
-        // get current data
-        const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4u;
-        int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
-        bool more_fragments = false;
+    // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragment)
+    if (acl_header_pos > 0u){
+        uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+        handle_and_flags = (handle_and_flags & 0xcfffu) | (1u << 12u);
+        little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
+    }
 
-        // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
-        if (current_acl_data_packet_length > max_acl_data_packet_length){
-            more_fragments = true;
-            current_acl_data_packet_length = max_acl_data_packet_length & (~(HCI_ACL_CHUNK_SIZE_ALIGNMENT-1));
-        }
+    // update header len
+    little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2u, current_acl_data_packet_length);
 
-        // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragment)
-        if (acl_header_pos > 0u){
-            uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
-            handle_and_flags = (handle_and_flags & 0xcfffu) | (1u << 12u);
-            little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
-        }
+    // count packet
+    connection->num_packets_sent++;
+    log_debug("hci_send_acl_packet_fragments before send (more fragments %d)", (int) more_fragments);
 
-        // update header len
-        little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2u, current_acl_data_packet_length);
-        
-        // count packet
-        connection->num_packets_sent++;
-        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", (int) more_fragments);
+    // update state for next fragment (if any) as "transport done" might be sent during send_packet already
+    if (more_fragments){
+        // update start of next fragment to send
+        hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
+    } else {
+        // done
+        hci_stack->acl_fragmentation_pos = 0;
+        hci_stack->acl_fragmentation_total_size = 0;
+    }
 
-        // update state for next fragment (if any) as "transport done" might be sent during send_packet already
-        if (more_fragments){
-            // update start of next fragment to send
-            hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
-        } else {
-            // done
-            hci_stack->acl_fragmentation_pos = 0;
-            hci_stack->acl_fragmentation_total_size = 0;
-        }
-
-        // send packet
-        uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
-        const int size = current_acl_data_packet_length + 4;
-        hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
-        hci_stack->acl_fragmentation_tx_active = 1;
-        int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
-        if (err != 0){
-            // no error from HCI Transport expected
-            status = ERROR_CODE_HARDWARE_FAILURE;
-            break;
-        }
-
+    // send packet
+    uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
+    const int size = current_acl_data_packet_length + 4;
+    hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
+    hci_stack->acl_fragmentation_tx_active = 1;
+    int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+    if (err == 0){
 #ifdef ENABLE_CONTROLLER_DUMP_PACKETS
         hci_controller_dump_packets();
 #endif
-
-        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", (int) more_fragments);
-
-        // done yet?
-        if (!more_fragments) break;
-
-        // can send more?
-        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return status;
+        log_debug("hci_send_acl_packet_fragments after send (more fragments %d)", (int) more_fragments);
     }
 
-    log_debug("hci_send_acl_packet_fragments loop over");
-
-    // release buffer now for synchronous transport
-    if (hci_transport_synchronous()){
+    // release buffer on error or schedule sent event for synchronous transport
+    if (err != 0) {
+        // no error from HCI Transport expected
         hci_stack->acl_fragmentation_tx_active = 0;
+        log_error("ACL Packet sent failed, error = %d", err);
         hci_release_packet_buffer();
+        return ERROR_CODE_HARDWARE_FAILURE;
+    } else if (hci_transport_synchronous()){
+        hci_stack->acl_fragmentation_tx_active = 0;
+        hci_schedule_transport_packet_sent();
     }
-
-    return status;
+    return ERROR_CODE_SUCCESS;
 }
 
 // pre: caller has reserved the packet buffer
@@ -1079,7 +1074,7 @@ uint8_t hci_send_sco_packet_buffer(int size){
         }
 
         // check transport
-        if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) {
+        if (!hci_sco_transport_can_send_prepared_packet_now()) {
             hci_release_packet_buffer();
             return BTSTACK_ACL_BUFFERS_FULL;
         }
@@ -1108,21 +1103,19 @@ uint8_t hci_send_sco_packet_buffer(int size){
 
 #ifdef HAVE_SCO_TRANSPORT
     hci_stack->sco_transport->send_packet(packet, size);
-    hci_release_packet_buffer();
+    hci_schedule_transport_packet_sent();
 
-    return 0;
+    return ERROR_CODE_SUCCESS;
 #else
     int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
-    uint8_t status;
-    if (err == 0){
-        status = ERROR_CODE_SUCCESS;
-    } else {
-        status = ERROR_CODE_HARDWARE_FAILURE;
-    }
-    if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
+    if (err != 0){
+        log_error("SCO packet sent failed, error = %d", err);
         hci_release_packet_buffer();
+        return ERROR_CODE_HARDWARE_FAILURE;
+    } else if (hci_transport_synchronous()){
+        hci_schedule_transport_packet_sent();
     }
-    return status;
+    return ERROR_CODE_SUCCESS;
 #endif
 }
 #endif
@@ -1131,73 +1124,65 @@ uint8_t hci_send_sco_packet_buffer(int size){
 static uint8_t hci_send_iso_packet_fragments(void){
 
     uint16_t max_iso_data_packet_length = hci_stack->le_iso_packets_length;
-    uint8_t status = ERROR_CODE_SUCCESS;
-    // multiple packets could be send on a synchronous HCI transport
-    while (true){
 
-        // get current data
-        const uint16_t iso_header_pos = hci_stack->iso_fragmentation_pos - 4u;
-        int current_iso_data_packet_length = hci_stack->iso_fragmentation_total_size - hci_stack->iso_fragmentation_pos;
-        bool more_fragments = false;
+    // get current data
+    const uint16_t iso_header_pos = hci_stack->iso_fragmentation_pos - 4u;
+    int current_iso_data_packet_length = hci_stack->iso_fragmentation_total_size - hci_stack->iso_fragmentation_pos;
+    bool more_fragments = false;
 
-        // if ISO packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
-        if (current_iso_data_packet_length > max_iso_data_packet_length){
-            more_fragments = true;
-            current_iso_data_packet_length = max_iso_data_packet_length;
-        }
-
-        // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragmnent)
-        uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
-        uint8_t pb_flags;
-        if (iso_header_pos == 0u){
-            // first fragment, keep TS field
-            pb_flags = more_fragments ? 0x00 : 0x02;
-            handle_and_flags = (handle_and_flags & 0x4fffu) | (pb_flags << 12u);
-        } else {
-            // later fragment, drop TS field
-            pb_flags = more_fragments ? 0x01 : 0x03;
-            handle_and_flags = (handle_and_flags & 0x0fffu) | (pb_flags << 12u);
-        }
-        little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos, handle_and_flags);
-
-        // update header len
-        little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos + 2u, current_iso_data_packet_length);
-
-        // update state for next fragment (if any) as "transport done" might be sent during send_packet already
-        if (more_fragments){
-            // update start of next fragment to send
-            hci_stack->iso_fragmentation_pos += current_iso_data_packet_length;
-        } else {
-            // done
-            hci_stack->iso_fragmentation_pos = 0;
-            hci_stack->iso_fragmentation_total_size = 0;
-        }
-
-        // send packet
-        uint8_t * packet = &hci_stack->hci_packet_buffer[iso_header_pos];
-        const int size = current_iso_data_packet_length + 4;
-        hci_dump_packet(HCI_ISO_DATA_PACKET, 0, packet, size);
-        hci_stack->iso_fragmentation_tx_active = true;
-        int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
-        if (err != 0){
-            // no error from HCI Transport expected
-            status = ERROR_CODE_HARDWARE_FAILURE;
-        }
-
-        // done yet?
-        if (!more_fragments) break;
-
-        // can send more?
-        if (!hci_transport_can_send_prepared_packet_now(HCI_ISO_DATA_PACKET)) return false;
+    // if ISO packet is larger than Bluetooth packet buffer, only send max_iso_data_packet_length
+    if (current_iso_data_packet_length > max_iso_data_packet_length){
+        more_fragments = true;
+        current_iso_data_packet_length = max_iso_data_packet_length;
     }
 
-    // release buffer now for synchronous transport
-    if (hci_transport_synchronous()){
+    // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragment)
+    uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+    uint8_t pb_flags;
+    if (iso_header_pos == 0u){
+        // first fragment, keep TS field
+        pb_flags = more_fragments ? 0x00 : 0x02;
+        handle_and_flags = (handle_and_flags & 0x4fffu) | (pb_flags << 12u);
+    } else {
+        // later fragment, drop TS field
+        pb_flags = more_fragments ? 0x01 : 0x03;
+        handle_and_flags = (handle_and_flags & 0x0fffu) | (pb_flags << 12u);
+    }
+    little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos, handle_and_flags);
+
+    // update header len
+    little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos + 2u, current_iso_data_packet_length);
+
+    // update state for next fragment (if any) as "transport done" might be sent during send_packet already
+    if (more_fragments){
+        // update start of next fragment to send
+        hci_stack->iso_fragmentation_pos += current_iso_data_packet_length;
+    } else {
+        // done
+        hci_stack->iso_fragmentation_pos = 0;
+        hci_stack->iso_fragmentation_total_size = 0;
+    }
+
+    // send packet
+    uint8_t * packet = &hci_stack->hci_packet_buffer[iso_header_pos];
+    const int size = current_iso_data_packet_length + 4;
+    hci_dump_packet(HCI_ISO_DATA_PACKET, 0, packet, size);
+    hci_stack->iso_fragmentation_tx_active = true;
+    int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
+
+    // release buffer on error or schedule sent event for synchronous transport
+    // no error from HCI Transport expected
+    if (err != 0){
         hci_stack->iso_fragmentation_tx_active = false;
+        log_error("ISO packet sent failed, error = %d", err);
         hci_release_packet_buffer();
+        return ERROR_CODE_HARDWARE_FAILURE;
+    } else if (hci_transport_synchronous()){
+        hci_stack->iso_fragmentation_tx_active = false;
+        hci_schedule_transport_packet_sent();
     }
 
-    return status;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t hci_send_iso_packet_buffer(uint16_t size){
@@ -5107,11 +5092,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
 
         case HCI_EVENT_TRANSPORT_PACKET_SENT:
-            // release packet buffer only for asynchronous transport and if there are not further fragments
-            if (hci_transport_synchronous()) {
-                log_error("Synchronous HCI Transport shouldn't send HCI_EVENT_TRANSPORT_PACKET_SENT");
-                return; // instead of break: to avoid re-entering hci_run()
-            }
+            // release packet buffer only if there are not further ACL or ISO fragments
             hci_stack->acl_fragmentation_tx_active = 0;
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
             hci_stack->iso_fragmentation_tx_active = 0;
@@ -5375,6 +5356,28 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 
+static bool hci_transport_packet_sent_from_synchronous_transport(uint8_t packet_type, uint8_t *packet, uint16_t size, bool synchronous_transport){
+    return synchronous_transport && (packet_type == HCI_EVENT_PACKET) && (size >= 1u) && (packet[0] == HCI_EVENT_TRANSPORT_PACKET_SENT);
+}
+
+static void hci_transport_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (hci_transport_packet_sent_from_synchronous_transport(packet_type, packet, size, hci_stack->hci_transport->can_send_packet_now == NULL)){
+        log_info("ignore HCI_EVENT_TRANSPORT_PACKET_SENT from synchronous transport");
+        return;
+    }
+    packet_handler(packet_type, packet, size);
+}
+
+#ifdef HAVE_SCO_TRANSPORT
+static void hci_sco_transport_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (hci_transport_packet_sent_from_synchronous_transport(packet_type, packet, size, true)){
+        log_info("ignore HCI_EVENT_TRANSPORT_PACKET_SENT from synchronous SCO transport");
+        return;
+    }
+    packet_handler(packet_type, packet, size);
+}
+#endif
+
 /**
  * @brief Add event packet handler. 
  */
@@ -5531,7 +5534,7 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
     
     // register packet handlers with transport
-    transport->register_packet_handler(&packet_handler);
+    transport->register_packet_handler(&hci_transport_packet_handler);
 
     hci_stack->state = HCI_STATE_OFF;
 
@@ -5722,7 +5725,7 @@ void hci_close(void){
 #ifdef HAVE_SCO_TRANSPORT
 void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport){
     hci_stack->sco_transport = sco_transport;
-    sco_transport->register_packet_handler(&packet_handler);
+    sco_transport->register_packet_handler(&hci_sco_transport_packet_handler);
 }
 #endif
 
@@ -6463,11 +6466,14 @@ static void hci_host_num_completed_packets(void){
     hci_stack->host_completed_packets = 0;
 
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+    int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 
-    // release packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous()){
+    // release buffer on error or schedule sent event for synchronous transport
+    if (err != 0){
+        log_error("Host Completed failed to send, error = %d", err);
         hci_release_packet_buffer();
+    } else if (hci_transport_synchronous()){
+        hci_schedule_transport_packet_sent();
     }
 }
 #endif
@@ -8390,8 +8396,11 @@ static uint8_t hci_send_prepared_cmd_packet(void) {
     // send packet
     uint8_t status = hci_send_cmd_packet(hci_stack->hci_packet_buffer, size);
     // release packet buffer on error or for synchronous transport implementations
-    if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
+    if (status != ERROR_CODE_SUCCESS){
+        log_error("Command packet sent failed, error = %d", status);
         hci_release_packet_buffer();
+    } else if (hci_transport_synchronous()){
+        hci_schedule_transport_packet_sent();
     }
     return status;
 }
@@ -8728,7 +8737,7 @@ static void hci_sco_emit_can_send_now_event(hci_con_handle_t con_handle) {
 static void hci_notify_if_sco_can_send_now(void){
     // check outgoing buffer and transport
     if (hci_stack->hci_packet_buffer_reserved) return;
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return;
+    if (!hci_sco_transport_can_send_prepared_packet_now()) return;
 
     // new API using request to send request stored in connection
     btstack_linked_list_iterator_t it;
@@ -8917,10 +8926,17 @@ static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_
 #endif
 #endif
 
-static void hci_emit_transport_packet_sent(void){
-    // notify upper stack that it might be possible to send again
+static void hci_emit_transport_packet_sent_on_main_thread(void * context){
+    UNUSED(context);
+
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
+    event_handler(&event[0], sizeof(event));
+}
+
+static void hci_schedule_transport_packet_sent(void){
+    hci_transport_packet_sent_callback.callback = &hci_emit_transport_packet_sent_on_main_thread;
+    hci_transport_packet_sent_callback.context = NULL;
+    btstack_run_loop_execute_on_main_thread(&hci_transport_packet_sent_callback);
 }
 
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
