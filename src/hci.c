@@ -766,6 +766,16 @@ static int hci_transport_can_send_prepared_packet_now(uint8_t packet_type){
     return hci_stack->hci_transport->can_send_packet_now(packet_type);
 }
 
+#ifdef ENABLE_CLASSIC
+static bool hci_sco_transport_can_send_prepared_packet_now(void){
+#ifdef HAVE_SCO_TRANSPORT
+    return hci_stack->sco_transport != NULL;
+#else
+    return hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET);
+#endif
+}
+#endif
+
 static bool hci_can_send_prepared_acl_packet_for_address_type(bd_addr_type_t address_type){
     if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return false;
     return hci_number_free_acl_slots_for_connection_type(address_type) > 0;
@@ -804,7 +814,7 @@ static bool hci_controller_can_send_sco_for_connection(hci_connection_t * connec
 
 // Old
 bool hci_can_send_prepared_sco_packet_now(void){
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
+    if (!hci_sco_transport_can_send_prepared_packet_now()) return false;
     if (hci_have_usb_transport()){
         return hci_stack->sco_can_send_now;
     } else {
@@ -825,7 +835,7 @@ void hci_request_sco_can_send_now_event(void){
 // New
 bool hci_can_send_sco_packet_now_for_con_handle(hci_con_handle_t con_handle) {
     if (hci_stack->hci_packet_buffer_reserved) return false;
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
+    if (!hci_sco_transport_can_send_prepared_packet_now()) return false;
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (connection == NULL)  return false;
 
@@ -1064,7 +1074,7 @@ uint8_t hci_send_sco_packet_buffer(int size){
         }
 
         // check transport
-        if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) {
+        if (!hci_sco_transport_can_send_prepared_packet_now()) {
             hci_release_packet_buffer();
             return BTSTACK_ACL_BUFFERS_FULL;
         }
@@ -5346,13 +5356,27 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 
+static bool hci_transport_packet_sent_from_synchronous_transport(uint8_t packet_type, uint8_t *packet, uint16_t size, bool synchronous_transport){
+    return synchronous_transport && (packet_type == HCI_EVENT_PACKET) && (size >= 1u) && (packet[0] == HCI_EVENT_TRANSPORT_PACKET_SENT);
+}
+
 static void hci_transport_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
-    if ((packet_type == HCI_EVENT_PACKET) && (size >= 1u) && (packet[0] == HCI_EVENT_TRANSPORT_PACKET_SENT) && (hci_stack->hci_transport->can_send_packet_now == NULL)){
+    if (hci_transport_packet_sent_from_synchronous_transport(packet_type, packet, size, hci_stack->hci_transport->can_send_packet_now == NULL)){
         log_info("ignore HCI_EVENT_TRANSPORT_PACKET_SENT from synchronous transport");
         return;
     }
     packet_handler(packet_type, packet, size);
 }
+
+#ifdef HAVE_SCO_TRANSPORT
+static void hci_sco_transport_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (hci_transport_packet_sent_from_synchronous_transport(packet_type, packet, size, true)){
+        log_info("ignore HCI_EVENT_TRANSPORT_PACKET_SENT from synchronous SCO transport");
+        return;
+    }
+    packet_handler(packet_type, packet, size);
+}
+#endif
 
 /**
  * @brief Add event packet handler. 
@@ -5701,7 +5725,7 @@ void hci_close(void){
 #ifdef HAVE_SCO_TRANSPORT
 void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport){
     hci_stack->sco_transport = sco_transport;
-    sco_transport->register_packet_handler(&packet_handler);
+    sco_transport->register_packet_handler(&hci_sco_transport_packet_handler);
 }
 #endif
 
@@ -8713,7 +8737,7 @@ static void hci_sco_emit_can_send_now_event(hci_con_handle_t con_handle) {
 static void hci_notify_if_sco_can_send_now(void){
     // check outgoing buffer and transport
     if (hci_stack->hci_packet_buffer_reserved) return;
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return;
+    if (!hci_sco_transport_can_send_prepared_packet_now()) return;
 
     // new API using request to send request stored in connection
     btstack_linked_list_iterator_t it;
