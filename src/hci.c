@@ -5377,6 +5377,14 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 
+static void hci_transport_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if ((packet_type == HCI_EVENT_PACKET) && (size >= 1u) && (packet[0] == HCI_EVENT_TRANSPORT_PACKET_SENT) && (hci_stack->hci_transport->can_send_packet_now == NULL)){
+        log_info("ignore HCI_EVENT_TRANSPORT_PACKET_SENT from synchronous transport");
+        return;
+    }
+    packet_handler(packet_type, packet, size);
+}
+
 /**
  * @brief Add event packet handler. 
  */
@@ -5533,7 +5541,7 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
     
     // register packet handlers with transport
-    transport->register_packet_handler(&packet_handler);
+    transport->register_packet_handler(&hci_transport_packet_handler);
 
     hci_stack->state = HCI_STATE_OFF;
 
@@ -8929,7 +8937,7 @@ static void hci_emit_transport_packet_sent_on_main_thread(void * context){
     UNUSED(context);
 
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    event_handler(&event[0], sizeof(event));
 }
 
 static void hci_schedule_transport_packet_sent(void){
