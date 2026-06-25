@@ -1114,64 +1114,51 @@ uint8_t hci_send_sco_packet_buffer(int size){
 static uint8_t hci_send_iso_packet_fragments(void){
 
     uint16_t max_iso_data_packet_length = hci_stack->le_iso_packets_length;
-    int err = 0;
-    // multiple packets could be send on a synchronous HCI transport
-    while (true){
 
-        // get current data
-        const uint16_t iso_header_pos = hci_stack->iso_fragmentation_pos - 4u;
-        int current_iso_data_packet_length = hci_stack->iso_fragmentation_total_size - hci_stack->iso_fragmentation_pos;
-        bool more_fragments = false;
+    // get current data
+    const uint16_t iso_header_pos = hci_stack->iso_fragmentation_pos - 4u;
+    int current_iso_data_packet_length = hci_stack->iso_fragmentation_total_size - hci_stack->iso_fragmentation_pos;
+    bool more_fragments = false;
 
-        // if ISO packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
-        if (current_iso_data_packet_length > max_iso_data_packet_length){
-            more_fragments = true;
-            current_iso_data_packet_length = max_iso_data_packet_length;
-        }
-
-        // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragmnent)
-        uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
-        uint8_t pb_flags;
-        if (iso_header_pos == 0u){
-            // first fragment, keep TS field
-            pb_flags = more_fragments ? 0x00 : 0x02;
-            handle_and_flags = (handle_and_flags & 0x4fffu) | (pb_flags << 12u);
-        } else {
-            // later fragment, drop TS field
-            pb_flags = more_fragments ? 0x01 : 0x03;
-            handle_and_flags = (handle_and_flags & 0x0fffu) | (pb_flags << 12u);
-        }
-        little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos, handle_and_flags);
-
-        // update header len
-        little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos + 2u, current_iso_data_packet_length);
-
-        // update state for next fragment (if any) as "transport done" might be sent during send_packet already
-        if (more_fragments){
-            // update start of next fragment to send
-            hci_stack->iso_fragmentation_pos += current_iso_data_packet_length;
-        } else {
-            // done
-            hci_stack->iso_fragmentation_pos = 0;
-            hci_stack->iso_fragmentation_total_size = 0;
-        }
-
-        // send packet
-        uint8_t * packet = &hci_stack->hci_packet_buffer[iso_header_pos];
-        const int size = current_iso_data_packet_length + 4;
-        hci_dump_packet(HCI_ISO_DATA_PACKET, 0, packet, size);
-        hci_stack->iso_fragmentation_tx_active = true;
-        err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
-        if (err != 0){
-            break;
-        }
-
-        // done yet?
-        if (!more_fragments) break;
-
-        // can send more?
-        if (!hci_transport_can_send_prepared_packet_now(HCI_ISO_DATA_PACKET)) return ERROR_CODE_SUCCESS;
+    // if ISO packet is larger than Bluetooth packet buffer, only send max_iso_data_packet_length
+    if (current_iso_data_packet_length > max_iso_data_packet_length){
+        more_fragments = true;
+        current_iso_data_packet_length = max_iso_data_packet_length;
     }
+
+    // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragment)
+    uint16_t handle_and_flags = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+    uint8_t pb_flags;
+    if (iso_header_pos == 0u){
+        // first fragment, keep TS field
+        pb_flags = more_fragments ? 0x00 : 0x02;
+        handle_and_flags = (handle_and_flags & 0x4fffu) | (pb_flags << 12u);
+    } else {
+        // later fragment, drop TS field
+        pb_flags = more_fragments ? 0x01 : 0x03;
+        handle_and_flags = (handle_and_flags & 0x0fffu) | (pb_flags << 12u);
+    }
+    little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos, handle_and_flags);
+
+    // update header len
+    little_endian_store_16(hci_stack->hci_packet_buffer, iso_header_pos + 2u, current_iso_data_packet_length);
+
+    // update state for next fragment (if any) as "transport done" might be sent during send_packet already
+    if (more_fragments){
+        // update start of next fragment to send
+        hci_stack->iso_fragmentation_pos += current_iso_data_packet_length;
+    } else {
+        // done
+        hci_stack->iso_fragmentation_pos = 0;
+        hci_stack->iso_fragmentation_total_size = 0;
+    }
+
+    // send packet
+    uint8_t * packet = &hci_stack->hci_packet_buffer[iso_header_pos];
+    const int size = current_iso_data_packet_length + 4;
+    hci_dump_packet(HCI_ISO_DATA_PACKET, 0, packet, size);
+    hci_stack->iso_fragmentation_tx_active = true;
+    int err = hci_stack->hci_transport->send_packet(HCI_ISO_DATA_PACKET, packet, size);
 
     // release buffer on error or schedule sent event for synchronous transport
     // no error from HCI Transport expected
