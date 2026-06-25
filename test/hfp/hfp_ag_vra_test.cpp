@@ -167,6 +167,9 @@ static void check_equal_cmd_error(void){
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(event_size);
     if (event[0] != HCI_EVENT_HFP_META) return;
     last_received_event = event[2];
 

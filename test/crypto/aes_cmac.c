@@ -72,7 +72,7 @@ void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int s
             sm_cmac_m_last[i] = data[sm_cmac_message_len - 16 + i] ^ k1[i];
         }
     } else {
-        int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
+        unsigned int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
         for (i=0;i<16;i++){
             if (i < valid_octets_in_last_block){
                 sm_cmac_m_last[i] = data[(sm_cmac_message_len & 0xfff0) + i] ^ k2[i];

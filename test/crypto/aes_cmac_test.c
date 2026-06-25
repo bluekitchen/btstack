@@ -222,7 +222,6 @@ static void h6(sm_key_t res, const sm_key_t w, const uint32_t key_id){
 // - SALT is 128 bit
 // - W is 128 bits
 static void h7(sm_key_t res, const sm_key_t salt, const sm_key_t w){
-	uint8_t key_id_buffer[4];
 	aes_cmac(res, salt, w, 16);
 }
 
@@ -263,10 +262,9 @@ int main(void){
 
 	// valdiate f5
 	printf("-- verify f5\n");
-	sm_key_t f5_cmac, f5_mackey, f5_n1, f5_n2;
+	sm_key_t f5_cmac, f5_n1, f5_n2;
 	sm_key56_t f5_a1, f5_a2;
 	sm_key256_t f5_w, f5_res;
-	uint8_t f5_z;
 	parse_hex(f5_w, f5_w_string);
 	parse_hex(f5_n1, f5_n1_string);
 	parse_hex(f5_n2, f5_n2_string);
@@ -289,7 +287,6 @@ int main(void){
 	sm_key_t f6_cmac, f6_mac_key, f6_n1, f6_n2, f6_r, f6_res;
 	sm_key24_t f6_io_cap;
 	sm_key56_t f6_a1, f6_a2;
-	uint8_t f6_z;
 	parse_hex(f6_n1, f6_n1_string);
 	parse_hex(f6_n2, f6_n2_string);
 	parse_hex(f6_a1, f6_a1_string);
@@ -308,7 +305,7 @@ int main(void){
 
 	// validate g2
 	printf("-- verify g2\n");
-	sm_key_t g2_cmac, g2_x, g2_y;
+	sm_key_t g2_x, g2_y;
 	sm_key256_t g2_u, g2_v;
 	parse_hex(g2_x, g2_x_string);
 	parse_hex(g2_y, g2_y_string);

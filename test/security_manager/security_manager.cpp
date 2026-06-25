@@ -123,8 +123,8 @@ extern "C" {
 }
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    uint16_t aHandle;
-    bd_addr_t event_address;
+    UNUSED(channel);
+    UNUSED(size);
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
@@ -173,46 +173,6 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 
 #define CHECK_HCI_COMMAND(packet) { log_info("check " #packet) ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 #define CHECK_ACL_PACKET(packet)  { log_info("check " #packet) ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
-
-static int parse_hex(uint8_t * buffer, const char * hex_string){
-    int len = 0;
-    while (*hex_string){
-        if (*hex_string == ' '){
-            hex_string++;
-            continue;
-        }
-        int high_nibble = nibble_for_char(*hex_string++);
-        int low_nibble = nibble_for_char(*hex_string++);
-        *buffer++ = (high_nibble << 4) | low_nibble;
-        len++;
-    }
-    return len;
-}
-
-static const char * key_string = "2b7e1516 28aed2a6 abf71588 09cf4f3c";
-
-static const char * m0_string        = "";
-static const char * cmac_m0_string   = "bb1d6929 e9593728 7fa37d12 9b756746";
-static const char * m16_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a";
-static const char * cmac_m16_string  = "070a16b4 6b4d4144 f79bdd9d d04a287c";
-static const char * m40_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a ae2d8a57 1e03ac9c 9eb76fac 45af8e51 30c81c46 a35ce411";
-static const char * cmac_m40_string  = "dfa66747 de9ae630 30ca3261 1497c827";
-static const char * m64_string       = "6bc1bee2 2e409f96 e93d7e11 7393172a ae2d8a57 1e03ac9c 9eb76fac 45af8e51 30c81c46 a35ce411 e5fbc119 1a0a52ef f69f2445 df4f9b17 ad2b417b e66c3710";
-static const char * cmac_m64_string  = "51f0bebf 7e3b9d92 fc497417 79363cfe";
-
-static uint8_t cmac_hash[16];
-static int cmac_hash_received;
-static void cmac_done(uint8_t * hash){
-    memcpy(cmac_hash, hash, 16);
-    printf("cmac hash: ");
-    printf_hexdump(hash, 16);
-    cmac_hash_received = 1;
-}
-
-static uint8_t m[128];
-
-#define VALIDATE_MESSAGE(NAME) validate_message(#NAME, NAME##_string, cmac_##NAME##_string)
-
 
 bool get_ltk_callback(hci_con_handle_t con_handle, uint8_t address_type, bd_addr_t addr, uint8_t * ltk){
     UNUSED(con_handle);

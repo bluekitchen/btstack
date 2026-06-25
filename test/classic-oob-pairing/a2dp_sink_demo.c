@@ -101,8 +101,8 @@
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "00:1A:7D:DA:71:06"; // pts v5.0
-#endif
 static bd_addr_t device_addr;
+#endif
 
 #ifdef HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
 static btstack_sample_rate_compensation_t sample_rate_compensation;

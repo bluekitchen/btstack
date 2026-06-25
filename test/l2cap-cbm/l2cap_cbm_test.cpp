@@ -6,8 +6,12 @@ void hal_cpu_enable_irqs_and_sleep(void){}
 
 // mock_sm.c
 #include "ble/sm.h"
-void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){}
-void sm_request_pairing(hci_con_handle_t con_handle){}
+void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    (void) callback_handler;
+}
+void sm_request_pairing(hci_con_handle_t con_handle){
+    (void) con_handle;
+}
 
 // mock_hci_transport.h
 #include "hci_transport.h"
@@ -41,6 +45,8 @@ static const hci_transport_t * mock_hci_transport_mock_get_instance(void){
         /*  .transport.can_send_packet_now           = */  mock_hci_transport_can_send_packet_now,
         /*  .transport.send_packet                   = */  &mock_hci_transport_send_packet,
         /*  .transport.set_baudrate                  = */  NULL,
+        /*  .transport.reset_link                    = */  NULL,
+        /*  .transport.set_sco_config                = */  NULL,
     };
     return &mock_hci_transport;
 }
@@ -54,7 +60,7 @@ static void disallow_sending() {
 }
 
 static int mock_hci_transport_can_send_packet_now(uint8_t packet_type) {
-//    printf("fuck you!\n");
+    UNUSED(packet_type);
     return can_send_now;
 }
 
@@ -119,29 +125,6 @@ const uint8_t le_data_channel_conn_response_1[] = {
 const uint8_t le_data_channel_data_1[] = {
         0x05, 0x20, 0x04, 0x00, 0x00, 0x00, 0x41, 0x00
 };
-
-static void fix_boundary_flags(uint8_t * packet, uint16_t size){
-    uint8_t acl_flags = packet[1] >> 4;
-    if (acl_flags == 0){
-        acl_flags = 2;  // first fragment
-    }
-    packet[1] = (packet[1] & 0x0f) | (acl_flags << 4);
-}
-
-static void print_acl(const char * name, const uint8_t * packet, uint16_t size){
-    printf("const uint8_t %s[] = {", name);
-    uint16_t i;
-    for (i=0;i<size;i++){
-        if (i != 0){
-            printf(", ");
-        }
-        if ((i % 16) == 0){
-            printf("\n    ");
-        }
-        printf("0x%02x", packet[i]);
-    }
-    printf("\n};\n");
-}
 
 static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -459,8 +442,9 @@ TEST(L2CAP_CHANNELS, le_credit_indication_unknown_cid){
 TEST(L2CAP_CHANNELS, fuzz) {
     l2cap_setup_test_channels_fuzz();
     l2cap_channel_t * channel = l2cap_get_dynamic_channel_fuzz();
+    CHECK(channel != NULL);
     l2cap_free_channels_fuzz();
-    l2cap_get_dynamic_channel_fuzz();
+    CHECK(l2cap_get_dynamic_channel_fuzz() == NULL);
 }
 
 int main (int argc, const char * argv[]){

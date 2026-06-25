@@ -73,10 +73,16 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 
 static void att_client_indication_callback(void * context){
+    UNUSED(context);
 }
 static void att_client_notification_callback(void * context){
+    UNUSED(context);
 }
 static void att_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 
@@ -495,7 +501,6 @@ TEST(ATT_SERVER, att_server_multiple_notify) {
     const uint16_t value_lens[] = { 1};
     static uint8_t battery_value[] = {0x55};
     const uint8_t * value_data[]  = {battery_value };
-    uint8_t num_attributes = 1;
 
     hci_setup_le_connection(att_con_handle);
     // correct command

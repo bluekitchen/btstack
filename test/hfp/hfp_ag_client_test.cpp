@@ -343,6 +343,9 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(event_size);
 
     if (event[0] != HCI_EVENT_HFP_META) return;
     const char * dial_string;

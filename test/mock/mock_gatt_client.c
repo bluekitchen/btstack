@@ -392,6 +392,7 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 }
 
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
+    UNUSED(configuration);
     mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(characteristic->value_handle);
     btstack_assert(mock_characteristic != NULL);
 
@@ -407,6 +408,8 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 }
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+    UNUSED(start_handle);
+    UNUSED(end_handle);
     mock_gatt_client_state = MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE;
     
     mock_gatt_client_characteristic_t * mock_characteristic = mock_gatt_client_get_characteristic_for_uuid16(uuid16);
@@ -444,21 +447,27 @@ uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callba
 }
 
 uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle){
+    UNUSED(callback);
+    UNUSED(con_handle);
     mock_gatt_client_state = MOCK_READ_VALUE_OF_CHARACTERISTIC_DESCRIPTOR_USING_VALUE_HANDLE;
     mock_gatt_client_value_handle = descriptor_handle;
     return ERROR_CODE_SUCCESS;
 }
 
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
+    UNUSED(notification);
 }
 
 uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    UNUSED(con_handle);
     // immediate callback, we don't have btstack runloop in most tests
     (*callback_registration->callback)(callback_registration->context);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+    UNUSED(value_length);
+    UNUSED(value);
     mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(value_handle);
     btstack_assert(mock_characteristic != NULL);
 

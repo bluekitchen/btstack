@@ -22,7 +22,6 @@ HCI_STATE hci_get_state(void){
 }
 
 static void mock_simulate_hci_event(uint8_t * packet, uint16_t size){
-	static int level = 0;
 	// hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
 	btstack_linked_list_iterator_t  it;
 	btstack_linked_list_iterator_init(&it ,&event_packet_handlers);

@@ -7,8 +7,12 @@ void hal_cpu_enable_irqs_and_sleep(void){}
 
 // mock_sm.c
 #include "ble/sm.h"
-void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){}
-void sm_request_pairing(hci_con_handle_t con_handle){}
+void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    (void) callback_handler;
+}
+void sm_request_pairing(hci_con_handle_t con_handle){
+    (void) con_handle;
+}
 
 // mock_hci_transport.h
 #include "btstack_run_loop_embedded.h"
@@ -42,6 +46,8 @@ const hci_transport_t * mock_hci_transport_mock_get_instance(void){
         /*  .transport.can_send_packet_now           = */  NULL,
         /*  .transport.send_packet                   = */  &mock_hci_transport_send_packet,
         /*  .transport.set_baudrate                  = */  NULL,
+        /*  .transport.reset_link                    = */  NULL,
+        /*  .transport.set_sco_config                = */  NULL,
     };
     return &mock_hci_transport;
 }
@@ -193,6 +199,7 @@ const uint8_t l2cap_enhanced_data_channel_classic_renegotiate_response[] = {
 };
 
 static void fix_boundary_flags(uint8_t * packet, uint16_t size){
+    UNUSED(size);
     uint8_t acl_flags = packet[1] >> 4;
     if (acl_flags == 0){
         acl_flags = 2;  // first fragment
@@ -222,7 +229,6 @@ static void print_acl(const char * name, const uint8_t * packet, uint16_t size){
 static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint16_t psm;
     uint16_t cid;
     uint16_t cids[5];
     switch (packet_type) {

@@ -40,7 +40,7 @@ static const int16_t sine_int16[] = {
 static int count_equal_samples(int16_t * packet, uint16_t size){
     int count = 0;
     int temp_count = 1;
-    int i;
+    uint16_t i;
     for (i = 0; i < size-1; i++){
         if (packet[i] == packet[i+1]){
             temp_count++;
@@ -81,11 +81,12 @@ static void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, in
 
 static int phase = 0;
 static void create_sine_wave_int16_data(int num_samples, int16_t * data){
+    int sine_samples = (int) (sizeof(sine_int16) / sizeof(int16_t));
     int i;
     for (i=0; i < num_samples; i++){
         data[i] = sine_int16[phase++] * 90/100;
         phase++;
-        if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
+        if (phase >= sine_samples){
             phase = 0;
         }
     }
@@ -201,6 +202,8 @@ static void fprintf_array_int16(FILE * oct_file, char * name, int data_len, int1
 }
 
 static void fprintf_plot_history(FILE * oct_file, char * name, int data_len, int16_t * data){
+    (void) data_len;
+    (void) data;
     fprintf_array_int16(oct_file, name, CVSD_LHIST, plc_state.hist);
 
     fprintf(oct_file, "y = [min(%s):1000:max(%s)];\n", name, name);

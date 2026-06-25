@@ -198,6 +198,7 @@ static uint8_t media_mpegd_sbc_local_seid;
 //uint8_t                         min_bitpool_value;
 //uint8_t                         max_bitpool_value;
 
+#ifdef HAVE_BTSTACK_STDIN
 static const avdtp_configuration_sbc_t my_sbc_codec_configuration = {
         .sampling_frequency = 44100,
         .channel_mode = AVDTP_CHANNEL_MODE_STEREO,
@@ -215,6 +216,7 @@ static const avdtp_configuration_mpegd_usac_t my_mpeg_d_codec_configuration = {
         .bit_rate = 0x2A00,
         .vbr = 1
 };
+#endif
 
 static a2dp_media_sending_context_t media_tracker;
 

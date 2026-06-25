@@ -150,8 +150,9 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
 }
 
 static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+	UNUSED(channel);
+	UNUSED(size);
 	if (packet_type != HCI_EVENT_PACKET) return;
-	uint8_t status;
 	gatt_client_service_t service;
 	gatt_client_characteristic_t characteristic;
 	gatt_client_characteristic_descriptor_t descriptor;
@@ -197,6 +198,8 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 }
 
 extern "C" int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+	UNUSED(con_handle);
+	UNUSED(attribute_handle);
 	switch(test){
 		case WRITE_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
@@ -236,6 +239,8 @@ int copy_bytes(uint8_t * value, uint16_t value_length, uint16_t offset, uint8_t 
 }
 
 extern "C" uint16_t att_read_callback(uint16_t handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+	UNUSED(handle);
+	UNUSED(attribute_handle);
 	//printf("gatt client test, att_read_callback_t handle 0x%04x, offset %u, buffer %p, buffer_size %u\n", handle, offset, buffer, buffer_size);
 	switch(test){
 		case READ_CHARACTERISTIC_DESCRIPTOR:
@@ -287,6 +292,7 @@ TEST_GROUP(GATTClient){
 	}
 
 	gatt_client_t * get_gatt_client(hci_con_handle_t con_handle){
+		UNUSED(con_handle);
         gatt_client_t * gatt_client;
 		(void) gatt_client_get_client(gatt_client_handle, &gatt_client);
 		return gatt_client;
@@ -1352,7 +1358,7 @@ TEST(GATTClient, gatt_client_request_can_write_without_response_event){
 }
 
 TEST(GATTClient, gatt_client_request_to_write_without_response){
-    btstack_context_callback_registration_t callback_registration = { 0 };
+    btstack_context_callback_registration_t callback_registration = { NULL, NULL, NULL };
     uint8_t status = gatt_client_request_to_write_without_response(&callback_registration, HCI_CON_HANDLE_INVALID);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
@@ -1364,7 +1370,7 @@ static void dummy_callback(void * context){
     (void) context;
 }
 TEST(GATTClient, gatt_client_request_to_send_gatt_query){
-    btstack_context_callback_registration_t callback_registration = { 0 };
+    btstack_context_callback_registration_t callback_registration = { NULL, NULL, NULL };
     callback_registration.callback = &dummy_callback;
 
     uint8_t status = gatt_client_request_to_send_gatt_query(&callback_registration, HCI_CON_HANDLE_INVALID);
@@ -1519,7 +1525,7 @@ TEST(GATTClient, gatt_client_deserialize_characteristic){
 }
 
 TEST(GATTClient, gatt_client_remove_gatt_query) {
-    btstack_context_callback_registration_t callback_registration = { 0 };
+    btstack_context_callback_registration_t callback_registration = { NULL, NULL, NULL };
 
     uint8_t status = gatt_client_remove_gatt_query(&callback_registration, HCI_CON_HANDLE_INVALID);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
