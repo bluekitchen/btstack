@@ -53,10 +53,11 @@ message("Build: ${CMAKE_BUILD_TYPE}\n")
 include(cmake/btstack.cmake)
 
 # PatchRAM file for CYW55310
-set(PATCHRAM CYW55500A1_001.002.032.0211.0125)
-set(PATCHRAM_FILE ${PATCHRAM}.hcd)
-message("Downloading PatchRAM ${PATCHRAM_FILE} from https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware")
-file (DOWNLOAD https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/${PATCHRAM_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE})
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+set(PATCHRAM ${BTSTACK_CYW55310_PATCHRAM_NAME})
+set(PATCHRAM_FILE ${BTSTACK_CYW55310_PATCHRAM_FILE})
+message("Downloading PatchRAM ${PATCHRAM_FILE} from ${BTSTACK_CYW55310_PATCHRAM_BASE_URL}")
+file (DOWNLOAD ${BTSTACK_CYW55310_PATCHRAM_URL} ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE})
 
 # Convert PatchRAM file into C
 find_package(Python3 REQUIRED COMPONENTS Interpreter)

@@ -20,11 +20,12 @@ if( NOT DEFINED ${BTSTACK_ROOT} )
 endif()
 message("BTstack root: ${BTSTACK_ROOT}")
 
-set(CYW55310_PATCHRAM_NAME CYW55500A1_001.002.032.0211.0125.hcd)
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+set(CYW55310_PATCHRAM_NAME ${BTSTACK_CYW55310_PATCHRAM_FILE})
 
 # Downloaded web assets, format: "URL|relative/output/path"
 set(WEB_H4_DOWNLOADED_ASSETS
-    "https://github.com/Ezurio/ifx_flasher/raw/refs/heads/main/files/if310/firmware/${CYW55310_PATCHRAM_NAME}|${CYW55310_PATCHRAM_NAME}"
+    "${BTSTACK_CYW55310_PATCHRAM_URL}|${CYW55310_PATCHRAM_NAME}"
 )
 
 function(web_h4_download_asset asset_entry)
