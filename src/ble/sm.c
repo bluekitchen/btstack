@@ -3284,6 +3284,9 @@ static void sm_run(void){
                 if (IS_RESPONDER(connection->sm_role)){
                     // slave -> receive master keys if any
                     if (sm_key_distribution_all_received()){
+                        // pre-set state as sm_key_distribution_handle_all_received might emit an event,
+                        // and we don't want to end up here again.
+                        connection->sm_engine_state = SM_RESPONDER_IDLE;
                         sm_key_distribution_handle_all_received(connection);
                         sm_key_distribution_complete_responder(connection);
                         // start CTKD right away
