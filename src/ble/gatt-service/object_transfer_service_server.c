@@ -1074,8 +1074,9 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
             break;
         case OLCP_OPCODE_ORDER:
             if (buffer_size == 2){
-                olcp_list_sort_order_t order = (olcp_list_sort_order_t)buffer[1];
-                if ((order >= OLCP_LIST_SORT_ORDER_NONE) && (order < OLCP_LIST_SORT_ORDER_RFU)){
+                uint8_t order_value = buffer[1];
+                if (order_value < OLCP_LIST_SORT_ORDER_RFU){
+                    olcp_list_sort_order_t order = (olcp_list_sort_order_t)order_value;
                     connection->olcp_result_code = ots_server_operations->sort(connection->con_handle, order);
                 }
             }
