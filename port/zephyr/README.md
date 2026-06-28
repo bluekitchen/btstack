@@ -7,7 +7,18 @@ or is connected to an external Controller via one of the supported Zephyr HCI Tr
 
 ## Status
 
-Tested with nRF52 DK (PCA10040), nRF52840 DK (PC10056) and nRF5340 DK (PCA10095) boards only. It uses the fixed static random BD ADDR stored in NRF_FICR/NRF_FICR_S, which will not compile on non nRF SoCs.
+Tested with the following Nordic boards:
+
+| Board | Zephyr target |
+|-------|---------------|
+| nRF52 DK (PCA10040) | `nrf52dk/nrf52832` |
+| nRF52840 DK (PCA10056) | `nrf52840dk/nrf52840` |
+| nRF5340 DK (PCA10095) | `nrf5340dk/nrf5340/cpuapp` |
+| nRF54L15 DK | `nrf54l15dk/nrf54l15/cpuapp` |
+| nRF54LM20 DK, nRF54LM20A variant | `nrf54lm20dk/nrf54lm20a/cpuapp` |
+
+For Zephyr/Nordic Controllers, BTstack uses the Zephyr vendor command to read the
+Controller's fixed static random address instead of accessing Nordic FICR registers directly.
 
 ## Build Environment
 
@@ -100,6 +111,22 @@ EXAMPLE=gatt_streamer_server west build -b nrf52840dk/nrf52840
 To flash a connected board:
 ```sh
 west flash
+```
+
+## Building and Running on nRF54L Series
+
+The following nRF54 DK targets have been tested with NCS:
+
+```sh
+west build -b nrf54l15dk/nrf54l15/cpuapp -d build-nrf54l15dk
+west build -b nrf54lm20dk/nrf54lm20a/cpuapp -d build-nrf54lm20dk
+```
+
+To build a different example, e.g. the `gatt_streamer_server`, set the `EXAMPLE`
+environment variable:
+
+```sh
+EXAMPLE=gatt_streamer_server west build -b nrf54lm20dk/nrf54lm20a/cpuapp -d build-nrf54lm20dk
 ```
 
 ## Building and Running on nRF5340
