@@ -10,22 +10,67 @@ or is connected to an external Controller via one of the supported Zephyr HCI Tr
 Tested with nRF52 DK (PCA10040), nRF52840 DK (PC10056) and nRF5340 DK (PCA10095) boards only. It uses the fixed static random BD ADDR stored in NRF_FICR/NRF_FICR_S, which will not compile on non nRF SoCs.
 
 ## Build Environment
-The first step needs to done once. Step two is needed every time to setup the environment.
+
+BTstack's Zephyr port can be built either with plain upstream Zephyr or with Nordic's
+nRF Connect SDK (NCS). The provided environment scripts support both setups.
 
 ### 1. Build Environment Preconditions
 
-Follow the getting started [guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
-until you are able to build an example.
+For plain Zephyr, follow the upstream Zephyr getting started
+[guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+until you are able to build an example. By default, `env-zephyr.sh` expects this workspace
+at `~/zephyrproject`.
 
-Then update the `ZEPHYR_ROOT` variable in `env.sh` to point to your `zephyrproject`. Defaults to `~/zephyrproject`
-
+For Nordic boards, you can alternatively use an NCS installation managed by
+`nrfutil sdk-manager`.
 
 ### 2. Prepare the build environment
 
-To setup your environment to build a BTstack example, run the provided setup in `env.sh`.
+For a plain Zephyr workspace:
 
 ```sh
-source env.sh
+source env-zephyr.sh
+```
+
+If your Zephyr workspace is not in `~/zephyrproject`, set one of these before
+sourcing `env-zephyr.sh`:
+
+```sh
+export BTSTACK_ZEPHYR_ROOT=/path/to/zephyrproject
+source env-zephyr.sh
+
+export BTSTACK_ZEPHYR_BASE=/path/to/zephyrproject/zephyr
+source env-zephyr.sh
+```
+
+For Nordic nRF Connect SDK via `nrfutil sdk-manager`:
+
+```sh
+source env-ncs.sh
+```
+
+`env-ncs.sh` uses the latest installed NCS version by default. Set
+`BTSTACK_NCS_VERSION` to select a specific version:
+
+```sh
+export BTSTACK_NCS_VERSION=v3.3.1
+source env-ncs.sh
+```
+
+The script uses `nrfutil sdk-manager list` to find the installed NCS directory and
+then activates the matching toolchain with `nrfutil sdk-manager toolchain env`.
+If discovery is not possible, set `BTSTACK_NCS_ROOT` explicitly:
+
+```sh
+export BTSTACK_NCS_ROOT=/opt/nordic/ncs/v3.3.1
+source env-ncs.sh
+```
+
+If you use `direnv`, keep a local `.envrc` in this folder and source the script
+you want. For example:
+
+```sh
+source ./env-ncs.sh
 ```
 
 ## Building and Running on nRF52840
