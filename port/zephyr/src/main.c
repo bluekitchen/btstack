@@ -18,9 +18,8 @@
 #include <zephyr/kernel.h>
 #endif
 
-// Nordic NDK
-#if defined(CONFIG_HAS_NORDIC_DRIVERS)
-#include "nrf.h"
+// Nordic SDK
+#if defined(CONFIG_SOC_SERIES_NRF53X)
 #include <nrfx_clock.h>
 #endif
 
@@ -57,20 +56,21 @@
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static bd_addr_t static_addr = { 0 };
 static bd_addr_t local_addr = { 0 };
-
-void nrf_get_static_random_addr( bd_addr_t addr ) {
-    // nRF5 chipsets don't have an official public address
-    // Instead, a Static Random Address is assigned during manufacturing
-    // let's use it as well
-#if defined(CONFIG_SOC_SERIES_NRF51X) || defined(CONFIG_SOC_SERIES_NRF52X)
-    big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
-    big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
-#elif defined(CONFIG_SOC_SERIES_NRF53X)
-    big_endian_store_16(addr, 0, NRF_FICR->INFO.DEVICEID[1] | 0xc000 );
-    big_endian_store_32(addr, 2, NRF_FICR->INFO.DEVICEID[0]);
+#ifdef ENABLE_BLE
+static bd_addr_t local_le_random_addr = { 0 };
+static bool local_le_random_addr_set;
 #endif
+
+static void print_local_addr(void){
+#ifdef ENABLE_BLE
+    if (local_le_random_addr_set){
+        printf("BTstack up and running on %s (random).\n", bd_addr_to_str(local_le_random_addr));
+        return;
+    }
+#endif
+    gap_local_bd_addr(local_addr);
+    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
 }
 
 static void local_version_information_handler(uint8_t * packet){
@@ -91,11 +91,6 @@ static void local_version_information_handler(uint8_t * packet){
             printf("Nordic Semiconductor nRF5 chipset.\n");
             hci_set_chipset(btstack_chipset_zephyr_instance());
             break;
-        case BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC:
-            printf("PacketCraft HCI Controller\n");
-            nrf_get_static_random_addr( local_addr );
-            gap_random_address_set( local_addr );
-            break;
         default:
             printf("Unknown manufacturer.\n");
             break;
@@ -109,10 +104,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
-                    if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_addr) ) {
-                        memcpy(local_addr, static_addr, sizeof(bd_addr_t));
-                    }
-                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+                    print_local_addr();
                     break;
                 case HCI_STATE_OFF:
                     log_info("Good bye, see you.\n");
@@ -126,23 +118,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;
-                case HCI_OPCODE_HCI_READ_BD_ADDR:
-                    params = hci_event_command_complete_get_return_parameters(packet);
-                    if(params[0] != 0)
-                        break;
-                    if(size < 12)
-                        break;
-                    reverse_48(&params[1], local_addr);
-                    break;
                 case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+#ifdef ENABLE_BLE
                     params = hci_event_command_complete_get_return_parameters(packet);
                     if(params[0] != 0)
+                        break;
+                    if(params[1] == 0)
                         break;
                     if(size < 13)
                         break;
-                    printf("Use static random address stored in nRF5 SoC.\n");
-                    reverse_48(&params[2], static_addr);
-                    gap_random_address_set(static_addr);
+                    printf("Use static random address reported by Zephyr Controller.\n");
+                    reverse_48(&params[2], local_le_random_addr);
+                    local_le_random_addr_set = true;
+                    gap_random_address_set(local_le_random_addr);
+#endif
                     break;
                 default:
                     break;
