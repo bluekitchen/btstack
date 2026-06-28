@@ -20,6 +20,14 @@ Tested with the following Nordic boards:
 For Zephyr/Nordic Controllers, BTstack uses the Zephyr vendor command to read the
 Controller's fixed static random address instead of accessing Nordic FICR registers directly.
 
+The board-specific Kconfig fragments for tested Nordic boards are generated and
+committed. Nordic SoftDevice Controller defaults live in `nordic_sdc.conf`.
+After changing Nordic board defaults, update `nordic_sdc.conf` and run:
+
+```sh
+python3 generate_board_configs.py
+```
+
 ## Build Environment
 
 BTstack's Zephyr port can be built either with plain upstream Zephyr or with Nordic's
