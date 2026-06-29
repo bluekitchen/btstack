@@ -48,6 +48,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/buf.h>
 #include <zephyr/bluetooth/hci_raw.h>
+#include <zephyr/drivers/bluetooth.h>
 
 // BTstack
 #include "btstack_debug.h"
@@ -62,6 +63,11 @@ static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, ui
 
 static btstack_data_source_t hci_transport_zephyr_receive;
 static fat_variable_t rx_queue_handle = { .variable = &rx_queue, .id = K_POLL_TYPE_FIFO_DATA_AVAILABLE };
+
+#if DT_HAS_COMPAT_STATUS_OKAY(infineon_bt_hci_uart) || \
+    DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
+#define ENABLE_H4_VND_SETUP
+#endif
 
 static void hci_transport_zephyr_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type) {
     UNUSED(ds);
@@ -88,9 +94,13 @@ static void hci_transport_zephyr_handler(btstack_data_source_t * ds, btstack_dat
     net_buf_unref(buf);
 }
 
-#if DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
+#ifdef ENABLE_H4_VND_SETUP
 static const struct device *const h4_dev = DEVICE_DT_GET(DT_PARENT(DT_CHOSEN(zephyr_bt_hci)));
-extern int bt_h4_vnd_setup(const struct device *dev);
+static const struct bt_hci_setup_params h4_setup_params = {
+    // BT_ADDR_NONE tells the Zephyr vendor setup to keep the Controller's public address.
+    .public_addr = {{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }},
+};
+extern int bt_h4_vnd_setup(const struct device *dev, const struct bt_hci_setup_params *params);
 #endif
 
 /**
@@ -109,9 +119,9 @@ static void transport_init(const void *transport_config){
     /* startup Controller */
     ret = bt_enable_raw(&rx_queue);
     btstack_assert(ret == 0);
-#if DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
-    ret = bt_h4_vnd_setup(h4_dev);
-    btstack_assert(ret == 0)
+#ifdef ENABLE_H4_VND_SETUP
+    ret = bt_h4_vnd_setup(h4_dev, &h4_setup_params);
+    btstack_assert(ret == 0);
 #endif
 }
 
