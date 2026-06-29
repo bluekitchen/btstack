@@ -17,6 +17,13 @@ Tested with the following Nordic boards:
 | nRF54L15 DK | `nrf54l15dk/nrf54l15/cpuapp` |
 | nRF54LM20 DK, nRF54LM20A variant | `nrf54lm20dk/nrf54lm20a/cpuapp` |
 
+Tested with the following non-Nordic development kits using an external
+Bluetooth Controller:
+
+| Board | Zephyr target | Bluetooth Controller |
+|-------|---------------|----------------------|
+| Ezurio IF310 DK | `if310` | Infineon CYW55310 over HCI UART |
+
 For Zephyr/Nordic Controllers, BTstack uses the Zephyr vendor command to read the
 Controller's fixed static random address instead of accessing Nordic FICR registers directly.
 
@@ -31,7 +38,8 @@ python3 generate_board_configs.py
 ## Build Environment
 
 BTstack's Zephyr port can be built either with plain upstream Zephyr or with Nordic's
-nRF Connect SDK (NCS). The provided environment scripts support both setups.
+nRF Connect SDK (NCS). Use NCS for Nordic boards. Use upstream Zephyr main for
+the IF310 DK.
 
 ### 1. Build Environment Preconditions
 
@@ -91,6 +99,105 @@ you want. For example:
 ```sh
 source ./env-ncs.sh
 ```
+
+## Building and Running on Ezurio IF310 DK
+
+The IF310 DK contains an RP2040 MCU connected to an Infineon CYW55310 Bluetooth
+Controller over HCI UART. It currently uses upstream Zephyr main, not NCS.
+
+### 1. Prepare Plain Zephyr
+
+```sh
+source env-zephyr.sh
+```
+
+### 2. Build Example
+
+```sh
+west build -b if310 -d build-if310 -p always
+```
+
+To build a different example, e.g. the `gatt_streamer_server`, set the
+`EXAMPLE` environment variable:
+
+```sh
+EXAMPLE=gatt_streamer_server west build -b if310 -d build-if310 -p always
+```
+
+### 3. Flash Example
+
+```sh
+west flash -d build-if310
+```
+
+The IF310 build downloads the CYW55310 PatchRAM HCD file automatically if it is
+missing. The filename, pinned Ezurio `ifx_flasher` URL, and SHA256 are defined in
+`chipset/bcm/btstack_cyw55310_patchram.cmake`.
+
+## External Bluetooth Controller Requirements
+
+Boards using an external Bluetooth Controller via Zephyr's HCI UART transport
+need both Kconfig and devicetree support.
+
+Kconfig requirements:
+
+```conf
+CONFIG_BT=y
+CONFIG_BT_HCI_RAW=y
+CONFIG_SERIAL=y
+CONFIG_UART_INTERRUPT_DRIVEN=y
+```
+
+Infineon AIROC controllers that need PatchRAM download also require:
+
+```conf
+CONFIG_BT_AIROC_CUSTOM=y
+CONFIG_AIROC_CUSTOM_FIRMWARE_HCD_BLOB="path-to-firmware.hcd"
+CONFIG_AIROC_AUTOBAUD_MODE=y
+```
+
+The devicetree must select the HCI transport node with `zephyr,bt-hci`, enable an
+H:4 UART transport, and configure hardware flow control when the board wiring
+requires it. IF310 uses UART0 with hardware flow control and a reset GPIO:
+
+```dts
+chosen {
+	zephyr,bt-hci = &bt_hci;
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	hw-flow-control;
+
+	bt_hci: bt_hci {
+		status = "okay";
+		compatible = "zephyr,bt-hci-uart";
+
+		cyw55310 {
+			status = "okay";
+			compatible = "infineon,bt-hci-uart";
+			bt-reg-on-gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
+			fw-download-speed = <921600>;
+			hci-operation-speed = <921600>;
+		};
+	};
+};
+```
+
+## Persistent BTstack TLV Storage
+
+BTstack can use Zephyr flash storage for its TLV database. The application needs
+flash-map support:
+
+```conf
+CONFIG_FLASH=y
+CONFIG_FLASH_MAP=y
+```
+
+The board devicetree must provide a `zephyr,code-partition` chosen node and a
+`storage_partition`. IF310 reserves the last 32 KiB of the RP2040 external flash
+for this purpose.
 
 ## Building and Running on nRF52840
 
