@@ -1,3 +1,4 @@
 build
 boards/nrf*
 build*
+*.hcd
