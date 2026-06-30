@@ -50,7 +50,6 @@ set(src_dirs
     ${BTSTACK_ROOT}/3rd-party/lc3-google/src
     ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server
     ${BTSTACK_ROOT}/3rd-party/md5
-    ${BTSTACK_ROOT}/3rd-party/micro-ecc
     ${BTSTACK_ROOT}/3rd-party/qr-code-generator
     ${BTSTACK_ROOT}/3rd-party/yxml
     ${BTSTACK_ROOT}/src/ble/gatt-service
@@ -103,17 +102,25 @@ if(CONFIG_BTDM_CTRL_MODE_BTDM)
         ${BTSTACK_ROOT}/src/classic)
 endif()
 
-set(priv_include_dirs
-    ${BTSTACK_ROOT}/3rd-party/micro-ecc
-)
+set(priv_include_dirs)
 
-idf_build_get_property(idf_version_major IDF_VERSION_MAJOR)
-idf_build_get_property(idf_version_minor IDF_VERSION_MINOR)
+if("${IDF_VERSION_MAJOR}" VERSION_GREATER_EQUAL "5" AND CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT)
+    list(APPEND priv_include_dirs
+        ${IDF_PATH}/components/bt/common/tinycrypt/include
+    )
+else()
+    list(APPEND src_dirs
+        ${BTSTACK_ROOT}/3rd-party/micro-ecc
+    )
+    list(APPEND priv_include_dirs
+        ${BTSTACK_ROOT}/3rd-party/micro-ecc
+    )
+endif()
 
 set(driver_requires)
 
-if(idf_version_major GREATER 5 OR
-   (idf_version_major EQUAL 5 AND idf_version_minor GREATER_EQUAL 3))
+if(IDF_VERSION_MAJOR GREATER 5 OR
+   (IDF_VERSION_MAJOR EQUAL 5 AND IDF_VERSION_MINOR GREATER_EQUAL 3))
     list(APPEND driver_requires
         esp_driver_gpio
         esp_driver_uart

@@ -75,8 +75,13 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
 
-// ESP32 supports ECDH HCI Commands, but micro-ecc lib is already provided anyway
+// ESP-IDF 5+ provides TinyCrypt/uECC via the bt component. Use it to avoid
+// duplicate uECC symbols and keep the no-heap ECC implementation.
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)) && defined(CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT)
+#define HAVE_ESP_IDF_TINYCRYPT_ECC_P256
+#else
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#endif
 
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
 
