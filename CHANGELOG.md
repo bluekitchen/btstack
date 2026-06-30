@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 ## Unreleased
 ### Added
+- esp32: support micro-ecc from tinycrypt
 ### Fixed
 ### Changed
 - HCI: align synchronouse transport with asynchronous by simulating a deferred packet sent event 
 - esp32: use individual drivers for esp-idf 5.3 and later
+- esp32: select large app partition for esp32-s31 binaries
 
 ## Release v1.8.2
 
@@ -28,7 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - POSIX-H4 and Windows-H4: support Zephyr-based Controllers
 - Windows-H4: support AIROC download mode
 - Web-H4: support CYW55310 and package .hcd files
-- ESP32: support external Bluetooth Controller
+- esp32: support external Bluetooth Controller
 - btstack_resample: add btstack_resample_get_min_factor_for_output_capacity
 - Tool: compile_gatt.py adds verbose mode and OpenSSL fallback if PyCryptodome is not installed
 

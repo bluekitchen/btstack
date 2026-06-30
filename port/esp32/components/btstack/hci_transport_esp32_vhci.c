@@ -248,12 +248,10 @@ static int transport_open(void){
 
     // Enable LE mode by default
     esp_bt_mode_t bt_mode = ESP_BT_MODE_BLE;
-#if CONFIG_IDF_TARGET_ESP32
 #if CONFIG_BTDM_CTRL_MODE_BTDM
     bt_mode = ESP_BT_MODE_BTDM;
 #elif CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY
     bt_mode = ESP_BT_MODE_CLASSIC_BT;
-#endif
 #endif
 
     ret = esp_bt_controller_enable(bt_mode);
