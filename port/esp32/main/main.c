@@ -53,7 +53,7 @@ int app_main(void){
     // Configure BTstack for ESP32 VHCI Controller
     btstack_init();
 
-#if defined(CONFIG_ESP_CONSOLE_UART) || defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+#if defined(CONFIG_ESP_CONSOLE_UART) || defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) || defined(CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG)
     // Enable support for stdin
     btstack_stdio_init();
 #endif
