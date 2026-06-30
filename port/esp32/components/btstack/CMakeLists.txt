@@ -125,6 +125,7 @@ if(IDF_VERSION_MAJOR GREATER 5 OR
         esp_driver_gpio
         esp_driver_uart
         esp_driver_i2s
+        esp_driver_usb_serial_jtag
     )
 else()
     list(APPEND driver_requires driver)
