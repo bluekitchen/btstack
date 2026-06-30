@@ -78,7 +78,22 @@
 
 // configure ECC implementations
 #if defined(ENABLE_MICRO_ECC_P256) && defined(HAVE_MBEDTLS_ECC_P256)
-#error "If you have mbedTLS (HAVE_MBEDTLS_ECC_P256), please disable uECC (ENABLE_MICRO_ECC_P256) in bstack_config.h"
+#error "If you have mbedTLS (HAVE_MBEDTLS_ECC_P256), please disable uECC (ENABLE_MICRO_ECC_P256) in btstack_config.h"
+#endif
+#if defined(ENABLE_MICRO_ECC_P256) && defined(HAVE_ESP_IDF_TINYCRYPT_ECC_P256)
+#error "If you use ESP-IDF TinyCrypt (HAVE_ESP_IDF_TINYCRYPT_ECC_P256), please disable uECC (ENABLE_MICRO_ECC_P256) in btstack_config.h"
+#endif
+#if defined(HAVE_MBEDTLS_ECC_P256) && defined(HAVE_ESP_IDF_TINYCRYPT_ECC_P256)
+#error "Please enable only one ECC P-256 implementation in btstack_config.h"
+#endif
+
+// Software ECC-P256 implementation provided by ESP-IDF TinyCrypt, based on micro-ecc
+#ifdef HAVE_ESP_IDF_TINYCRYPT_ECC_P256
+#define ENABLE_ECC_P256
+#define USE_ESP_IDF_TINYCRYPT_ECC_P256
+#define USE_SOFTWARE_ECC_P256_IMPLEMENTATION
+#include "tinycrypt/ecc.h"
+#include "tinycrypt/ecc_dh.h"
 #endif
 
 // Software ECC-P256 implementation provided by micro-ecc
@@ -158,6 +173,9 @@ static uint8_t btstack_crypto_ccm_s[16];
 #ifdef USE_MBEDTLS_ECC_P256
 // mbedTLS requires additional random data for multiplication: 32 each for key gen, own DHKey and remote DHKey
 #define ECC_P256_KEYGEN_EXTRA_RANDOM 96
+#endif
+#ifdef USE_ESP_IDF_TINYCRYPT_ECC_P256
+#define ECC_P256_KEYGEN_EXTRA_RANDOM 0
 #endif
 #ifdef USE_MICRO_ECC_P256
 #define ECC_P256_KEYGEN_EXTRA_RANDOM 0
@@ -542,7 +560,7 @@ static void btstack_crypto_log_ec_publickey(const uint8_t * ec_q){
     log_info_hexdump(&ec_q[32],32);
 }
 
-#if (defined(USE_MICRO_ECC_P256) && !defined(WICED_VERSION)) || defined(USE_MBEDTLS_ECC_P256)
+#if (defined(USE_MICRO_ECC_P256) && !defined(WICED_VERSION)) || defined(USE_ESP_IDF_TINYCRYPT_ECC_P256) || defined(USE_MBEDTLS_ECC_P256)
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, btstack_crypto_ecc_p256_random_offset);
@@ -565,8 +583,16 @@ static void btstack_crypto_ecc_p256_generate_key_software(void){
     btstack_crypto_ecc_p256_random_offset = 0;
     
     // generate EC key
-#ifdef USE_MICRO_ECC_P256
+#ifdef USE_ESP_IDF_TINYCRYPT_ECC_P256
+    log_info("set uECC RNG for initial key generation with 64 random bytes");
+    uECC_set_rng(&sm_generate_f_rng);
+    uECC_make_key(btstack_crypto_ecc_p256_public_key, btstack_crypto_ecc_p256_d, uECC_secp256r1());
+    // BTstack only stages random data for key generation. TinyCrypt can operate
+    // without a RNG during shared-secret calculation, so clear the temporary RNG.
+    uECC_set_rng(NULL);
+#endif
 
+#ifdef USE_MICRO_ECC_P256
 #ifndef WICED_VERSION
     log_info("set uECC RNG for initial key generation with 64 random bytes");
     // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
@@ -611,6 +637,10 @@ static void btstack_crypto_ecc_p256_generate_key_software(void){
 static int btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_p256_t * btstack_crypto_ec_p192){
     memset(btstack_crypto_ec_p192->dhkey, 0, 32);
     int res = 0;
+
+#ifdef USE_ESP_IDF_TINYCRYPT_ECC_P256
+    res = uECC_shared_secret(btstack_crypto_ec_p192->public_key, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey, uECC_secp256r1()) != 1;
+#endif
 
 #ifdef USE_MICRO_ECC_P256
 #if uECC_SUPPORTS_secp256r1
@@ -1328,6 +1358,11 @@ void btstack_crypto_ecc_p256_calculate_dhkey(btstack_crypto_ecc_p256_t * request
 int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key){
 
     int err = 0;
+
+#ifdef USE_ESP_IDF_TINYCRYPT_ECC_P256
+    // ESP-IDF TinyCrypt returns 0 for valid public keys, negative values for invalid keys.
+    err = uECC_valid_public_key(public_key, uECC_secp256r1()) != 0;
+#endif
 
 #ifdef USE_MICRO_ECC_P256
     // validate public key using micro-ecc
