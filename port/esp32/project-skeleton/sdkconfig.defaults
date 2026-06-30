@@ -10,3 +10,6 @@ CONFIG_BT_CONTROLLER_ONLY=y
 #
 CONFIG_BTDM_CTRL_MODE_BTDM=y
 CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY=n
+
+# Use the built-in 1.5 MB single-app partition table for larger examples.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y

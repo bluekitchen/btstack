@@ -17,3 +17,6 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 # Make btstack get time ms useful
 CONFIG_FREERTOS_HZ=1000
+
+# Use the built-in 1.5 MB single-app partition table for larger examples.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
