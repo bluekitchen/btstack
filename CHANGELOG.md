@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 ## Unreleased
+
 ### Added
 - esp32: support micro-ecc from tinycrypt
+
 ### Fixed
+- A2DP: ignore unexpected responses, keep state for Delay Report response
+
 ### Changed
-- HCI: align synchronouse transport with asynchronous by simulating a deferred packet sent event 
+- HCI: align synchronous transport with asynchronous by simulating a deferred packet sent event 
 - esp32: use individual drivers for esp-idf 5.3 and later
 - esp32: select large app partition for esp32-s31 binaries
 
