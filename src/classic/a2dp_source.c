@@ -195,11 +195,27 @@ uint8_t a2dp_source_disconnect(uint16_t avdtp_cid){
 }
 
 uint8_t a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_start_stream(avdtp_cid, local_seid);
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    uint8_t status = avdtp_start_stream(avdtp_cid, local_seid);
+    if (status == ERROR_CODE_SUCCESS){
+        a2dp_config_process_set_pending_signal_identifier(AVDTP_ROLE_SOURCE, connection, AVDTP_SI_START);
+    }
+    return status;
 }
 
 uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_suspend_stream(avdtp_cid, local_seid);
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    uint8_t status = avdtp_suspend_stream(avdtp_cid, local_seid);
+    if (status == ERROR_CODE_SUCCESS){
+        a2dp_config_process_set_pending_signal_identifier(AVDTP_ROLE_SOURCE, connection, AVDTP_SI_SUSPEND);
+    }
+    return status;
 }
 
 void a2dp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
@@ -305,13 +321,17 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
     // start reconfigure
     connection->a2dp_source_config_process.state = A2DP_W2_RECONFIGURE_WITH_SEID;
 
-    return avdtp_source_reconfigure(
+    status = avdtp_source_reconfigure(
             avdtp_cid,
             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
             connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid,
             1 << AVDTP_MEDIA_CODEC,
             new_configuration
     );
+    if (status == ERROR_CODE_SUCCESS){
+        a2dp_config_process_set_pending_signal_identifier(AVDTP_ROLE_SOURCE, connection, AVDTP_SI_RECONFIGURE);
+    }
+    return status;
 }
 
 static uint8_t a2dp_source_media_config_validator_callback(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size){
@@ -332,4 +352,3 @@ void a2dp_source_register_media_config_validator(uint8_t (*callback)(const avdtp
     a2dp_source_media_config_validator = callback;
     avdtp_source_register_media_config_validator(&a2dp_source_media_config_validator_callback);
 }
-
