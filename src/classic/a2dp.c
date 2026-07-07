@@ -956,7 +956,9 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     config_process->state = A2DP_STREAMING_OPENED;
                     break;
                 default:
+                    if (signal_identifier != AVDTP_SI_DELAYREPORT){
                         config_process->state = A2DP_CONNECTED;
+                    }
                     break;
             }
 
@@ -974,7 +976,9 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             if (a2dp_config_process_is_pending_signal_identifier(config_process, (avdtp_signal_identifier_t) signal_identifier) == false) break;
             config_process->pending_signal_identifier = AVDTP_SI_NONE;
 
+            if (signal_identifier != AVDTP_SI_DELAYREPORT){
                 config_process->state = A2DP_CONNECTED;
+            }
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
