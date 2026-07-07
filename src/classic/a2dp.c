@@ -279,6 +279,19 @@ void a2dp_config_process_set_pending_signal_identifier(avdtp_role_t role, avdtp_
     config_process->pending_signal_identifier = signal_identifier;
 }
 
+static bool a2dp_config_process_is_pending_signal_identifier(const a2dp_config_process_t * config_process,
+                                                             avdtp_signal_identifier_t signal_identifier){
+    switch (config_process->pending_signal_identifier){
+        case AVDTP_SI_NONE:
+            return false;
+        case AVDTP_SI_GET_ALL_CAPABILITIES:
+            // we store AVDTP_SI_GET_ALL_CAPABILITIES although avdtp_get_all_capabilities might use AVDTP_SI_GET_CAPABILITIES
+            return (signal_identifier == AVDTP_SI_GET_ALL_CAPABILITIES) || (signal_identifier == AVDTP_SI_GET_CAPABILITIES);
+        default:
+            return config_process->pending_signal_identifier == signal_identifier;
+    }
+}
+
 static void a2dp_config_process_timer_handler(btstack_timer_source_t * timer){
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
@@ -436,10 +449,10 @@ void a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *conne
     }
     config_process->state = A2DP_W4_SET_CONFIGURATION;
     uint8_t status = avdtp_set_configuration(connection->avdtp_cid,
-                            local_seid,
-                            remote_seid,
-                            config_process->local_stream_endpoint->remote_configuration_bitmap,
-                            config_process->local_stream_endpoint->remote_configuration);
+                                             local_seid,
+                                             remote_seid,
+                                             config_process->local_stream_endpoint->remote_configuration_bitmap,
+                                             config_process->local_stream_endpoint->remote_configuration);
     if (status == ERROR_CODE_SUCCESS){
         a2dp_config_process_set_pending_signal_identifier(role, connection, AVDTP_SI_SET_CONFIGURATION);
     }
@@ -850,6 +863,12 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             }
 #endif
 
+            if (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) break;
+
+            if (a2dp_config_process_is_pending_signal_identifier(config_process, (avdtp_signal_identifier_t) signal_identifier) == false) break;
+
+            config_process->pending_signal_identifier = AVDTP_SI_NONE;
+
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
 
             switch (config_process->state){
@@ -873,8 +892,8 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                              config_process->local_stream_endpoint->remote_sep.seid);
                     config_process->state = A2DP_W4_OPEN_STREAM_WITH_SEID;
                     status = avdtp_open_stream(cid,
-                                     avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
-                                     config_process->local_stream_endpoint->remote_sep.seid);
+                                               avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                                               config_process->local_stream_endpoint->remote_sep.seid);
                     if (status == ERROR_CODE_SUCCESS){
                         a2dp_config_process_set_pending_signal_identifier(role, connection, AVDTP_SI_OPEN);
                     }
@@ -922,6 +941,11 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
             if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
 
+            signal_identifier = avdtp_subevent_signaling_reject_get_signal_identifier(packet);
+            if (a2dp_config_process_is_pending_signal_identifier(config_process, (avdtp_signal_identifier_t) signal_identifier) == false) break;
+
+            config_process->pending_signal_identifier = AVDTP_SI_NONE;
+
             switch (config_process->state) {
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     log_info("A2DP reconfigure failed ... local seid 0x%02x, active remote seid 0x%02x",
@@ -932,7 +956,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     config_process->state = A2DP_STREAMING_OPENED;
                     break;
                 default:
-                    config_process->state = A2DP_CONNECTED;
+                        config_process->state = A2DP_CONNECTED;
                     break;
             }
 
@@ -946,8 +970,11 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             config_process = a2dp_config_process_for_role(role, connection);
 
             if (avdtp_subevent_signaling_general_reject_get_is_initiator(packet) == 0) break;
+            signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
+            if (a2dp_config_process_is_pending_signal_identifier(config_process, (avdtp_signal_identifier_t) signal_identifier) == false) break;
+            config_process->pending_signal_identifier = AVDTP_SI_NONE;
 
-            config_process->state = A2DP_CONNECTED;
+                config_process->state = A2DP_CONNECTED;
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
@@ -966,6 +993,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
+            config_process->pending_signal_identifier = AVDTP_SI_NONE;
 
             // connect/release are passed on to app
             if (a2dp_config_process_sep_discovery_cid == cid){
