@@ -826,6 +826,15 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
 
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+            // Emit A2DP_SUBEVENT_START_STREAM_REQUESTED for AVDTP_SI_START in Acceptor Role
+            if ((signal_identifier == AVDTP_SI_ACCEPT_START) && (config_process->state == A2DP_STREAMING_OPENED)){
+                a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                                A2DP_SUBEVENT_START_STREAM_REQUESTED);
+                return;
+            }
+#endif
+
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
 
             switch (config_process->state){
@@ -874,13 +883,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                             a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                                           A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
-#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
-                        case AVDTP_SI_ACCEPT_START:
-                            a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
-                                                            A2DP_SUBEVENT_START_STREAM_REQUESTED);
-                            break;
-#endif
-                        default:
+                       default:
                             break;
                     }
                     break;
