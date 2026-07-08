@@ -328,9 +328,6 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
             1 << AVDTP_MEDIA_CODEC,
             new_configuration
     );
-    if (status == ERROR_CODE_SUCCESS){
-        a2dp_config_process_set_pending_signal_identifier(AVDTP_ROLE_SOURCE, connection, AVDTP_SI_RECONFIGURE);
-    }
     return status;
 }
 
