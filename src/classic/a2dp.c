@@ -509,6 +509,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
     uint8_t status;
     uint8_t local_seid;
     uint8_t remote_seid;
+    bool is_initiator;
     bool outgoing_active;
 
     switch (hci_event_avdtp_meta_get_subevent_code(packet)){
@@ -820,10 +821,11 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
+            is_initiator = avdtp_subevent_signaling_accept_get_is_initiator(packet) != 0;
 
             // restart set config timer while remote is active for current cid
             if (a2dp_config_process_set_config_timer_active &&
-                (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) &&
+                !is_initiator &&
                 (cid == a2dp_config_process_sep_discovery_cid)){
 
                 a2dp_config_process_timer_restart();
@@ -841,9 +843,11 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             }
 #endif
 
-            if (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) break;
+            if (!is_initiator && (config_process->state != A2DP_STREAMING_OPENED)) break;
 
-            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
+            if (is_initiator){
+                log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
+            }
 
             switch (config_process->state){
                 case A2DP_W2_GET_ALL_CAPABILITIES:
@@ -885,8 +889,10 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     break;
 
                 case A2DP_STREAMING_OPENED:
-                    if (config_process->pending_signal_identifier != signal_identifier) break;
-                    config_process->pending_signal_identifier = AVDTP_SI_NONE;
+                    if (is_initiator){
+                        if (config_process->pending_signal_identifier != signal_identifier) break;
+                        config_process->pending_signal_identifier = AVDTP_SI_NONE;
+                    }
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
                             a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
