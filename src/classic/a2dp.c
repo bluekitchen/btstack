@@ -834,15 +834,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
 
-#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
-            // Emit A2DP_SUBEVENT_START_STREAM_REQUESTED for AVDTP_SI_START in Acceptor Role
-            if ((signal_identifier == AVDTP_SI_ACCEPT_START) && (config_process->state == A2DP_STREAMING_OPENED)){
-                a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
-                                A2DP_SUBEVENT_START_STREAM_REQUESTED);
-                return;
-            }
-#endif
-
             if (!is_initiator && (config_process->state != A2DP_STREAMING_OPENED)) break;
 
             if (is_initiator){
@@ -873,7 +864,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                                       avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                       config_process->local_stream_endpoint->remote_sep.seid);
                     break;
-                
+
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     if (signal_identifier != AVDTP_SI_RECONFIGURE) break;
                     log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x",
@@ -903,7 +894,13 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                             a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                                           A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
-                       default:
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+                    case AVDTP_SI_ACCEPT_START:
+                            a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
+                                                            A2DP_SUBEVENT_START_STREAM_REQUESTED);
+                            break;
+#endif
+                        default:
                             break;
                     }
                     break;
