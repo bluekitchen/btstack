@@ -6,13 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 ## Unreleased
+
 ### Added
+
 ### Fixed
-- A2DP: get capabilities of all streamendpoints
+- RFCOMM: only deliver RFCOMM data with size > 0
 
 ### Changed
 
-
+    
 ## Release v1.8.2
 
 ### Added
