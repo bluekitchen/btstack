@@ -4093,6 +4093,7 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                 uint8_t status = packet[3];
                 if (status == ERROR_CODE_SUCCESS){
                     if (size < 21u) break;
+                    big->iso_interval_1250us = little_endian_read_16(packet, 18);
                     uint8_t num_bis = btstack_min(big->num_bis, packet[20]);
                     if (size < (21u + (2u * num_bis))) break;
 
@@ -4157,6 +4158,7 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                 uint8_t status = packet[3];
                 if (status == ERROR_CODE_SUCCESS){
                     if (size < 17u) break;
+                    big_sync->iso_interval_1250us = little_endian_read_16(packet, 14);
                     uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
                     if (size < (17u + (2u * packet[16]))) break;
 
