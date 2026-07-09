@@ -926,7 +926,10 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
 
+            // ignore events that we didn't initiate
             if (!is_initiator) break;
+            // ignore response for delay report as well
+            if (signal_identifier == AVDTP_SI_DELAYREPORT)  break;
 
             switch (config_process->state){
                 case A2DP_W2_GET_ALL_CAPABILITIES:
@@ -967,9 +970,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                 case A2DP_STREAMING_OPENED:
                     if (config_process->pending_signal_identifier != signal_identifier) break;
                     config_process->pending_signal_identifier = AVDTP_SI_NONE;
-                    if (signal_identifier != AVDTP_SI_DELAYREPORT){
-                        config_process->state = A2DP_CONNECTED;
-                    }
                     a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
                     break;
 
