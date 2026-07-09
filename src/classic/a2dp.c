@@ -273,12 +273,6 @@ static a2dp_config_process_t * a2dp_config_process_for_role(avdtp_role_t role, a
     return (role == AVDTP_ROLE_SOURCE) ? &connection->a2dp_source_config_process : &connection->a2dp_sink_config_process;
 }
 
-void a2dp_config_process_set_pending_signal_identifier(avdtp_role_t role, avdtp_connection_t *connection,
-                                                       avdtp_signal_identifier_t signal_identifier){
-    a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
-    config_process->pending_signal_identifier = signal_identifier;
-}
-
 static void a2dp_config_process_timer_handler(btstack_timer_source_t * timer){
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
@@ -834,11 +828,10 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
 
+            // ignore responses unless we're either initiator or we're already in streaming state
             if (!is_initiator && (config_process->state != A2DP_STREAMING_OPENED)) break;
 
-            if (is_initiator){
-                log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
-            }
+            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
 
             switch (config_process->state){
                 case A2DP_W2_GET_ALL_CAPABILITIES:
@@ -964,8 +957,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     break;
 
                 case A2DP_STREAMING_OPENED:
-                    if (config_process->pending_signal_identifier != signal_identifier) break;
-                    config_process->pending_signal_identifier = AVDTP_SI_NONE;
                     a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
                     break;
 
@@ -989,7 +980,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
-            config_process->pending_signal_identifier = AVDTP_SI_NONE;
 
             // connect/release are passed on to app
             if (a2dp_config_process_sep_discovery_cid == cid){

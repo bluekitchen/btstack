@@ -553,7 +553,6 @@ typedef struct {
     bool         outgoing_active;
     bool         have_config;
     bool         stream_endpoint_configured;
-    avdtp_signal_identifier_t pending_signal_identifier;
     a2dp_state_t state;
     struct avdtp_stream_endpoint * local_stream_endpoint;
 } a2dp_config_process_t;

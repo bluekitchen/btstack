@@ -72,7 +72,7 @@ void a2dp_register_sink_packet_handler(btstack_packet_handler_t callback);
 
 void a2dp_replace_subevent_id_and_emit_sink(uint8_t *packet, uint16_t size, uint8_t subevent_id);
 
-    // config process
+// config process
 void a2dp_config_process_ready_for_sep_discovery(avdtp_role_t role, avdtp_connection_t *connection);
 
 void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet, uint16_t size);
@@ -80,8 +80,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 uint8_t a2dp_config_process_config_init(avdtp_role_t role, avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
                                         avdtp_media_codec_type_t codec_type);
 void    a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection);
-void    a2dp_config_process_set_pending_signal_identifier(avdtp_role_t role, avdtp_connection_t *connection,
-                                                          avdtp_signal_identifier_t signal_identifier);
 
 uint8_t a2dp_config_process_set_sbc(avdtp_role_t role, uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid,
                                     const avdtp_configuration_sbc_t * configuration);

@@ -213,14 +213,5 @@ uint8_t a2dp_sink_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8
 }
 
 uint8_t a2dp_sink_delay_report(uint16_t a2dp_cid, uint8_t local_seid, uint16_t delay_100us){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    uint8_t status = avdtp_sink_delay_report(a2dp_cid, local_seid, delay_100us);
-    if (status == ERROR_CODE_SUCCESS){
-        a2dp_config_process_set_pending_signal_identifier(AVDTP_ROLE_SINK, connection, AVDTP_SI_DELAYREPORT);
-    }
-    return status;
+    return avdtp_sink_delay_report(a2dp_cid, local_seid, delay_100us);
 }
