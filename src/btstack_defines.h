@@ -2173,10 +2173,11 @@ typedef SSIZE_T ssize_t;
 #define GAP_SUBEVENT_ADVERTISING_SET_REMOVED                     0x01u
 
 /**
- * @format 1111C
+ * @format 11121C
  * @param subevent_code
  * @param status
  * @param big_handle
+ * @param iso_interval_1250us
  * @param num_bis
  * @param bis_con_handles
  */
@@ -2190,10 +2191,11 @@ typedef SSIZE_T ssize_t;
 #define GAP_SUBEVENT_BIG_TERMINATED                              0x03u
 
 /**
- * @format 1111C
+ * @format 11121C
  * @param subevent_code
  * @param status
  * @param big_handle
+ * @param iso_interval_1250us
  * @param num_bis
  * @param bis_con_handles
  */
