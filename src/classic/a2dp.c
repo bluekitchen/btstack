@@ -876,10 +876,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     break;
 
                 case A2DP_STREAMING_OPENED:
-                    if (is_initiator){
-                        if (config_process->pending_signal_identifier != signal_identifier) break;
-                        config_process->pending_signal_identifier = AVDTP_SI_NONE;
-                    }
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
                             a2dp_emit_stream_event_for_role(role, cid, avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
