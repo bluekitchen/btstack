@@ -911,16 +911,24 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
-            cid = avdtp_subevent_signaling_reject_get_avdtp_cid(packet);
+        case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
+            if (hci_event_avdtp_meta_get_subevent_code(packet) == AVDTP_SUBEVENT_SIGNALING_REJECT){
+                cid = avdtp_subevent_signaling_reject_get_avdtp_cid(packet);
+                is_initiator = avdtp_subevent_signaling_reject_get_is_initiator(packet) != 0;
+                signal_identifier = avdtp_subevent_signaling_reject_get_signal_identifier(packet);
+            } else {
+                cid = avdtp_subevent_signaling_general_reject_get_avdtp_cid(packet);
+                is_initiator = avdtp_subevent_signaling_general_reject_get_is_initiator(packet) != 0;
+                signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
+            }
+
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
 
-            if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
+            if (!is_initiator) break;
 
-            signal_identifier = avdtp_subevent_signaling_reject_get_signal_identifier(packet);
-
-            switch (config_process->state) {
+            switch (config_process->state){
                 case A2DP_W2_GET_ALL_CAPABILITIES:
                     if (signal_identifier != AVDTP_SI_DISCOVER) break;
                     config_process->state = A2DP_CONNECTED;
@@ -953,60 +961,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     a2dp_emit_stream_reconfigured_role(role, cid, avdtp_stream_endpoint_seid(
                             config_process->local_stream_endpoint), ERROR_CODE_UNSPECIFIED_ERROR);
                     config_process->state = A2DP_STREAMING_OPENED;
-                    a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-                    break;
-
-                case A2DP_STREAMING_OPENED:
-                    if (config_process->pending_signal_identifier != signal_identifier) break;
-                    config_process->pending_signal_identifier = AVDTP_SI_NONE;
-                    if (signal_identifier != AVDTP_SI_DELAYREPORT){
-                        config_process->state = A2DP_CONNECTED;
-                    }
-                    a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-                    break;
-
-                default:
-                    break;
-            }
-            break;
-
-        case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-            cid = avdtp_subevent_signaling_general_reject_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-            config_process = a2dp_config_process_for_role(role, connection);
-
-            if (avdtp_subevent_signaling_general_reject_get_is_initiator(packet) == 0) break;
-            signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
-
-            switch (config_process->state){
-                case A2DP_W2_GET_ALL_CAPABILITIES:
-                    if (signal_identifier != AVDTP_SI_DISCOVER) break;
-                    config_process->state = A2DP_CONNECTED;
-                    a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-                    break;
-
-                case A2DP_W4_GET_ALL_CAPABILITIES:
-                    if ((signal_identifier != AVDTP_SI_GET_ALL_CAPABILITIES) && (signal_identifier != AVDTP_SI_GET_CAPABILITIES)) break;
-                    config_process->state = A2DP_CONNECTED;
-                    a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-                    break;
-
-                case A2DP_W4_SET_CONFIGURATION:
-                    if (signal_identifier != AVDTP_SI_SET_CONFIGURATION) break;
-                    config_process->state = A2DP_CONNECTED;
-                    a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-                    break;
-
-                case A2DP_W4_OPEN_STREAM_WITH_SEID:
-                    if (signal_identifier != AVDTP_SI_OPEN) break;
-                    config_process->state = A2DP_CONNECTED;
-                    a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
-                    break;
-
-                case A2DP_W2_RECONFIGURE_WITH_SEID:
-                    if (signal_identifier != AVDTP_SI_RECONFIGURE) break;
-                    config_process->state = A2DP_CONNECTED;
                     a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
                     break;
 
