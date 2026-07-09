@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - A2DP: ignore unexpected responses, keep state for Delay Report response
+- RFCOMM: only deliver RFCOMM data with size > 0
 
 ### Changed
 - HCI: align synchronous transport with asynchronous by simulating a deferred packet sent event 
