@@ -381,6 +381,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         // Configure sink for the optional microphone audio sent by the peer.
                         uint16_t iso_interval_1250us = gap_subevent_cis_created_get_iso_interval_1250us(packet);
                         uint8_t  flush_timeout       = gap_subevent_cis_created_get_flush_timeout_c_to_p(packet);
+                        printf("- ISO Interval: %u us\n", iso_interval_1250us * 1250);
                         le_audio_demo_util_sink_configure_unicast(1, 1, sampling_frequency_hz, frame_duration,
                                                                   octets_per_frame,
                                                                   iso_interval_1250us, flush_timeout);
