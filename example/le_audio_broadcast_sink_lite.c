@@ -423,9 +423,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_BIG_SYNC_CREATED: {
-                    printf("BIG Sync created with BIS Connection handles: ");
+                    printf("BIG Sync created\n");
+                    printf("- ISO Interval: %u us\n", gap_subevent_big_sync_created_get_iso_interval_1250us(packet) * 1250);
+                    printf("- BIS Connection handles: ");
+                    uint8_t event_num_bis = gap_subevent_big_sync_created_get_num_bis(packet);
                     uint8_t i;
-                    for (i=0;i<big_sync_params.num_bis;i++){
+                    for (i=0;i<event_num_bis;i++){
                         bis_con_handles[i] = gap_subevent_big_sync_created_get_bis_con_handles(packet, i);
                         printf("0x%04x ", bis_con_handles[i]);
                     }
