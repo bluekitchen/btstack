@@ -11103,13 +11103,15 @@ static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet
 }
 
 static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status){
-    uint8_t event [6 + (MAX_NR_BIS * 2)];
+    uint8_t event [8 + (MAX_NR_BIS * 2)];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_META_GAP;
-    event[pos++] = 4 + (2 * big->num_bis);
+    event[pos++] = 6 + (2 * big->num_bis);
     event[pos++] = GAP_SUBEVENT_BIG_CREATED;
     event[pos++] = status;
     event[pos++] = big->big_handle;
+    little_endian_store_16(event, pos, big->iso_interval_1250us);
+    pos += 2;
     event[pos++] = big->num_bis;
     uint8_t i;
     for (i=0;i<big->num_bis;i++){
@@ -11181,13 +11183,15 @@ static void hci_emit_big_terminated(const le_audio_big_t * big){
 }
 
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status){
-    uint8_t event [6 + (MAX_NR_BIS * 2)];
+    uint8_t event [8 + (MAX_NR_BIS * 2)];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_META_GAP;
-    event[pos++] = 4;
+    event[pos++] = 6 + (2 * big_sync->num_bis);
     event[pos++] = GAP_SUBEVENT_BIG_SYNC_CREATED;
     event[pos++] = status;
     event[pos++] = big_sync->big_handle;
+    little_endian_store_16(event, pos, big_sync->iso_interval_1250us);
+    pos += 2;
     event[pos++] = big_sync->num_bis;
     uint8_t i;
     for (i=0;i<big_sync->num_bis;i++){
@@ -11456,6 +11460,7 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
     big->params = big_params;
     big->state = LE_AUDIO_BIG_STATE_CREATE;
     big->num_bis = big_params->num_bis;
+    big->iso_interval_1250us = 0;
     btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
 
     hci_run();
@@ -11474,6 +11479,7 @@ uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_par
     big_sync->params = big_sync_params;
     big_sync->state = LE_AUDIO_BIG_STATE_CREATE;
     big_sync->num_bis = big_sync_params->num_bis;
+    big_sync->iso_interval_1250us = 0;
     btstack_linked_list_add(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
 
     hci_run();
