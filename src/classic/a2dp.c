@@ -873,11 +873,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                                       avdtp_stream_endpoint_seid(config_process->local_stream_endpoint),
                                       config_process->local_stream_endpoint->remote_sep.seid);
                     break;
-
-                case A2DP_W4_OPEN_STREAM_WITH_SEID:
-                    if (signal_identifier != AVDTP_SI_OPEN) break;
-                    break;
-
+                
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     if (signal_identifier != AVDTP_SI_RECONFIGURE) break;
                     log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x",
