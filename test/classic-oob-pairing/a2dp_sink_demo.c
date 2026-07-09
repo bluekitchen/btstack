@@ -1316,7 +1316,7 @@ static void stdin_process(char cmd){
             break;
         case 'w':
             printf("Send delay report\n");
-            avdtp_sink_delay_report(a2dp_connection->a2dp_cid, a2dp_connection->a2dp_local_seid, 100);
+            a2dp_sink_delay_report(a2dp_connection->a2dp_cid, a2dp_connection->a2dp_local_seid, 100);
             break;
         // Volume Control
         case 't':
