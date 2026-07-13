@@ -43,6 +43,16 @@ static uint8_t moc_att_error_code_read_value_characteristics;
 
 static btstack_linked_list_t event_packet_handlers;
 
+uint8_t gatt_client_att_status_to_error_code(uint8_t att_status){
+    return att_status;
+}
+
+uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
+    UNUSED(con_handle);
+    *mtu = 23;
+    return ERROR_CODE_SUCCESS;
+}
+
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
     btstack_linked_list_add_tail(&event_packet_handlers, (btstack_linked_item_t*) callback_handler);
 }
@@ -206,8 +216,8 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_cli
 
 static void emit_gatt_all_characteristic_descriptors_result_event(
         gatt_client_t * gatt_client, uint16_t descriptor_handle, const uint8_t * uuid128){
-    // @format HZ
-    uint8_t packet[22];
+    // @format H22Z
+    uint8_t packet[26];
     hci_event_builder_context_t context;
     hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT, 0);
     hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
@@ -342,6 +352,22 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gatt_client_discover_primary_services_by_uuid16_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                     uint16_t uuid16, uint16_t service_id, uint16_t connection_id){
+    uint8_t status = gatt_client_discover_primary_services_by_uuid16(callback, con_handle, uuid16);
+    gatt_client.service_id = service_id;
+    gatt_client.connection_id = connection_id;
+    return status;
+}
+
+uint8_t gatt_client_discover_primary_services_by_uuid128_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                      const uint8_t * uuid128, uint16_t service_id, uint16_t connection_id){
+    uint8_t status = gatt_client_discover_primary_services_by_uuid128(callback, con_handle, uuid128);
+    gatt_client.service_id = service_id;
+    gatt_client.connection_id = connection_id;
+    return status;
+}
+
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
     mock_gatt_client_state = MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID;
     uuid_add_bluetooth_prefix(mock_gatt_client_uuid128, uuid16);
@@ -362,6 +388,14 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gatt_client_discover_characteristics_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                      gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id){
+    uint8_t status = gatt_client_discover_characteristics_for_service(callback, con_handle, service);
+    gatt_client.service_id = service_id;
+    gatt_client.connection_id = connection_id;
+    return status;
+}
+
 uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
     mock_gatt_client_state = MOCK_QUERY_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
     mock_gatt_client_value_handle = characteristic->value_handle;
@@ -369,6 +403,14 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
     gatt_client.callback = callback;
     gatt_client.con_handle = con_handle;
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_discover_characteristic_descriptors_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                     gatt_client_characteristic_t * characteristic, uint16_t service_id, uint16_t connection_id){
+    uint8_t status = gatt_client_discover_characteristic_descriptors(callback, con_handle, characteristic);
+    gatt_client.service_id = service_id;
+    gatt_client.connection_id = connection_id;
+    return status;
 }
 
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
@@ -405,6 +447,15 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     gatt_client.callback = callback;
     gatt_client.con_handle = con_handle;
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_write_client_characteristic_configuration_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                           gatt_client_characteristic_t * characteristic, uint16_t configuration,
+                                                                           uint16_t service_id, uint16_t connection_id){
+    uint8_t status = gatt_client_write_client_characteristic_configuration(callback, con_handle, characteristic, configuration);
+    gatt_client.service_id = service_id;
+    gatt_client.connection_id = connection_id;
+    return status;
 }
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
@@ -455,6 +506,21 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
 }
 
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
+    UNUSED(notification);
+}
+
+void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification,
+                                                                 btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                 gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id){
+    notification->callback = callback;
+    notification->con_handle = con_handle;
+    notification->start_group_handle = service->start_group_handle;
+    notification->end_group_handle = service->end_group_handle;
+    notification->service_id = service_id;
+    notification->connection_id = connection_id;
+}
+
+void gatt_client_stop_listening_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification){
     UNUSED(notification);
 }
 
