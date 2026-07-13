@@ -109,6 +109,7 @@ void att_server_register_service_handler(att_service_handler_t * handler);
 /**
  * @brief Request callback when sending is possible
  * @note callback might happend during call to this function
+ * @note pending callback is discarded if the connection disconnects
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return 0 if ok, error otherwise
@@ -125,6 +126,7 @@ uint16_t att_server_get_mtu(hci_con_handle_t con_handle);
 /**
  * @brief Request callback when sending notifcation is possible
  * @note callback might happend during call to this function
+ * @note pending callback will be discarded on HCI disconnect
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
@@ -134,6 +136,7 @@ uint8_t att_server_request_to_send_notification(btstack_context_callback_registr
 /**
  * @brief Request callback when sending indication is possible
  * @note callback might happend during call to this function
+ * @note pending callback will be discarded on HCI disconnect
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered

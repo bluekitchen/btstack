@@ -393,6 +393,10 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_connection->con_handle = 0;
                     att_server->pairing_active = false;
                     att_server->state = ATT_SERVER_IDLE;
+                    // Pending callbacks are specific to this connection and must not
+                    // be dispatched if its hci_connection_t storage is reused.
+                    att_server->notification_requests = NULL;
+                    att_server->indication_requests = NULL;
                     if (att_server->value_indication_handle != 0u){
                         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
                         uint16_t att_handle = att_server->value_indication_handle;
