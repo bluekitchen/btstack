@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - A2DP: ignore unexpected responses, keep state for Delay Report response
+- GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
 - RFCOMM: only deliver RFCOMM data with size > 0
 
 ### Changed

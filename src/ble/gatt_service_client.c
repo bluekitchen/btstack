@@ -522,6 +522,10 @@ static void gatt_service_client_send_next_query(void * context) {
             characteristic.value_handle = connection->characteristics[connection->characteristic_index].value_handle;
             characteristic.properties   = connection->characteristics[connection->characteristic_index].properties;
             characteristic.end_handle   = connection->characteristics[connection->characteristic_index].end_handle;
+            // A CCC may be reported more than once by a malformed server. Clear
+            // the result for this characteristic before the query and retain only
+            // the first valid CCC reported for it.
+            connection->characteristics[connection->characteristic_index].client_configuration_handle = 0;
 
             (void) gatt_client_discover_characteristic_descriptors_with_context(
                     &gatt_service_client_gatt_packet_handler,
@@ -621,6 +625,10 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
+            // A descriptor query covers exactly one characteristic. Advance the
+            // requested-characteristic index once it has completed, irrespective
+            // of whether the server reported a CCC.
+            connection->characteristic_index++;
             if (gatt_service_client_more_descriptor_queries(client, connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
                 break;
@@ -767,14 +775,24 @@ gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, u
             }
             btstack_assert(connection->state == GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT);
 
-            if ( ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY)   != 0u) ||
-                 ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u)
-               ){
-                connection->characteristics[connection->characteristic_index].client_configuration_handle = characteristic_descriptor.handle;
-            } else {
-                connection->characteristics[connection->characteristic_index].client_configuration_handle = 0;
-            } 
-            connection->characteristic_index++;
+            // Check index (defense-in-depth)
+            if (connection->characteristic_index >= client->characteristics_desc_num){
+                log_info("CCC descriptor result without active characteristic");
+                break;
+            }
+
+            // Assert that at least notify or indication is enabled
+            const uint16_t notify_or_indicate = ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE;
+            if ( (connection->characteristics[connection->characteristic_index].properties & notify_or_indicate) == 0u) break;
+
+            // Only store first result
+            if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0u) break;
+
+            // Validate handle range
+            if (characteristic_descriptor.handle <= connection->characteristics[connection->characteristic_index].value_handle) break;
+            if (characteristic_descriptor.handle > connection->characteristics[connection->characteristic_index].end_handle) break;
+
+            connection->characteristics[connection->characteristic_index].client_configuration_handle = characteristic_descriptor.handle;
 
 #ifdef ENABLE_TESTING_SUPPORT
             printf("    Characteristic Configuration Descriptor:  Handle 0x%04X, UUID 0x%04X\n", 
@@ -1111,4 +1129,3 @@ void gatt_service_client_deinit(void){
     gatt_service_clients = NULL;
     gatt_service_client_initialized = false;
 }
-
