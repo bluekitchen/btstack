@@ -44,7 +44,7 @@
 #include <string.h>
 #include "btstack_debug.h"
 
-// ignore if NVM_LE_DEVICE_DB_ENTRIES is defined
+// ignore if NVM_NUM_DEVICE_DB_ENTRIES is defined
 #ifndef NVM_NUM_DEVICE_DB_ENTRIES
 
 // LE Device db implemenation using static memory
@@ -243,4 +243,3 @@ void le_device_db_dump(void){
 }
 
 #endif
-
