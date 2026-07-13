@@ -1711,7 +1711,11 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
 
 // create eatt bearers
 uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer, uint16_t storage_size){
-    uint16_t size_for_structs = num_eatt_bearers * sizeof(att_server_eatt_bearer_t);
+    if ((num_eatt_bearers == 0u) || (storage_buffer == NULL)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    uint32_t size_for_structs = (uint32_t) num_eatt_bearers * sizeof(att_server_eatt_bearer_t);
     if (storage_size < size_for_structs) {
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
@@ -1722,7 +1726,7 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
     uint16_t buffer_size_per_bearer = ((storage_size - size_for_structs) / num_eatt_bearers);
     att_server_eatt_receive_buffer_size = buffer_size_per_bearer / 2;
     att_server_eatt_send_buffer_size    = buffer_size_per_bearer / 2;
-    uint8_t * bearer_buffer = &storage_buffer[size_for_structs];
+    uint8_t * bearer_buffer = &storage_buffer[(uint16_t) size_for_structs];
     uint8_t i;
     att_server_eatt_bearer_t * eatt_bearer = (att_server_eatt_bearer_t *) storage_buffer;
     log_info("%u EATT bearers with receive buffer size %u",

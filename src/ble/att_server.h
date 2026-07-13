@@ -86,6 +86,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
  * @param storage_buffer
  * @param storage_size must be >= num_eatt_bearers * sizeof(att_server_eatt_bearer_t)
  * @return status   ERROR_CODE_SUCCESS
+ *                  ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if num_eatt_bearers is zero or storage_buffer is NULL
  *                  ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if buffer too small or no entry in l2cap service pool
  *                  L2CAP_SERVICE_ALREADY_REGISTERED if called twice
  */
