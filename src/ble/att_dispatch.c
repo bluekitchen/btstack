@@ -220,6 +220,8 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // clear l2cap_cid in att_server
                     l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     att_server = att_dispatch_att_server_for_l2cap_cid(l2cap_cid);
+                    // Assert att_server found (defense-in-depth)
+                    btstack_assert(att_server != NULL);
                     att_server->l2cap_cid = 0;
                     // dispatch to all roles
                     for (index = 0; index < ATT_MAX; index++){
