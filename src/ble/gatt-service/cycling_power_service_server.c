@@ -366,9 +366,9 @@ static void cycling_power_service_vector_can_send_now(void * context){
                 uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
                 uint16_t bytes_left = 0;
                 if (att_mtu > (pos + 3u)){
-                    bytes_left = btstack_min(sizeof(value), att_mtu - 3u - pos);
+                    bytes_left = btstack_min((uint16_t)(sizeof(value) - pos), (uint16_t)(att_mtu - 3u - pos));
                 }
-                while ((bytes_left > 2u) && instance->force_magnitude_count){
+                while ((bytes_left > 2u) && (instance->force_magnitude_count > 0)){
                     little_endian_store_16(value, pos, instance->vector_instantaneous_force_magnitude_N_array[0]);
                     pos += 2;
                     bytes_left -= 2u;
@@ -381,10 +381,10 @@ static void cycling_power_service_vector_can_send_now(void * context){
                 uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
                 uint16_t bytes_left = 0;
                 if (att_mtu > (pos + 3u)){
-                    bytes_left = btstack_min(sizeof(value), att_mtu - 3u - pos);
+                    bytes_left = btstack_min((uint16_t)(sizeof(value) - pos), (uint16_t)(att_mtu - 3u - pos));
                 }
 
-                while ((bytes_left > 2u) && instance->torque_magnitude_count){
+                while ((bytes_left > 2u) && (instance->torque_magnitude_count > 0)){
                     little_endian_store_16(value, pos, instance->vector_instantaneous_torque_magnitude_Nm_array[0]);
                     pos += 2;
                     bytes_left -= 2u;
@@ -588,7 +588,7 @@ static void cycling_power_service_response_can_send_now(void * context){
         switch (instance->request_opcode){
             case CP_OPCODE_REQUEST_SUPPORTED_SENSOR_LOCATIONS:{
                 int i;
-                for (i=0; i<instance->num_supported_sensor_locations; i++){
+                for (i=0; (i<instance->num_supported_sensor_locations) && (pos < (int)sizeof(value)); i++){
                     value[pos++] = instance->supported_sensor_locations[i]; 
                 }
                 break;
@@ -1034,7 +1034,7 @@ void cycling_power_service_server_init(uint32_t feature_flags,
     instance->sensor_location = current_sensor_location;
     instance->num_supported_sensor_locations = 0;
     if (supported_sensor_locations != NULL){
-        instance->num_supported_sensor_locations = num_supported_sensor_locations;
+        instance->num_supported_sensor_locations = btstack_min(num_supported_sensor_locations, (uint16_t)CP_SENSOR_LOCATION_RESERVED);
         instance->supported_sensor_locations = supported_sensor_locations;
     }
     
