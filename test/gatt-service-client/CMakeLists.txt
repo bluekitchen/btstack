@@ -30,6 +30,7 @@ set(SOURCES
 	../../src/ble/gatt-service/ancs_client.c
 	../../src/ble/gatt-service/battery_service_client.c
 	../../src/ble/gatt-service/device_information_service_client.c
+	../../src/ble/gatt_service_client.c
 	../mock/mock_gatt_client.c
 )
 

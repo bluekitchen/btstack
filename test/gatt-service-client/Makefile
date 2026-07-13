@@ -39,16 +39,21 @@ build-asan/ancs_client_test: ${COMMON_OBJ_ASAN} build-asan/ancs_client.o
 build-coverage/device_information_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_client.o
 build-asan/device_information_service_client_test: ${COMMON_OBJ_ASAN} build-asan/device_information_service_client.o
 
+build-coverage/gatt_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/gatt_service_client.o
+build-asan/gatt_service_client_test: ${COMMON_OBJ_ASAN} build-asan/gatt_service_client.o
+
 test: build-asan/battery_service_client_test \
       build-asan/ancs_client_test \
-      build-asan/device_information_service_client_test
+      build-asan/device_information_service_client_test \
+      build-asan/gatt_service_client_test
 	ASAN_OPTIONS=detect_leaks=0 build-asan/battery_service_client_test
 	build-asan/ancs_client_test
 	build-asan/device_information_service_client_test
+	ASAN_OPTIONS=detect_leaks=0 build-asan/gatt_service_client_test
 		
 coverage: build-coverage/battery_service_client_test.info \
 		  build-coverage/ancs_client_test.info \
-		  build-coverage/device_information_service_client_test.info
+		  build-coverage/device_information_service_client_test.info \
+		  build-coverage/gatt_service_client_test.info
 
 clean: clean-common
-
