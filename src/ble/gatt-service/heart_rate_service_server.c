@@ -202,9 +202,13 @@ static void heart_rate_service_can_send_now(void * context){
         pos += 2;
     }
 
-    uint16_t bytes_left = btstack_min(sizeof(value), att_server_get_mtu(instance->con_handle) - 3u - pos);
+    uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
+    uint16_t bytes_left = 0;
+    if (att_mtu > (pos + 3u)){
+        bytes_left = btstack_min((uint16_t)(sizeof(value) - pos), (uint16_t)(att_mtu - 3u - pos));
+    }
 
-    while ((bytes_left > 2u) && instance->rr_interval_count){
+    while ((bytes_left > 2u) && (instance->rr_interval_count > 0)){
         little_endian_store_16(value, pos, instance->rr_intervals[0]);
         pos +=2;
         bytes_left -= 2u;
