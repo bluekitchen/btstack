@@ -187,7 +187,7 @@ static void cycling_speed_and_cadence_service_response_can_send_now(void * conte
 		return;
 	}
 		
-	uint8_t value[3 + sizeof(cycling_speed_and_cadence_sensor_location_t)];
+	uint8_t value[3 + CSC_SERVICE_SENSOR_LOCATION_RESERVED];
 	int pos = 0;
 	value[pos++] = CSC_OPCODE_RESPONSE_CODE;
 	value[pos++] = instance->request_opcode;
