@@ -43,7 +43,12 @@
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
+#ifdef ENABLE_CLASSIC
+#include "classic/btstack_link_key_db_tlv.h"
+#endif
+#ifdef ENABLE_BLE
 #include "ble/le_device_db_tlv.h"
+#endif
 
 #include "hci_transport_zephyr.h"
 #include "btstack_run_loop_zephyr.h"

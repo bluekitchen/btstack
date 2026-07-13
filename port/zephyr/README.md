@@ -134,6 +134,40 @@ The IF310 build downloads the CYW55310 PatchRAM HCD file automatically if it is
 missing. The filename, pinned Ezurio `ifx_flasher` URL, and SHA256 are defined in
 `chipset/bcm/btstack_cyw55310_patchram.cmake`.
 
+## BTstack Controller Feature Configuration
+
+The Zephyr port exposes BTstack's LE and BR/EDR Classic feature selection via
+Kconfig. The values are translated into the BTstack compile-time defines in
+`btstack_config.h` and also control which BTstack protocol sources are compiled.
+
+```conf
+CONFIG_BTSTACK_ENABLE_BLE=y
+CONFIG_BTSTACK_ENABLE_CLASSIC=n
+```
+
+`CONFIG_BTSTACK_ENABLE_BLE` defaults to `y` and maps to `ENABLE_BLE`. LE-only
+boards such as Nordic SoCs using the SoftDevice Controller can use this default.
+
+`CONFIG_BTSTACK_ENABLE_CLASSIC` defaults to `n` and maps to `ENABLE_CLASSIC`.
+Enable it for boards with a dual-mode Bluetooth Controller. The IF310 board
+fragment enables it because the CYW55310 supports BR/EDR.
+
+For a custom board or a size-constrained build, override these options in the
+board fragment or in an extra config fragment:
+
+```conf
+CONFIG_BTSTACK_ENABLE_BLE=y
+CONFIG_BTSTACK_ENABLE_CLASSIC=n
+```
+
+```sh
+west build -b <board> -- -DEXTRA_CONF_FILE=btstack_features.conf
+```
+
+When `CONFIG_BTSTACK_ENABLE_BLE=n`, build an example that does not use LE, GATT,
+or LE Audio APIs. When `CONFIG_BTSTACK_ENABLE_CLASSIC=n`, build an example that
+does not use Classic APIs such as RFCOMM, SDP, BNEP, A2DP, or HFP.
+
 ## External Bluetooth Controller Requirements
 
 Boards using an external Bluetooth Controller via Zephyr's HCI UART transport

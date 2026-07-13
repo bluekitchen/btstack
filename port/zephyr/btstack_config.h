@@ -10,7 +10,22 @@
 // Port related features
 
 // BTstack features that can be enabled
+#define ENABLE_LOG_ERROR
+#define ENABLE_LOG_INFO
+#define ENABLE_MODPLAYER
+#define ENABLE_PRINTF_HEXDUMP
+
+// Enable Classic/LE based on Zephyr Kconfig.
+#if defined(CONFIG_BTSTACK_ENABLE_BLE)
 #define ENABLE_BLE
+#endif
+
+#if defined(CONFIG_BTSTACK_ENABLE_CLASSIC)
+#define ENABLE_CLASSIC
+#endif
+
+//  Enable LE Features
+#ifdef ENABLE_BLE
 #define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
@@ -18,35 +33,77 @@
 #define ENABLE_LE_ISOCHRONOUS_STREAMS
 #define ENABLE_LE_PERIODIC_ADVERTISING
 #define ENABLE_LE_PERIPHERAL
-#define ENABLE_LOG_ERROR
-#define ENABLE_LOG_INFO
-#define ENABLE_MODPLAYER
-#define ENABLE_PRINTF_HEXDUMP
+#endif
 
 // BTstack configuration. buffers, sizes, ...
+#ifdef ENABLE_CLASSIC
+#define HCI_ACL_PAYLOAD_SIZE (1021 + 4)
+#else
 #define HCI_ACL_PAYLOAD_SIZE 260
+#endif
+
+#ifdef ENABLE_BLE
 #define MAX_NR_GATT_CLIENTS 1
-#define MAX_NR_HCI_CONNECTIONS 1
-#define MAX_NR_HCI_ISO_STREAMS 10
-#define MAX_NR_L2CAP_CHANNELS 1
-#define MAX_NR_L2CAP_SERVICES 1
+#else
+#define MAX_NR_GATT_CLIENTS 0
+#endif
+
+#define MAX_NR_HCI_CONNECTIONS 2
+
+#ifdef ENABLE_BLE
+#define MAX_NR_HCI_ISO_STREAMS   4
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_WHITELIST_ENTRIES 1
+#else
+#define MAX_NR_HCI_ISO_STREAMS 0
+#define MAX_NR_SM_LOOKUP_ENTRIES 0
+#define MAX_NR_WHITELIST_ENTRIES 0
+#endif
 
+#define MAX_NR_L2CAP_CHANNELS 4
+#define MAX_NR_L2CAP_SERVICES 3
+
+#ifdef ENABLE_CLASSIC
+#define MAX_NR_AVDTP_CONNECTIONS 1
+#define MAX_NR_AVDTP_STREAM_ENDPOINTS 1
+#define MAX_NR_AVRCP_CONNECTIONS 2
+#define MAX_NR_BNEP_CHANNELS 1
+#define MAX_NR_BNEP_SERVICES 1
+#define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES 2
+#define MAX_NR_HFP_CONNECTIONS 1
+#define MAX_NR_HID_HOST_CONNECTIONS 1
+#define MAX_NR_RFCOMM_CHANNELS 1
+#define MAX_NR_RFCOMM_MULTIPLEXERS 1
+#define MAX_NR_RFCOMM_SERVICES 1
+#define MAX_NR_SERVICE_RECORD_ITEMS 4
+#define NVM_NUM_LINK_KEYS 16
+#else
+#define MAX_NR_AVDTP_CONNECTIONS 0
+#define MAX_NR_AVDTP_STREAM_ENDPOINTS 0
+#define MAX_NR_AVRCP_CONNECTIONS 0
 #define MAX_NR_BNEP_CHANNELS 0
 #define MAX_NR_BNEP_SERVICES 0
 #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES 0
 #define MAX_NR_HFP_CONNECTIONS 0
-#define MAX_NR_LE_DEVICE_DB_ENTRIES 1
+#define MAX_NR_HID_HOST_CONNECTIONS 0
 #define MAX_NR_RFCOMM_CHANNELS 0
 #define MAX_NR_RFCOMM_MULTIPLEXERS 0
 #define MAX_NR_RFCOMM_SERVICES 0
 #define MAX_NR_SERVICE_RECORD_ITEMS 0
+#endif
 
-// hack to fix usage of hci_init in zephry
+#ifdef ENABLE_BLE
+#define MAX_NR_HIDS_CLIENTS 1
+#else
+#define MAX_NR_HIDS_CLIENTS 0
+#endif
+
+// hack to fix usage of hci_init in zephyr
 #define hci_init btstack_hci_init
 
 // LE Device DB using TLV
+#ifdef ENABLE_BLE
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
+#endif
 
 #endif
