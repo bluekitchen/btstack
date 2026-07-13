@@ -59,6 +59,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
+#include "btstack_util.h"
 #include "gap.h"
 #include "hci_dump.h"
 #include "l2cap.h"
@@ -1652,7 +1653,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                         l2cap_ecbm_decline_channels(cid, L2CAP_ECBM_CONNECTION_RESULT_SOME_REFUSED_INSUFFICIENT_RESOURCES_AVAILABLE );
                         log_info("Decline incoming connection from %s", bd_addr_to_str(hci_connection->address));
                     } else {
-                        num_requested_bearers = l2cap_event_ecbm_incoming_connection_get_num_channels(packet);
+                        num_requested_bearers = btstack_min(l2cap_event_ecbm_incoming_connection_get_num_channels(packet), MAX_NR_EATT_CHANNELS);
                         for (i = 0; i < num_requested_bearers; i++){
                             eatt_bearers[i] = (att_server_eatt_bearer_t *) btstack_linked_list_pop(&att_server_eatt_bearer_pool);
                             if (eatt_bearers[i] == NULL) {
