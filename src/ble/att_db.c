@@ -1324,7 +1324,7 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
     little_endian_store_16(response_buffer, 1, handle);
     uint16_t bytes_to_copy = (uint16_t) btstack_min(value_len, att_connection->mtu - 3u);
     (void)memcpy(&response_buffer[3], value, bytes_to_copy);
-    return value_len + 3u;
+    return bytes_to_copy + 3u;
 }
 
 // MARK: ATT_HANDLE_VALUE_NOTIFICATION 0x1b
