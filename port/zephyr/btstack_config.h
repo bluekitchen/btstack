@@ -35,13 +35,14 @@
 #define ENABLE_LE_PERIPHERAL
 #endif
 
-// BTstack configuration. buffers, sizes, ...
-#ifdef ENABLE_CLASSIC
-#define HCI_ACL_PAYLOAD_SIZE (1021 + 4)
+// Match BTstack's ACL payload size to Zephyr's HCI ACL buffers.
+#if CONFIG_BT_BUF_ACL_TX_SIZE < CONFIG_BT_BUF_ACL_RX_SIZE
+#define HCI_ACL_PAYLOAD_SIZE CONFIG_BT_BUF_ACL_TX_SIZE
 #else
-#define HCI_ACL_PAYLOAD_SIZE 260
+#define HCI_ACL_PAYLOAD_SIZE CONFIG_BT_BUF_ACL_RX_SIZE
 #endif
 
+// BTstack configuration. buffers, sizes, ...
 #ifdef ENABLE_BLE
 #define MAX_NR_GATT_CLIENTS 1
 #else
