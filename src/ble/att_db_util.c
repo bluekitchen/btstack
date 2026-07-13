@@ -132,21 +132,28 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
  * asserts that the requested amount of bytes can be stored in the att_db
  * @return TRUE if space is available
  */
-static int att_db_util_assert_space(uint16_t size){
-	uint16_t required_size = att_db_size + size + 2u;
+static int att_db_util_assert_space(uint32_t size){
+	uint32_t required_size = (uint32_t) att_db_size + size + 2u;
+	if (required_size > UINT16_MAX){
+		log_error("att_db: maximum database size exceeded");
+		return 0;
+	}
 	if (required_size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
-    uint16_t new_size = att_db_max_size;
+    uint32_t new_size = att_db_max_size;
 	while (new_size < required_size){
-        new_size += (uint16_t)ATT_DB_BUFFER_INCREMENT;
+		new_size += ATT_DB_BUFFER_INCREMENT;
+		if (new_size > UINT16_MAX){
+			new_size = UINT16_MAX;
+		}
 	}
-	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
+	uint8_t * new_db = (uint8_t*) realloc(att_db, (size_t) new_size);
 	if (!new_db) {
 		log_error("att_db: realloc failed");
 		return 0;
 	}
 	att_db = new_db;
-	att_db_max_size = new_size;
+	att_db_max_size = (uint16_t) new_size;
     att_set_db(att_db); // Update att_db with the new db
 	return 1;
 #else
@@ -160,9 +167,9 @@ static int att_db_util_assert_space(uint16_t size){
 // db endds with 0x00 0x00
 
 static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, uint8_t * data, uint16_t data_len){
-	int size = 2u + 2u + 2u + 2u + data_len;
+	uint32_t size = 2u + 2u + 2u + 2u + data_len;
 	if (!att_db_util_assert_space(size)) return;
-	little_endian_store_16(att_db, att_db_size, size);
+	little_endian_store_16(att_db, att_db_size, (uint16_t) size);
 	att_db_size += 2u;
 	little_endian_store_16(att_db, att_db_size, flags);
 	att_db_size += 2u;
@@ -183,10 +190,10 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 }
 
 static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
-	int size = 2u + 2u + 2u + 16u + data_len;
+	uint32_t size = 2u + 2u + 2u + 16u + data_len;
 	if (!att_db_util_assert_space(size)) return;
 	uint16_t flags_to_store = flags | (uint16_t)ATT_PROPERTY_UUID128;
-	little_endian_store_16(att_db, att_db_size, size);
+	little_endian_store_16(att_db, att_db_size, (uint16_t) size);
 	att_db_size += 2u;
 	little_endian_store_16(att_db, att_db_size, flags_to_store);
 	att_db_size += 2u;
