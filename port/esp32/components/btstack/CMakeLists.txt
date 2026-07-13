@@ -110,7 +110,9 @@ set(priv_include_dirs
 set(priv_requires
         "nvs_flash"
         "bt"
-        "driver"
+        "esp_driver_gpio"
+        "esp_driver_uart"
+        "esp_driver_i2s"
         "lwip"
         "vfs"
         )
