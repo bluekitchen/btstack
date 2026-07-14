@@ -894,7 +894,7 @@ static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channe
     rx_state->valid = 1;
     rx_state->sar = sar;
     rx_state->len = size;
-    uint8_t * rx_buffer = &l2cap_channel->rx_packets_data[index];
+    uint8_t * rx_buffer = &l2cap_channel->rx_packets_data[index * (l2cap_channel->local_mps + 2u)];
     (void)memcpy(rx_buffer, payload, size);
 }
 
@@ -4930,7 +4930,8 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                     l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
 
                     rx_state->valid = 0;
-                    l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, rx_state->sar, &l2cap_channel->rx_packets_data[index], rx_state->len);
+                    l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, rx_state->sar,
+                                                      &l2cap_channel->rx_packets_data[index * (l2cap_channel->local_mps + 2u)], rx_state->len);
 
                     // update rx store index
                     index++;
