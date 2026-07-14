@@ -289,6 +289,22 @@ TEST(L2CAP_CHANNELS, outgoing_response_failure){
     CHECK_EQUAL(L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES, l2cap_channel_open_status);
 }
 
+TEST(L2CAP_CHANNELS, outgoing_response_with_invalid_mps_is_rejected){
+    hci_setup_test_connections_fuzz();
+    uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM,
+                                              data_channel_buffer, sizeof(data_channel_buffer),
+                                              L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    uint8_t packet[sizeof(le_data_channel_conn_response_1)];
+    memcpy(packet, le_data_channel_conn_response_1, sizeof(packet));
+    little_endian_store_16(packet, 16, L2CAP_LE_DEFAULT_MTU - 1u);
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    CHECK(l2cap_channel_opened);
+    CHECK_EQUAL(L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR, l2cap_channel_open_status);
+}
+
 TEST(L2CAP_CHANNELS, outgoing_response_too_short){
     hci_setup_test_connections_fuzz();
     uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM,

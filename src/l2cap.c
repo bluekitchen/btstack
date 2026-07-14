@@ -4534,8 +4534,16 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             le_psm  = little_endian_read_16(command, 4);
             service = l2cap_cbm_get_service(le_psm);
             source_cid = little_endian_read_16(command, 6);
+            uint16_t remote_mtu = little_endian_read_16(command, 8);
+            uint16_t remote_mps = little_endian_read_16(command, 10);
                 
             if (service){
+                if ((remote_mtu < L2CAP_LE_DEFAULT_MTU) || (remote_mps < L2CAP_LE_DEFAULT_MTU)) {
+                    log_info("CBM: invalid remote MTU %u or MPS %u", remote_mtu, remote_mps);
+                    l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid,
+                                                      L2CAP_CBM_CONNECTION_RESULT_UNACCEPTABLE_PARAMETERS);
+                    return 1;
+                }
                 if (source_cid < 0x40u){
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INVALID_SOURCE_CID);
                     return 1;
@@ -4592,8 +4600,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel->con_handle = handle;
                 channel->remote_cid = source_cid;
                 channel->remote_sig_id = sig_id; 
-                channel->remote_mtu = little_endian_read_16(command, 8);
-                channel->remote_mps = little_endian_read_16(command, 10);
+                channel->remote_mtu = remote_mtu;
+                channel->remote_mps = remote_mps;
                 channel->credits_outgoing = little_endian_read_16(command, 12);
 
                 // set initial state
@@ -4642,9 +4650,19 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             }
 
             // success
+            uint16_t response_mtu = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 2);
+            uint16_t response_mps = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
+            if ((response_mtu < L2CAP_LE_DEFAULT_MTU) || (response_mps < L2CAP_LE_DEFAULT_MTU)) {
+                log_info("CBM: invalid remote MTU %u or MPS %u", response_mtu, response_mps);
+                channel->state = L2CAP_STATE_CLOSED;
+                l2cap_cbm_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR);
+                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                l2cap_free_channel_entry(channel);
+                break;
+            }
             channel->remote_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
-            channel->remote_mtu = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 2);
-            channel->remote_mps = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
+            channel->remote_mtu = response_mtu;
+            channel->remote_mps = response_mps;
             channel->credits_outgoing = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
             channel->state = L2CAP_STATE_OPEN;
             l2cap_cbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
