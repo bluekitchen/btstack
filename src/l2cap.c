@@ -3986,6 +3986,18 @@ static inline l2cap_service_t * l2cap_ecbm_get_service(uint16_t spsm){
     return l2cap_get_service_internal(&l2cap_enhanced_services, spsm);
 }
 
+static uint8_t l2cap_ecbm_validate_receive_buffers(uint8_t num_channels, uint8_t ** receive_buffers){
+    if (receive_buffers == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    for (uint8_t i = 0; i < num_channels; i++){
+        if (receive_buffers[i] == NULL){
+            return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+        }
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 static inline uint8_t l2cap_ecbm_status_for_result(uint16_t result) {
     switch (result) {
         case L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS:
@@ -5723,6 +5735,14 @@ uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_
 
     log_info("create enhanced, handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
 
+    if ((num_channels == 0u) || (num_channels > L2CAP_ECBM_MAX_CID_ARRAY_SIZE)){
+        return ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS;
+    }
+    uint8_t status = l2cap_ecbm_validate_receive_buffers(num_channels, receive_sdu_buffers);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) {
         log_error("no hci_connection for handle 0x%04x", con_handle);
@@ -5731,8 +5751,7 @@ uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_
 
     // setup all channels
     btstack_linked_list_t channels = NULL;
-    uint8_t status = l2cap_ecbm_setup_channels(&channels, packet_handler, num_channels, connection, psm, mtu,
-                                               security_level);
+    status = l2cap_ecbm_setup_channels(&channels, packet_handler, num_channels, connection, psm, mtu, security_level);
     uint16_t local_mps = btstack_min(l2cap_enhanced_mps_max, btstack_min(l2cap_max_le_mtu(), mtu));
 
     // add to connections list and set state + local_sig_id
@@ -5785,6 +5804,19 @@ uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_
 
 uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uint16_t initial_credits,
                                             uint16_t receive_buffer_size, uint8_t ** receive_buffers, uint16_t * out_local_cids){
+
+    if (num_channels > L2CAP_ECBM_MAX_CID_ARRAY_SIZE){
+        return ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS;
+    }
+    if (num_channels != 0u){
+        if (out_local_cids == NULL){
+            return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+        }
+        uint8_t status = l2cap_ecbm_validate_receive_buffers(num_channels, receive_buffers);
+        if (status != ERROR_CODE_SUCCESS){
+            return status;
+        }
+    }
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -5854,12 +5886,16 @@ uint8_t l2cap_ecbm_decline_channels(uint16_t local_cid, uint16_t result){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers){
-    btstack_assert(receive_buffers != NULL);
-    btstack_assert(local_cids != NULL);
-
-    if (num_cids > L2CAP_ECBM_MAX_CID_ARRAY_SIZE){
+uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, uint16_t receive_buffer_size, uint8_t ** receive_buffers){
+    if ((num_cids == 0u) || (num_cids > L2CAP_ECBM_MAX_CID_ARRAY_SIZE)){
         return ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS;
+    }
+    if (local_cids == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    uint8_t status = l2cap_ecbm_validate_receive_buffers(num_cids, receive_buffers);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
     }
 
     // check if all cids exist and have the same con handle

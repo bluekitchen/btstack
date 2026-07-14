@@ -743,6 +743,42 @@ TEST(L2CAP_CHANNELS, outgoing_le_renegotiate_api_errors){
     CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
 }
 
+TEST(L2CAP_CHANNELS, outgoing_le_api_rejects_invalid_channel_arrays){
+    hci_setup_test_connections_fuzz();
+    uint16_t cids[L2CAP_ECBM_MAX_CID_ARRAY_SIZE + 1];
+    uint8_t * buffers[L2CAP_ECBM_MAX_CID_ARRAY_SIZE + 1];
+    memset(cids, 0, sizeof(cids));
+    for (uint8_t i = 0; i < (L2CAP_ECBM_MAX_CID_ARRAY_SIZE + 1); i++){
+        buffers[i] = data_channel_buffer_1;
+    }
+
+    uint8_t status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
+                                                 0, initial_credits, TEST_PACKET_SIZE, buffers, cids);
+    CHECK_EQUAL(ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS, status);
+
+    status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
+                                         L2CAP_ECBM_MAX_CID_ARRAY_SIZE + 1, initial_credits, TEST_PACKET_SIZE, buffers, cids);
+    CHECK_EQUAL(ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS, status);
+
+    status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
+                                         1, initial_credits, TEST_PACKET_SIZE, NULL, cids);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    buffers[0] = NULL;
+    status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
+                                         1, initial_credits, TEST_PACKET_SIZE, buffers, cids);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = l2cap_ecbm_reconfigure_channels(0, cids, TEST_PACKET_SIZE, receive_buffers_2);
+    CHECK_EQUAL(ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS, status);
+
+    status = l2cap_ecbm_reconfigure_channels(1, NULL, TEST_PACKET_SIZE, receive_buffers_2);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = l2cap_ecbm_reconfigure_channels(1, cids, TEST_PACKET_SIZE, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+}
+
 TEST(L2CAP_CHANNELS, outgoing_le_renegotiate_response_too_short){
     setup_open_le_ecbm_channels(0);
     uint8_t status = l2cap_ecbm_reconfigure_channels(2, l2cap_cids, TEST_PACKET_SIZE/2, reconfigure_buffers_2);
