@@ -3753,10 +3753,12 @@ static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client)
 static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * connection, uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
+    uint16_t attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+    uint16_t data_offset = sdp_event_query_attribute_byte_get_data_offset(packet);
 
-    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= sizeof(gatt_client_classic_sdp_buffer)) {
-        gatt_client_classic_sdp_buffer[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
-        if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+    if ((attribute_length <= sizeof(gatt_client_classic_sdp_buffer)) && (data_offset < attribute_length)) {
+        gatt_client_classic_sdp_buffer[data_offset] = sdp_event_query_attribute_byte_get_data(packet);
+        if ((uint16_t)(data_offset + 1u) == attribute_length) {
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     for (des_iterator_init(&des_list_it, gatt_client_classic_sdp_buffer); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
