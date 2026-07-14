@@ -867,6 +867,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found
  *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
+ *                GATT_CLIENT_VALUE_TOO_LONG                                if message and signing trailer exceed ATT MTU
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
 uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,

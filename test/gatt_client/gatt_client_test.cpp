@@ -1332,8 +1332,15 @@ TEST(GATTClient, gatt_client_signed_write_without_response){
     CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 
 	reset_query_state();
+	gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+	gatt_client->mtu = ATT_DEFAULT_MTU;
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, ATT_DEFAULT_MTU - 14, (uint8_t*)short_value);
+    CHECK_EQUAL(GATT_CLIENT_VALUE_TOO_LONG, status);
 
-	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 1, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+	status = gatt_client_signed_write_without_response(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
 	CHECK_EQUAL(0, status);
 }
 

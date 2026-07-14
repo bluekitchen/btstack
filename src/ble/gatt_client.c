@@ -2863,6 +2863,13 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
     if (gatt_cilent_is_ready_internal(gatt_client) == 0){
         return GATT_CLIENT_IN_WRONG_STATE;
     }
+    if ((message_len > 0) && (message == NULL)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    // ATT Command, Atribute Value, 12 bytes signing trailer
+    if (message_len > (gatt_client->mtu - 15u)){
+        return GATT_CLIENT_VALUE_TOO_LONG;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
