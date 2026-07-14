@@ -250,7 +250,7 @@ static void ots_client_emit_string_value(ots_client_connection_t * connection, u
     (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void ots_client_emit_filter_value(ots_client_connection_t * connection, uint8_t filter_index, ots_filter_type_t filter_type, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+static void ots_client_emit_filter_value(ots_client_connection_t * connection, uint8_t filter_index, ots_filter_type_t filter_type, const uint8_t * data, uint16_t data_size, uint8_t att_status){
     btstack_assert(connection != NULL);
 
     uint8_t event[MAX_SIZE_OTS_STRING + 9];
@@ -262,10 +262,12 @@ static void ots_client_emit_filter_value(ots_client_connection_t * connection, u
     pos+= 2;
     event[pos++] = filter_index;
     event[pos++] = (uint8_t)filter_type;
-    event[pos++] = data_size;
-    memcpy(&event[pos], data, data_size);
-    pos += data_size;
+    uint16_t bytes_to_copy = btstack_min(data_size, (uint16_t)(sizeof(event) - pos - 1u));
+    event[pos++] = (uint8_t) bytes_to_copy;
+    memcpy(&event[pos], data, bytes_to_copy);
+    pos += bytes_to_copy;
     event[pos++] = att_status;
+    event[1] = (uint8_t)(pos - 2u);
     (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
