@@ -182,6 +182,8 @@ TEST_GROUP(L2CAP_CHANNELS){
 
 TEST(L2CAP_CHANNELS, fixed_channel){
     hci_setup_test_connections_fuzz();
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS,
+                l2cap_send_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL, NULL, 1));
     // channel does not exist
     l2cap_request_can_send_fix_channel_now_event(HCI_CON_HANDLE_TEST_LE, 0x003f);
     // att
@@ -283,6 +285,20 @@ TEST(L2CAP_CHANNELS, outgoing_1){
     // simulate data
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_data_1, sizeof(le_data_channel_data_1));
     l2cap_disconnect(l2cap_cid);
+}
+
+TEST(L2CAP_CHANNELS, outgoing_rejects_null_send_buffer){
+    hci_setup_test_connections_fuzz();
+    uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM,
+                                              data_channel_buffer, sizeof(data_channel_buffer),
+                                              L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_conn_response_1,
+                                      sizeof(le_data_channel_conn_response_1));
+    CHECK(l2cap_channel_opened);
+
+    status = l2cap_send(l2cap_cid, NULL, 1);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_response_failure){
