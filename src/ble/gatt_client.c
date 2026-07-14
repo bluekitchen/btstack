@@ -95,7 +95,7 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client);
 static void gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code);
-static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
     uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
 static uint8_t gatt_client_write_client_characteristic_configuration_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, gatt_client_characteristic_t * characteristic, uint16_t configuration,
@@ -517,7 +517,9 @@ static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t req
 
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
-    (void)memcpy(&request[3], value, value_length);
+    if (value_length > 0u){
+        (void)memcpy(&request[3], value, value_length);
+    }
     little_endian_store_32(request, 3 + value_length, sign_counter);
     reverse_64(sgn, &request[3 + value_length + 4]);
     
@@ -533,7 +535,9 @@ att_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t att
 
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
-    (void)memcpy(&request[3], value, value_length);
+    if (value_length > 0u){
+        (void)memcpy(&request[3], value, value_length);
+    }
     
     return gatt_client_send(gatt_client, 3u + value_length);
 }
@@ -556,7 +560,9 @@ static uint8_t att_prepare_write_request(gatt_client_t *gatt_client, uint8_t req
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     little_endian_store_16(request, 3, value_offset);
-    (void)memcpy(&request[5], &value[value_offset], blob_length);
+    if (blob_length > 0u){
+        (void)memcpy(&request[5], &value[value_offset], blob_length);
+    }
     
     return gatt_client_send(gatt_client,  5u + blob_length);
 }
@@ -3244,9 +3250,20 @@ uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_
 }
 #endif
 
+static uint8_t gatt_client_validate_write_value(uint16_t value_length, const uint8_t * value){
+    if ((value_length > 0u) && (value == NULL)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3261,8 +3278,13 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     return att_write_request(gatt_client, ATT_WRITE_COMMAND, value_handle, value_length, value);
 }
 
-static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
     uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id) {
+
+    uint8_t status = gatt_client_validate_write_value(value_length, value);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
     gatt_client->callback = callback;
     gatt_client->service_id = service_id;
@@ -3272,6 +3294,7 @@ static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * g
     gatt_client->attribute_value = value;
     gatt_client->state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
     gatt_client_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
@@ -3281,8 +3304,7 @@ uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_ha
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
-    gatt_client_write_value_of_characteristic_internal(gatt_client, callback, value_handle, value_length, value, service_id, connection_id);
-    return ERROR_CODE_SUCCESS;
+    return gatt_client_write_value_of_characteristic_internal(gatt_client, callback, value_handle, value_length, value, service_id, connection_id);
 }
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value) {
     return gatt_client_write_value_of_characteristic_with_context(callback, con_handle, value_handle, value_length, value, 0, 0);
@@ -3291,6 +3313,10 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
 uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3324,6 +3350,10 @@ uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t 
 uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3434,6 +3464,10 @@ uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btst
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+    status = gatt_client_validate_write_value(value_length, value);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
@@ -3452,6 +3486,10 @@ uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t cal
 uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3480,6 +3518,10 @@ uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_
 uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }

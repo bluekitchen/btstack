@@ -1136,6 +1136,10 @@ TEST(GATTClient, gatt_client_write_long_value_of_characteristic_with_offset){
 	CHECK_EQUAL(1, result_counter);
 
 	reset_query_state();
+	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, 1, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+	reset_query_state();
 	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, long_value_length, (uint8_t*)long_value);
 	CHECK_EQUAL(0, status);
 
@@ -1253,6 +1257,9 @@ TEST(GATTClient, gatt_client_write_value_of_characteristic_without_response){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
+	reset_query_state();
+	status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, 1, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
 	reset_query_state();
 	// invalid con handle
 	status = gatt_client_write_value_of_characteristic_without_response(HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
