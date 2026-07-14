@@ -881,7 +881,7 @@ static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channe
     log_info("Store SDU with delta %u", delta);
     // get rx state for packet to store
     int index = l2cap_channel->rx_store_index + delta - 1;
-    if (index > l2cap_channel->num_rx_buffers){
+    if (index >= l2cap_channel->num_rx_buffers){
         index -= l2cap_channel->num_rx_buffers;
     }
     log_info("Index of packet to store %u", index);
