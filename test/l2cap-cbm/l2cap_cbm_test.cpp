@@ -301,6 +301,20 @@ TEST(L2CAP_CHANNELS, outgoing_rejects_null_send_buffer){
     CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
 }
 
+TEST(L2CAP_CHANNELS, outgoing_rejects_credit_overflow){
+    hci_setup_test_connections_fuzz();
+    uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM,
+                                              data_channel_buffer, sizeof(data_channel_buffer), 0xfffeu, LEVEL_0,
+                                              &l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, le_data_channel_conn_response_1,
+                                      sizeof(le_data_channel_conn_response_1));
+    CHECK(l2cap_channel_opened);
+
+    status = l2cap_cbm_provide_credits(l2cap_cid, 2);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+}
+
 TEST(L2CAP_CHANNELS, outgoing_response_failure){
     hci_setup_test_connections_fuzz();
     uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM,

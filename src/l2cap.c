@@ -5318,13 +5318,14 @@ static uint8_t l2cap_credit_based_provide_credits(uint16_t local_cid, uint16_t c
     // ignore if set to automatic credits
     if (channel->automatic_credits) return ERROR_CODE_SUCCESS;
 
-    // assert incoming credits + credits <= 0xffff
+    // Credit counts are limited to 16 bits by the Credit Based Flow Control PDUs.
     uint32_t total_credits = channel->credits_incoming;
     total_credits += channel->new_credits_incoming;
     total_credits += credits;
     if (total_credits > 0xffffu){
         log_error("le credits overrun: current %u, scheduled %u, additional %u", channel->credits_incoming,
                   channel->new_credits_incoming, credits);
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     // set credits_granted
