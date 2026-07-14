@@ -75,6 +75,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void ots_client_run_for_connection(void * context);
 
+// Lookup OTS Client connection by GATT Service Client CID
 static ots_client_connection_t * ots_client_get_connection_for_cid(uint16_t connection_cid){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it,  &ots_connections);
@@ -83,6 +84,18 @@ static ots_client_connection_t * ots_client_get_connection_for_cid(uint16_t conn
         if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
             return connection;
         }
+    }
+    return NULL;
+}
+
+// Lookup OTS Client connection by L2CAP CBM CID
+ots_client_connection_t *  ots_client_get_connection_for_cbm_local_cid(uint16_t cbm_local_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ots_client.connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ots_client_connection_t * connection = (ots_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->le_cbm_connection.cid != cbm_local_cid) continue;
+        return connection;
     }
     return NULL;
 }
@@ -127,17 +140,6 @@ static void ots_client_operations_start_timer(ots_client_connection_t * connecti
 
     btstack_run_loop_set_timer(&connection->operation_timer, 30000);
     btstack_run_loop_add_timer(&connection->operation_timer);
-}
-
-ots_client_connection_t *  ots_client_get_connection_for_cbm_local_cid(uint16_t cbm_local_cid){
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ots_client.connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        ots_client_connection_t * connection = (ots_client_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->le_cbm_connection.cid != cbm_local_cid) continue;
-        return connection;
-    }
-    return NULL;
 }
 
 static void ots_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
@@ -1294,8 +1296,7 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
 
         case L2CAP_EVENT_CHANNEL_CLOSED:
             cid = l2cap_event_channel_closed_get_local_cid(packet);
-            connection = ots_client_get_connection_for_cid(cid);
-            btstack_assert(connection != NULL);
+            connection = ots_client_get_connection_for_cbm_local_cid(cid);
             if (connection != NULL){
                 log_info("L2CAP: Channel closed 0x%02x", cid);
                 connection->le_cbm_connection.cid = 0;
