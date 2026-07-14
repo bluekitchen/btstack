@@ -4014,11 +4014,12 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
     uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
     uint8_t * receive_buffers[MAX_NR_EATT_CHANNELS];
     uint16_t  new_cids[MAX_NR_EATT_CHANNELS];
-    memset(gatt_client->eatt_storage_buffer, 0, gatt_client->eatt_storage_size);
+    uint8_t * storage_cursor = gatt_client->eatt_storage_buffer;
+    memset(storage_cursor, 0, gatt_client->eatt_storage_size);
     uint8_t i;
     for (i=0;i<gatt_client->eatt_num_clients; i++){
-        receive_buffers[i] = &gatt_client->eatt_storage_buffer[REPORT_PREBUFFER_HEADER];
-        gatt_client->eatt_storage_buffer += REPORT_PREBUFFER_HEADER + max_mtu;
+        receive_buffers[i] = &storage_cursor[REPORT_PREBUFFER_HEADER];
+        storage_cursor += REPORT_PREBUFFER_HEADER + max_mtu;
     }
 
     log_info("%u EATT clients with receive buffer size %u", gatt_client->eatt_num_clients, buffer_size_per_client);
@@ -4047,8 +4048,8 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
             new_eatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
             new_eatt_client->state = P_W4_L2CAP_CONNECTION;
             new_eatt_client->l2cap_cid = new_cids[i];
-            new_eatt_client->eatt_storage_buffer = gatt_client->eatt_storage_buffer;
-            gatt_client->eatt_storage_buffer += max_mtu;
+            new_eatt_client->eatt_storage_buffer = storage_cursor;
+            storage_cursor += max_mtu;
             i++;
         }
         gatt_client->eatt_state = GATT_CLIENT_EATT_L2CAP_SETUP;
