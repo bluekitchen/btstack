@@ -4247,6 +4247,9 @@ uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_c
 
     // need one buffer for sending and one for receiving. Receiving includes pre-buffer for reports
     uint16_t buffer_size_per_client = storage_size / num_channels;
+    if (buffer_size_per_client < REPORT_PREBUFFER_HEADER) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
     if (max_mtu < 64) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
