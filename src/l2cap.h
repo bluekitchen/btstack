@@ -411,7 +411,7 @@ typedef struct {
     // receiver: eassembly buffer
     uint8_t * reassembly_buffer;
 
-    // receiver: num_rx_buffers of size local_mps
+    // receiver: num_rx_buffers of size local_mps + two-byte SDU Length field for START and UNSEGMENTED I-frames
     uint8_t * rx_packets_data;
 
     // sender: num_tx_buffers of size local_mps

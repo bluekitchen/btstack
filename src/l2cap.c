@@ -629,7 +629,8 @@ static uint8_t l2cap_ertm_validate_storage(const l2cap_ertm_config_t * ertm_conf
     uint32_t alignment_padding = (uint32_t)(-(uintptr_t)buffer) & 0x0fu;
     uint32_t state_size = ertm_config->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t) +
                           ertm_config->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
-    uint32_t mps_storage = (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers) * L2CAP_MINIMAL_MTU;
+    uint32_t mps_storage = ertm_config->num_rx_buffers * (L2CAP_MINIMAL_MTU + 2u) +
+                           ertm_config->num_tx_buffers * L2CAP_MINIMAL_MTU;
     uint32_t required_size = alignment_padding + state_size + ertm_config->local_mtu + mps_storage;
     if (size < required_size){
         log_error("ERTM buffer too small: %u, need %u", (unsigned int)size, (unsigned int)required_size);
@@ -654,11 +655,11 @@ static void l2cap_ertm_setup_buffers(l2cap_channel_t * channel, uint8_t * buffer
 
     // setup rx buffers
     channel->rx_packets_data = &buffer[pos];
-    pos += channel->num_rx_buffers * channel->local_mps;
+    pos += channel->num_rx_buffers * (channel->local_mps + 2u);
 
     // setup tx buffers
     channel->tx_packets_data = &buffer[pos];
-    pos += channel->num_rx_buffers * channel->remote_mps;
+    pos += channel->num_tx_buffers * channel->remote_mps;
 
     btstack_assert(pos <= size);
     UNUSED(pos);
@@ -684,6 +685,9 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     // calculate space for rx and tx buffers
     uint32_t state_len = channel->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t) + channel->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
     uint32_t buffer_space = size - state_len - channel->local_mtu;
+
+    // RX slots include the two-byte SDU Length field on START I-frames.
+    buffer_space -= ertm_config->num_rx_buffers * 2u;
 
     // divide rest of data equally for initial config
     uint16_t mps = buffer_space / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
@@ -3404,7 +3408,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                             channel->remote_mps = remote_mps;
                             uint16_t num_bytes_per_tx_buffer_now = sizeof(l2cap_ertm_tx_packet_state_t) + channel->remote_mps;
                             channel->num_tx_buffers = tx_storage / num_bytes_per_tx_buffer_now;
-                            uint32_t total_storage = (sizeof(l2cap_ertm_rx_packet_state_t) + channel->local_mps) * channel->num_rx_buffers + tx_storage + channel->local_mtu;
+                            uint32_t total_storage = (sizeof(l2cap_ertm_rx_packet_state_t) + channel->local_mps + 2u) * channel->num_rx_buffers + tx_storage + channel->local_mtu;
                             l2cap_ertm_setup_buffers(channel, (uint8_t *) channel->rx_packets_state, total_storage);
                         }
                         // limit remote mtu by our tx buffers. Include 2 bytes SDU Length
