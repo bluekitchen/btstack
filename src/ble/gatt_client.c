@@ -2314,51 +2314,56 @@ static void gatt_client_handle_att_write_response(gatt_client_t *gatt_client) {
 }
 
 static void gatt_client_handle_att_mtu_response(gatt_client_t* gatt_client, uint8_t* packet, uint16_t size) {
-    if (size == 3){
-        bool update_gatt_server_att_mtu = false;
-        uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
-        if (remote_rx_mtu < ATT_DEFAULT_MTU){
-            log_info("GATT client: invalid remote MTU %u", remote_rx_mtu);
-            gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
-            gatt_client_notify_can_send_query(gatt_client);
-            return;
-        }
-        uint16_t local_rx_mtu = l2cap_max_le_mtu();
-        switch (gatt_client->bearer_type){
-            case ATT_BEARER_UNENHANCED_LE:
-                update_gatt_server_att_mtu = true;
-                break;
-#ifdef ENABLE_GATT_OVER_CLASSIC
-            case ATT_BEARER_UNENHANCED_CLASSIC:
-                local_rx_mtu = gatt_client->mtu;
-                break;
-#endif
-            default:
-                btstack_unreachable();
-                break;
-        }
-
-        // set gatt client mtu
-        uint16_t mtu = (uint16_t) btstack_min(local_rx_mtu, remote_rx_mtu);
-        gatt_client->mtu = mtu;
-
-        // MTU exchange completed
-        gatt_client->mtu_state = MTU_EXCHANGED;
-
-        // Update GATT Server ATT MTU for Unenhanced LE Bearer
-        if (update_gatt_server_att_mtu){
-            // set per connection mtu state - for fixed channel
-            hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-            hci_connection->att_connection.mtu = gatt_client->mtu;
-            hci_connection->att_connection.mtu_exchanged = true;
-        }
-
-        // Notify clients
-        emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
-
-        // Trigger first/next query if queued
+    if (size != 3u){
+        log_info("GATT client: malformed MTU response");
+        gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
         gatt_client_notify_can_send_query(gatt_client);
+        return;
     }
+
+    bool update_gatt_server_att_mtu = false;
+    uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
+    if (remote_rx_mtu < ATT_DEFAULT_MTU){
+        log_info("GATT client: invalid remote MTU %u", remote_rx_mtu);
+        gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+        gatt_client_notify_can_send_query(gatt_client);
+        return;
+    }
+    uint16_t local_rx_mtu = l2cap_max_le_mtu();
+    switch (gatt_client->bearer_type){
+        case ATT_BEARER_UNENHANCED_LE:
+            update_gatt_server_att_mtu = true;
+            break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            local_rx_mtu = gatt_client->mtu;
+            break;
+#endif
+        default:
+            btstack_unreachable();
+            break;
+    }
+
+    // set gatt client mtu
+    uint16_t mtu = (uint16_t) btstack_min(local_rx_mtu, remote_rx_mtu);
+    gatt_client->mtu = mtu;
+
+    // MTU exchange completed
+    gatt_client->mtu_state = MTU_EXCHANGED;
+
+    // Update GATT Server ATT MTU for Unenhanced LE Bearer
+    if (update_gatt_server_att_mtu){
+        // set per connection mtu state - for fixed channel
+        hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+        hci_connection->att_connection.mtu = gatt_client->mtu;
+        hci_connection->att_connection.mtu_exchanged = true;
+    }
+
+    // Notify clients
+    emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
+
+    // Trigger first/next query if queued
+    gatt_client_notify_can_send_query(gatt_client);
 }
 
 static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {

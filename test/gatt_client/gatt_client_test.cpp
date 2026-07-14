@@ -1422,6 +1422,13 @@ TEST(GATTClient, invalid_remote_mtu_response_keeps_safe_mtu){
 
     CHECK_EQUAL(ATT_DEFAULT_MTU, gatt_client->mtu);
     CHECK_EQUAL(MTU_AUTO_EXCHANGE_DISABLED, gatt_client->mtu_state);
+
+    gatt_client->mtu_state = SENT_MTU_EXCHANGE;
+    uint8_t truncated_packet[] = { ATT_EXCHANGE_MTU_RESPONSE, 0 };
+    gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, gatt_client_handle, truncated_packet, sizeof(truncated_packet));
+
+    CHECK_EQUAL(ATT_DEFAULT_MTU, gatt_client->mtu);
+    CHECK_EQUAL(MTU_AUTO_EXCHANGE_DISABLED, gatt_client->mtu_state);
 }
 
 TEST(GATTClient, truncated_read_by_type_response_is_rejected){
