@@ -490,6 +490,24 @@ TEST(L2CAP_CHANNELS, le_ecbm_signaling_command_incomplete){
     CHECK_EQUAL(0, mock_hci_transport_outgoing_packet_size);
 }
 
+TEST(L2CAP_CHANNELS, incoming_ecbm_connection_request_too_many_cids_rejected){
+    hci_setup_test_connections_fuzz();
+    uint8_t packet[32];
+    memset(packet, 0, sizeof(packet));
+    memcpy(packet, l2cap_enhanced_data_channel_le_conn_request_1, sizeof(l2cap_enhanced_data_channel_le_conn_request_1));
+    little_endian_store_16(packet, 2, 28);   // ACL payload: L2CAP header plus signaling command
+    little_endian_store_16(packet, 4, 24);   // L2CAP payload: signaling command header plus data
+    little_endian_store_16(packet, 10, 20);  // fixed fields plus six Source CIDs
+    for (uint8_t i = 0; i < 6; i++){
+        little_endian_store_16(packet, 20 + (i * 2), 0x0041 + i);
+    }
+
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    CHECK_EQUAL(0, num_l2cap_channel_opened);
+    CHECK(mock_hci_transport_outgoing_packet_size > 0);
+}
+
 TEST(L2CAP_CHANNELS, le_ecbm_signaling_unknown_command_rejected){
     hci_setup_test_connections_fuzz();
     uint8_t packet[sizeof(l2cap_enhanced_data_channel_le_conn_request_1)];

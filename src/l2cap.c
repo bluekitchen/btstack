@@ -4139,8 +4139,8 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
 
     switch (code) {
         case L2CAP_CREDIT_BASED_CONNECTION_REQUEST:
-            // check size
-            if (len < 10u) return 0u;
+            // The Source CID array contains one to five two-octet entries.
+            if ((len < 10u) || (len > 18u) || ((len & 1u) != 0u)) return 0u;
 
             // get hci connection, bail if not found (must not happen)
             connection = hci_connection_for_handle(handle);
