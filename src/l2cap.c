@@ -620,6 +620,24 @@ static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_confi
     return result;
 }
 
+static uint8_t l2cap_ertm_validate_storage(const l2cap_ertm_config_t * ertm_config, const uint8_t * buffer, uint32_t size){
+    if (buffer == NULL){
+        log_error("ERTM buffer must not be NULL");
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    uint32_t alignment_padding = (uint32_t)(-(uintptr_t)buffer) & 0x0fu;
+    uint32_t state_size = ertm_config->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t) +
+                          ertm_config->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
+    uint32_t mps_storage = (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers) * L2CAP_MINIMAL_MTU;
+    uint32_t required_size = alignment_padding + state_size + ertm_config->local_mtu + mps_storage;
+    if (size < required_size){
+        log_error("ERTM buffer too small: %u, need %u", (unsigned int)size, (unsigned int)required_size);
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 static void l2cap_ertm_setup_buffers(l2cap_channel_t * channel, uint8_t * buffer, uint32_t size){
     btstack_assert( (((uintptr_t) buffer) & 0x0f) == 0);
 
@@ -659,7 +677,7 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     channel->fcs_option = ertm_config->fcs_option;
 
     // align buffer to 16-byte boundary to assert l2cap_ertm_rx_packet_state_t is aligned
-    int bytes_till_alignment = 16 - (((uintptr_t) buffer) & 0x0f);
+    uint32_t bytes_till_alignment = (uint32_t)(-(uintptr_t)buffer) & 0x0fu;
     buffer += bytes_till_alignment;
     size   -= bytes_till_alignment;
 
@@ -683,6 +701,8 @@ uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_ad
 
     // validate local config
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
+    if (result) return result;
+    result = l2cap_ertm_validate_storage(ertm_config, buffer, size);
     if (result) return result;
 
     // determine security level based on psm
