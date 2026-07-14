@@ -2312,6 +2312,12 @@ static void gatt_client_handle_att_mtu_response(gatt_client_t* gatt_client, uint
     if (size == 3){
         bool update_gatt_server_att_mtu = false;
         uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
+        if (remote_rx_mtu < ATT_DEFAULT_MTU){
+            log_info("GATT client: invalid remote MTU %u", remote_rx_mtu);
+            gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+            gatt_client_notify_can_send_query(gatt_client);
+            return;
+        }
         uint16_t local_rx_mtu = l2cap_max_le_mtu();
         switch (gatt_client->bearer_type){
             case ATT_BEARER_UNENHANCED_LE:

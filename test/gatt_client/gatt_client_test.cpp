@@ -1393,6 +1393,18 @@ TEST(GATTClient, gatt_client_send_mtu_negotiation){
 	gatt_client->mtu_state = SEND_MTU_EXCHANGE;
 }
 
+TEST(GATTClient, invalid_remote_mtu_response_keeps_safe_mtu){
+    gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+    gatt_client->mtu = ATT_DEFAULT_MTU;
+    gatt_client->mtu_state = SENT_MTU_EXCHANGE;
+
+    uint8_t packet[] = { ATT_EXCHANGE_MTU_RESPONSE, 0, 0 };
+    gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, gatt_client_handle, packet, sizeof(packet));
+
+    CHECK_EQUAL(ATT_DEFAULT_MTU, gatt_client->mtu);
+    CHECK_EQUAL(MTU_AUTO_EXCHANGE_DISABLED, gatt_client->mtu_state);
+}
+
 TEST(GATTClient, gatt_client_get_mtu){
 	reset_query_state();
 	uint16_t mtu;
