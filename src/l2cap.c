@@ -4121,6 +4121,13 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                 uint16_t remote_mps = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
                 uint16_t credits_outgoing = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
 
+                if ((remote_mtu < L2CAP_LE_DEFAULT_MTU) || (remote_mps < L2CAP_LE_DEFAULT_MTU)) {
+                    log_info("ECBM: invalid remote MTU %u or MPS %u", remote_mtu, remote_mps);
+                    l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                                      num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INVALID_PARAMETERS);
+                    return 1;
+                }
+
                 // param: check remote mtu
                 if (service->mtu > remote_mtu) {
                     l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
@@ -4248,6 +4255,10 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
             initial_credits = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 4);
             result = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 6);
             status = l2cap_ecbm_status_for_result(result);
+            if ((status == ERROR_CODE_SUCCESS) && ((new_mtu < L2CAP_LE_DEFAULT_MTU) || (new_mps < L2CAP_LE_DEFAULT_MTU))) {
+                log_info("ECBM: invalid remote MTU %u or MPS %u", new_mtu, new_mps);
+                status = L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR;
+            }
 
             // get num channels to modify
             num_channels = (len - 8) / sizeof(uint16_t);
@@ -4261,7 +4272,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                 if (channel->state != L2CAP_STATE_WAIT_ENHANCED_CONNECTION_RESPONSE) continue;
                 if (channel->cid_index < num_channels) {
                     uint16_t remote_cid = little_endian_read_16(command, 12 + channel->cid_index * sizeof(uint16_t));
-                    if (remote_cid != 0) {
+                    if ((channel_status == ERROR_CODE_SUCCESS) && (remote_cid != 0)) {
                         // check for duplicate remote CIDs
                         l2cap_channel_t * original_channel = l2cap_get_channel_for_remote_handle_and_cid(handle, remote_cid);
                         if (original_channel == NULL){
@@ -4322,7 +4333,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     break;
                 }
                 // check MPS valid
-                if (new_mps < l2cap_enhanced_mps_min) {
+                if (new_mps < btstack_max(l2cap_enhanced_mps_min, L2CAP_LE_DEFAULT_MTU)) {
                     result = L2CAP_ECBM_RECONFIGURE_FAILED_UNACCEPTABLE_PARAMETERS;
                     break;
                 }

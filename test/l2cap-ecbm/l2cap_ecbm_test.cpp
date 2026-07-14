@@ -353,6 +353,23 @@ TEST(L2CAP_CHANNELS, outgoing_le_response_failure){
     CHECK_EQUAL(L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES, l2cap_open_status[1]);
 }
 
+TEST(L2CAP_CHANNELS, outgoing_le_response_with_invalid_mtu_is_rejected){
+    hci_setup_test_connections_fuzz();
+    uint16_t cids[2];
+    uint8_t status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
+                                                    2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    uint8_t packet[sizeof(l2cap_enhanced_data_channel_le_conn_response_2_success)];
+    memcpy(packet, l2cap_enhanced_data_channel_le_conn_response_2_success, sizeof(packet));
+    little_endian_store_16(packet, 12, L2CAP_LE_DEFAULT_MTU - 1u);
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    CHECK_EQUAL(2, num_l2cap_channel_opened);
+    CHECK_EQUAL(L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR, l2cap_open_status[0]);
+    CHECK_EQUAL(L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR, l2cap_open_status[1]);
+}
+
 TEST(L2CAP_CHANNELS, outgoing_le_response_too_short){
     hci_setup_test_connections_fuzz();
     uint16_t cids[2];
