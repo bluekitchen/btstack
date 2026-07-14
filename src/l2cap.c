@@ -4890,13 +4890,13 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
             uint16_t        payload_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
 
             // assert SDU size is smaller or equal to our buffers
-            uint16_t max_payload_size = 0;
+            uint32_t max_payload_size = 0;
             switch (sar){
-                case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-                    // SDU Length + MPS
-                    max_payload_size = l2cap_channel->local_mps + 2;
+                    // MPS limits the Information Payload; START I-frames also carry SDU Length.
+                    max_payload_size = l2cap_channel->local_mps + 2u;
                     break;
+                case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
                     max_payload_size = l2cap_channel->local_mps;
