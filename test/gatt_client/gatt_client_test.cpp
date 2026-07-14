@@ -1122,6 +1122,19 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	CHECK_EQUAL(1, gatt_query_complete);
 }
 
+TEST(GATTClient, uuid128_apis_reject_null_uuid){
+    status = gatt_client_discover_primary_services_by_uuid128(handle_ble_client_event, gatt_client_handle, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = gatt_client_discover_characteristics_for_handle_range_by_uuid128(handle_ble_client_event,
+                                                                                gatt_client_handle, 1, 0xffff, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = gatt_client_read_value_of_characteristics_by_uuid128(handle_ble_client_event, gatt_client_handle, 1,
+                                                                    0xffff, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+}
+
 TEST(GATTClient, gatt_client_write_long_value_of_characteristic_with_offset){
 	reset_query_state();
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);

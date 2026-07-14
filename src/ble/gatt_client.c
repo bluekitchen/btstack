@@ -2958,6 +2958,9 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
 
 uint8_t gatt_client_discover_primary_services_by_uuid128_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                       const uint8_t * uuid128, uint16_t service_id, uint16_t connection_id){
+    if (uuid128 == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3052,6 +3055,9 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
 }
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
+    if (uuid128 == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3160,6 +3166,9 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
 }
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
+    if (uuid128 == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
