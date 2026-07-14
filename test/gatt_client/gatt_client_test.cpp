@@ -1200,6 +1200,18 @@ TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descripto
 
 TEST(GATTClient, gatt_client_read_multiple_characteristic_values){
 	reset_query_state();
+    gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+    gatt_client->mtu = ATT_DEFAULT_MTU;
+
+	uint16_t value_handles[] = {characteristics[0].value_handle};
+	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, gatt_client_handle, 0, value_handles);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, gatt_client_handle, 1, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, gatt_client_handle, 12, value_handles);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+	reset_query_state();
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
@@ -1211,7 +1223,7 @@ TEST(GATTClient, gatt_client_read_multiple_characteristic_values){
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
-	uint16_t value_handles[] = {characteristics[0].value_handle};
+	value_handles[0] = characteristics[0].value_handle;
 
 	reset_query_state();
 	status = gatt_client_read_multiple_characteristic_values(handle_ble_client_event, gatt_client_handle, 1, value_handles);

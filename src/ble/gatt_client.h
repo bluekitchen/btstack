@@ -824,7 +824,7 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_of
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles);
+uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t num_value_handles, uint16_t * value_handles);
 
 /*
  * @brief Read multiple varaible characteristic values. Only supported over LE Enhanced Bearer
@@ -838,7 +838,7 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered
  */
-uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles);
+uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t num_value_handles, uint16_t * value_handles);
 
 /**
  * @brief Writes the characteristic value using the characteristic's value handle without 
