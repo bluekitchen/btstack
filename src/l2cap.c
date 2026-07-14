@@ -3370,6 +3370,11 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                     channel->remote_monitor_timeout_ms = little_endian_read_16(command, pos + 5);
                     {
                         uint16_t remote_mps = little_endian_read_16(command, pos + 7);
+                        if (remote_mps < L2CAP_MINIMAL_MTU) {
+                            log_info("ERTM: invalid remote MPS %u", remote_mps);
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                            return;
+                        }
                         // optimize our tx buffer configuration based on actual remote mps if remote mps is smaller than planned
                         if (remote_mps < channel->remote_mps){
                             // get current tx storage
