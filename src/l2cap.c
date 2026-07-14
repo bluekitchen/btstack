@@ -5535,6 +5535,10 @@ uint8_t l2cap_cbm_unregister_service(uint16_t psm) {
 }
 
 uint8_t l2cap_cbm_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
+    if ((receive_sdu_buffer == NULL) || (mtu < L2CAP_LE_DEFAULT_MTU)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     // get channel
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -5622,6 +5626,10 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
     static bool sm_callback_registered = false;
 
     log_info("create, handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
+
+    if ((receive_sdu_buffer == NULL) || (mtu < L2CAP_LE_DEFAULT_MTU)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
 
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) {

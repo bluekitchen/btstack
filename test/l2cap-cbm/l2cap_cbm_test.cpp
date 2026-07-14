@@ -243,6 +243,17 @@ TEST(L2CAP_CHANNELS, outgoing_no_connection){
                             sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
 }
 
+TEST(L2CAP_CHANNELS, outgoing_rejects_invalid_receive_buffer){
+    hci_setup_test_connections_fuzz();
+    uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, NULL,
+                                              sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
+                                       L2CAP_LE_DEFAULT_MTU - 1, L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+}
+
 TEST(L2CAP_CHANNELS, outgoing_security_1){
     hci_setup_test_connections_fuzz();
     l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
