@@ -1405,6 +1405,20 @@ TEST(GATTClient, invalid_remote_mtu_response_keeps_safe_mtu){
     CHECK_EQUAL(MTU_AUTO_EXCHANGE_DISABLED, gatt_client->mtu_state);
 }
 
+TEST(GATTClient, truncated_read_by_type_response_is_rejected){
+    reset_query_state();
+    gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+    gatt_client->callback = handle_ble_client_event;
+    gatt_client->state = P_W4_READ_BY_TYPE_RESPONSE;
+
+    uint8_t packet[] = { ATT_READ_BY_TYPE_RESPONSE };
+    gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, gatt_client_handle, packet, sizeof(packet));
+
+    CHECK_EQUAL(P_READY, gatt_client->state);
+    CHECK_EQUAL(1, gatt_query_complete);
+    CHECK_EQUAL(ATT_ERROR_INVALID_PDU, gatt_query_complete_status);
+}
+
 TEST(GATTClient, gatt_client_get_mtu){
 	reset_query_state();
 	uint16_t mtu;

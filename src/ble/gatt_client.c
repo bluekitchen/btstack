@@ -2272,6 +2272,11 @@ static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_cli
             break;
 #endif
         case P_W4_READ_BY_TYPE_RESPONSE: {
+            if (size < 2u){
+                log_info("GATT client: truncated Read By Type response");
+                gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_INVALID_PDU);
+                break;
+            }
             uint16_t pair_size = packet[1];
             // set last result handle to last valid handle, only used if pair_size invalid
             uint16_t last_result_handle = 0xffff;
