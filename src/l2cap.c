@@ -935,7 +935,7 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
             // assert size of reassembled data <= our mtu
-            if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
+            if (((uint32_t) l2cap_channel->reassembly_pos + size) > l2cap_channel->local_mtu) break;
             // store continuation segment
             (void)memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos],
                          payload, size);
@@ -943,7 +943,7 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
             // assert size of reassembled data <= our mtu
-            if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
+            if (((uint32_t) l2cap_channel->reassembly_pos + size) > l2cap_channel->local_mtu) break;
             // store continuation segment
             (void)memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos],
                          payload, size);
