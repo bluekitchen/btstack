@@ -217,17 +217,18 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    // clear l2cap_cid in att_server
+                    // find att_server before it clears the l2cap_cid
                     l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     att_server = att_dispatch_att_server_for_l2cap_cid(l2cap_cid);
                     // Assert att_server found (defense-in-depth)
                     btstack_assert(att_server != NULL);
+                    // dispatch to server before clearing the l2cap_cid
+                    if (subscriptions[ATT_SERVER].packet_handler != NULL){
+                        subscriptions[ATT_SERVER].packet_handler(packet_type, channel, packet, size);
+                    }
                     att_server->l2cap_cid = 0;
-                    // dispatch to all roles
-                    for (index = 0; index < ATT_MAX; index++){
-                        if (subscriptions[index].packet_handler != NULL){
-                            subscriptions[index].packet_handler(packet_type, channel, packet, size);
-                        }
+                    if (subscriptions[ATT_CLIENT].packet_handler != NULL){
+                        subscriptions[ATT_CLIENT].packet_handler(packet_type, channel, packet, size);
                     }
                     break;
 #endif
