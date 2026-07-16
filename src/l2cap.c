@@ -591,7 +591,11 @@ static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t 
 }
 
 static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_config){
-    
+    if (ertm_config == NULL){
+        log_error("ERTM config must not be NULL");
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     uint8_t result = ERROR_CODE_SUCCESS;
     if (ertm_config->max_transmit < 1){
         log_error("max_transmit must be >= 1");
@@ -705,13 +709,13 @@ uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_ad
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
-    log_info("l2cap_ertm_create_channel addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
-
     // validate local config
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
     result = l2cap_ertm_validate_storage(ertm_config, buffer, size);
     if (result) return result;
+
+    log_info("l2cap_ertm_create_channel addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
 
     // determine security level based on psm
     const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
@@ -769,6 +773,8 @@ uint8_t l2cap_ertm_accept_connection(uint16_t local_cid, l2cap_ertm_config_t * e
 
     // validate local config
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
+    if (result) return result;
+    result = l2cap_ertm_validate_storage(ertm_config, buffer, size);
     if (result) return result;
 
     // configure L2CAP ERTM
