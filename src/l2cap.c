@@ -694,9 +694,13 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     buffer_space -= ertm_config->num_rx_buffers * 2u;
 
     // divide rest of data equally for initial config
-    uint16_t mps = buffer_space / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
-    channel->local_mps  = mps;
-    channel->remote_mps = mps;
+    uint32_t mps = buffer_space / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
+    // RX slots reserve two additional bytes for the START-frame SDU Length.
+    if (mps > (UINT16_MAX - 2u)){
+        mps = UINT16_MAX - 2u;
+    }
+    channel->local_mps  = (uint16_t) mps;
+    channel->remote_mps = (uint16_t) mps;
     l2cap_ertm_setup_buffers(channel, buffer, size);
 
     log_info("Local MPS: %u", channel->local_mps);
