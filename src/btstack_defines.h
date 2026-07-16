@@ -92,6 +92,22 @@
 #define UNUSED(x) (void)(x)
 #endif
 
+// Function annotation for functions that never return
+#if defined(__CC_ARM)
+#define BTSTACK_NORETURN __declspec(noreturn)
+#elif defined(_MSC_VER)
+#define BTSTACK_NORETURN __declspec(noreturn)
+#elif defined(__GNUC__) || defined(__clang__)
+#define BTSTACK_NORETURN __attribute__((noreturn))
+#elif defined(__cplusplus)
+#define BTSTACK_NORETURN [[noreturn]]
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#include <stdnoreturn.h>
+#define BTSTACK_NORETURN noreturn
+#else
+#define BTSTACK_NORETURN
+#endif
+
 // TYPES
 
 // packet handler
