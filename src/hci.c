@@ -1300,6 +1300,13 @@ static void acl_handler(uint8_t *packet, uint16_t size){
                 conn->acl_recombination_pos = 0;
             }
 
+            // A first ACL fragment must contain the complete L2CAP header before
+            // its advertised L2CAP length can be used for reassembly.
+            if (acl_length < 4u){
+                log_info("ACL first fragment shorter than L2CAP header for handle 0x%02x", con_handle);
+                return;
+            }
+
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
 

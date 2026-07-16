@@ -613,6 +613,16 @@ TEST(HCI, acl_handling) {
     packet_handler(HCI_ACL_DATA_PACKET, packet, 2000);
 }
 
+TEST(HCI, acl_first_fragment_requires_complete_l2cap_header) {
+    uint8_t packet[] = {
+        0x01, 0x20,
+        0x01, 0x00,
+        0x00,
+    };
+
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+}
+
 TEST(HCI, incoming_event_packet_bounds_check) {
     hci_event_callback_registration.callback = &test_hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
