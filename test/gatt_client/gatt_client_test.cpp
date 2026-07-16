@@ -1135,6 +1135,27 @@ TEST(GATTClient, uuid128_apis_reject_null_uuid){
     CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
 }
 
+TEST(GATTClient, struct_apis_reject_null_pointers){
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, gatt_client_handle, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = gatt_client_find_included_services_for_service(handle_ble_client_event, gatt_client_handle, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, NULL, 0x1800);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = gatt_client_read_value_of_characteristic(handle_ble_client_event, gatt_client_handle, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, NULL, 0);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = gatt_client_read_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = gatt_client_write_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, NULL, 0, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+}
+
 TEST(GATTClient, gatt_client_write_long_value_of_characteristic_with_offset){
 	reset_query_state();
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);

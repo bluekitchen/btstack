@@ -2994,6 +2994,9 @@ static void gatt_client_discover_characteristics_for_service_internal(gatt_clien
 
 uint8_t gatt_client_discover_characteristics_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service,
                                                                       uint16_t service_id, uint16_t connection_id){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3009,6 +3012,9 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
 
 uint8_t gatt_client_find_included_services_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                     gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3078,15 +3084,24 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack
 
 
 uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, uint16_t uuid16){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_discover_characteristics_for_handle_range_by_uuid16(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid16);
 }
 
 uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, const uint8_t * uuid128){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_discover_characteristics_for_handle_range_by_uuid128(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid128);
 }
 
 uint8_t gatt_client_discover_characteristic_descriptors_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                      gatt_client_characteristic_t * characteristic,  uint16_t service_id, uint16_t connection_id){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3189,6 +3204,9 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_hand
 
 
 uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
@@ -3226,6 +3244,9 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack
 }
 
 uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_long_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
@@ -3412,6 +3433,9 @@ static uint8_t gatt_client_write_client_characteristic_configuration_internal(ga
 
 uint8_t gatt_client_write_client_characteristic_configuration_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                               gatt_client_characteristic_t * characteristic, uint16_t configuration, uint16_t service_id, uint16_t connection_id){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3441,6 +3465,9 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
 }
 
 uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle);
 }
 
@@ -3464,6 +3491,9 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(
 }
 
 uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle);
 }
 
@@ -3489,6 +3519,9 @@ uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btst
 }
 
 uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_write_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, value_length, value);
 }
 
@@ -3518,6 +3551,9 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
 }
 
 uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, value_length, value);
 }
 
