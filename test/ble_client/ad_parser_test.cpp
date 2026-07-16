@@ -129,6 +129,13 @@ TEST(ADParser, TestAdvertisementEventMultipleReports){
     hci_le_handle_advertisement_report(adv_multi_packet, sizeof(adv_multi_packet));
 }
 
+TEST(ADParser, TestAdvertisementEventTruncatedFixedReport){
+    // One report is announced, but only its first field is present.
+    // The parser must not read the data-length field at offset + 8.
+    uint8_t truncated_report[] = { HCI_EVENT_LE_META, 3, HCI_SUBEVENT_LE_ADVERTISING_REPORT, 1, 0 };
+    hci_le_handle_advertisement_report(truncated_report, sizeof(truncated_report));
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

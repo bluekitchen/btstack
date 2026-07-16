@@ -1635,7 +1635,8 @@ void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size){
     uint16_t i;
     uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
     for (i=0; (i<num_reports) && (offset < size);i++){
-        // sanity checks on data_length:
+        // Validate the fixed report fields before reading data_length.
+        if ((offset + 9u) > size) return;
         uint8_t data_length = packet[offset + 8];
         if (data_length > LE_ADVERTISING_DATA_SIZE) return;
         if ((offset + 9u + data_length + 1u) > size)    return;
@@ -1664,7 +1665,8 @@ static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t si
     uint8_t event[2 + 255]; // use upper bound to avoid var size automatic var
     uint8_t i;
     for (i=0; (i<num_reports) && (offset < size);i++){
-        // sanity checks on data_length:
+        // Validate the fixed report fields before reading data_length.
+        if ((offset + 24u) > size) return;
         uint16_t data_length = packet[offset + 23];
         if (data_length > LE_EXTENDED_ADVERTISING_DATA_SIZE) return;
         if ((offset + 24u + data_length) > size)    return;
