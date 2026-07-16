@@ -5361,7 +5361,9 @@ static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
 
 static uint8_t l2cap_credit_based_send_data(l2cap_channel_t * channel, const uint8_t * data, uint16_t size){
 
-    if (size > channel->remote_mtu){
+    // send_sdu_pos also represents the two-byte SDU Length field.
+    uint16_t max_sdu_size = btstack_min(channel->remote_mtu, UINT16_MAX - 2u);
+    if (size > max_sdu_size){
         log_error("l2cap send, cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
