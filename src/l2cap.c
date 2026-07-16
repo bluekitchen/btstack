@@ -3488,18 +3488,20 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                         // optimize our tx buffer configuration based on actual remote mps if remote mps is smaller than planned
                         if (remote_mps < channel->remote_mps){
                             // get current tx storage
-                            uint16_t num_bytes_per_tx_buffer_before = sizeof(l2cap_ertm_tx_packet_state_t) + channel->remote_mps;
-                            uint16_t tx_storage = channel->num_tx_buffers * num_bytes_per_tx_buffer_before;
+                            uint32_t num_bytes_per_tx_buffer_before = (uint32_t) sizeof(l2cap_ertm_tx_packet_state_t) + channel->remote_mps;
+                            uint32_t tx_storage = channel->num_tx_buffers * num_bytes_per_tx_buffer_before;
 
                             channel->remote_mps = remote_mps;
-                            uint16_t num_bytes_per_tx_buffer_now = sizeof(l2cap_ertm_tx_packet_state_t) + channel->remote_mps;
-                            channel->num_tx_buffers = tx_storage / num_bytes_per_tx_buffer_now;
-                            uint32_t total_storage = (sizeof(l2cap_ertm_rx_packet_state_t) + channel->local_mps + 2u) * channel->num_rx_buffers + tx_storage + channel->local_mtu;
+                            uint32_t num_bytes_per_tx_buffer_now = (uint32_t) sizeof(l2cap_ertm_tx_packet_state_t) + channel->remote_mps;
+                            uint32_t num_tx_buffers = tx_storage / num_bytes_per_tx_buffer_now;
+                            channel->num_tx_buffers = (uint8_t) btstack_min(num_tx_buffers, UINT8_MAX);
+                            uint32_t total_storage = ((uint32_t) sizeof(l2cap_ertm_rx_packet_state_t) + channel->local_mps + 2u) * channel->num_rx_buffers +
+                                                     tx_storage + channel->local_mtu;
                             l2cap_ertm_setup_buffers(channel, (uint8_t *) channel->rx_packets_state, total_storage);
                         }
                         // limit remote mtu by our tx buffers. Include 2 bytes SDU Length
-                        uint16_t effective_mtu = channel->remote_mps * channel->num_tx_buffers - 2;
-                        channel->remote_mtu    = btstack_min( effective_mtu, channel->remote_mtu);
+                        uint32_t effective_mtu = (uint32_t) channel->remote_mps * channel->num_tx_buffers - 2u;
+                        channel->remote_mtu    = btstack_min((uint16_t) btstack_min(effective_mtu, UINT16_MAX), channel->remote_mtu);
                     }
                     log_info("FC&C config: tx window: %u, max transmit %u, retrans timeout %u, monitor timeout %u, mps %u",
                         channel->remote_tx_window_size,
