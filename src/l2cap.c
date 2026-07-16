@@ -3440,9 +3440,16 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         if ((option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) && (length == 2)){
             channel->remote_mtu = little_endian_read_16(command, pos);
             log_info("Remote MTU %u", channel->remote_mtu);
-            if (channel->remote_mtu > l2cap_max_mtu()){
-                log_info("Remote MTU %u larger than outgoing buffer, only using MTU = %u", channel->remote_mtu, l2cap_max_mtu());
-                channel->remote_mtu = l2cap_max_mtu();
+            uint16_t max_remote_mtu = l2cap_max_mtu();
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+            // ERTM I-frames add a two-byte control field and may add a two-byte FCS.
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                max_remote_mtu -= 4u;
+            }
+#endif
+            if (channel->remote_mtu > max_remote_mtu){
+                log_info("Remote MTU %u larger than outgoing buffer, only using MTU = %u", channel->remote_mtu, max_remote_mtu);
+                channel->remote_mtu = max_remote_mtu;
             }
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
