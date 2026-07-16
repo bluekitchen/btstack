@@ -1696,6 +1696,10 @@ uint16_t l2cap_max_le_mtu(void){
 }
 
 void l2cap_set_max_le_mtu(uint16_t max_mtu){
+    if (max_mtu < L2CAP_LE_DEFAULT_MTU){
+        log_error("max LE MTU must be >= %u", L2CAP_LE_DEFAULT_MTU);
+        return;
+    }
     if (max_mtu < l2cap_max_mtu()){
         l2cap_le_custom_max_mtu = max_mtu;
     }

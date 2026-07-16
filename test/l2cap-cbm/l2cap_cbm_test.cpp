@@ -271,6 +271,12 @@ TEST(L2CAP_CHANNELS, outgoing_rejects_invalid_receive_buffer){
     CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
 }
 
+TEST(L2CAP_CHANNELS, max_le_mtu_rejects_sub_minimum_value){
+    uint16_t max_le_mtu = l2cap_max_le_mtu();
+    l2cap_set_max_le_mtu(L2CAP_LE_DEFAULT_MTU - 1u);
+    CHECK_EQUAL(max_le_mtu, l2cap_max_le_mtu());
+}
+
 TEST(L2CAP_CHANNELS, outgoing_security_1){
     hci_setup_test_connections_fuzz();
     l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer,
