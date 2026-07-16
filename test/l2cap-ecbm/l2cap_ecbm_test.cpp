@@ -132,6 +132,10 @@ const uint8_t l2cap_enhanced_data_channel_classic_conn_response_2_success[] = {
         0xff, 0xff, 0x00, 0x00, 0x41, 0x00, 0x42, 0x00
 };
 
+const uint8_t l2cap_classic_connection_request[] = {
+        0x03, 0x20, 0x0c, 0x00, 0x08, 0x00, 0x01, 0x00, 0x02, 0x01, 0x04, 0x00, 0x01, 0x10, 0x41, 0x00
+};
+
 const uint8_t l2cap_enhanced_data_channel_le_credits[] = {
         0x05, 0x20, 0x0c, 0x00, 0x08, 0x00, 0x05, 0x00,  0x16, 0x02, 0x04, 0x00,  0x41, 0x00, 0x05, 0x00,
 };
@@ -328,6 +332,37 @@ TEST(L2CAP_CHANNELS, setup_api_errors){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     status = l2cap_ecbm_unregister_service(TEST_PSM);
     CHECK_EQUAL(L2CAP_SERVICE_DOES_NOT_EXIST, status);
+}
+
+TEST(L2CAP_CHANNELS, classic_connection_request_rejects_invalid_and_duplicate_source_cid){
+    hci_setup_test_connections_fuzz();
+    uint8_t status = l2cap_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    uint8_t packet[sizeof(l2cap_classic_connection_request)];
+    memcpy(packet, l2cap_classic_connection_request, sizeof(packet));
+
+    little_endian_store_16(packet, 14, L2CAP_CID_SIGNALING);
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    CHECK(mock_hci_transport_outgoing_packet_size > 0);
+    CHECK_EQUAL(CONNECTION_RESPONSE, mock_hci_transport_outgoing_packet_buffer[8]);
+    CHECK_EQUAL(L2CAP_CONNECTION_RESULT_INVALID_SOURCE_CID,
+                little_endian_read_16(mock_hci_transport_outgoing_packet_buffer, 16));
+
+    memcpy(packet, l2cap_classic_connection_request, sizeof(packet));
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    packet[9] = 2;
+    mock_hci_transport_outgoing_packet_size = 0;
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    CHECK(mock_hci_transport_outgoing_packet_size > 0);
+    CHECK_EQUAL(CONNECTION_RESPONSE, mock_hci_transport_outgoing_packet_buffer[8]);
+    CHECK_EQUAL(L2CAP_CONNECTION_RESULT_SOURCE_CID_ALREADY_ALLOCATED,
+                little_endian_read_16(mock_hci_transport_outgoing_packet_buffer, 16));
+
+    status = l2cap_unregister_service(TEST_PSM);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_le_2_success){

@@ -3260,6 +3260,26 @@ static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint8_t id
 static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig_id, uint16_t psm, uint16_t source_cid){
     
     // log_info("l2cap_handle_connection_request for handle %u, psm %u cid 0x%02x", handle, psm, source_cid);
+    if (source_cid < 0x0040u) {
+        log_info("Classic L2CAP: invalid source CID 0x%04x", source_cid);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid,
+                                          L2CAP_CONNECTION_RESULT_INVALID_SOURCE_CID);
+        return;
+    }
+
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (channel->con_handle != handle) continue;
+        if (channel->remote_cid != source_cid) continue;
+        log_info("Classic L2CAP: source CID 0x%04x already allocated", source_cid);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid,
+                                          L2CAP_CONNECTION_RESULT_SOURCE_CID_ALREADY_ALLOCATED);
+        return;
+    }
+
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CONNECTION_RESULT_PSM_NOT_SUPPORTED);
