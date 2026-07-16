@@ -701,6 +701,10 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
 uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm,
     l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
 
+    if (packet_handler == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     log_info("l2cap_ertm_create_channel addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
 
     // validate local config
@@ -1067,10 +1071,12 @@ void l2cap_deinit(void){
 }
 
 void l2cap_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    if ((callback_handler == NULL) || (callback_handler->callback == NULL)) return;
     btstack_linked_list_add_tail(&l2cap_event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
 void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    if (callback_handler == NULL) return;
     btstack_linked_list_remove(&l2cap_event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
@@ -2626,6 +2632,10 @@ static void l2cap_free_channel_entry(l2cap_channel_t * channel){
  */
 
 uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
+    if (channel_packet_handler == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     // limit MTU to the size of our outgoing HCI buffer
     uint16_t local_mtu = btstack_min(mtu, l2cap_max_mtu());
 
@@ -5223,6 +5233,10 @@ static void l2cap_update_minimal_security_level(void){
 uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
     log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u", psm, mtu);
+
+    if (service_packet_handler == NULL) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     
     // check for alread registered psm 
     l2cap_service_t *service = l2cap_get_service(psm);
@@ -5553,6 +5567,10 @@ static inline l2cap_service_t * l2cap_cbm_get_service(uint16_t le_psm){
 uint8_t l2cap_cbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, gap_security_level_t security_level){
     
     log_info("l2cap_cbm_register_service psm 0x%x", psm);
+
+    if (packet_handler == NULL) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     
     // check for alread registered psm 
     l2cap_service_t *service = l2cap_cbm_get_service(psm);
@@ -5684,7 +5702,7 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
 
     log_info("create, handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
 
-    if ((receive_sdu_buffer == NULL) || (mtu < L2CAP_LE_DEFAULT_MTU)){
+    if ((packet_handler == NULL) || (receive_sdu_buffer == NULL) || (mtu < L2CAP_LE_DEFAULT_MTU)){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
@@ -5749,6 +5767,10 @@ uint16_t l2cap_cbm_available_credits(uint16_t local_cid){
 uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu,
                                     gap_security_level_t security_level, bool authorization_required) {
 
+    if (packet_handler == NULL) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     // check for already registered psm
     l2cap_service_t *service = l2cap_ecbm_get_service(psm);
     if (service) {
@@ -5800,6 +5822,9 @@ uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_
 
     log_info("create enhanced, handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
 
+    if (packet_handler == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     if ((num_channels == 0u) || (num_channels > L2CAP_ECBM_MAX_CID_ARRAY_SIZE)){
         return ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS;
     }

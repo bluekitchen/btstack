@@ -136,6 +136,11 @@ const uint8_t l2cap_classic_connection_request[] = {
         0x03, 0x20, 0x0c, 0x00, 0x08, 0x00, 0x01, 0x00, 0x02, 0x01, 0x04, 0x00, 0x01, 0x10, 0x41, 0x00
 };
 
+const uint8_t l2cap_connection_parameter_update_request[] = {
+        0x05, 0x20, 0x10, 0x00, 0x0c, 0x00, 0x05, 0x00, 0x12, 0x01, 0x08, 0x00, 0x06, 0x00, 0x06, 0x00,
+        0x00, 0x00, 0x0a, 0x00
+};
+
 const uint8_t l2cap_enhanced_data_channel_le_credits[] = {
         0x05, 0x20, 0x0c, 0x00, 0x08, 0x00, 0x05, 0x00,  0x16, 0x02, 0x04, 0x00,  0x41, 0x00, 0x05, 0x00,
 };
@@ -319,11 +324,28 @@ TEST(L2CAP_CHANNELS, no_connection){
 
 TEST(L2CAP_CHANNELS, setup_api_errors){
     uint16_t cids[2];
+    bd_addr_t addr = { 0 };
     uint8_t status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
                                                     2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     hci_setup_test_connections_fuzz();
+    status = l2cap_register_service(NULL, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = l2cap_cbm_register_service(NULL, TEST_PSM, LEVEL_0);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = l2cap_ecbm_register_service(NULL, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0, false);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    status = l2cap_create_channel(NULL, addr, TEST_PSM, TEST_PACKET_SIZE, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = l2cap_cbm_create_channel(NULL, HCI_CON_HANDLE_TEST_LE, TEST_PSM, data_channel_buffer_1,
+                                      TEST_PACKET_SIZE, initial_credits, LEVEL_0, NULL);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+    status = l2cap_ecbm_create_channels(NULL, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
+                                        2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
     status = l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0, false);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     status = l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0, false);
@@ -332,6 +354,20 @@ TEST(L2CAP_CHANNELS, setup_api_errors){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     status = l2cap_ecbm_unregister_service(TEST_PSM);
     CHECK_EQUAL(L2CAP_SERVICE_DOES_NOT_EXIST, status);
+}
+
+TEST(L2CAP_CHANNELS, event_handler_registration_ignores_null_handlers){
+    btstack_packet_callback_registration_t null_callback_registration;
+    memset(&null_callback_registration, 0, sizeof(null_callback_registration));
+
+    l2cap_add_event_handler(NULL);
+    l2cap_add_event_handler(&null_callback_registration);
+
+    hci_setup_test_connections_fuzz();
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_connection_parameter_update_request,
+                                      sizeof(l2cap_connection_parameter_update_request));
+
+    l2cap_remove_event_handler(NULL);
 }
 
 TEST(L2CAP_CHANNELS, classic_connection_request_rejects_invalid_and_duplicate_source_cid){
