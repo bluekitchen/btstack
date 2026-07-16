@@ -310,6 +310,16 @@ TEST(HCI, hci_send_acl_packet_buffer_no_connection){
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 }
 
+TEST(HCI, hci_send_acl_packet_buffer_oversized){
+    hci_reserve_packet_buffer();
+    uint8_t status = hci_send_acl_packet_buffer(HCI_ACL_BUFFER_SIZE + 1u);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    // The failed send must release the prepared-packet reservation.
+    hci_reserve_packet_buffer();
+    hci_release_packet_buffer();
+}
+
 TEST(HCI, hci_send_acl_packet_buffer){
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_get_outgoing_packet_buffer();

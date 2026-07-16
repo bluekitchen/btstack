@@ -1011,6 +1011,12 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 uint8_t hci_send_acl_packet_buffer(int size){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
 
+    if (size > HCI_ACL_BUFFER_SIZE){
+        log_error("hci_send_acl_packet_buffer called with packet size %u > ACL buffer size %u", size, HCI_ACL_BUFFER_SIZE);
+        hci_release_packet_buffer();
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     uint8_t * packet = hci_stack->hci_packet_buffer;
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
 
