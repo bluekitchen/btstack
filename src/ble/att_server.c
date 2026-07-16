@@ -940,6 +940,7 @@ static void att_server_dispatch_packet_handler(uint8_t packet_type, uint16_t cha
 #ifdef ENABLE_GATT_OVER_CLASSIC
     hci_con_handle_t con_handle;
     bd_addr_t        address;
+    uint16_t         l2cap_cid;
     btstack_linked_list_iterator_t it;
 #endif
 
@@ -987,6 +988,22 @@ static void att_server_dispatch_packet_handler(uint8_t packet_type, uint16_t cha
                     }
                     // TODO: what to do about le device db?
                     att_server->pairing_active = 0;
+                    break;
+
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    hci_connections_get_iterator(&it);
+                    while(btstack_linked_list_iterator_has_next(&it)){
+                        hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+                        att_server = &hci_connection->att_server;
+                        if (att_server->l2cap_cid != l2cap_cid){
+                            continue;
+                        }
+                        att_server->l2cap_cid = 0;
+                        att_server->state = ATT_SERVER_IDLE;
+                        att_emit_disconnected_event(hci_connection->con_handle);
+                        break;
+                    }
                     break;
 #endif
                 case L2CAP_EVENT_CAN_SEND_NOW:
