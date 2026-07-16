@@ -948,6 +948,9 @@ static void att_server_dispatch_packet_handler(uint8_t packet_type, uint16_t cha
             switch (packet[0]){
 #ifdef ENABLE_GATT_OVER_CLASSIC
                 case L2CAP_EVENT_CHANNEL_OPENED:
+                    if (l2cap_event_channel_opened_get_status(packet) != ERROR_CODE_SUCCESS){
+                        break;
+                    }
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
                     hci_connection = hci_connection_for_handle(con_handle);
                     if (!hci_connection) break;
