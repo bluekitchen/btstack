@@ -5460,7 +5460,7 @@ static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const
     }
 
     // check sdu overrun
-    if ((l2cap_channel->receive_sdu_pos + fragment_size) > l2cap_channel->receive_sdu_len){
+    if (((uint32_t) l2cap_channel->receive_sdu_pos + fragment_size) > l2cap_channel->receive_sdu_len){
         log_info("(e)CBM: fragments larger than SDU");
         l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
         return;
