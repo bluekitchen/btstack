@@ -1349,6 +1349,23 @@ TEST(GATTClient, register_for_notification){
     gatt_client_stop_listening_for_service_characteristic_value_updates(&service_notification);
 }
 
+TEST(GATTClient, notification_registration_rejects_invalid_arguments){
+    gatt_client_notification_t notification;
+    gatt_client_service_notification_t service_notification;
+
+    gatt_client_listen_for_characteristic_value_updates(NULL, handle_ble_client_event, gatt_client_handle, NULL);
+    gatt_client_listen_for_characteristic_value_updates(&notification, NULL, gatt_client_handle, NULL);
+    gatt_client_stop_listening_for_characteristic_value_updates(NULL);
+
+    gatt_client_listen_for_service_characteristic_value_updates(NULL, handle_ble_client_event, gatt_client_handle,
+                                                                 &services[0], 0, 0);
+    gatt_client_listen_for_service_characteristic_value_updates(&service_notification, NULL, gatt_client_handle,
+                                                                 &services[0], 0, 0);
+    gatt_client_listen_for_service_characteristic_value_updates(&service_notification, handle_ble_client_event,
+                                                                 gatt_client_handle, NULL, 0, 0);
+    gatt_client_stop_listening_for_service_characteristic_value_updates(NULL);
+}
+
 TEST(GATTClient, gatt_client_signed_write_without_response){
 	reset_query_state();
 	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);

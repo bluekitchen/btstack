@@ -1575,6 +1575,9 @@ static void trigger_next_blob_query(gatt_client_t * gatt_client, gatt_client_sta
 }
 
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    if ((notification == NULL) || (callback == NULL)){
+        return;
+    }
     notification->callback = callback;
     notification->con_handle = con_handle;
     if (characteristic == NULL){
@@ -1586,6 +1589,9 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 }
 
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
+    if (notification == NULL){
+        return;
+    }
     btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
@@ -1595,6 +1601,9 @@ void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_ser
                                                                  gatt_client_service_t * service,
                                                                  uint16_t service_id,
                                                                  uint16_t connection_id){
+    if ((notification == NULL) || (callback == NULL) || (service == NULL)){
+        return;
+    }
     notification->callback = callback;
     notification->con_handle = con_handle;
     notification->start_group_handle = service->start_group_handle;
@@ -1610,6 +1619,9 @@ void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_ser
  * @param notification struct used in gatt_client_listen_for_characteristic_value_updates
  */
 void gatt_client_stop_listening_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification){
+    if (notification == NULL){
+        return;
+    }
     btstack_linked_list_remove(&gatt_client_service_value_listeners, (btstack_linked_item_t*) notification);
 }
 
