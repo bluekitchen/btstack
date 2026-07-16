@@ -1125,12 +1125,20 @@ static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle
     little_endian_store_16(acl_buffer, 6,  remote_cid);    
 }
 
+static bool l2cap_payload_fits_acl_buffer(uint16_t len, uint16_t trailer_size){
+    return len <= (HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE - trailer_size);
+}
+
 // assumption - only on LE connections
 uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){
         log_error("l2cap_send_prepared_connectionless called without reserving packet first");
         return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
+    if (!l2cap_payload_fits_acl_buffer(len, 0)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     if (!hci_can_send_prepared_acl_packet_now(con_handle)){
@@ -1150,6 +1158,10 @@ uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t
 uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len){
 
     if (data == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    if (!l2cap_payload_fits_acl_buffer(len, 0)){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
     
@@ -1573,6 +1585,10 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     }
 #endif
 
+    if (!l2cap_payload_fits_acl_buffer(len, fcs_size)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     // set non-flushable packet boundary flag if supported on Controller
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     uint8_t packet_boundary_flag = l2cap_classic_packet_boundary_flag();
@@ -1606,6 +1622,10 @@ static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
 
+    if (!l2cap_payload_fits_acl_buffer(len, 0)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
     if (!hci_can_send_acl_packet_now(channel->con_handle)){
         log_info("l2cap_send cid 0x%02x, cannot send", channel->local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
@@ -1619,6 +1639,10 @@ static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data
 
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len){
     if (data == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    // Reserve space for the L2CAP and signaling headers written by the serializer.
+    if (!l2cap_payload_fits_acl_buffer(len, L2CAP_SIGNALING_COMMAND_DATA_OFFSET)){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
     return l2cap_send_classic_signaling_packet(con_handle, ECHO_REQUEST, l2cap_next_sig_id(), len, data);
@@ -5255,7 +5279,8 @@ static void l2cap_credit_based_send_pdu(l2cap_channel_t *channel) {
         little_endian_store_16(l2cap_payload, pos, channel->send_sdu_len);
         pos += 2u;
     }
-    uint16_t payload_size = btstack_min(channel->send_sdu_len + 2u - channel->send_sdu_pos, channel->remote_mps - pos);
+    uint16_t effective_mps = btstack_min(channel->remote_mps, l2cap_max_le_mtu());
+    uint16_t payload_size = btstack_min(channel->send_sdu_len + 2u - channel->send_sdu_pos, effective_mps - pos);
     log_info("len %u, pos %u => payload %u, credits %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size,
              channel->credits_outgoing);
     (void) memcpy(&l2cap_payload[pos],

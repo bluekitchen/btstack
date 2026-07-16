@@ -201,6 +201,21 @@ TEST(L2CAP_CHANNELS, fixed_channel){
     l2cap_send_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL, (uint8_t *) "hallo", 5);
 }
 
+TEST(L2CAP_CHANNELS, fixed_channel_rejects_oversized_payload){
+    hci_setup_test_connections_fuzz();
+    uint16_t oversized_length = HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE + 1u;
+
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS,
+                l2cap_send_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL,
+                                          data_channel_buffer, oversized_length));
+
+    l2cap_reserve_packet_buffer();
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS,
+                l2cap_send_prepared_connectionless(HCI_CON_HANDLE_TEST_LE, L2CAP_CID_ATTRIBUTE_PROTOCOL,
+                                                    oversized_length));
+    l2cap_release_packet_buffer();
+}
+
 TEST(L2CAP_CHANNELS, some_functions){
     hci_setup_test_connections_fuzz();
     l2cap_reserve_packet_buffer();
@@ -344,6 +359,23 @@ TEST(L2CAP_CHANNELS, outgoing_response_with_invalid_mps_is_rejected){
 
     CHECK(l2cap_channel_opened);
     CHECK_EQUAL(L2CAP_CONNECTION_RESPONSE_UNKNOWN_ERROR, l2cap_channel_open_status);
+}
+
+TEST(L2CAP_CHANNELS, outgoing_response_with_oversized_mps_is_accepted){
+    hci_setup_test_connections_fuzz();
+    uint8_t status = l2cap_cbm_create_channel(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, TEST_PSM,
+                                              data_channel_buffer, sizeof(data_channel_buffer),
+                                              L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    uint8_t packet[sizeof(le_data_channel_conn_response_1)];
+    memcpy(packet, le_data_channel_conn_response_1, sizeof(packet));
+    little_endian_store_16(packet, 14, l2cap_max_le_mtu());
+    little_endian_store_16(packet, 16, l2cap_max_le_mtu() + 1u);
+    mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    CHECK(l2cap_channel_opened);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, l2cap_channel_open_status);
 }
 
 TEST(L2CAP_CHANNELS, outgoing_response_too_short){
