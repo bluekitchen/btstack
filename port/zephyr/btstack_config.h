@@ -9,11 +9,20 @@
 
 // Port related features
 
+// Zephyr's shared configuration enables SEGGER RTT for every supported board.
+// Use its down-channel to provide BTstack stdin support.
+#if defined(CONFIG_USE_SEGGER_RTT)
+#define ENABLE_SEGGER_RTT
+#define HAVE_BTSTACK_STDIN
+#endif
+
 // BTstack features that can be enabled
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_MODPLAYER
 #define ENABLE_PRINTF_HEXDUMP
+
+#define ENABLE_HCI_DUMP
 
 // Enable Classic/LE based on Zephyr Kconfig.
 #if defined(CONFIG_BTSTACK_ENABLE_BLE)
