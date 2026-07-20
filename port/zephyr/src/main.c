@@ -96,6 +96,11 @@ static void local_version_information_handler(uint8_t * packet){
             printf("Nordic Semiconductor nRF5 chipset.\n");
             hci_set_chipset(btstack_chipset_zephyr_instance());
             break;
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
+        case BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR:
+        case BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG:
+            printf("Broadcom/Cypress/Infineon Controller.\n");
+            break;
         default:
             printf("Unknown manufacturer.\n");
             break;
