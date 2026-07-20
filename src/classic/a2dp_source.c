@@ -202,6 +202,10 @@ uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_suspend_stream(avdtp_cid, local_seid);
 }
 
+uint8_t a2dp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
+    return avdtp_stop_stream(avdtp_cid, local_seid);
+}
+
 void a2dp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_source_stream_endpoint_request_can_send_now(avdtp_cid, local_seid);
 }
