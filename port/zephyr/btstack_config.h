@@ -22,8 +22,6 @@
 #define ENABLE_MODPLAYER
 #define ENABLE_PRINTF_HEXDUMP
 
-#define ENABLE_HCI_DUMP
-
 // Enable Classic/LE based on Zephyr Kconfig.
 #if defined(CONFIG_BTSTACK_ENABLE_BLE)
 #define ENABLE_BLE
