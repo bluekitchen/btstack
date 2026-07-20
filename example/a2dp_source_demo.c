@@ -886,7 +886,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_STOP:
-                    status = a2dp_source_disconnect(media_tracker.a2dp_cid);
+                    status = a2dp_source_stop_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 default:
                     break;
