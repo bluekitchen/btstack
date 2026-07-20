@@ -124,11 +124,20 @@ To build a different example, e.g. the `gatt_streamer_server`, set the
 EXAMPLE=gatt_streamer_server west build -b if310 -d build-if310 -p always
 ```
 
-### 3. Flash Example
+### 3. Flash Example with J-Link
+
+Install the [SEGGER J-Link Software](https://www.segger.com/downloads/jlink/),
+connect a J-Link probe to the IF310 DK's RP2040 SWD debug connector, and power
+the board. Flash the build with the J-Link runner:
 
 ```sh
-west flash -d build-if310
+west flash -d build-if310 --runner jlink
 ```
+
+The runner is preconfigured for the RP2040 (`RP2040_M0_0`) and uses SWD. If
+more than one J-Link probe is connected, select the intended probe with its
+serial number; use `west flash -d build-if310 --context -r jlink` to view the
+runner options.
 
 The IF310 build downloads the CYW55310 PatchRAM HCD file automatically if it is
 missing. The filename, pinned Ezurio `ifx_flasher` URL, and SHA256 are defined in
