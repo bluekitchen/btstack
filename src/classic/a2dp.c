@@ -396,7 +396,6 @@ static void a2dp_config_process_handle_media_configuration(avdtp_role_t role, co
             config_process->state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             break;
         case A2DP_W4_DISCOVER_SEPS:
-        case A2DP_W2_GET_ALL_CAPABILITIES:
         case A2DP_W4_GET_ALL_CAPABILITIES:
         case A2DP_DISCOVERY_DONE:
         case A2DP_W4_GET_CONFIGURATION:
