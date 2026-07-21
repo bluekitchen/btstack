@@ -179,9 +179,9 @@ static void hci_dump_buffered_log_message(int log_level, const char * format, va
     }
     uint16_t used_len = (uint16_t) btstack_min(sizeof(log_message_buffer) - 1,len);
     // strip trailing \n for messages caused by printf via ENABLE_PRINTF_TO_LOG
-    if ((log_level == HCI_DUMP_LOG_LEVEL_PRINT) && (log_message_buffer[len - 1] == '\n')) {
-        log_message_buffer[len - 1] = '\0';
-        len--;
+    if ((log_level == HCI_DUMP_LOG_LEVEL_PRINT) && (used_len > 0u) && (log_message_buffer[used_len - 1u] == '\n')) {
+        log_message_buffer[used_len - 1u] = '\0';
+        used_len--;
     }
     hci_dump_buffered_store_packet(LOG_MESSAGE_PACKET, 0, (uint8_t *) log_message_buffer, used_len);
 }

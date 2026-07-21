@@ -17,7 +17,7 @@ typedef struct {
     uint8_t packet_type;
     uint8_t in;
     uint16_t len;
-    uint8_t data[32];
+    uint8_t data[HCI_DUMP_MAX_MESSAGE_LEN];
 } logged_packet_t;
 
 static logged_packet_t logged_packets[8];
@@ -321,6 +321,25 @@ TEST(hci_dump, buffered_buffers_messages){
     CHECK_EQUAL(1, logged_message_count);
     CHECK_EQUAL(LOG_MESSAGE_PACKET, logged_packets[0].packet_type);
     STRCMP_EQUAL("test 7", (const char *) logged_packets[0].data);
+}
+
+TEST(hci_dump, buffered_print_message_bounds){
+    uint8_t buffer[HCI_DUMP_MAX_MESSAGE_LEN + 4];
+    char long_message[HCI_DUMP_MAX_MESSAGE_LEN + 1];
+    memset(long_message, 'a', sizeof(long_message) - 1u);
+    long_message[sizeof(long_message) - 1u] = '\0';
+
+    hci_dump_buffered_init(&hci_dump_instance_with_reset, buffer, sizeof(buffer), 0);
+    hci_dump_init(hci_dump_buffered_get_instance());
+
+    hci_dump_log(HCI_DUMP_LOG_LEVEL_PRINT, "");
+    hci_dump_log(HCI_DUMP_LOG_LEVEL_PRINT, "%s", long_message);
+    hci_dump_buffered_flush();
+
+    CHECK_EQUAL(2, logged_packet_count);
+    CHECK_EQUAL(0, logged_packets[0].len);
+    CHECK_EQUAL(HCI_DUMP_MAX_MESSAGE_LEN - 1, logged_packets[1].len);
+    CHECK_EQUAL('a', logged_packets[1].data[HCI_DUMP_MAX_MESSAGE_LEN - 2]);
 }
 
 TEST(hci_dump, buffered_reset_clears_buffer_and_forwards_reset){
