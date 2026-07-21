@@ -5267,13 +5267,17 @@ static void sco_handler(uint8_t * packet, uint16_t size){
                 // - avoid overrun
                 int received_payload_len = size - 3;
                 int outgoing_payload_len = hci_sco_packet_length_for_payload_length_and_voice_setting(conn->sco_payload_length, conn->sco_voice_setting) - 3;
-                int new_credits = received_payload_len / outgoing_payload_len;
-                if ((conn->sco_tx_ready + new_credits)< max_sco_packets){
-                    conn->sco_tx_ready += new_credits;
+                if (outgoing_payload_len == 0){
+                    log_info("SCO implicit flow control disabled: controller has no outgoing SCO payload space");
                 } else {
-                    conn->sco_tx_ready = max_sco_packets;
+                    int new_credits = received_payload_len / outgoing_payload_len;
+                    if ((conn->sco_tx_ready + new_credits)< max_sco_packets){
+                        conn->sco_tx_ready += new_credits;
+                    } else {
+                        conn->sco_tx_ready = max_sco_packets;
+                    }
+                    hci_notify_if_sco_can_send_now();
                 }
-                hci_notify_if_sco_can_send_now();
             }
         }
     }
