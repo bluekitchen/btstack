@@ -1634,6 +1634,8 @@ void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
 
 void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
+    if (size < 4u) return;
+
     uint16_t offset = 3;
     uint8_t num_reports = packet[offset];
     offset += 1;
@@ -1666,6 +1668,8 @@ void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
+    if (size < 4u) return;
+
     uint16_t offset = 3;
     uint8_t num_reports = packet[offset++];
     uint8_t event[2 + 255]; // use upper bound to avoid var size automatic var

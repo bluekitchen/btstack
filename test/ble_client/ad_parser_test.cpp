@@ -136,6 +136,12 @@ TEST(ADParser, TestAdvertisementEventTruncatedFixedReport){
     hci_le_handle_advertisement_report(truncated_report, sizeof(truncated_report));
 }
 
+TEST(ADParser, TestAdvertisementEventMissingReportCount){
+    // The LE Meta Event names the Advertising Report subevent but has no count.
+    uint8_t missing_report_count[] = { HCI_EVENT_LE_META, 1, HCI_SUBEVENT_LE_ADVERTISING_REPORT };
+    hci_le_handle_advertisement_report(missing_report_count, sizeof(missing_report_count));
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
