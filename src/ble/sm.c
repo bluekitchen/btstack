@@ -5667,9 +5667,13 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 #endif
 
 bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
      // wrong connection
-    if (!sm_conn) return false;
+    if (!hci_connection) return false;
+    // Classic connections do not use the LE IRK lookup or re-encryption procedure.
+    if (hci_connection->address_type == BD_ADDR_TYPE_ACL) return false;
+
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     // already encrypted
     if (sm_conn->sm_connection_encrypted) return false;
     // irk status?
