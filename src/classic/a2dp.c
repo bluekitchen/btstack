@@ -409,6 +409,16 @@ static void a2dp_config_process_handle_media_configuration(avdtp_role_t role, co
     }
 }
 
+static void a2dp_config_process_get_all_capabilities(avdtp_role_t role, avdtp_connection_t * connection){
+    a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
+    btstack_assert(a2dp_config_process_sep_discovery_index < a2dp_config_process_sep_discovery_count);
+
+    uint8_t remote_seid = a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].seid;
+    log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
+    config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
+    avdtp_get_all_capabilities(connection->avdtp_cid, remote_seid, role);
+}
+
 void a2dp_config_process_set_config(avdtp_role_t role, avdtp_connection_t *connection) {
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
     uint8_t local_seid  = avdtp_stream_endpoint_seid(config_process->local_stream_endpoint);
@@ -674,54 +684,9 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             config_process = a2dp_config_process_for_role(role, connection);
 
             if (config_process->state != A2DP_W4_GET_ALL_CAPABILITIES) break;
-            config_process->state = A2DP_DISCOVERY_DONE;
 
             // forward capabilities done for endpoint
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
-
-            // endpoint was not suitable, check next one if possible
-            a2dp_config_process_sep_discovery_index++;
-
-            if (a2dp_config_process_sep_discovery_index >= a2dp_config_process_sep_discovery_count){
-
-                // emit 'all capabilities for all seps reported'
-                uint8_t event[6];
-                uint8_t pos = 0;
-                event[pos++] = HCI_EVENT_A2DP_META;
-                event[pos++] = sizeof(event) - 2;
-                event[pos++] = A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE;
-                little_endian_store_16(event, pos, cid);
-                a2dp_emit_role(role, event, sizeof(event));
-
-                // do we have a valid config?
-                if (config_process->have_config){
-                    config_process->state = A2DP_W2_SET_CONFIGURATION;
-                    config_process->have_config = false;
-                    break;
-                }
-
-#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
-                config_process->state = A2DP_DISCOVERY_DONE;
-                // TODO call a2dp_discover_seps_with_next_waiting_connection?
-                break;
-#endif
-
-                // we didn't find a suitable SBC stream endpoint, sorry.
-                if (config_process->outgoing_active){
-                    config_process->state = A2DP_IDLE;
-                    config_process->outgoing_active = false;
-                    connection = avdtp_get_connection_for_avdtp_cid(cid);
-                    btstack_assert(connection != NULL);
-                    a2dp_emit_streaming_connection_failed_for_role(role, connection,
-                                                                 ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
-                } else {
-                    config_process->state = A2DP_CONNECTED;
-                    a2dp_config_process_sep_discovery_cid = 0;
-                    a2dp_config_process_discover_seps_with_next_waiting_connection();
-                }
-            } else {
-                config_process->state = A2DP_W2_GET_ALL_CAPABILITIES;
-            }
             break;
 
             // forward codec configuration
@@ -827,18 +792,61 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                         break;
                     }
 
-                    config_process->state = A2DP_W2_GET_ALL_CAPABILITIES;
                     a2dp_config_process_sep_discovery_index = 0;
                     config_process->have_config = false;
-                    // fall through
 
-                case A2DP_W2_GET_ALL_CAPABILITIES:
+                    a2dp_config_process_get_all_capabilities(role, connection);
+                    return;
+
+                case A2DP_W4_GET_ALL_CAPABILITIES:
                     if ((signal_identifier != AVDTP_SI_GET_CAPABILITIES) &&
                         (signal_identifier != AVDTP_SI_GET_ALL_CAPABILITIES)) break;
-                    config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
-                    remote_seid = a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].seid;
-                    log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
-                    avdtp_get_all_capabilities(cid, remote_seid, role);
+
+                    // All capability events for this SEP have been emitted.
+                    a2dp_config_process_sep_discovery_index++;
+
+                    if (a2dp_config_process_sep_discovery_index >= a2dp_config_process_sep_discovery_count){
+
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+                        config_process->state = A2DP_DISCOVERY_DONE;
+#endif
+
+                        // emit 'all capabilities for all seps reported'
+                        uint8_t event[6];
+                        uint8_t pos = 0;
+                        event[pos++] = HCI_EVENT_A2DP_META;
+                        event[pos++] = sizeof(event) - 2;
+                        event[pos++] = A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE;
+                        little_endian_store_16(event, pos, cid);
+                        a2dp_emit_role(role, event, sizeof(event));
+
+#ifdef ENABLE_A2DP_EXPLICIT_CONFIG
+                        break;
+#endif
+
+                        // do we have a valid config?
+                        if (config_process->have_config){
+                            config_process->state = A2DP_W2_SET_CONFIGURATION;
+                            config_process->have_config = false;
+                            a2dp_config_process_set_config(role, connection);
+                            return;
+                        }
+
+                        // we didn't find a suitable SBC stream endpoint, sorry.
+                        if (config_process->outgoing_active){
+                            config_process->state = A2DP_IDLE;
+                            config_process->outgoing_active = false;
+                            a2dp_emit_streaming_connection_failed_for_role(role, connection,
+                                                                             ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
+                        } else {
+                            config_process->state = A2DP_CONNECTED;
+                            a2dp_config_process_sep_discovery_cid = 0;
+                            a2dp_config_process_discover_seps_with_next_waiting_connection();
+                        }
+                        break;
+                    }
+
+                    a2dp_config_process_get_all_capabilities(role, connection);
                     return;
 
                 case A2DP_W2_SET_CONFIGURATION:
@@ -920,7 +928,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             if (signal_identifier == AVDTP_SI_DELAYREPORT)  break;
 
             switch (config_process->state){
-                case A2DP_W2_GET_ALL_CAPABILITIES:
+                case A2DP_W4_DISCOVER_SEPS:
                     if (signal_identifier != AVDTP_SI_DISCOVER) break;
                     config_process->state = A2DP_CONNECTED;
                     a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
