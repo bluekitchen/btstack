@@ -674,6 +674,9 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid){
 }
 
 uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
+    if (dst_size == 0u){
+        return 0;
+    }
     uint16_t bytes_to_copy = (uint16_t) btstack_min( dst_size - 1, (uint16_t) strlen(src));
     (void) memcpy(dst, src, bytes_to_copy);
     dst[bytes_to_copy] = 0;
@@ -681,8 +684,17 @@ uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
 }
 
 void btstack_strcat(char * dst, uint16_t dst_size, const char * src){
+    if (dst_size == 0u){
+        return;
+    }
     uint16_t src_len = (uint16_t) strlen(src);
-    uint16_t dst_len = (uint16_t) strlen(dst);
+    uint16_t dst_len = 0;
+    while ((dst_len < dst_size) && (dst[dst_len] != '\0')){
+        dst_len++;
+    }
+    if (dst_len == dst_size){
+        return;
+    }
     uint16_t bytes_to_copy = btstack_min( src_len, dst_size - dst_len - 1);
     (void) memcpy( &dst[dst_len], src, bytes_to_copy);
     dst[dst_len + bytes_to_copy] = 0;
@@ -754,6 +766,5 @@ uint16_t btstack_virtual_memcpy(
     memcpy(&buffer[(field_offset + skip_at_start) - buffer_offset], &field_data[skip_at_start], bytes_to_copy);
     return bytes_to_copy;
 }
-
 
 

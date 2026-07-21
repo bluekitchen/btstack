@@ -326,6 +326,24 @@ TEST(BTstackUtil, btstack_strcpy){
     MEMCMP_EQUAL(buffer, field_data, strlen(field_data));
 }
 
+TEST(BTstackUtil, btstack_string_copy_zero_sized_buffer){
+    char buffer[1] = { 0x55 };
+
+    CHECK_EQUAL(0, btstack_strcpy(buffer, 0, "test"));
+    CHECK_EQUAL(0x55, buffer[0]);
+
+    btstack_strcat(buffer, 0, "test");
+    CHECK_EQUAL(0x55, buffer[0]);
+}
+
+TEST(BTstackUtil, btstack_string_append_unterminated_buffer){
+    char buffer[4] = { 't', 'e', 's', 't' };
+
+    btstack_strcat(buffer, sizeof(buffer), " more");
+    const char expected[] = { 't', 'e', 's', 't' };
+    MEMCMP_EQUAL(expected, buffer, sizeof(buffer));
+}
+
 TEST(BTstackUtil, btstack_virtual_memcpy){
     uint16_t bytes_copied;
     const uint8_t field_data[] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
