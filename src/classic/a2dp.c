@@ -572,30 +572,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:
-            cid = avdtp_subevent_signaling_sep_dicovery_done_get_avdtp_cid(packet);
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
-            config_process = a2dp_config_process_for_role(role, connection);
-
-            if (config_process->state != A2DP_W4_DISCOVER_SEPS) break;
-
-            if (a2dp_config_process_sep_discovery_count > 0){
-                config_process->state = A2DP_W2_GET_ALL_CAPABILITIES;
-                a2dp_config_process_sep_discovery_index = 0;
-                config_process->have_config = false;
-            } else {
-                if (config_process->outgoing_active){
-                    config_process->outgoing_active = false;
-                    connection = avdtp_get_connection_for_avdtp_cid(cid);
-                    btstack_assert(connection != NULL);
-                    a2dp_emit_streaming_connection_failed_for_role(role, connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
-                }
-
-                // continue
-                config_process->state = A2DP_CONNECTED;
-                a2dp_config_process_sep_discovery_cid = 0;
-                a2dp_config_process_discover_seps_with_next_waiting_connection();
-            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
@@ -834,8 +810,29 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), config_process->state, cid);
 
             switch (config_process->state){
-                case A2DP_W2_GET_ALL_CAPABILITIES:
+                case A2DP_W4_DISCOVER_SEPS:
                     if (signal_identifier != AVDTP_SI_DISCOVER) break;
+
+                    if (a2dp_config_process_sep_discovery_count == 0){
+                        if (config_process->outgoing_active){
+                            config_process->outgoing_active = false;
+                            a2dp_emit_streaming_connection_failed_for_role(role, connection,
+                                                                             ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
+                        }
+
+                        // continue
+                        config_process->state = A2DP_CONNECTED;
+                        a2dp_config_process_sep_discovery_cid = 0;
+                        a2dp_config_process_discover_seps_with_next_waiting_connection();
+                        break;
+                    }
+
+                    config_process->state = A2DP_W2_GET_ALL_CAPABILITIES;
+                    a2dp_config_process_sep_discovery_index = 0;
+                    config_process->have_config = false;
+                    // fall through
+
+                case A2DP_W2_GET_ALL_CAPABILITIES:
                     config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
                     remote_seid = a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
