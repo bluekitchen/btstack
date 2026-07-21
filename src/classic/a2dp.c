@@ -323,7 +323,7 @@ static void a2dp_config_process_timer_stop(void){
 static void a2dp_config_process_start_discovering_seps(avdtp_role_t role, avdtp_connection_t *connection) {
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
 
-    config_process->state = A2DP_DISCOVER_SEPS;
+    config_process->state = A2DP_W4_DISCOVER_SEPS;
     config_process->discover_seps = false;
 
     a2dp_config_process_role = role;
@@ -395,7 +395,7 @@ static void a2dp_config_process_handle_media_configuration(avdtp_role_t role, co
             // outgoing: discovery and config of remote sink sep successful, trigger stream open
             config_process->state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             break;
-        case A2DP_DISCOVER_SEPS:
+        case A2DP_W4_DISCOVER_SEPS:
         case A2DP_W2_GET_ALL_CAPABILITIES:
         case A2DP_W4_GET_ALL_CAPABILITIES:
         case A2DP_DISCOVERY_DONE:
@@ -554,7 +554,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
 
-            if (config_process->state == A2DP_DISCOVER_SEPS) {
+            if (config_process->state == A2DP_W4_DISCOVER_SEPS) {
                 avdtp_sep_t sep;
                 memset(&sep, 0, sizeof(avdtp_sep_t));
                 sep.seid       = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
@@ -577,7 +577,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             btstack_assert(connection != NULL);
             config_process = a2dp_config_process_for_role(role, connection);
 
-            if (config_process->state != A2DP_DISCOVER_SEPS) break;
+            if (config_process->state != A2DP_W4_DISCOVER_SEPS) break;
 
             if (a2dp_config_process_sep_discovery_count > 0){
                 config_process->state = A2DP_W2_GET_ALL_CAPABILITIES;

@@ -530,7 +530,7 @@ typedef enum {
     A2DP_IDLE = 0,
     A2DP_W4_CONNECTED,
     A2DP_CONNECTED,
-    A2DP_DISCOVER_SEPS,
+    A2DP_W4_DISCOVER_SEPS,
     A2DP_W2_GET_ALL_CAPABILITIES,
     A2DP_W4_GET_ALL_CAPABILITIES,
     A2DP_DISCOVERY_DONE,
@@ -549,11 +549,17 @@ typedef enum {
 } a2dp_state_t;
 
 typedef struct {
-    bool         discover_seps;
-    bool         outgoing_active;
-    bool         have_config;
-    bool         stream_endpoint_configured;
+    // Configuration process state
     a2dp_state_t state;
+    // Stream Configuration initiated
+    bool         outgoing_active;
+    // Discover SEPSs requested
+    bool         discover_seps;
+    // Stream Endpoint configure
+    bool         stream_endpoint_configured;
+    // Configuration available
+    bool         have_config;
+    // Local Stream Endpoint matched to remote endpoint
     struct avdtp_stream_endpoint * local_stream_endpoint;
 } a2dp_config_process_t;
 
