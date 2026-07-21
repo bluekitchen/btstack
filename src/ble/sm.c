@@ -3841,10 +3841,8 @@ static void sm_connection_init(sm_connection_t * sm_conn, hci_con_handle_t con_h
     sm_conn->sm_le_db_index = -1;
     sm_conn->sm_reencryption_active = false;
 
-    // prepare CSRK lookup (does not involve setup)
-    sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
-
     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
+    sm_conn->sm_irk_lookup_state = IRK_LOOKUP_IDLE;
 }
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -4016,6 +4014,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                                addr_type,
                                                addr);
 			                sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
+
+			                // prepare CSRK lookup (does not involve setup)
+			                sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
 
 			                // track our addr used for this connection and set state
 #ifdef ENABLE_LE_PERIPHERAL
@@ -5668,7 +5669,7 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 
 bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-     // wrong connection
+    // wrong connection
     if (!hci_connection) return false;
     // Classic connections do not use the LE IRK lookup or re-encryption procedure.
     if (hci_connection->address_type == BD_ADDR_TYPE_ACL) return false;
