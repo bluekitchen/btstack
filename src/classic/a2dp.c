@@ -833,6 +833,8 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                     // fall through
 
                 case A2DP_W2_GET_ALL_CAPABILITIES:
+                    if ((signal_identifier != AVDTP_SI_GET_CAPABILITIES) &&
+                        (signal_identifier != AVDTP_SI_GET_ALL_CAPABILITIES)) break;
                     config_process->state = A2DP_W4_GET_ALL_CAPABILITIES;
                     remote_seid = a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
