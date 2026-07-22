@@ -17,6 +17,7 @@ COMMON = \
 	btstack_util.c		  \
 	btstack_linked_list.c \
 	hci_dump.c			  \
+    avrcp_media_item_iterator.c \
     avdtp_util.c         \
     avdtp_initiator.c
 
@@ -36,13 +37,16 @@ build-asan/avdtp_util_test: ${COMMON_OBJ_ASAN}
 build-asan/avdtp_acceptor_test: ${COMMON_CODEC_OBJ_ASAN} build-asan/avdtp_acceptor.o
 build-asan/codec_serialization_test: ${COMMON_CODEC_OBJ_ASAN}
 
-test: build-asan/avdtp_util_test build-asan/avdtp_acceptor_test build-asan/codec_serialization_test build-asan/a2dp_test
+test: build-asan/avdtp_util_test build-asan/avdtp_acceptor_test build-asan/codec_serialization_test build-asan/a2dp_test build-asan/avrcp_media_item_iterator_test
 	build-asan/avdtp_util_test
 	build-asan/avdtp_acceptor_test
 	build-asan/codec_serialization_test
 	build-asan/a2dp_test
+	build-asan/avrcp_media_item_iterator_test
 
 build-asan/a2dp_test: ${A2DP_TEST_OBJ_ASAN}
+
+build-asan/avrcp_media_item_iterator_test: build-asan/avrcp_media_item_iterator_test.o build-asan/avrcp_media_item_iterator.o build-asan/btstack_util.o build-asan/hci_dump.o
 
 coverage: build-coverage/avdtp_util_test.info
 

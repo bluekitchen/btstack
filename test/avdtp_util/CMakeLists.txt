@@ -28,6 +28,7 @@ set(SOURCES
         ../../src/btstack_util.c
         ../../src/hci_dump.c
         ../../src/hci_event_builder.c
+        ../../src/classic/avrcp_media_item_iterator.c
         ../../src/classic/avdtp_util.c
         ../../src/classic/avdtp_initiator.c
         ../../src/classic/avdtp_acceptor.c
