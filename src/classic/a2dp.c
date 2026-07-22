@@ -575,6 +575,10 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
                          a2dp_config_process_sep_discovery_count);
                 avdtp_sep_type_t matching_type = (role == AVDTP_ROLE_SOURCE) ? AVDTP_SINK : AVDTP_SOURCE;
                 if ((sep.type == matching_type) && (sep.in_use == false)) {
+                    if (a2dp_config_process_sep_discovery_count == AVDTP_MAX_SEP_NUM) {
+                        log_info("A2DP: ignoring SEP %u, discovery limit reached", sep.seid);
+                        break;
+                    }
                     a2dp_config_process_sep_discovery_seps[a2dp_config_process_sep_discovery_count++] = sep;
                 }
             }
