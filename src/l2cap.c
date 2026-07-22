@@ -1840,15 +1840,23 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
                     l2cap_send_classic_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id,
                                                         channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS,
                                                         channel->unknown_options_count, channel->unknown_options_list);
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                    uint16_t options_size = l2cap_setup_options_ertm_response(channel, config_options);
+                    uint16_t options_size;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                        options_size = l2cap_setup_options_ertm_response(channel, config_options);
+                    } else
+#endif
+                    {
+                        options_size = l2cap_setup_options_mtu_response(channel, config_options);
+                    }
                     l2cap_send_classic_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id,
                                                         channel->remote_cid, flags,
                                                         L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS, options_size,
                                                         &config_options);
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM);
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
@@ -3448,6 +3456,12 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         if ((option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) && (length == 2)){
             channel->remote_mtu = little_endian_read_16(command, pos);
             log_info("Remote MTU %u", channel->remote_mtu);
+            if (channel->remote_mtu < L2CAP_MINIMAL_MTU){
+                log_info("Classic L2CAP: invalid remote MTU %u", channel->remote_mtu);
+                channel->remote_mtu = L2CAP_MINIMAL_MTU;
+                channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                return;
+            }
             uint16_t max_remote_mtu = l2cap_max_mtu();
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
             // ERTM I-frames add a two-byte control field and may add a two-byte FCS.
