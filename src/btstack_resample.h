@@ -89,8 +89,9 @@ uint32_t btstack_resample_get_min_factor_for_output_capacity(uint16_t input_fram
 /**
  * @brief Process block of input samples
  * @note size of output buffer is not checked
+ * @pre num_frames > 0
  * @param input_buffer
- * @param num_frames
+ * @param num_frames number of input frames, must be greater than zero
  * @param output_buffer
  * @return number destination frames
  */
