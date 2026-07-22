@@ -475,28 +475,16 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
 #endif
         case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO;
-            if (value){
-                little_endian_store_32(event, pos, btstack_atoi((char *)value));
-            } else {
-                little_endian_store_32(event, pos, 0);
-            }
+            little_endian_store_32(event, pos, btstack_atoi_n((const char *) value, value_len));
             pos += 4;
             break;
         case AVRCP_MEDIA_ATTR_TRACK:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO;
-            if (value){
-                event[pos++] = btstack_atoi((char *)value);
-            } else {
-                event[pos++] = 0;
-            }
+            event[pos++] = (uint8_t) btstack_atoi_n((const char *) value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO;
-            if (value){
-                event[pos++] = btstack_atoi((char *)value);
-            } else {
-                event[pos++] = 0;
-            }
+            event[pos++] = (uint8_t) btstack_atoi_n((const char *) value, value_len);
             break;
         default:
             break;
