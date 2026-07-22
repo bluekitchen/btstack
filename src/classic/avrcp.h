@@ -635,6 +635,7 @@ typedef struct {
     uint8_t  parsed_attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];
     uint16_t parsed_attribute_value_len;
     uint16_t parsed_attribute_value_offset;
+    uint16_t parsed_attribute_value_received;
     uint8_t  parsed_num_attributes;
 
     // get folder items data
