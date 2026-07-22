@@ -124,7 +124,7 @@ To build a different example, e.g. the `gatt_streamer_server`, set the
 EXAMPLE=gatt_streamer_server west build -b if310 -d build-if310 -p always
 ```
 
-### 3. Flash Example with J-Link
+### 3a. Flash Example with west & J-Link
 
 Install the [SEGGER J-Link Software](https://www.segger.com/downloads/jlink/),
 connect a J-Link probe to the IF310 DK's RP2040 SWD debug connector, and power
@@ -142,6 +142,15 @@ runner options.
 The IF310 build downloads the CYW55310 PatchRAM HCD file automatically if it is
 missing. The filename, pinned Ezurio `ifx_flasher` URL, and SHA256 are defined in
 `chipset/bcm/btstack_cyw55310_patchram.cmake`.
+
+### 3b. Flash Example with Ozone & J-Link
+
+As the examples are configure to use SEGGER RTT as console, the easiest way to flash / debug / monitor the examples
+is to install SEGGER Ozone. Then, create a new project select 'RP2040_M0_0' as the MCU core and pick the file
+`build-if310/zephyr/zephyr.elf`. In the Optional settings, select 'Do not set' for both Initial PC as well as Initial
+Stack Pointer which is required due to the RP2040's Bootloader that first has to enable external QSPI flash.
+Please check if "Capture RTT" is enabled and click flash & run.
+
 
 ## BTstack Controller Feature Configuration
 
