@@ -440,19 +440,24 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
 }
 
 uint32_t btstack_atoi(const char * str){
-    const char * the_string = str;
+    return btstack_atoi_n(str, strlen(str));
+}
+
+uint32_t btstack_atoi_n(const char * str, size_t len){
     uint32_t val = 0;
-    while (true){
-        char chr = *the_string++;
+    size_t i;
+    for (i = 0; i < len; i++){
+        char chr = str[i];
         // skip whitespace
         if (((chr >= 0x09) && (chr <= 0x0d)) || (chr == ' ')) {
             continue;
         }
-        if (!chr || (chr < '0') || (chr > '9')){
-            return val;
+        if ((chr < '0') || (chr > '9')){
+            break;
         }
         val = (val * 10u) + (uint8_t)(chr - '0');
     }
+    return val;
 }
 
 int string_len_for_uint32(uint32_t i){
@@ -766,5 +771,4 @@ uint16_t btstack_virtual_memcpy(
     memcpy(&buffer[(field_offset + skip_at_start) - buffer_offset], &field_data[skip_at_start], bytes_to_copy);
     return bytes_to_copy;
 }
-
 

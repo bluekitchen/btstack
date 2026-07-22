@@ -82,6 +82,13 @@ TEST(btstack_util, sscanf_bd_addr ){
     bzero(addr, 6);
 }
 
+TEST(btstack_util, btstack_atoi_n){
+    const char number[] = { ' ', '1', '2', '3', 'x' };
+    CHECK_EQUAL(123, btstack_atoi_n(number, 4));
+    CHECK_EQUAL(123, btstack_atoi_n(number, sizeof(number)));
+    CHECK_EQUAL(12, btstack_atoi_n(number, 3));
+}
+
 TEST(btstack_util, btstack_printf_strlen){
     CHECK_EQUAL(4, btstack_printf_strlen("%04x", 0x1234));
 }

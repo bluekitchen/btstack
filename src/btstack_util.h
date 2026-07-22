@@ -301,11 +301,19 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
 bool uuid_has_bluetooth_prefix(const uint8_t * uuid128);
 
 /**
- * @brief Parse unsigned number 
- * @param str to parse
+ * @brief Parse an unsigned decimal number from a NUL-terminated string.
+ * @param str NUL-terminated string to parse.
  * @return value
  */
 uint32_t btstack_atoi(const char * str);
+
+/**
+ * @brief Parse an unsigned decimal number from a length-delimited string.
+ * @param str Byte sequence to parse; it does not need to be NUL-terminated.
+ * @param len Maximum number of bytes to parse.
+ * @return value
+ */
+uint32_t btstack_atoi_n(const char * str, size_t len);
 
 /**
  * @brief Return number of digits of a uint32 number
