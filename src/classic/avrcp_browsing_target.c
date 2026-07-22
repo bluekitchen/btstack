@@ -454,14 +454,6 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
     
-    // TODO: fragmentation
-    if (attr_list_size >  sizeof(connection->cmd_operands)){
-        connection->attr_list = attr_list;
-        connection->attr_list_size = attr_list_size;
-        log_info(" todo: list too big, invoke fragmentation");
-        return 1;
-    }
-
     uint16_t num_items_to_send = 0;
     if (connection->start_item < num_items) {
         if (connection->end_item < num_items) {
@@ -478,6 +470,13 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     pos += 2;
 
     if (num_items_to_send > 0){
+        // TODO: fragmentation
+        if (attr_list_size > (sizeof(connection->cmd_operands) - pos)){
+            connection->attr_list = attr_list;
+            connection->attr_list_size = attr_list_size;
+            log_info(" todo: list too big, invoke fragmentation");
+            return 1;
+        }
         (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
         pos += attr_list_size;
         param_length += attr_list_size;
@@ -601,7 +600,7 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
     pos += 2;
 
     // TODO: fragmentation
-    if (response_size >  sizeof(connection->cmd_operands)){
+    if (response_size > (sizeof(connection->cmd_operands) - pos)){
         connection->attr_list = response;
         connection->attr_list_size = response_size;
         log_info(" todo: list too big, invoke fragmentation");
