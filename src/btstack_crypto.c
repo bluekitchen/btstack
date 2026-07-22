@@ -160,8 +160,8 @@ static btstack_crypto_cmac_state_t btstack_crypto_cmac_state;
 static sm_key_t btstack_crypto_cmac_k;
 static sm_key_t btstack_crypto_cmac_x;
 static sm_key_t btstack_crypto_cmac_subkey;
-static uint8_t  btstack_crypto_cmac_block_current;
-static uint8_t  btstack_crypto_cmac_block_count;
+static uint16_t btstack_crypto_cmac_block_current;
+static uint16_t btstack_crypto_cmac_block_count;
 #endif
 
 // state for AES-CCM
