@@ -57,6 +57,7 @@
 #include "ble/sm.h"
 #endif
 
+#include <inttypes.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -5020,7 +5021,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                     break;
             }
             if (payload_len > max_payload_size){
-                log_info("payload len %u > max payload %u -> drop packet", payload_len, max_payload_size);
+                log_info("payload len %u > max payload %" PRIu32 " -> drop packet", payload_len, max_payload_size);
                 return;
             }
 
