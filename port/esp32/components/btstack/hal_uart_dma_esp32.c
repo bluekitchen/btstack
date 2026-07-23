@@ -16,10 +16,15 @@
 
 #include "driver/gpio.h"
 #include "driver/uart.h"
+#include "esp_idf_version.h"
 #include "esp_log.h"
 #include "sdkconfig.h"
 #include "hal/uart_ll.h"
+#if ESP_IDF_VERSION_MAJOR >= 6
+#include "hal/uart_periph.h"
+#else
 #include "soc/uart_periph.h"
+#endif
 #include "soc/uart_struct.h"
 
 #define UART_NO                  (CONFIG_BTSTACK_UART_NUM)
@@ -187,7 +192,7 @@ void hal_uart_dma_init(void) {
     esp_intr_alloc(uart_periph_signal[UART_NO].irq,
                    intr_alloc_flags,
                    hal_uart_dma_isr,
-                   UART_LL_GET_HW(UART_NO),
+                   (void *) UART_LL_GET_HW(UART_NO),
                    NULL);
 
     // configure TX Empty threshold
