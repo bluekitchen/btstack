@@ -729,6 +729,7 @@ uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_
 }
 
 uint8_t avrcp_target_support_companies(uint16_t avrcp_cid, uint8_t num_companies, const uint32_t *companies){
+    btstack_assert((num_companies == 0u) || (companies != NULL));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
