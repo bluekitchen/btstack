@@ -448,6 +448,13 @@ avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btsta
                                bd_addr_t remote_addr, uint8_t *ertm_buffer, uint32_t ertm_buffer_size,
                                const l2cap_ertm_config_t *ertm_config, uint16_t *avrcp_cover_art_cid) {
 
+    btstack_assert(cover_art_client != NULL);
+    btstack_assert(packet_handler != NULL);
+    btstack_assert(remote_addr != NULL);
+    btstack_assert(ertm_buffer != NULL);
+    btstack_assert(ertm_buffer_size > 0u);
+    btstack_assert(ertm_config != NULL);
+
     avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
     avrcp_connection_t * connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
     if ((connection_target == NULL) || (connection_controller == NULL)){
@@ -481,6 +488,9 @@ avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btsta
 }
 
 static uint8_t avrcp_cover_art_client_get_object(uint16_t avrcp_cover_art_cid, const char * object_type, const char * image_handle, const char * image_descriptor){
+    btstack_assert(object_type != NULL);
+    btstack_assert(image_handle != NULL);
+
     avrcp_cover_art_client_t * cover_art_client = avrcp_cover_art_client_for_cover_art_cid(avrcp_cover_art_cid);
     if (cover_art_client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

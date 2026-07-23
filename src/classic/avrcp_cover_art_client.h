@@ -128,11 +128,12 @@ void avrcp_cover_art_client_init(void);
 
 /**
  * @brief   Connect to AVRCP Cover Art service on a remote device, emits AVRCP_SUBEVENT_COVER_ART_CONNECTION_ESTABLISHED with status
- * @param   packet_handler
- * @param   remote_addr
- * @param   ertm_buffer
- * @param   ertm_buffer_size
- * @param   ertm_config
+ * @param   cover_art_client non-NULL caller-provided connection storage
+ * @param   packet_handler non-NULL callback for connection and operation events
+ * @param   remote_addr non-NULL remote Bluetooth address
+ * @param   ertm_buffer non-NULL ERTM storage, retained for the connection lifetime
+ * @param   ertm_buffer_size nonzero ERTM storage size
+ * @param   ertm_config non-NULL ERTM configuration, retained for the connection lifetime
  * @param   avrcp_cover_art_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @return status     
  */
@@ -145,7 +146,7 @@ uint8_t avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_clien
  *        - avrcp_controller_get_now_playing_info or
  *        - avrcp_controller_get_element_attributes(... AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART ...)
  * @param avrcp_cover_art_cid
- * @param image_handle
+ * @param image_handle non-NULL image-handle string, retained until the operation completes
  * @return status
  */
 uint8_t avrcp_cover_art_client_get_linked_thumbnail(uint16_t avrcp_cover_art_cid, const char * image_handle);
@@ -156,8 +157,8 @@ uint8_t avrcp_cover_art_client_get_linked_thumbnail(uint16_t avrcp_cover_art_cid
  *        - avrcp_controller_get_element_attributes(... AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART ...)
  *        and given image descriptor
  * @param avrcp_cover_art_cid
- * @param image_handle
- * @param image_descriptor
+ * @param image_handle non-NULL image-handle string, retained until the operation completes
+ * @param image_descriptor optional image-descriptor string, retained until the operation completes
  * @return status
  */
 uint8_t avrcp_cover_art_client_get_image(uint16_t avrcp_cover_art_cid, const char * image_handle, const char * image_descriptor);
@@ -167,7 +168,7 @@ uint8_t avrcp_cover_art_client_get_image(uint16_t avrcp_cover_art_cid, const cha
  *        - avrcp_controller_get_now_playing_info or
  *        - avrcp_controller_get_element_attributes(... AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART ...)
  * @param avrcp_cover_art_cid
- * @param image_handle
+ * @param image_handle non-NULL image-handle string, retained until the operation completes
  * @return status
  */
 uint8_t avrcp_cover_art_client_get_image_properties(uint16_t avrcp_cover_art_cid, const char * image_handle);
