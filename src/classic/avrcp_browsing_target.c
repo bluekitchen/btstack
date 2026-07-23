@@ -61,7 +61,7 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
     
     // l2cap_reserve_packet_buffer();
     // uint8_t * packet = l2cap_get_outgoing_buffer();
-    uint8_t packet[400];
+    uint8_t packet[sizeof(connection->cmd_operands) + 3u];
     connection->packet_type = AVRCP_SINGLE_PACKET;
 
     packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
