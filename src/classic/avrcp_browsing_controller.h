@@ -149,7 +149,7 @@ uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid,
 /**
  * @brief Retrives metadata information (title, artist, album, ...) about a media element with given uid. 
  * @param avrcp_browsing_cid
- * @param uid 			 media element uid 
+ * @param uid 			 non-NULL eight-byte media-element UID
  * @param uid_counter    Used to detect change to the media database on target device. A TG device that supports the UID Counter shall update the value of the counter on each change to the media database.
  * @param attr_bitmap    0x00000000 - retrieve all, chek avrcp_media_attribute_id_t in avrcp.h for detailed bit position description.
  * @param scope          check avrcp_browsing_scope_t in avrcp.h
