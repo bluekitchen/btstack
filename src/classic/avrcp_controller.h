@@ -329,6 +329,8 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
 /**
  * @brief Get info on now playing media using subset of attribute IDs
  * @param avrcp_cid
+ * @param num_attributes Number of attribute IDs.
+ * @param attributes Attribute IDs; must be non-NULL if `num_attributes` is nonzero.
  * @return status
  */
 uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_attributes, avrcp_media_attribute_id_t * attributes);
@@ -366,7 +368,9 @@ uint8_t avrcp_controller_skip(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id);
 
+/** `attr_ids` must be non-NULL when `attr_ids_num` is nonzero. */
 uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, avrcp_player_application_setting_attribute_id_t * attr_ids);
+/** `attr_id_values` must be non-NULL when `attr_id_values_num` is nonzero. */
 uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_id_values_num, uint8_t * attr_id_values);
 
 /**

@@ -2059,6 +2059,7 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
 }
 
 uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_attributes, avrcp_media_attribute_id_t * attributes){
+    btstack_assert((num_attributes == 0u) || (attributes != NULL));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -2218,6 +2219,7 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
 }
 
 uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, avrcp_player_application_setting_attribute_id_t * attr_ids){
+    btstack_assert((attr_ids_num == 0u) || (attr_ids != NULL));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -2233,13 +2235,16 @@ uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_
     connection->data_len = 1 + attr_ids_num;
     connection->data[0] = attr_ids_num;                     // NumPlayerApplicationSettingAttributeID
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
-    memcpy(&connection->data[2], (uint8_t *) attr_ids, attr_ids_num);
+    if (attr_ids_num > 0u){
+        memcpy(&connection->data[2], (uint8_t *) attr_ids, attr_ids_num);
+    }
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_id_values_num, uint8_t * attr_id_values){
+    btstack_assert((attr_id_values_num == 0u) || (attr_id_values != NULL));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -2262,7 +2267,9 @@ uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t av
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
     connection->data[0] = (uint8_t) attr_id;
     connection->data[1] = (uint8_t) attr_id_values_num;
-    memcpy(&connection->data[2], attr_id_values, attr_id_values_num);
+    if (attr_id_values_num > 0u){
+        memcpy(&connection->data[2], attr_id_values, attr_id_values_num);
+    }
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
