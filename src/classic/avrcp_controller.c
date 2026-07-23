@@ -1331,7 +1331,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CAPABILITY_ID_EVENT:
                             for (i = 0; (i < capability_count) && avrcp_controller_have_bytes(pos, payload_end, 1u); i++){
                                 uint8_t event_id = packet[pos++];
-                                connection->notifications_supported_by_target |= (1 << event_id);
+                                if ((event_id < AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) || (event_id > AVRCP_NOTIFICATION_EVENT_LAST_INDEX)){
+                                    log_info("AVRCP: ignore invalid notification event ID 0x%02x", event_id);
+                                    continue;
+                                }
+                                connection->notifications_supported_by_target |= (uint16_t)(1u << event_id);
                             }
 
                             connection->remote_capabilities_state = AVRCP_REMOTE_CAPABILITIES_KNOWN;
