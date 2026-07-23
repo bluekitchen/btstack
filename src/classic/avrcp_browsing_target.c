@@ -428,6 +428,8 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
 }
 
 uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size, uint16_t num_items){
+    btstack_assert((attr_list_size == 0u) || (attr_list != NULL));
+
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
@@ -530,6 +532,8 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_
 }
 
 uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint8_t * attr_list, uint16_t attr_list_size, uint8_t num_items){
+    btstack_assert((attr_list_size == 0u) || (attr_list != NULL));
+
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
@@ -576,6 +580,8 @@ uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_b
 }
 
 uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint16_t browsed_player_id, uint8_t * response, uint16_t response_size){
+    btstack_assert((response_size == 0u) || (response != NULL));
+
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
