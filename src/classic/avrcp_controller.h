@@ -437,8 +437,8 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
  * @param subunit_id
  * @param pdu_id
  * @param company_id
- * @param data
- * @param data_len
+ * @param data optional command payload, non-NULL when data_len is nonzero and retained until transmission completes
+ * @param data_len command payload length
  */
 uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, 
     avrcp_command_type_t command_type, 

@@ -2396,6 +2396,8 @@ uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid,
     avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
     avrcp_pdu_id_t pdu_id, uint32_t company_id, 
     const uint8_t * data, uint16_t data_len){
+
+    btstack_assert((data_len == 0u) || (data != NULL));
     
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
