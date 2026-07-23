@@ -71,7 +71,7 @@ void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief   Connect to AVRCP Browsing service on a remote device, emits AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED with status
- * @param   remote_addr
+ * @param   remote_addr Non-NULL remote Bluetooth address.
  * @param   ertm_buffer Non-NULL ERTM storage.
  * @param   ertm_buffer_size Nonzero ERTM storage size.
  * @param   ertm_config Non-NULL ERTM configuration.
