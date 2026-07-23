@@ -881,7 +881,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief   Connect to AVRCP service on a remote device, emits AVRCP_SUBEVENT_CONNECTION_ESTABLISHED with status
- * @param   remote_addr
+ * @param   remote_addr non-NULL remote Bluetooth address
  * @param   avrcp_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @return status     
  */

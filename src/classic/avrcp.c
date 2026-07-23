@@ -1183,6 +1183,7 @@ void avrcp_trigger_sdp_query(avrcp_connection_t *connection_controller, avrcp_co
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_controller_packet_handler != NULL);
     btstack_assert(avrcp_target_packet_handler != NULL);
+    btstack_assert(remote_addr != NULL);
 
     avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
     bool setup_active = false;
