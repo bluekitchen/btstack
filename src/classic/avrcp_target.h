@@ -149,7 +149,7 @@ uint8_t avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit
  * @brief Set Subunit Info
  * @param avrcp_cid
  * @param subunit_type
- * @param subunit_info_data
+ * @param subunit_info_data Subunit data; must not be NULL when `subunit_info_data_size` is nonzero.
  * @param subunit_info_data_size
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */

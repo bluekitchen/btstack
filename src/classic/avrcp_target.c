@@ -613,6 +613,7 @@ uint8_t avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit
 }
 
 uint8_t avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size){
+    btstack_assert((subunit_info_data_size == 0u) || (subunit_info_data != NULL));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
