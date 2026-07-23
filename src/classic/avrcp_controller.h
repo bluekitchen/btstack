@@ -369,6 +369,13 @@ uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_
 uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, avrcp_player_application_setting_attribute_id_t * attr_ids);
 uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_id_values_num, uint8_t * attr_id_values);
 
+/**
+ * @brief Inform the target about displayable character sets.
+ * @param avrcp_cid
+ * @param character_set_num Number of entries; limited to (AVRCP_MAX_COMMAND_PARAMETER_LENGTH - 1) / 2.
+ * @param character_set Character-set identifiers; must be non-NULL if character_set_num is nonzero.
+ * @return status
+ */
 uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set);
 uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 

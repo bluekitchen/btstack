@@ -2262,7 +2262,8 @@ uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t av
 }
 
 uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set){
-    btstack_assert(character_set_num > 4);
+    btstack_assert(character_set_num <= ((AVRCP_MAX_COMMAND_PARAMETER_LENGTH - 1u) / 2u));
+    btstack_assert((character_set_num == 0u) || (character_set != NULL));
 
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
@@ -2274,14 +2275,14 @@ uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uin
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_INFORM_DISPLAYABLE_CHARACTERSET, true);
 
     // Parameter Length
-    connection->data_len = character_set_num * 2;
+    connection->data_len = 1u + (uint16_t)character_set_num * 2u;
     uint8_t pos = 0;
 
     connection->data[pos++] = character_set_num;
     uint8_t i;
     for (i = 0; i < character_set_num; i++){
         little_endian_store_16(connection->data, pos, character_set[i]);
-        pos += i * 2;
+        pos += 2;
     }
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
