@@ -168,14 +168,15 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
 }
 
 static void avrcp_browsing_configure_ertm(avrcp_browsing_connection_t * browsing_connection, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
+    btstack_assert(ertm_buffer != NULL);
+    btstack_assert(ertm_buffer_size > 0u);
+    btstack_assert(ertm_config != NULL);
     browsing_connection->ertm_buffer = ertm_buffer;
     browsing_connection->ertm_buffer_size = ertm_buffer_size;
-    
-    if (ertm_buffer_size > 0) {
-        (void)memcpy(&browsing_connection->ertm_config, ertm_config,
+
+    (void)memcpy(&browsing_connection->ertm_config, ertm_config,
                  sizeof(l2cap_ertm_config_t));
-        log_info("avrcp_browsing_configure_ertm");
-    }
+    log_info("avrcp_browsing_configure_ertm");
 }
 
 static avrcp_browsing_connection_t * avrcp_browsing_handle_incoming_connection(avrcp_connection_t * connection, uint16_t local_cid, uint16_t avrcp_browsing_cid){
