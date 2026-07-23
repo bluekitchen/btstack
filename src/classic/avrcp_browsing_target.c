@@ -292,7 +292,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 pos += 4;
                                 // only store first 32 attribute ids
                                 if (attr_id < 32) {
-                                    browsing_connection->attr_bitmap |= (1 << attr_id);
+                                    browsing_connection->attr_bitmap |= (1u << attr_id);
                                 }
                                 attr_count--;
                             }
