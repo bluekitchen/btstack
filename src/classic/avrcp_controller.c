@@ -1922,6 +1922,7 @@ uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
+    btstack_assert((event_id >= AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) && (event_id <= AVRCP_NOTIFICATION_EVENT_LAST_INDEX));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1930,6 +1931,7 @@ uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notificat
 }
 
 uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
+    btstack_assert((event_id >= AVRCP_NOTIFICATION_EVENT_FIRST_INDEX) && (event_id <= AVRCP_NOTIFICATION_EVENT_LAST_INDEX));
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

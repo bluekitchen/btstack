@@ -313,7 +313,7 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid);
 /**
  * @brief Enable notification. Response via AVRCP_SUBEVENT_NOTIFICATION_STATE.
  * @param avrcp_cid
- * @param event_id
+ * @param event_id Valid AVRCP notification event ID.
  * @return status
  */
 uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
@@ -321,7 +321,7 @@ uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notificat
 /**
  * @brief Disable notification. Response via AVRCP_SUBEVENT_NOTIFICATION_STATE.
  * @param avrcp_cid
- * @param event_id
+ * @param event_id Valid AVRCP notification event ID.
  * @return status
  */
 uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
