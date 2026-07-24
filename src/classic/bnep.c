@@ -680,6 +680,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, u
 static void bnep_channel_timer_handler(btstack_timer_source_t *timer)
 {
     bnep_channel_t *channel = btstack_run_loop_get_timer_context(timer);
+    uint16_t l2cap_cid = channel->l2cap_cid;
     // retry send setup connection at least one time
     if (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE){
         if (channel->retry_count < BNEP_CONNECTION_MAX_RETRIES){
@@ -693,7 +694,9 @@ static void bnep_channel_timer_handler(btstack_timer_source_t *timer)
 
     log_info( "bnep_channel_timeout_handler callback: shutting down connection!");
     bnep_emit_channel_timeout(channel);
-    bnep_channel_finalize(channel);
+    if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
+        bnep_channel_finalize(channel);
+    }
 }
 
 
