@@ -275,6 +275,7 @@ static void avrcp_cover_art_goep_event_handler(const uint8_t *packet, uint16_t s
                         cover_art_cid = cover_art_client->cover_art_cid;
                         uint16_t avrcp_cid = cover_art_client->avrcp_cid;
                         bd_addr_t addr;
+                        // cppcheck-suppress uninitvar ; addr is the target
                         (void)memcpy(addr, cover_art_client->addr, sizeof(addr));
                         avrcp_cover_art_finalize_connection(cover_art_client);
                         avrcp_cover_art_client_emit_connection_established(packet_handler, status, addr, avrcp_cid, cover_art_cid);
