@@ -1642,12 +1642,16 @@ static void bnep_handle_can_send_now(uint16_t l2cap_cid){
         next = it->next;    // be prepared for removal of channel in state machine
         bnep_channel_t * channel = ((bnep_channel_t *) it);
         if (channel->l2cap_cid != l2cap_cid) continue;
-        //
+        uint16_t channel_l2cap_cid = channel->l2cap_cid;
         bnep_channel_event_t channel_event = { BNEP_CH_EVT_READY_TO_SEND };
         bnep_channel_state_machine(channel, &channel_event);
 
-        if (!l2cap_can_send_packet_now(channel->l2cap_cid)) {
-            l2cap_request_can_send_now_event(channel->l2cap_cid);
+        if (bnep_channel_for_l2cap_cid(channel_l2cap_cid) != channel) {
+            continue;
+        }
+
+        if (!l2cap_can_send_packet_now(channel_l2cap_cid)) {
+            l2cap_request_can_send_now_event(channel_l2cap_cid);
             return;
         }
     }
