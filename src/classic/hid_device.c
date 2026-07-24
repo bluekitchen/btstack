@@ -857,6 +857,8 @@ void hid_device_init(bool boot_protocol_mode_supported, uint16_t descriptor_len,
 }
 
 void hid_device_deinit(void){
+    // Test-only: the deinit functions of all protocols/profiles have to be called before a new init
+
     hid_device_callback = NULL;
     hci_device_get_report = NULL;
     hci_device_set_report = NULL;
