@@ -599,13 +599,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             hsp_ag_send_error = 1;
             if (!hsp_ag_callback) return;
 			if ((size + 4) > 255) return;
-            // re-use incoming buffer to avoid reserving buffers/memcpy - ugly but efficient
-			uint8_t * event = packet - 6;
+            uint8_t event[HCI_EVENT_BUFFER_SIZE];
             event[0] = HCI_EVENT_HSP_META;
             event[1] = (uint8_t) (size + 4);
             event[2] = HSP_SUBEVENT_HS_COMMAND;
             little_endian_store_16(event, 3, hsp_ag_rfcomm_handle);
             event[5] = (uint8_t) size;
+			memcpy(&event[6], packet, size);
             (*hsp_ag_callback)(HCI_EVENT_PACKET, 0, event, size+6);
         }
 
