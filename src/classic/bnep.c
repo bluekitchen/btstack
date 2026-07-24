@@ -169,10 +169,13 @@ static void bnep_emit_ready_to_send(bnep_channel_t *channel)
 {
     if (!channel->packet_handler) return;
 
-    uint8_t event[4];
+    uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
     event[0] = BNEP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->l2cap_cid);
+    little_endian_store_16(event, 4, channel->uuid_source);
+    little_endian_store_16(event, 6, channel->uuid_dest);
+    reverse_bd_addr(channel->remote_addr, &event[8]);
     hci_dump_btstack_event( event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
