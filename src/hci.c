@@ -4067,6 +4067,9 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                             if (status == ERROR_CODE_SUCCESS){
                                 cig->cis_established[i] = true;
                             } else {
+                                // hci_cis_handle_created finalizes the stream on error, so do not retain
+                                // a CIS handle for which no hci_iso_stream_t exists anymore.
+                                cig->cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
                                 hci_cis_handle_created(iso_stream, status);
                             }
                         }
@@ -11379,6 +11382,8 @@ static void hci_iso_notify_can_send_now(void){
         do {
             run_again = false;
             for (uint8_t i=0;i<cig->num_cis;i++){
+                // A failed CIS Established event finalizes its stream.
+                if (!cig->cis_established[i]) continue;
                 hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
                 // we grant can send now request if requested
                 if (iso_stream->can_send_now_requested) {
@@ -11569,7 +11574,7 @@ uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
         }
         cig->highest_outgoing_cis_index = 0;
         for (uint8_t i = 0; i<cig->num_cis;i++) {
-            if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
+            if (cig->cis_established[i] && (cig->params->cis_params[i].max_sdu_c_to_p > 0)) {
                 hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
                 btstack_assert(cis != NULL);
                 if (cis->state == HCI_ISO_STREAM_STATE_ACTIVE) {
