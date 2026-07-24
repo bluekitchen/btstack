@@ -1660,8 +1660,9 @@ void bnep_disconnect(bd_addr_t addr)
     log_info("BNEP_DISCONNECT");
 
     channel = bnep_channel_for_addr(addr);
-    
-    bnep_channel_finalize(channel);
+    if (channel != NULL) {
+        bnep_channel_finalize(channel);
+    }
 }
 
 
