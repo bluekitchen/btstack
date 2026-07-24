@@ -489,6 +489,9 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     bd_addr_t       addr_source;
     uint16_t        network_protocol_type;
 
+    btstack_assert(packet != NULL);
+    btstack_assert(len >= 14u);
+
     channel = bnep_channel_for_l2cap_cid(bnep_cid);
     if (channel == NULL) {
         log_error("bnep_send cid 0x%02x doesn't exist!", bnep_cid);
@@ -1716,4 +1719,3 @@ void bnep_unregister_service(uint16_t service_uuid)
     
     l2cap_unregister_service(BLUETOOTH_PSM_BNEP);
 }
-

@@ -190,6 +190,9 @@ void bnep_request_can_send_now_event(uint16_t bnep_cid);
 
 /**
  * @brief Send a data packet.
+ * @param bnep_cid BNEP channel identifier.
+ * @param packet Non-NULL Ethernet frame, including its 14-byte destination, source, and protocol header.
+ * @param len Frame size, at least 14 bytes.
  */
 int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len);
 
