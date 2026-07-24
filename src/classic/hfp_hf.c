@@ -1882,7 +1882,7 @@ void hfp_hf_deinit(void){
 
 void hfp_hf_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
-    if (codecs_nr > HFP_MAX_NUM_CODECS) return;
+    btstack_assert((codecs_nr == 0u) || (codecs != NULL));
 
     hfp_hf_codecs_nr = codecs_nr;
     uint8_t i;
@@ -1896,10 +1896,13 @@ void hfp_hf_init_supported_features(uint32_t supported_features){
 }
 
 void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
-    btstack_assert(hfp_hf_indicators_nr < HFP_MAX_NUM_INDICATORS);
+    btstack_assert((indicators_nr >= 0) && (indicators_nr <= HFP_MAX_NUM_INDICATORS));
+    btstack_assert((indicators_nr == 0) || (indicators != NULL));
 
     hfp_hf_indicators_nr = indicators_nr;
-    memcpy(hfp_hf_indicators, indicators, sizeof(uint16_t) * hfp_hf_indicators_nr);
+    if (indicators_nr != 0){
+        memcpy(hfp_hf_indicators, indicators, sizeof(uint16_t) * hfp_hf_indicators_nr);
+    }
 
     // store copy in hfp to setup hf_indicators_supported_by_ag during SLC
     hfp_set_hf_indicators(indicators_nr, hfp_hf_indicators);

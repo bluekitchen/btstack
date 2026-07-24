@@ -2419,6 +2419,8 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
 }
 
 void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators) {
+    btstack_assert(indicators_nr <= HFP_MAX_NUM_INDICATORS);
+    btstack_assert((indicators_nr == 0u) || (indicators != NULL));
     hfp_hf_indicators_nr = indicators_nr;
     hfp_hf_indicators = indicators;
 }
