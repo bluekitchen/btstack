@@ -806,6 +806,11 @@ static void bnep_channel_free(bnep_channel_t *channel)
 static void bnep_channel_finalize(bnep_channel_t *channel)
 {    
     uint16_t l2cap_cid;
+
+    if (channel->state_var & BNEP_CHANNEL_STATE_VAR_FINALIZING) {
+        return;
+    }
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_FINALIZING);
     
     /* Inform application about closed channel */
     if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) {
@@ -924,6 +929,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
 static bnep_control_packet_result_t bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet,
                                                                       uint16_t size, uint16_t * consumed)
 {
+    uint16_t l2cap_cid = channel->l2cap_cid;
     *consumed = 0;
 
     /* Sanity check packet size */
@@ -939,6 +945,7 @@ static bnep_control_packet_result_t bnep_handle_connection_response(bnep_channel
     }
 
     uint16_t response_code = big_endian_read_16(packet, 1);
+    *consumed = 1 + 2;
 
     if (response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) {
         log_info("BNEP_CONNECTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
@@ -946,13 +953,16 @@ static bnep_control_packet_result_t bnep_handle_connection_response(bnep_channel
         /* Stop timeout timer! */
         bnep_channel_stop_timer(channel);
         bnep_emit_open_channel_complete(channel, ERROR_CODE_SUCCESS, response_code);
-        *consumed = 1 + 2;
+        if (bnep_channel_for_l2cap_cid(l2cap_cid) != channel) {
+            return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
+        }
         return BNEP_CONTROL_PACKET_PROCESSED;
     } else {
         log_error("BNEP_CONNECTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
         bnep_emit_open_channel_complete(channel, BNEP_SETUP_CONNECTION_ERROR, response_code);
-        bnep_channel_finalize(channel);
-        *consumed = 1 + 2;
+        if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
+            bnep_channel_finalize(channel);
+        }
         return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
     }
 }
