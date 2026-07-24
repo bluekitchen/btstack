@@ -2883,6 +2883,11 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
     btstack_assert((call_hold_services_nr >= 0) && (call_hold_services_nr <= HFP_MAX_NUM_CALL_SERVICES));
     btstack_assert((call_hold_services_nr == 0) || (call_hold_services != NULL));
 
+    int i;
+    for (i = 0; i < call_hold_services_nr; i++){
+        btstack_assert(call_hold_services[i] != NULL);
+    }
+
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
     if (call_hold_services_nr != 0){
         (void)memcpy(hfp_ag_call_hold_services, call_hold_services,
