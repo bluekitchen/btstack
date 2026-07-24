@@ -1355,8 +1355,10 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 /* Emit bnep_open_channel_complete with status and free channel */
                 bnep_emit_open_channel_complete(channel, status, 0);
 
-                /* Free BNEP channel mempory */
-                bnep_channel_free(channel);
+                /* Free BNEP channel memory */
+                if (bnep_channel_for_addr(event_addr) == channel) {
+                    bnep_channel_free(channel);
+                }
                 return 1;
             }
 
@@ -1406,7 +1408,9 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE:
                     // emit channel open failed
                     bnep_emit_open_channel_complete(channel, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
-                    bnep_channel_finalize(channel);
+                    if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
+                        bnep_channel_finalize(channel);
+                    }
                     return 1;
                 case BNEP_CHANNEL_STATE_CONNECTED:
                     // emit channel closed
