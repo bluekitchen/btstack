@@ -420,6 +420,10 @@ static hid_handshake_param_type_t hid_device_set_report_cmd_is_valid(uint16_t ci
     int pos = 0;
     int report_id = 0;
 
+    if (report_size == 0) {
+        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+    }
+
     if (btstack_hid_report_id_declared(hid_device_descriptor, hid_device_descriptor_len)){
         report_id = report[pos++];
         hid_report_id_status_t report_id_status = hid_report_id_status(cid, report_id);
