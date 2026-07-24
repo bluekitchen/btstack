@@ -934,9 +934,12 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                     
                     status = l2cap_event_channel_opened_get_status(packet); 
                     if (status != ERROR_CODE_SUCCESS){
+                        uint16_t hid_cid = connection->hid_cid;
                         log_info("L2CAP connection %s failed: 0x%02xn", bd_addr_to_str(address), status);
                         hid_emit_connected_event(connection, status);
-                        hid_host_finalize_connection(connection);
+                        if (hid_host_get_connection_for_hid_cid(hid_cid) == connection) {
+                            hid_host_finalize_connection(connection);
+                        }
                         break;
                     }
                     
@@ -1033,8 +1036,12 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                     }
 
                     if (l2cap_cid == connection->control_cid){
+                        uint16_t hid_cid = connection->hid_cid;
                         connection->control_cid = 0;
                         hid_emit_event(connection, HID_SUBEVENT_CONNECTION_CLOSED);
+                        if (hid_host_get_connection_for_hid_cid(hid_cid) != connection) {
+                            break;
+                        }
                         hid_descriptor_storage_delete(connection);
                         hid_host_finalize_connection(connection);
                         break;
