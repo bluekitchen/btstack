@@ -748,6 +748,7 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
 
     channel->state = BNEP_CHANNEL_STATE_CLOSED;
     channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
+    channel->incoming_max_frame_size = UINT16_MAX;
     bd_addr_copy(channel->remote_addr, addr);
     gap_local_bd_addr(channel->local_addr);
 
@@ -910,6 +911,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         } else {
             // use packet handler for service
             channel->packet_handler = service->packet_handler;
+            channel->incoming_max_frame_size = service->max_frame_size;
 
             if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU)) {
                 response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
@@ -1152,6 +1154,12 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
 static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_dest, bd_addr_t addr_source, uint16_t network_protocol_type, uint8_t *payload, uint16_t size)
 {
     uint16_t pos = 0;
+    uint32_t ethernet_frame_size = (uint32_t) size + 2u * sizeof(bd_addr_t) + sizeof(uint16_t);
+
+    if (ethernet_frame_size > channel->incoming_max_frame_size) {
+        log_info("BNEP: Incoming ethernet frame size %u exceeds maximum %u", (unsigned int) ethernet_frame_size, channel->incoming_max_frame_size);
+        return 0;
+    }
     
 #if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 14 - 8) // 2 * sizeof(bd_addr_t) + sizeof(uint16_t) - L2CAP Header (4) - ACL Header (4)
     /* In-place modify the package and add the ethernet header in front of the payload.
