@@ -124,7 +124,7 @@ void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_in
 /**
  * @brief Set Call Hold services. 
  * @param call_hold_services_nr Number of entries, in the range 0 to HFP_MAX_NUM_CALL_SERVICES.
- * @param call_hold_services Array of non-NULL strings when call_hold_services_nr is nonzero.
+ * @param call_hold_services Array of non-NULL strings when call_hold_services_nr is nonzero. The serialized list, including parentheses and commas, must fit the generated response.
  */
 void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call_hold_services[]);
 

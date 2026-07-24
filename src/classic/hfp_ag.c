@@ -78,9 +78,13 @@ static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t 
 static void hfp_ag_emit_string_event_with_len(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value, uint16_t value_len);
 
 #define HFP_SUBEVENT_INVALID 0xFFFF
+#define HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE 40u
 
 // const
 static const char hfp_ag_default_service_name[] = "Voice gateway";
+static const char hfp_ag_call_hold_response_prefix[] = "\r\n" HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES ":";
+static const char hfp_ag_call_hold_response_footer[] = "\r\n\r\nOK\r\n";
+#define HFP_AG_CALL_HOLD_SERVICES_MAX_JOINED_LEN (HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE - sizeof(hfp_ag_call_hold_response_prefix) - sizeof(hfp_ag_call_hold_response_footer) + 1u)
 
 // globals
 
@@ -443,11 +447,12 @@ static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
 }
 
 static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
-    char buffer[40];
+    char buffer[HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE];
     const int size = sizeof(buffer);
-    int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
-    offset += hfp_ag_call_services_join(buffer+offset, size-offset-9);
-    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
+    const int footer_len = (int) sizeof(hfp_ag_call_hold_response_footer) - 1;
+    int offset = btstack_snprintf_assert_complete(buffer, size, "%s", hfp_ag_call_hold_response_prefix);
+    offset += hfp_ag_call_services_join(buffer + offset, size - offset - footer_len);
+    offset += btstack_snprintf_assert_complete(buffer + offset, size - offset, "%s", hfp_ag_call_hold_response_footer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -2879,6 +2884,18 @@ void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_in
     }
 }
 
+static size_t hfp_ag_call_hold_services_joined_len(int call_hold_services_nr, const char * call_hold_services[]){
+    size_t joined_len = 2u;
+    int i;
+    for (i = 0; i < call_hold_services_nr; i++){
+        joined_len += strlen(call_hold_services[i]);
+    }
+    if (call_hold_services_nr > 1){
+        joined_len += (size_t) call_hold_services_nr - 1u;
+    }
+    return joined_len;
+}
+
 void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call_hold_services[]){
     btstack_assert((call_hold_services_nr >= 0) && (call_hold_services_nr <= HFP_MAX_NUM_CALL_SERVICES));
     btstack_assert((call_hold_services_nr == 0) || (call_hold_services != NULL));
@@ -2887,6 +2904,7 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
     for (i = 0; i < call_hold_services_nr; i++){
         btstack_assert(call_hold_services[i] != NULL);
     }
+    btstack_assert(hfp_ag_call_hold_services_joined_len(call_hold_services_nr, call_hold_services) <= HFP_AG_CALL_HOLD_SERVICES_MAX_JOINED_LEN);
 
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
     if (call_hold_services_nr != 0){
