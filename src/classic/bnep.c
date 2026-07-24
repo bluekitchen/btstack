@@ -124,7 +124,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 3, channel->l2cap_cid);
     little_endian_store_16(event, 5, channel->uuid_source);
     little_endian_store_16(event, 7, channel->uuid_dest);
-    little_endian_store_16(event, 9, channel->max_frame_size);
+    little_endian_store_16(event, 9, channel->max_frame_size_outgoing);
     reverse_bd_addr(channel->remote_addr, &event[11]);
     little_endian_store_16(event, 17, channel->con_handle);
     event[19] = setup_connection_response;
@@ -562,8 +562,8 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     has_dest = (memcmp(addr_dest, channel->remote_addr, ETHER_ADDR_LEN) != 0);
 
     /* Check for MTU limits */
-    if (payload_len > channel->max_frame_size) {
-        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size, payload_len);
+    if (payload_len > channel->max_frame_size_outgoing) {
+        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size_outgoing, payload_len);
         return BNEP_DATA_LEN_EXCEEDS_MTU;
     }
     
@@ -747,8 +747,8 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
     }
 
     channel->state = BNEP_CHANNEL_STATE_CLOSED;
-    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
-    channel->incoming_max_frame_size = UINT16_MAX;
+    channel->max_frame_size_outgoing = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
+    channel->max_frame_size_incoming = UINT16_MAX;
     bd_addr_copy(channel->remote_addr, addr);
     gap_local_bd_addr(channel->local_addr);
 
@@ -911,7 +911,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         } else {
             // use packet handler for service
             channel->packet_handler = service->packet_handler;
-            channel->incoming_max_frame_size = service->max_frame_size;
+            channel->max_frame_size_incoming = service->max_frame_size_incoming;
 
             if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU)) {
                 response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
@@ -1156,8 +1156,8 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     uint16_t pos = 0;
     uint32_t ethernet_frame_size = (uint32_t) size + 2u * sizeof(bd_addr_t) + sizeof(uint16_t);
 
-    if (ethernet_frame_size > channel->incoming_max_frame_size) {
-        log_info("BNEP: Incoming ethernet frame size %u exceeds maximum %u", (unsigned int) ethernet_frame_size, channel->incoming_max_frame_size);
+    if (ethernet_frame_size > channel->max_frame_size_incoming) {
+        log_info("BNEP: Incoming ethernet frame size %u exceeds maximum %u", (unsigned int) ethernet_frame_size, channel->max_frame_size_incoming);
         return 0;
     }
     
@@ -1370,12 +1370,12 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                     /* Initiate the connection request */
                     channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE;
                     bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
-                    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
+                    channel->max_frame_size_outgoing = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
                     l2cap_request_can_send_now_event(channel->l2cap_cid);
                     break;
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST:
                     /* New information: channel mtu */
-                    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
+                    channel->max_frame_size_outgoing = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
                     break;
                 default:
                     log_error("L2CAP_EVENT_CHANNEL_OPENED: Invalid state: %d", channel->state);
@@ -1716,9 +1716,9 @@ void bnep_disconnect(bd_addr_t addr)
 }
 
 
-uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size)
+uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size_incoming)
 {
-    log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size);
+    log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size_incoming);
 
     /* Check if we already registered a service */
     bnep_service_t * service = bnep_service_for_uuid(service_uuid);
@@ -1744,7 +1744,7 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     l2cap_register_service(bnep_packet_handler, BLUETOOTH_PSM_BNEP, 0xffff, bnep_security_level);
         
     /* Setup the service struct */
-    service->max_frame_size = max_frame_size;
+    service->max_frame_size_incoming = max_frame_size_incoming;
     service->service_uuid    = service_uuid;
     service->packet_handler = packet_handler;
 

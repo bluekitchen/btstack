@@ -112,8 +112,8 @@ typedef struct {
 
     BNEP_CHANNEL_STATE_VAR state_var;     // State flag variable. Needed for asynchronous packet sending
 
-    uint16_t           max_frame_size;    // outgoing max. frame size
-    uint16_t           incoming_max_frame_size;
+    uint16_t           max_frame_size_outgoing;
+    uint16_t           max_frame_size_incoming;
     void              *connection;        // client connection
     bd_addr_t          local_addr;        // locale drvice address
 	bd_addr_t          remote_addr;       // remote device address
@@ -153,7 +153,7 @@ typedef struct {
 typedef struct {
     btstack_linked_item_t    item;           // linked list - assert: first field
     uint16_t         service_uuid;   // Service class: PANU, NAP, GN
-    uint16_t         max_frame_size; // incoming max. ethernet frame size
+    uint16_t         max_frame_size_incoming; // incoming max. ethernet frame size
     
     // internal connection
     btstack_packet_handler_t packet_handler;
@@ -227,7 +227,7 @@ void bnep_disconnect(bd_addr_t addr);
 /**
  * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter. 
  */
-uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size);
+uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size_incoming);
 
 /**
  * @brief Unregister BNEP service.
