@@ -3423,6 +3423,8 @@ uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok){
 }
 
 void hfp_ag_set_subscriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
+    btstack_assert(numbers_count >= 0);
+    btstack_assert((numbers_count == 0) || (numbers != NULL));
     hfp_ag_subscriber_numbers = numbers;
     hfp_ag_subscriber_numbers_count = numbers_count;
 }

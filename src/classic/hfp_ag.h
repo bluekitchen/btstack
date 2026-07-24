@@ -456,8 +456,8 @@ uint8_t hfp_ag_set_roaming_status(int roaming_status);
 
 /**
  * @brief Set subscriber number information, e.g. the phone number
- * @param numbers
- * @param numbers_count
+ * @param numbers Array of subscriber numbers; non-NULL when numbers_count is nonzero.
+ * @param numbers_count Number of entries; must be non-negative.
  */
 void hfp_ag_set_subscriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
