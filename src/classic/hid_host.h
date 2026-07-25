@@ -146,6 +146,8 @@ void hid_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_sto
 /**
  * @brief Register callback for the HID Host. 
  * @param callback
+ * @note HID Reports might be larger than what fits into regular HCI Event, i.e. the 8-bit lenght field might be invalid
+ *       Instead, you can use the provided uint16_t packet_size value
  */
 void hid_host_register_packet_handler(btstack_packet_handler_t callback);
 
