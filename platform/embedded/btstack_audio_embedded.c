@@ -323,4 +323,6 @@ const btstack_audio_source_t * btstack_audio_embedded_source_get_instance(void){
     return &btstack_audio_embedded_source;
 }
 
-#endif 
+#else
+typedef int btstack_audio_embedded_no_audio_placeholder_t;
+#endif
