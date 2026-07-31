@@ -107,9 +107,6 @@ list(TRANSFORM SOURCES_LWIP PREPEND ${BTSTACK_ROOT}/)
 #file(GLOB SOURCES_SRC_OFF "${BTSTACK_ROOT}/src/hci_transport_*.c")
 #list(REMOVE_ITEM SOURCES_SRC   ${SOURCES_SRC_OFF})
 
-file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/att_db_util.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
 list(APPEND SOURCES_LE_AUDIO "${BTSTACK_ROOT}/example/le_audio_demo_util_sink.c")
 list(APPEND SOURCES_LE_AUDIO "${BTSTACK_ROOT}/example/le_audio_demo_util_source.c")
 
@@ -124,7 +121,7 @@ set(SOURCES
     ${SOURCES_BLE}
     ${SOURCES_CLASSIC}
     ${SOURCES_GATT}
-#    ${SOURCES_LE_AUDIO}
+    ${SOURCES_LE_AUDIO}
     ${SOURCES_UECC}
     ${SOURCES_SEGGER_RTT}
     ${SOURCES_HXCMOD}
