@@ -5472,4 +5472,213 @@ typedef SSIZE_T ssize_t;
 #define MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT                                    0x57u
 
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_OTS_SERVER_CONNECTED                                        0x90u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_OTS_SERVER_DISCONNECTED                                     0x91u
+
+/**
+ * @format 1H11JV
+ * @param subevent_code
+ * @param con_handle
+ * @param filter_index
+ * @param filter_type
+ * @param data_length
+ * @param data
+ */
+#define LEAUDIO_SUBEVENT_OTS_SERVER_FILTER                                          0x92u
+
+
+/**
+ * @format 1H2144
+ * @param subevent_code
+ * @param con_handle
+ * @param ots_cid
+ * @param status
+ * @param oacp_features
+ * @param olcp_features
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_CONNECTED                                        0x96u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param ots_cid
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED                                     0x97u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param ots_cid
+ * @param ots_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_WRITE_DONE                                       0x98u
+
+/**
+ * @format 12441
+ * @param subevent_code
+ * @param ots_cid
+ * @param oacp_features
+ * @param olcp_features
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_FEATURES                                        0x99u
+
+/**
+ * @format 12JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_NAME                                      0x9Au
+
+/**
+ * @format 12JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_TYPE                                      0x9Bu
+
+/**
+ * @format 12441
+ * @param subevent_code
+ * @param ots_cid
+ * @param current_size
+ * @param allocated_size
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_SIZE                                      0x9Cu
+
+/**
+ * @format 122111111
+ * @param subevent_code
+ * @param ots_cid
+ * @param year
+ * @param month
+ * @param day
+ * @param hours
+ * @param minutes
+ * @param seconds
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED                             0x9Du
+
+/**
+ * @format 122111111
+ * @param subevent_code
+ * @param ots_cid
+ * @param year
+ * @param month
+ * @param day
+ * @param hours
+ * @param minutes
+ * @param seconds
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED                             0x9Eu
+
+/**
+ * @format 12JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_ID                                        0x9Fu
+
+/**
+ * @format 1241
+ * @param subevent_code
+ * @param ots_cid
+ * @param bitmask
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES                                0xA1u
+
+/**
+ * @format 1211JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param index
+ * @param type
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_FILTER                                            0xA2u
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param flags
+ * @param id_len
+ * @param id
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED                                   0xA3u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param ots_cid
+ * @param opcode
+ * @param result_code
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE                                    0xA4u
+ 
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param ots_cid
+ * @param opcode
+ * @param result_code
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE                                    0xA5u
+
+/**
+ * @format 121444
+ * @param subevent_code
+ * @param ots_cid
+ * @param state
+ * @param length
+ * @param offset
+ * @param bytes_transferred_num
+*/
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_DATA_CHUNK                                       0xA6u
+
+/**
+ * @format 122
+ * @param subevent_code
+ * @param ots_cid
+ * @param characterictic_uuid
+ */
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_TIMEOUT                                          0xA7u
+
+
+
+
 #endif

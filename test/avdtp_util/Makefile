@@ -1,6 +1,6 @@
 include ../common.make
 
-DEFINES := -DUNIT_TEST
+DEFINES := -DUNIT_TEST -DENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
 INCLUDES := -I${BTSTACK_ROOT}/src
 INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
@@ -32,10 +32,12 @@ build-coverage/avdtp_util_test: ${COMMON_OBJ_COVERAGE}
 build-coverage/codec_serialization_test: ${COMMON_CODEC_OBJ_COVERAGE}
 
 build-asan/avdtp_util_test: ${COMMON_OBJ_ASAN}
+build-asan/avdtp_acceptor_test: ${COMMON_CODEC_OBJ_ASAN} build-asan/avdtp_acceptor.o
 build-asan/codec_serialization_test: ${COMMON_CODEC_OBJ_ASAN}
 
-test: build-asan/avdtp_util_test build-asan/codec_serialization_test
+test: build-asan/avdtp_util_test build-asan/avdtp_acceptor_test build-asan/codec_serialization_test
 	build-asan/avdtp_util_test
+	build-asan/avdtp_acceptor_test
 	build-asan/codec_serialization_test
 
 coverage: build-coverage/avdtp_util_test.info

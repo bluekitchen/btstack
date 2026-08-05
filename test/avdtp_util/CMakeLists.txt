@@ -20,6 +20,7 @@ add_compile_options(-fsanitize=address,undefined)
 add_link_options(   -fsanitize=address,undefined)
 add_definitions(    -DCOVERAGE)
 add_definitions(    -DHAVE_ASSERT)
+add_definitions(    -DENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION)
 
 # common files
 set(SOURCES
@@ -29,6 +30,7 @@ set(SOURCES
         ../../src/hci_event_builder.c
         ../../src/classic/avdtp_util.c
         ../../src/classic/avdtp_initiator.c
+        ../../src/classic/avdtp_acceptor.c
 )
 
 

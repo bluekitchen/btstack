@@ -107,12 +107,28 @@ set(priv_include_dirs
     ${BTSTACK_ROOT}/3rd-party/micro-ecc
 )
 
+idf_build_get_property(idf_version_major IDF_VERSION_MAJOR)
+idf_build_get_property(idf_version_minor IDF_VERSION_MINOR)
+
+set(driver_requires)
+
+if(idf_version_major GREATER 5 OR
+   (idf_version_major EQUAL 5 AND idf_version_minor GREATER_EQUAL 3))
+    list(APPEND driver_requires
+        esp_driver_gpio
+        esp_driver_uart
+        esp_driver_i2s
+    )
+else()
+    list(APPEND driver_requires driver)
+endif()
+
 set(priv_requires
         "nvs_flash"
         "bt"
-        "driver"
         "lwip"
         "vfs"
+        ${driver_requires}
         )
 
 idf_component_register(
