@@ -162,7 +162,11 @@ static btstack_lc3plus_fraunhofer_decoder_t fraunhofer_decoder_contexts[MAX_CHAN
 #endif
 static void * decoder_contexts[MAX_CHANNELS];
 
-#ifdef HAVE_HAL_AUDIO_EXTERNAL_TRIGGER
+#if defined(HAVE_HAL_AUDIO_EXTERNAL_TRIGGER) && defined(HAVE_HAL_AUDIO_BLUETOOTH_TIME)
+#error "HAVE_HAL_AUDIO_EXTERNAL_TRIGGER and HAVE_HAL_AUDIO_BLUETOOTH_TIME are mutually exclusive"
+#endif
+
+#if defined(HAVE_HAL_AUDIO_EXTERNAL_TRIGGER) || defined(HAVE_HAL_AUDIO_BLUETOOTH_TIME)
 #define ENABLE_ACCURATE_PLAYBACK
 #endif
 
@@ -181,7 +185,9 @@ static bool sample_rate_compensation_started;
 
 // accurate playback
 static uint32_t le_audio_demo_util_sink_presentation_delay_us;
+#ifdef HAVE_HAL_AUDIO_EXTERNAL_TRIGGER
 static int32_t  le_audio_demo_util_sink_time_offset_us;
+#endif
 
 // generic playback
 #ifndef ENABLE_ACCURATE_PLAYBACK
@@ -221,7 +227,7 @@ static uint8_t le_audio_demo_util_sink_ringbuffer_available(uint8_t channel) {
 
 #ifdef ENABLE_ACCURATE_PLAYBACK
 
-// With external trigger, we can convert LE ISO timestamps to local time and provide sample accurate playback
+// With an external trigger or Bluetooth-time audio timestamps, we can provide sample-accurate playback.
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
     btstack_assert(context != NULL);
 
@@ -442,7 +448,10 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
 static void le_audio_demo_util_sink_store_packet(uint8_t stream_index, uint32_t sdu_sync_ref_us, const uint8_t * data, uint16_t len) {
 
 #ifdef ENABLE_ACCURATE_PLAYBACK
-    uint32_t start_time_us = sdu_sync_ref_us + le_audio_demo_util_sink_presentation_delay_us - le_audio_demo_util_sink_time_offset_us;
+    uint32_t start_time_us = sdu_sync_ref_us + le_audio_demo_util_sink_presentation_delay_us;
+#ifdef HAVE_HAL_AUDIO_EXTERNAL_TRIGGER
+    start_time_us -= le_audio_demo_util_sink_time_offset_us;
+#endif
     uint32_t duration_us = le_audio_demo_sink_frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US ? 10000 : 7500;
     uint32_t end_time_us = start_time_us + duration_us;
     UNUSED(end_time_us);
@@ -730,11 +739,14 @@ void le_audio_demo_util_sink_set_presentation_delay(uint32_t presentation_delay_
     le_audio_demo_util_sink_presentation_delay_us = presentation_delay_us;
 }
 
+#ifdef HAVE_HAL_AUDIO_EXTERNAL_TRIGGER
+// this should only be called when we have a iso time sync mechanism in place
 void le_audio_demo_util_sink_process_sync_event(uint32_t bluetooth_time_us, uint32_t local_time_us) {
     le_audio_demo_util_sink_time_offset_us = btstack_time_delta(bluetooth_time_us, local_time_us);
     log_info("ISO timestamp %010"PRIu32" us, local timestamp %010" PRIu32 " => offset %10" PRIi32" us\n",
         bluetooth_time_us, local_time_us, le_audio_demo_util_sink_time_offset_us);
 }
+#endif
 
 void le_audio_demo_util_sink_set_visualizer( void (*callback)(uint8_t num_channels, uint16_t num_samples, const int16_t * pcm)) {
     le_audio_demo_util_sink_visualizer = callback;
