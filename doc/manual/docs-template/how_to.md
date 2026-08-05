@@ -52,6 +52,8 @@ Embedded platform properties:
 | HAVE_EMBEDDED_TIME_MS                    | System provides time in milliseconds             |
 | HAVE_EMBEDDED_TICK                       | System provides tick interrupt                   |
 | HAVE_HAL_AUDIO                           | Audio HAL is available                           |
+| HAVE_HAL_AUDIO_<br>BLUETOOTH_TIME        | Audio driver uses same clock as Bluetooth ISO    |
+| HAVE_HAL_AUDIO_<br>EXTERNAL_TRIGGER      | Bluetooth time sync via command and GPIO toggle  |
 | HAVE_HAL_AUDIO_SINK_<br>BUFFER_CONTEXT   | Audio Sink provides playback time information    |
 | HAVE_HAL_AUDIO_SINK_<br>STEREO_ONLY      | Duplicate samples for mono playback              |
 | HAVE_HAL_AUDIO_SINK_<br>VOLUME_CONTROL   | Audio Sink provides volume control               |
