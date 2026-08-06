@@ -159,8 +159,10 @@ static void l2cap_run(void);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
 static uint8_t  l2cap_next_sig_id(void);
+#endif
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * channel);
@@ -993,6 +995,7 @@ static uint16_t l2cap_next_local_cid(void){
 }
 #endif
 
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
 static uint8_t l2cap_next_sig_id(void){
     if (l2cap_sig_seq_nr == 0xffu) {
         l2cap_sig_seq_nr = 1;
@@ -1001,6 +1004,7 @@ static uint8_t l2cap_next_sig_id(void){
     }
     return l2cap_sig_seq_nr;
 }
+#endif
 
 void l2cap_init(void){
 #ifdef L2CAP_USES_CHANNELS
@@ -1091,6 +1095,7 @@ void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callbac
     btstack_linked_list_remove(&l2cap_event_handlers, (btstack_linked_item_t*) callback_handler);
 }
 
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
 static void l2cap_emit_event(uint8_t *event, uint16_t size) {
     hci_dump_btstack_event( event, size);
     // dispatch to all event handlers
@@ -1101,6 +1106,7 @@ static void l2cap_emit_event(uint8_t *event, uint16_t size) {
         entry->callback(HCI_EVENT_PACKET, 0, event, size);
     }
 }
+#endif
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
     UNUSED(con_handle);  // ok: there is no con handle
@@ -1195,6 +1201,7 @@ uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uin
     return l2cap_send_prepared_connectionless(con_handle, cid, len);
 }
 
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel) {
     log_debug("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
     uint8_t event[4];
@@ -1204,6 +1211,7 @@ static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uin
     hci_dump_btstack_event( event, sizeof(event));
     packet_handler(HCI_EVENT_PACKET, channel, event, sizeof(event));
 }
+#endif
 
 #ifdef L2CAP_USES_CHANNELS
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
@@ -1509,6 +1517,7 @@ static void l2cap_stop_rtx(l2cap_channel_t * channel){
 }
 #endif
 
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
 static uint8_t l2cap_send_signaling_packet(hci_con_handle_t handle, uint8_t pb_flags, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, int identifier, va_list argptr){
     if (!hci_can_send_acl_packet_now(handle)){
         log_info("l2cap_send_classic_signaling_packet, cannot send");
@@ -1520,6 +1529,7 @@ static uint8_t l2cap_send_signaling_packet(hci_con_handle_t handle, uint8_t pb_f
     va_end(argptr);
     return hci_send_acl_packet_buffer(len);
 }
+#endif
 
 #ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
 static int l2cap_send_general_signaling_packet(hci_con_handle_t handle, uint16_t signaling_cid, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
@@ -3259,6 +3269,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     l2cap_run();
 }
 
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
 static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t code, uint8_t sig_id, uint16_t cid, uint16_t data){
     // Vol 3, Part A, 4.3: "The DCID and SCID fields shall be ignored when the result field indicates the connection was refused."
     if (l2cap_signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
@@ -3271,6 +3282,7 @@ static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t c
         l2cap_run();
     }
 }
+#endif
 
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint8_t identifier){
