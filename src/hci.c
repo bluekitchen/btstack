@@ -6405,7 +6405,7 @@ static void hci_update_scan_enable(void){
 }
 
 void gap_discoverable_control(uint8_t enable){
-    if (enable) enable = 1; // normalize argument
+    enable = !!enable // normalize argument
     
     if (hci_stack->discoverable == enable){
         hci_emit_scan_mode_changed(hci_stack->discoverable, hci_stack->connectable);
@@ -6417,7 +6417,7 @@ void gap_discoverable_control(uint8_t enable){
 }
 
 void gap_connectable_control(uint8_t enable){
-    if (enable) enable = 1; // normalize argument
+    enable = !!enable // normalize argument
     
     // don't emit event
     if (hci_stack->connectable == enable) return;
