@@ -17,6 +17,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "btstack.h"
 #include "btstack_ring_buffer.h"
 #include "lhdc_dec.h"
@@ -45,6 +49,19 @@ int g_pkframe = 0;
 #define LHDCV5_FRAME_5MS  0x10
 #define LHDCV5_FEATURE_LL 0x40
 
+#define APTX_VENDOR_ID    0x0000004fu
+#define APTX_CODEC_ID     0x0001u
+#define APTX_HD_VENDOR_ID 0x000000d7u
+#define APTX_HD_CODEC_ID  0x0024u
+#define APTX_SR_48000     0x10
+#define APTX_SR_44100     0x20
+#define APTX_CHANNEL_STEREO 0x02
+#define APTX_PCM_BUFFER_SIZE 16384
+#define APTX_PCM_LATENCY_TARGET_MS 40
+#define APTX_PCM_LATENCY_HIGH_MS   48
+#define LHDC_PCM_LATENCY_TARGET_MS 32
+#define LHDC_PCM_LATENCY_HIGH_MS   40
+
 #define LHDCV5_FRAGMENT_BUFFER_SIZE 8192
 #define LHDCV5_PCM_SAMPLES_PER_CH_MAX 1920
 #define PCM_RING_BUFFER_SIZE (256 * 1024)
@@ -72,7 +89,22 @@ static const uint8_t media_lhdcv5_codec_capabilities[] = {
 };
 static uint8_t media_lhdcv5_codec_configuration[sizeof(media_lhdcv5_codec_capabilities)];
 
+static const uint8_t media_aptx_codec_capabilities[] = {
+    0x4f, 0x00, 0x00, 0x00, 0x01, 0x00,
+    APTX_SR_44100 | APTX_SR_48000 | APTX_CHANNEL_STEREO
+};
+static uint8_t media_aptx_codec_configuration[sizeof(media_aptx_codec_capabilities)];
+
+static const uint8_t media_aptx_hd_codec_capabilities[] = {
+    0xd7, 0x00, 0x00, 0x00, 0x24, 0x00,
+    APTX_SR_44100 | APTX_SR_48000 | APTX_CHANNEL_STEREO,
+    0x00, 0x00, 0x00, 0x00
+};
+static uint8_t media_aptx_hd_codec_configuration[sizeof(media_aptx_hd_codec_capabilities)];
+
 static uint8_t sbc_local_seid;
+static uint8_t aptx_local_seid;
+static uint8_t aptx_hd_local_seid;
 static uint8_t lhdcv5_local_seid;
 static uint32_t negotiated_sample_rate = 48000;
 static uint8_t negotiated_bit_depth = 16;
@@ -86,17 +118,27 @@ static lhdc_decoder_t *lhdcv5_decoder;
 static uint8_t lhdcv5_fragment[LHDCV5_FRAGMENT_BUFFER_SIZE];
 static size_t lhdcv5_fragment_size;
 
+struct aptx_context;
+typedef struct aptx_context *(__cdecl *aptx_init_fn)(int hd);
+typedef void (__cdecl *aptx_reset_fn)(struct aptx_context *ctx);
+typedef void (__cdecl *aptx_finish_fn)(struct aptx_context *ctx);
+typedef size_t (__cdecl *aptx_decode_sync_fn)(
+    struct aptx_context *ctx, const unsigned char *input, size_t input_size,
+    unsigned char *output, size_t output_size, size_t *written,
+    int *synced, size_t *dropped);
+
+static HMODULE aptx_module;
+static aptx_init_fn aptx_init_ptr;
+static aptx_reset_fn aptx_reset_ptr;
+static aptx_finish_fn aptx_finish_ptr;
+static aptx_decode_sync_fn aptx_decode_sync_ptr;
+static struct aptx_context *aptx_decoder;
+static int aptx_decoder_is_hd;
+
 static btstack_ring_buffer_t pcm_ring_buffer;
 static uint8_t pcm_ring_storage[PCM_RING_BUFFER_SIZE];
 static int audio_initialized;
 static int audio_started;
-static uint32_t dropped_pcm_bytes;
-static uint64_t pcm_written_frames;
-static uint64_t pcm_read_frames;
-static uint32_t pcm_underflow_count;
-static uint32_t pcm_playback_callbacks;
-static FILE *lhdcv5_media_dump;
-static uint32_t lhdcv5_diag_packets;
 
 static int is_lhdcv5_codec_info(const uint8_t *codec_info, uint16_t len) {
     if (codec_info == NULL || len < 11) return 0;
@@ -120,43 +162,63 @@ static uint8_t lhdcv5_depth_from_codec_info(const uint8_t *codec_info) {
     return 0;
 }
 
+static int is_aptx_codec_info(const uint8_t *codec_info, uint16_t len, int hd) {
+    if (codec_info == NULL) return 0;
+    if ((!hd && len < 7) || (hd && len < 11)) return 0;
+    uint32_t vendor = little_endian_read_32(codec_info, 0);
+    uint16_t codec = little_endian_read_16(codec_info, 4);
+    return hd ? (vendor == APTX_HD_VENDOR_ID && codec == APTX_HD_CODEC_ID)
+              : (vendor == APTX_VENDOR_ID && codec == APTX_CODEC_ID);
+}
+
+static uint32_t aptx_rate_from_codec_info(const uint8_t *codec_info, uint16_t len) {
+    if (codec_info == NULL || len < 7) return 0;
+    uint8_t rate = codec_info[6] & 0xf0;
+    if (rate & APTX_SR_48000) return 48000;
+    if (rate & APTX_SR_44100) return 44100;
+    return 0;
+}
+
 static void pcm_queue_reset(void) {
     btstack_ring_buffer_init(&pcm_ring_buffer, pcm_ring_storage, sizeof(pcm_ring_storage));
-    dropped_pcm_bytes = 0;
-    pcm_written_frames = 0;
-    pcm_read_frames = 0;
-    pcm_underflow_count = 0;
-    pcm_playback_callbacks = 0;
 }
 
 static void pcm_queue_write(const int16_t *samples, uint32_t frames) {
     uint32_t bytes = frames * PCM_BYTES_PER_FRAME;
-    if (btstack_ring_buffer_bytes_free(&pcm_ring_buffer) < bytes) {
-        dropped_pcm_bytes += bytes;
-        return;
-    }
+    if (btstack_ring_buffer_bytes_free(&pcm_ring_buffer) < bytes) return;
     (void)btstack_ring_buffer_write(&pcm_ring_buffer, (uint8_t *)samples, bytes);
-    pcm_written_frames += frames;
 }
 
 static void playback_handler(int16_t *buffer, uint16_t num_audio_frames,
                              const btstack_audio_context_t *context) {
     UNUSED(context);
     uint32_t requested = (uint32_t)num_audio_frames * PCM_BYTES_PER_FRAME;
+    if ((aptx_decoder != NULL || lhdcv5_decoder != NULL) && negotiated_sample_rate != 0) {
+        static uint8_t trim_scratch[2048];
+        uint32_t queued = btstack_ring_buffer_bytes_available(&pcm_ring_buffer);
+        uint32_t target_ms = aptx_decoder != NULL ? APTX_PCM_LATENCY_TARGET_MS : LHDC_PCM_LATENCY_TARGET_MS;
+        uint32_t high_ms = aptx_decoder != NULL ? APTX_PCM_LATENCY_HIGH_MS : LHDC_PCM_LATENCY_HIGH_MS;
+        uint32_t target = (negotiated_sample_rate * PCM_BYTES_PER_FRAME * target_ms) / 1000;
+        uint32_t high = (negotiated_sample_rate * PCM_BYTES_PER_FRAME * high_ms) / 1000;
+        target -= target % PCM_BYTES_PER_FRAME;
+        high -= high % PCM_BYTES_PER_FRAME;
+        if (queued > high) {
+            uint32_t trim = queued - target;
+            trim -= trim % PCM_BYTES_PER_FRAME;
+            while (trim != 0) {
+                uint32_t chunk = trim < sizeof(trim_scratch) ? trim : (uint32_t)sizeof(trim_scratch);
+                chunk -= chunk % PCM_BYTES_PER_FRAME;
+                uint32_t discarded = 0;
+                btstack_ring_buffer_read(&pcm_ring_buffer, trim_scratch, chunk, &discarded);
+                if (discarded == 0) break;
+                trim -= discarded;
+            }
+        }
+    }
     uint32_t read = 0;
     btstack_ring_buffer_read(&pcm_ring_buffer, (uint8_t *)buffer, requested, &read);
-    pcm_read_frames += read / PCM_BYTES_PER_FRAME;
-    pcm_playback_callbacks++;
     if (read < requested) {
-        pcm_underflow_count++;
         memset(((uint8_t *)buffer) + read, 0, requested - read);
-    }
-    if ((pcm_playback_callbacks % 200) == 0) {
-        printf("[PCM] cb=%u written=%llu read=%llu queued=%u underflows=%u dropped=%u\n",
-               pcm_playback_callbacks, (unsigned long long)pcm_written_frames,
-               (unsigned long long)pcm_read_frames,
-               btstack_ring_buffer_bytes_available(&pcm_ring_buffer),
-               pcm_underflow_count, dropped_pcm_bytes);
     }
 }
 
@@ -198,6 +260,88 @@ static void handle_sbc_pcm(int16_t *data, int num_audio_frames, int num_channels
     UNUSED(sample_rate);
     if (num_channels != NUM_CHANNELS) return;
     pcm_queue_write(data, (uint32_t)num_audio_frames);
+}
+
+static void aptx_decoder_close(void) {
+    if (aptx_decoder != NULL && aptx_finish_ptr != NULL) aptx_finish_ptr(aptx_decoder);
+    aptx_decoder = NULL;
+    aptx_decoder_is_hd = 0;
+}
+
+static int aptx_load_library(void) {
+    if (aptx_module != NULL) return 1;
+    aptx_module = LoadLibraryA("openaptx0.dll");
+    if (aptx_module == NULL) {
+        printf("aptX: openaptx0.dll not found (error %lu)\n", (unsigned long)GetLastError());
+        return 0;
+    }
+    aptx_init_ptr = (aptx_init_fn)GetProcAddress(aptx_module, "aptx_init");
+    aptx_reset_ptr = (aptx_reset_fn)GetProcAddress(aptx_module, "aptx_reset");
+    aptx_finish_ptr = (aptx_finish_fn)GetProcAddress(aptx_module, "aptx_finish");
+    aptx_decode_sync_ptr = (aptx_decode_sync_fn)GetProcAddress(aptx_module, "aptx_decode_sync");
+    if (!aptx_init_ptr || !aptx_reset_ptr || !aptx_finish_ptr || !aptx_decode_sync_ptr) {
+        printf("aptX: decoder DLL missing required exports\n");
+        FreeLibrary(aptx_module); aptx_module = NULL; return 0;
+    }
+    printf("aptX decoder backend loaded: openaptx0.dll\n");
+    return 1;
+}
+
+static int aptx_decoder_open(int hd) {
+    aptx_decoder_close();
+    if (!aptx_load_library()) return 0;
+    aptx_decoder = aptx_init_ptr(hd ? 1 : 0);
+    if (aptx_decoder == NULL) return 0;
+    aptx_decoder_is_hd = hd ? 1 : 0;
+    printf("aptX%s decoder configured: %" PRIu32 " Hz, stereo\n",
+           hd ? " HD" : "", negotiated_sample_rate);
+    return 1;
+}
+
+static int32_t aptx_read_s24le(const uint8_t *q) {
+    int32_t v = (int32_t)q[0] | ((int32_t)q[1] << 8) | ((int32_t)q[2] << 16);
+    if (v & 0x00800000) v |= (int32_t)0xff000000;
+    return v;
+}
+
+static void aptx_decode_payload(const uint8_t *payload, size_t payload_size) {
+    static uint8_t pcm24[48];
+    static int16_t s16[APTX_PCM_BUFFER_SIZE / 3];
+    if (!aptx_decoder || !payload || payload_size == 0) return;
+
+    const size_t block_size = aptx_decoder_is_hd ? 6 : 4;
+    size_t offset = 0;
+    size_t total_samples = 0;
+    size_t total_dropped = 0;
+    int final_synced = 0;
+
+    while (payload_size - offset >= block_size) {
+        size_t written = 0, dropped = 0;
+        int synced = 0;
+        size_t processed = aptx_decode_sync_ptr(aptx_decoder,
+            payload + offset, block_size, pcm24, sizeof(pcm24),
+            &written, &synced, &dropped);
+        if (processed != block_size) break;
+        offset += processed;
+        total_dropped += dropped;
+        final_synced = synced;
+
+        size_t samples = written / 3;
+        if (total_samples + samples > sizeof(s16) / sizeof(s16[0])) break;
+        for (size_t i = 0; i < samples; i++)
+            s16[total_samples + i] = (int16_t)(aptx_read_s24le(&pcm24[i * 3]) >> 8);
+        total_samples += samples;
+    }
+
+    if (offset != payload_size || total_dropped != 0) {
+        static uint32_t reports;
+        if ((reports++ % 100) == 0)
+            printf("aptX%s sync: processed=%zu/%zu samples=%zu synced=%d dropped=%zu\n",
+                   aptx_decoder_is_hd ? " HD" : "", offset, payload_size,
+                   total_samples, final_synced, total_dropped);
+    }
+
+    pcm_queue_write(s16, (uint32_t)(total_samples / NUM_CHANNELS));
 }
 
 static void lhdcv5_decoder_close(void) {
@@ -260,13 +404,27 @@ static void lhdcv5_decode_payload(const uint8_t *payload, size_t payload_size) {
     if (lhdcv5_decoder == NULL || payload == NULL || payload_size < 3) return;
 
     /*
-     * On onyx/Android LHDC V5, two bytes precede the raw frame stream.
-     * Captured 96 kHz packets are exactly:
-     *   [2-byte LHDC packet prefix] + 4 * ([u16 LE frame header] + 200-byte frame)
-     * so the first decoder frame begins at offset 2, not offset 1.
+     * Android/onyx prefixes each LHDC transport subpacket with two bytes.
+     * At 48/96 kHz there is one prefix before the frame stream. At 192 kHz
+     * the 20 ms A2DP payload contains two 10 ms subpackets:
+     *   [tag, seq] + 2 frames + [tag, seq+1] + 2 frames
+     * Skip the verified second prefix after frame 2; do not concatenate data
+     * across A2DP packet boundaries.
      */
+    const uint8_t prefix_tag = payload[0];
+    const uint8_t prefix_seq = payload[1];
     size_t offset = 2;
+    uint32_t frame_index = 0;
+
     while (offset + 2 <= payload_size) {
+        if (negotiated_sample_rate == 192000 && frame_index != 0 &&
+            (frame_index % 2u) == 0 && offset + 2 <= payload_size &&
+            payload[offset] == prefix_tag &&
+            payload[offset + 1] == (uint8_t)(prefix_seq + frame_index / 2u)) {
+            offset += 2;
+            if (offset + 2 > payload_size) break;
+        }
+
         uint8_t pcm[LHDCV5_PCM_SAMPLES_PER_CH_MAX * NUM_CHANNELS * sizeof(int32_t)];
         size_t consumed = 0;
         uint32_t generated = 0;
@@ -279,14 +437,13 @@ static void lhdcv5_decode_payload(const uint8_t *payload, size_t payload_size) {
 
         if (ret != LHDC_DEC_OK || consumed == 0) {
             static uint32_t decode_errors;
-            if ((decode_errors++ % 100) == 0) {
+            if ((decode_errors++ % 100) == 0)
                 printf("LHDC V5 decode error %d at %zu/%zu\n", (int)ret, offset, payload_size);
-            }
             break;
         }
-
         lhdcv5_emit_pcm(pcm, generated, info.bit_depth);
         offset += consumed;
+        frame_index++;
     }
 }
 
@@ -300,19 +457,6 @@ static int read_rtp_header(const uint8_t *packet, uint16_t size, uint16_t *offse
 }
 
 static void handle_lhdcv5_media(uint8_t *packet, uint16_t size) {
-    if (lhdcv5_media_dump != NULL) {
-        uint8_t len_le[2] = { (uint8_t)(size & 0xff), (uint8_t)(size >> 8) };
-        fwrite(len_le, 1, sizeof(len_le), lhdcv5_media_dump);
-        fwrite(packet, 1, size, lhdcv5_media_dump);
-        fflush(lhdcv5_media_dump);
-    }
-    if (lhdcv5_diag_packets < 12) {
-        printf("[RX] #%u size=%u first=", lhdcv5_diag_packets, size);
-        uint16_t n = size < 32 ? size : 32;
-        for (uint16_t i = 0; i < n; i++) printf("%02x", packet[i]);
-        printf("\n");
-    }
-    lhdcv5_diag_packets++;
     uint16_t pos;
     if (!read_rtp_header(packet, size, &pos) || size <= pos) return;
 
@@ -355,31 +499,42 @@ static void handle_sbc_media(uint8_t *packet, uint16_t size) {
     sbc_decoder->decode_signed_16(&sbc_decoder_context, 0, packet + pos, size - pos);
 }
 
+static void handle_aptx_media(uint8_t *packet, uint16_t size, int hd) {
+    uint16_t pos = 0;
+    /* Android aptX Classic omits RTP when SCMS-T is not enabled; aptX HD uses RTP. */
+    if (hd && (!read_rtp_header(packet, size, &pos) || size <= pos)) return;
+    aptx_decode_payload(packet + pos, size - pos);
+}
+
 static void handle_media_data(uint8_t local_seid, uint8_t *packet, uint16_t size) {
-    if (local_seid == lhdcv5_local_seid) {
-        handle_lhdcv5_media(packet, size);
-    } else if (local_seid == sbc_local_seid && sbc_decoder != NULL) {
-        handle_sbc_media(packet, size);
-    }
+    if (local_seid == lhdcv5_local_seid) handle_lhdcv5_media(packet, size);
+    else if (local_seid == aptx_hd_local_seid) handle_aptx_media(packet, size, 1);
+    else if (local_seid == aptx_local_seid) handle_aptx_media(packet, size, 0);
+    else if (local_seid == sbc_local_seid && sbc_decoder != NULL) handle_sbc_media(packet, size);
 }
 
 static uint8_t media_config_validator(const avdtp_stream_endpoint_t *stream_endpoint,
                                       const uint8_t *event, uint16_t size) {
     UNUSED(size);
-    if (avdtp_local_seid(stream_endpoint) != lhdcv5_local_seid) return ERROR_CODE_SUCCESS;
+    uint8_t local_seid = avdtp_local_seid(stream_endpoint);
+    if (local_seid == sbc_local_seid) return ERROR_CODE_SUCCESS;
 
     const uint8_t *info =
         a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information(event);
     uint16_t len =
         a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(event);
 
-    if (!is_lhdcv5_codec_info(info, len)) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
-    if (lhdcv5_rate_from_codec_info(info) == 0 || lhdcv5_depth_from_codec_info(info) == 0) {
-        return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
+    if (local_seid == lhdcv5_local_seid) {
+        if (!is_lhdcv5_codec_info(info, len)) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
+        if (!lhdcv5_rate_from_codec_info(info) || !lhdcv5_depth_from_codec_info(info)) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
+        if ((info[8] & LHDCV5_VERSION_1) == 0 || (info[8] & LHDCV5_FRAME_5MS) == 0) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
+        return ERROR_CODE_SUCCESS;
     }
-    if ((info[8] & LHDCV5_VERSION_1) == 0 || (info[8] & LHDCV5_FRAME_5MS) == 0) {
-        return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
-    }
+    int hd = local_seid == aptx_hd_local_seid;
+    if (local_seid != aptx_local_seid && !hd) return ERROR_CODE_SUCCESS;
+    if (!is_aptx_codec_info(info, len, hd)) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
+    if (!aptx_rate_from_codec_info(info, len)) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
+    if ((info[6] & APTX_CHANNEL_STEREO) == 0) return AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION;
     return ERROR_CODE_SUCCESS;
 }
 
@@ -396,14 +551,19 @@ static void a2dp_packet_handler(uint8_t packet_type, uint16_t channel,
                 a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information(packet);
             uint16_t len =
                 a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(packet);
-            if (!is_lhdcv5_codec_info(info, len)) break;
-            negotiated_sample_rate = lhdcv5_rate_from_codec_info(info);
-            negotiated_bit_depth = lhdcv5_depth_from_codec_info(info);
-            printf("A2DP: LHDC V5 selected, %" PRIu32 " Hz, %u-bit, LL=%s, features=0x%02x\n",
-                   negotiated_sample_rate, negotiated_bit_depth,
-                   (len > 9 && (info[9] & LHDCV5_FEATURE_LL)) ? "ON" : "OFF",
-                   len > 9 ? info[9] : 0);
-            printf("A2DP LHDC V5 config (%u):", len);
+            if (is_lhdcv5_codec_info(info, len)) {
+                negotiated_sample_rate = lhdcv5_rate_from_codec_info(info);
+                negotiated_bit_depth = lhdcv5_depth_from_codec_info(info);
+                printf("A2DP: LHDC V5 selected, %" PRIu32 " Hz, %u-bit, LL=%s\n", negotiated_sample_rate, negotiated_bit_depth,
+                       (len > 9 && (info[9] & LHDCV5_FEATURE_LL)) ? "ON" : "OFF");
+            } else if (is_aptx_codec_info(info, len, 1)) {
+                negotiated_sample_rate = aptx_rate_from_codec_info(info, len); negotiated_bit_depth = 24;
+                printf("A2DP: aptX HD selected, %" PRIu32 " Hz, stereo\n", negotiated_sample_rate);
+            } else if (is_aptx_codec_info(info, len, 0)) {
+                negotiated_sample_rate = aptx_rate_from_codec_info(info, len); negotiated_bit_depth = 16;
+                printf("A2DP: aptX selected, %" PRIu32 " Hz, stereo\n", negotiated_sample_rate);
+            } else break;
+            printf("A2DP vendor config (%u):", len);
             for (uint16_t i = 0; i < len; i++) printf(" %02x", info[i]);
             printf("\n");
             break;
@@ -430,11 +590,10 @@ static void a2dp_packet_handler(uint8_t packet_type, uint16_t channel,
             uint8_t local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
             pcm_queue_reset();
             if (local_seid == lhdcv5_local_seid) {
-                if (lhdcv5_media_dump != NULL) fclose(lhdcv5_media_dump);
-                lhdcv5_media_dump = NULL;
-                fopen_s(&lhdcv5_media_dump, "live_media_packets.bin", "wb");
-                lhdcv5_diag_packets = 0;
                 if (!lhdcv5_decoder_open(negotiated_sample_rate, negotiated_bit_depth)) break;
+            } else if (local_seid == aptx_hd_local_seid || local_seid == aptx_local_seid) {
+                int hd = local_seid == aptx_hd_local_seid;
+                if (!aptx_decoder_open(hd)) break;
             } else if (local_seid == sbc_local_seid) {
                 sbc_decoder = btstack_sbc_decoder_bluedroid_init_instance(&sbc_decoder_context);
                 sbc_decoder->configure(&sbc_decoder_context, SBC_MODE_STANDARD, handle_sbc_pcm, NULL);
@@ -450,6 +609,7 @@ static void a2dp_packet_handler(uint8_t packet_type, uint16_t channel,
             audio_started = 0;
             pcm_queue_reset();
             if (lhdcv5_decoder != NULL) lhdc_dec_flush(lhdcv5_decoder);
+            if (aptx_decoder != NULL && aptx_reset_ptr != NULL) aptx_reset_ptr(aptx_decoder);
             printf("A2DP stream suspended\n");
             break;
         }
@@ -457,16 +617,14 @@ static void a2dp_packet_handler(uint8_t packet_type, uint16_t channel,
         case A2DP_SUBEVENT_STREAM_STOPPED:
             audio_close();
             lhdcv5_decoder_close();
-            if (lhdcv5_media_dump != NULL) fclose(lhdcv5_media_dump);
-            lhdcv5_media_dump = NULL;
+            aptx_decoder_close();
             printf("A2DP stream stopped\n");
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
             audio_close();
             lhdcv5_decoder_close();
-            if (lhdcv5_media_dump != NULL) fclose(lhdcv5_media_dump);
-            lhdcv5_media_dump = NULL;
+            aptx_decoder_close();
             printf("A2DP stream released\n");
             break;
 
@@ -513,6 +671,24 @@ static void setup_receiver(void) {
     btstack_assert(sbc_endpoint != NULL);
     sbc_local_seid = avdtp_local_seid(sbc_endpoint);
 
+    /* aptX decoding is optional. Only advertise the vendor codecs when an
+     * external openaptx0.dll backend is available at runtime. */
+    if (aptx_load_library()) {
+        avdtp_stream_endpoint_t *aptx_endpoint = a2dp_sink_create_stream_endpoint(
+            AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP,
+            media_aptx_codec_capabilities, sizeof(media_aptx_codec_capabilities),
+            media_aptx_codec_configuration, sizeof(media_aptx_codec_configuration));
+        btstack_assert(aptx_endpoint != NULL);
+        aptx_local_seid = avdtp_local_seid(aptx_endpoint);
+
+        avdtp_stream_endpoint_t *aptx_hd_endpoint = a2dp_sink_create_stream_endpoint(
+            AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP,
+            media_aptx_hd_codec_capabilities, sizeof(media_aptx_hd_codec_capabilities),
+            media_aptx_hd_codec_configuration, sizeof(media_aptx_hd_codec_configuration));
+        btstack_assert(aptx_hd_endpoint != NULL);
+        aptx_hd_local_seid = avdtp_local_seid(aptx_hd_endpoint);
+    }
+
     avdtp_stream_endpoint_t *lhdc_endpoint = a2dp_sink_create_stream_endpoint(
         AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP,
         media_lhdcv5_codec_capabilities, sizeof(media_lhdcv5_codec_capabilities),
@@ -524,7 +700,7 @@ static void setup_receiver(void) {
     a2dp_sink_create_sdp_record(sdp_a2dp_sink_service_buffer,
                                 sdp_create_service_record_handle(),
                                 AVDTP_SINK_FEATURE_MASK_HEADPHONE,
-                                "BTstack LHDC V5 Receiver", "BTstack");
+                                "BTstack Multi-Codec Receiver", "BTstack");
     sdp_register_service(sdp_a2dp_sink_service_buffer);
 
     memset(device_id_sdp_service_buffer, 0, sizeof(device_id_sdp_service_buffer));
@@ -534,7 +710,7 @@ static void setup_receiver(void) {
                                 BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
     sdp_register_service(device_id_sdp_service_buffer);
 
-    gap_set_local_name("BTstack LHDC V5 Receiver 00:00:00:00:00:00");
+    gap_set_local_name("BTstack Multi-Codec Receiver 00:00:00:00:00:00");
     gap_set_class_of_device(0x240400);
     gap_discoverable_control(1);
     gap_set_default_link_policy_settings(
@@ -545,8 +721,13 @@ static void setup_receiver(void) {
     hci_add_event_handler(&hci_event_callback_registration);
     pcm_queue_reset();
 
-    printf("A2DP endpoints: SBC SEID %u, LHDC V5 SEID %u\n",
-           sbc_local_seid, lhdcv5_local_seid);
+    printf("A2DP endpoints: SBC SEID %u, aptX SEID %u, aptX HD SEID %u, LHDC V5 SEID %u\n",
+           sbc_local_seid, aptx_local_seid, aptx_hd_local_seid, lhdcv5_local_seid);
+    if (aptx_local_seid != 0) {
+        printf("aptX capabilities: Classic + HD, 44.1/48 kHz stereo\n");
+    } else {
+        printf("aptX decoder backend unavailable; aptX endpoints disabled\n");
+    }
     printf("LHDC V5 capabilities: 44.1/48/96/192 kHz, 16/24-bit, lossy\n");
 }
 
@@ -554,7 +735,7 @@ int btstack_main(int argc, const char *argv[]) {
     UNUSED(argc);
     UNUSED(argv);
     setup_receiver();
-    printf("Starting BTstack LHDC V5 receiver...\n");
+    printf("Starting BTstack multi-codec receiver...\n");
     hci_power_control(HCI_POWER_ON);
     return 0;
 }

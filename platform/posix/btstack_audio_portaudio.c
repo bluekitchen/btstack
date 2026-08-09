@@ -49,6 +49,7 @@
 
 #define PA_SAMPLE_TYPE               paInt16
 #define NUM_FRAMES_PER_PA_BUFFER       128
+#define MAX_OUTPUT_FRAMES_PER_PA_BUFFER 512
 #define NUM_OUTPUT_BUFFERS               4
 #define NUM_INPUT_BUFFERS                5
 #define DRIVER_POLL_INTERVAL_MS          1
@@ -58,6 +59,9 @@
 #endif
 
 #include <portaudio.h>
+#ifdef _WIN32
+#include <pa_win_wasapi.h>
+#endif
 
 // config
 static int                    num_channels_sink;
@@ -87,19 +91,15 @@ static void (*playback_callback)(int16_t * buffer, uint16_t num_samples, const b
 static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
 
 // output buffer
-static int16_t               output_buffer_storage[NUM_OUTPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
+static int16_t               output_buffer_storage[NUM_OUTPUT_BUFFERS * MAX_OUTPUT_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
 static int16_t             * output_buffers[NUM_OUTPUT_BUFFERS];
-static int16_t               output_discard_buffer[NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
+static int16_t               output_discard_buffer[MAX_OUTPUT_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
 static int                   output_buffer_to_play;
 static int                   output_buffer_to_fill;
+static uint16_t              sink_frames_per_buffer = NUM_FRAMES_PER_PA_BUFFER;
 /* Monotonic SPSC counters avoid the modulo-index full-lap ambiguity. */
 static volatile uint32_t      output_buffers_consumed;
 static uint32_t               output_buffers_refilled;
-static volatile uint64_t     sink_pa_callbacks;
-static volatile uint64_t     sink_pa_underflows;
-static uint64_t              sink_driver_fills;
-static uint64_t              sink_driver_skips;
-static uint32_t              sink_driver_ticks;
 
 // input buffer
 static int16_t               input_buffer_storage[NUM_INPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
@@ -125,8 +125,7 @@ static int portaudio_callback_sink( const void *                     inputBuffer
 
     /** portaudio_callback is called from different thread, don't use hci_dump / log_info here without additional checks */
 
-    sink_pa_callbacks++;
-    if (statusFlags & paOutputUnderflow) sink_pa_underflows++;
+    (void) statusFlags;
     (void) userData;
     (void) frames_per_buffer;
     (void) inputBuffer;
@@ -142,19 +141,19 @@ static int portaudio_callback_sink( const void *                     inputBuffer
     uint16_t index;
     int16_t * from_buffer = output_buffers[play_index];
     int16_t * to_buffer = (int16_t *) outputBuffer;
-    btstack_assert(frames_per_buffer == NUM_FRAMES_PER_PA_BUFFER);
+    btstack_assert(frames_per_buffer == sink_frames_per_buffer);
 
 #if 0
     // up to 8 right shifts
     int right_shift = 8 - btstack_min(8, ((sink_volume + 15) / 16));
-    for (index = 0; index < (NUM_FRAMES_PER_PA_BUFFER * num_channels_sink); index++){
+    for (index = 0; index < (sink_frames_per_buffer * num_channels_sink); index++){
         *to_buffer++ = (*from_buffer++) >> right_shift;
     }
 #else
     // multiply with volume ^ 4
     int16_t x2 = sink_volume * sink_volume;
     int16_t x4 = (x2 * x2) >> 14;
-    for (index = 0; index < (NUM_FRAMES_PER_PA_BUFFER * num_channels_sink); index++){
+    for (index = 0; index < (sink_frames_per_buffer * num_channels_sink); index++){
         *to_buffer++ = ((*from_buffer++) * x4) >> 14;
     }
 #endif
@@ -203,31 +202,18 @@ static void driver_timer_handler_sink(btstack_timer_source_t * ts){
     if (lag > NUM_OUTPUT_BUFFERS) {
         uint32_t stale = lag - NUM_OUTPUT_BUFFERS;
         while (stale--) {
-            (*playback_callback)(output_discard_buffer, NUM_FRAMES_PER_PA_BUFFER, NULL);
+            (*playback_callback)(output_discard_buffer, sink_frames_per_buffer, NULL);
             output_buffers_refilled++;
-            sink_driver_skips++;
         }
     }
 
     while (output_buffers_refilled != consumed) {
         uint32_t fill_index = output_buffers_refilled % NUM_OUTPUT_BUFFERS;
-        (*playback_callback)(output_buffers[fill_index], NUM_FRAMES_PER_PA_BUFFER,
+        (*playback_callback)(output_buffers[fill_index], sink_frames_per_buffer,
             &sink_playback_audio_contexts[fill_index]);
         output_buffers_refilled++;
         output_buffer_to_fill = (int)(output_buffers_refilled % NUM_OUTPUT_BUFFERS);
-        sink_driver_fills++;
         consumed = output_buffers_consumed;
-    }
-
-    sink_driver_ticks++;
-    if ((sink_driver_ticks % 200) == 0) {
-        printf("[PA] cb=%llu fills=%llu skips=%llu underflows=%llu consumed=%u refilled=%u lag=%u\n",
-               (unsigned long long)sink_pa_callbacks,
-               (unsigned long long)sink_driver_fills,
-               (unsigned long long)sink_driver_skips,
-               (unsigned long long)sink_pa_underflows,
-               output_buffers_consumed, output_buffers_refilled,
-               output_buffers_consumed - output_buffers_refilled);
     }
 
     btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
@@ -264,8 +250,12 @@ static int btstack_audio_portaudio_sink_init(
     num_channels_sink = channels;
     num_bytes_per_sample_sink = 2 * channels;
 
+    sink_frames_per_buffer = NUM_FRAMES_PER_PA_BUFFER;
+    if (samplerate >= 192000) sink_frames_per_buffer = 512;
+    else if (samplerate >= 88200) sink_frames_per_buffer = 256;
+
     for (int i=0;i<NUM_OUTPUT_BUFFERS;i++){
-        output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
+        output_buffers[i] = &output_buffer_storage[i * MAX_OUTPUT_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
     }
 
     /* -- initialize PortAudio -- */
@@ -306,23 +296,6 @@ static int btstack_audio_portaudio_sink_init(
         output_device_info = Pa_GetDeviceInfo(device_index);
     }
     const PaHostApiInfo *selected_host = Pa_GetHostApiInfo(output_device_info->hostApi);
-    printf("[PADEV] selected index=%d name=%s api=%s low=%.3fms high=%.3fms defaultRate=%.0f\n",
-           (int)device_index, output_device_info->name,
-           selected_host ? selected_host->name : "?",
-           output_device_info->defaultLowOutputLatency * 1000.0,
-           output_device_info->defaultHighOutputLatency * 1000.0,
-           output_device_info->defaultSampleRate);
-    int pa_device_count = Pa_GetDeviceCount();
-    for (int di = 0; di < pa_device_count; di++) {
-        const PaDeviceInfo *d = Pa_GetDeviceInfo(di);
-        if (!d || d->maxOutputChannels <= 0) continue;
-        const PaHostApiInfo *h = Pa_GetHostApiInfo(d->hostApi);
-        printf("[PADEV] %d api=%s out=%d low=%.3fms high=%.3fms rate=%.0f name=%s\n",
-               di, h ? h->name : "?", d->maxOutputChannels,
-               d->defaultLowOutputLatency * 1000.0,
-               d->defaultHighOutputLatency * 1000.0,
-               d->defaultSampleRate, d->name);
-    }
 
     /* -- setup output -- */
     PaStreamParameters output_parameters;
@@ -341,10 +314,25 @@ static int btstack_audio_portaudio_sink_init(
            NULL,
            &output_parameters,
            samplerate,
-           NUM_FRAMES_PER_PA_BUFFER,
-           paClipOff,           /* we won't output out of range samples so don't bother clipping them */
-           portaudio_callback_sink,  /* use callback */
-           NULL );   
+           sink_frames_per_buffer,
+           paClipOff,
+           portaudio_callback_sink,
+           NULL );
+#ifdef _WIN32
+    if (err == paInvalidSampleRate && selected_host != NULL && selected_host->type == paWASAPI) {
+        PaWasapiStreamInfo wasapi_info;
+        memset(&wasapi_info, 0, sizeof(wasapi_info));
+        wasapi_info.size = sizeof(wasapi_info);
+        wasapi_info.hostApiType = paWASAPI;
+        wasapi_info.version = 1;
+        wasapi_info.flags = paWinWasapiAutoConvert;
+        output_parameters.hostApiSpecificStreamInfo = &wasapi_info;
+        log_info("PortAudio: shared WASAPI rejected %u Hz, retrying with auto-convert", (unsigned)samplerate);
+        err = Pa_OpenStream(&stream_sink, NULL, &output_parameters, samplerate,
+                            sink_frames_per_buffer, paClipOff,
+                            portaudio_callback_sink, NULL);
+    }
+#endif
     
     if (err != paNoError){
         log_error("Portudio: error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
@@ -353,14 +341,10 @@ static int btstack_audio_portaudio_sink_init(
     log_info("PortAudio: sink stream created");
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
-    printf("[PA] device low-latency hint=%.3f ms actual output latency=%.3f ms\n",
-           output_device_info->defaultLowOutputLatency * 1000.0,
-           stream_info->outputLatency * 1000.0);
-
     // verify latency
     uint32_t latency_samples = (uint32_t) (stream_info->outputLatency * samplerate);
-    uint32_t buffer_samples = NUM_FRAMES_PER_PA_BUFFER * NUM_OUTPUT_BUFFERS;
-    int buffers_needed = (latency_samples + NUM_FRAMES_PER_PA_BUFFER - 1) / NUM_FRAMES_PER_PA_BUFFER;
+    uint32_t buffer_samples = sink_frames_per_buffer * NUM_OUTPUT_BUFFERS;
+    int buffers_needed = (latency_samples + sink_frames_per_buffer - 1) / sink_frames_per_buffer;
     log_info("PortAudio: output latency of %f requires %u buffers, %u buffers available\n",
     stream_info->outputLatency, buffers_needed, NUM_OUTPUT_BUFFERS);
     UNUSED(buffers_needed);
@@ -490,17 +474,12 @@ static void btstack_audio_portaudio_sink_start_stream(void){
     // Pre-fill the entire staging ring before PortAudio starts consuming it.
     uint8_t i;
     for (i=0;i<NUM_OUTPUT_BUFFERS;i++){
-        (*playback_callback)(&output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS], NUM_FRAMES_PER_PA_BUFFER, 0);
+        (*playback_callback)(output_buffers[i], sink_frames_per_buffer, 0);
     }
     output_buffers_consumed = 0;
     output_buffers_refilled = 0;
     output_buffer_to_play = 0;
     output_buffer_to_fill = 0;
-    sink_pa_callbacks = 0;
-    sink_pa_underflows = 0;
-    sink_driver_fills = 0;
-    sink_driver_skips = 0;
-    sink_driver_ticks = 0;
 
     /* -- start stream -- */
     PaError err = Pa_StartStream(stream_sink);
