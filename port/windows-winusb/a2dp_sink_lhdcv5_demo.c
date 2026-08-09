@@ -59,8 +59,6 @@ int g_pkframe = 0;
 #define APTX_PCM_BUFFER_SIZE 16384
 #define APTX_PCM_LATENCY_TARGET_MS 40
 #define APTX_PCM_LATENCY_HIGH_MS   48
-#define LHDC_PCM_LATENCY_TARGET_MS 32
-#define LHDC_PCM_LATENCY_HIGH_MS   40
 
 #define LHDCV5_FRAGMENT_BUFFER_SIZE 8192
 #define LHDCV5_PCM_SAMPLES_PER_CH_MAX 1920
@@ -193,13 +191,11 @@ static void playback_handler(int16_t *buffer, uint16_t num_audio_frames,
                              const btstack_audio_context_t *context) {
     UNUSED(context);
     uint32_t requested = (uint32_t)num_audio_frames * PCM_BYTES_PER_FRAME;
-    if ((aptx_decoder != NULL || lhdcv5_decoder != NULL) && negotiated_sample_rate != 0) {
+    if (aptx_decoder != NULL && negotiated_sample_rate != 0) {
         static uint8_t trim_scratch[2048];
         uint32_t queued = btstack_ring_buffer_bytes_available(&pcm_ring_buffer);
-        uint32_t target_ms = aptx_decoder != NULL ? APTX_PCM_LATENCY_TARGET_MS : LHDC_PCM_LATENCY_TARGET_MS;
-        uint32_t high_ms = aptx_decoder != NULL ? APTX_PCM_LATENCY_HIGH_MS : LHDC_PCM_LATENCY_HIGH_MS;
-        uint32_t target = (negotiated_sample_rate * PCM_BYTES_PER_FRAME * target_ms) / 1000;
-        uint32_t high = (negotiated_sample_rate * PCM_BYTES_PER_FRAME * high_ms) / 1000;
+        uint32_t target = (negotiated_sample_rate * PCM_BYTES_PER_FRAME * APTX_PCM_LATENCY_TARGET_MS) / 1000;
+        uint32_t high = (negotiated_sample_rate * PCM_BYTES_PER_FRAME * APTX_PCM_LATENCY_HIGH_MS) / 1000;
         target -= target % PCM_BYTES_PER_FRAME;
         high -= high % PCM_BYTES_PER_FRAME;
         if (queued > high) {
