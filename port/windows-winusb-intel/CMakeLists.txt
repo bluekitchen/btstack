@@ -56,7 +56,7 @@ file(GLOB SOURCES_CSR       "../../chipset/csr/*.c")
 file(GLOB SOURCES_INTEL     "../../chipset/intel/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
-file(GLOB SOURCES_PORT      "*.c")
+file(GLOB SOURCES_PORT      "*.c" "../../platform/posix/btstack_audio_portaudio.c")
 file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
@@ -85,20 +85,40 @@ list(SORT SOURCES)
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
-# pkgconfig
-find_package(PkgConfig QUIET)
-
-# portaudio
-if (PkgConfig_FOUND)
-    pkg_check_modules(PORTAUDIO portaudio-2.0)
-    if(PORTAUDIO_FOUND)
-        message("HAVE_PORTAUDIO")
-        target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-        target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-        target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
-        add_compile_definitions(HAVE_PORTAUDIO)
-    endif()
+# LHDC V5 portable codec libraries
+file(GLOB SOURCES_LHDCV5_DECODER "../../3rd-party/lhdcv5-decoder/decoder/*.c")
+add_library(lhdcv5_decoder STATIC ${SOURCES_LHDCV5_DECODER})
+target_include_directories(lhdcv5_decoder PUBLIC "${BTSTACK_ROOT}/3rd-party/lhdcv5-decoder/decoder")
+target_compile_definitions(lhdcv5_decoder PRIVATE LHDC_HOST_BUILD)
+if(MSVC)
+    target_compile_options(lhdcv5_decoder PRIVATE /FI"${BTSTACK_ROOT}/port/windows-winusb/lhdcv5_msvc_compat.h")
 endif()
+
+file(GLOB SOURCES_LHDCV5_ENCODER "../../3rd-party/lhdcv5-encoder/src/*.c")
+add_library(lhdcv5_encoder STATIC ${SOURCES_LHDCV5_ENCODER})
+target_include_directories(lhdcv5_encoder PUBLIC "${BTSTACK_ROOT}/3rd-party/lhdcv5-encoder/include" PRIVATE "${BTSTACK_ROOT}/3rd-party/lhdcv5-encoder/src")
+
+# PortAudio: use system pkg-config when available, otherwise build the vendored copy.
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(PORTAUDIO portaudio-2.0)
+endif()
+
+if(PORTAUDIO_FOUND)
+    message("HAVE_PORTAUDIO (pkg-config)")
+    target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+    target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+    target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
+else()
+    message("HAVE_PORTAUDIO (vendored)")
+    set(PA_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(PA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(PA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    add_subdirectory("${BTSTACK_ROOT}/3rd-party/portaudio" "${CMAKE_CURRENT_BINARY_DIR}/portaudio")
+    target_include_directories(btstack PUBLIC "${BTSTACK_ROOT}/3rd-party/portaudio/include")
+    target_link_libraries(btstack portaudio)
+endif()
+add_compile_definitions(HAVE_PORTAUDIO)
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
@@ -127,3 +147,19 @@ foreach(EXAMPLE ${EXAMPLES})
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
     target_link_libraries(${EXAMPLE} btstack setupapi winusb)
 endforeach(EXAMPLE)
+
+# Windows Intel A2DP Sink with LHDC V5 software decoder
+add_executable(a2dp_sink_lhdcv5_demo "${BTSTACK_ROOT}/port/windows-winusb/a2dp_sink_lhdcv5_demo.c")
+target_link_libraries(a2dp_sink_lhdcv5_demo btstack lhdcv5_decoder setupapi winusb)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/firmware/ibt-1040-0041.sfi" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/firmware/ibt-1040-0041.ddc")
+    add_custom_command(TARGET a2dp_sink_lhdcv5_demo POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:a2dp_sink_lhdcv5_demo>/firmware"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/firmware/ibt-1040-0041.sfi"
+                "$<TARGET_FILE_DIR:a2dp_sink_lhdcv5_demo>/firmware/ibt-1040-0041.sfi"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/firmware/ibt-1040-0041.ddc"
+                "$<TARGET_FILE_DIR:a2dp_sink_lhdcv5_demo>/firmware/ibt-1040-0041.ddc")
+endif()
