@@ -2131,7 +2131,6 @@ typedef SSIZE_T ssize_t;
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
-// #define HCI_EVENT_GAP_META                                 0xxx
 // #define HCI_EVENT_GATT_META                                0xxx
 // #define HCI_EVENT_PAN_META                                 0xxx
 // #define HCI_EVENT_SDP_META                                 0xxx
