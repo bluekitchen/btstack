@@ -59,7 +59,10 @@
 // Jambox static const char * remote_addr_string = "00:21:3C:AC:F7:38";
 // Mac static const char * remote_addr_string = "F0:18:98:60:3E:E5";
 // iPhone 5S: 
-static const char * remote_addr_string = "6C:72:E7:10:22:EE";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "6C:72:E7:10:22:EE"
+#endif
+static const char * remote_addr_string = REMOTE_ADDR_STRING;
 #endif
 
 static bd_addr_t remote_addr;

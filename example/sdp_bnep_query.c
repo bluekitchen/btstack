@@ -61,7 +61,10 @@ int attribute_id = -1;
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
 
-static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "04:0C:CE:E4:85:D3"
+#endif
+static bd_addr_t remote;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void assertBuffer(int size){
@@ -270,6 +273,8 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
+
+    sscanf_bd_addr(REMOTE_ADDR_STRING, remote);
 
     printf("Client HCI init done\r\n");
 

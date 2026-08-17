@@ -200,7 +200,10 @@ static bool                   send_active;
 
 static bd_addr_t device_addr;
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "BC:EC:5D:E6:15:03"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 #endif
 
 // used to store remote device in TLV

@@ -160,7 +160,10 @@ typedef struct {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // Minijambox:
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:21:3C:AC:F7:38"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 
 static bd_addr_t device_addr;
 static bool scan_active;

@@ -68,7 +68,10 @@ static bd_addr_t    remote_addr;
 // Nexus 7 "30-85-A9-54-2E-78"
 // iPhone SE "BC:EC:5D:E6:15:03"
 // PTS "001BDC080AA5"
-static  char * remote_addr_string = "DC:52:85:B4:AD:2B ";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "DC:52:85:B4:AD:2B"
+#endif
+static  char * remote_addr_string = REMOTE_ADDR_STRING;
 
 
 #ifdef HAVE_BTSTACK_STDIN

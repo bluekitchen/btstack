@@ -86,7 +86,10 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 #endif
 
 // MBP 2016
-static const char * remote_addr_string = "78:4F:43:8C:B2:5D";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "78:4F:43:8C:B2:5D"
+#endif
+static const char * remote_addr_string = REMOTE_ADDR_STRING;
 // Wiko Sunny static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
 
 static bd_addr_t remote_addr;

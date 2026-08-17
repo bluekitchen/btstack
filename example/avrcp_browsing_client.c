@@ -79,7 +79,10 @@
 
 #ifdef HAVE_BTSTACK_STDIN
 // Minijambox:
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:21:3C:AC:F7:38"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 #endif
 static bd_addr_t device_addr;
 
