@@ -2647,7 +2647,6 @@ static bool sm_ctkd_from_le(void) {
     // - bonding needs to be enabled:
     bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
     return bonding_enabled;
-    return false;
 }
 
 static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
