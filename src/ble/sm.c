@@ -2663,7 +2663,7 @@ static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
     if (index >= 0){
         int ltk_authenticated;
         sm_key_t ltk;
-        le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, &ltk_authenticated, NULL, NULL);
+        le_device_db_encryption_get(index, NULL, NULL, ltk, NULL, &ltk_authenticated, NULL, NULL);
         bool have_ltk = !sm_is_null_key(ltk);
         if (have_ltk && ltk_authenticated) return false;
     }
