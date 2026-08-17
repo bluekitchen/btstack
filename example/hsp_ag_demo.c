@@ -73,7 +73,10 @@ static uint16_t      sco_handle = HCI_CON_HANDLE_INVALID;
 static char hs_cmd_buffer[100];
 
 static const char * device_name = "HSP AG Demo 00:00:00:00:00:00";
-static const char * device_addr_string = "00:1b:dc:07:32:ef";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 static bd_addr_t device_addr;
 
 /* @section Audio Transfer Setup 

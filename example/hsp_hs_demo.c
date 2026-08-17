@@ -73,8 +73,10 @@ static const char    hsp_hs_service_name[] = "Headset Test";
 static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 
 static char hs_cmd_buffer[100];
-// mac 2013: 
-static const char * device_addr_string = "84:38:35:65:d1:15";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 static bd_addr_t device_addr;
 
 /* @section Audio Transfer Setup 

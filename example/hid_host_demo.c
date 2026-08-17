@@ -56,7 +56,10 @@
 
 #define MAX_ATTRIBUTE_VALUE_SIZE 300
 
-static const char * remote_addr_string = "00:1A:7D:DA:71:01";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static const char * remote_addr_string = REMOTE_ADDR_STRING;
 
 static bd_addr_t remote_addr;
 
