@@ -1603,10 +1603,6 @@ static void sm_process_bonding_information(sm_connection_t * sm_conn){
 #endif
         sm_store_le_bonding_information(sm_conn, le_db_index);
     }
-
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-    sm_store_classic_bonding_information(sm_conn);
-#endif
 }
 
 static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
@@ -1658,6 +1654,12 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 
     if (bonding_enabled){
         sm_process_bonding_information(sm_conn);
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+        // Only for the LE -> BR/EDR direction: setup->sm_link_key was derived here and reversed into
+        // HCI byte order. In the BR/EDR -> LE direction it holds the *existing* link key in SM byte
+        // order (see sm_ctkd_fetch_br_edr_link_key), and storing it would corrupt the link key db.
+        sm_store_classic_bonding_information(sm_conn);
+#endif
     } else {
         log_info("Ignoring received keys, bonding not enabled");
     }
