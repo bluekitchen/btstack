@@ -63,7 +63,10 @@
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static bd_addr_t remote;
 
 static struct {
     uint8_t channel_nr;
@@ -153,6 +156,8 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
+
+    sscanf_bd_addr(REMOTE_ADDR_STRING, remote);
 
     // init L2CAP
     l2cap_init();

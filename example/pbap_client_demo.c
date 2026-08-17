@@ -64,11 +64,10 @@
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static bd_addr_t    remote_addr;
-// MBP2016 "F4-0F-24-3B-1B-E1"
-// Nexus 7 "30-85-A9-54-2E-78"
-// iPhone SE "BC:EC:5D:E6:15:03"
-// PTS "001BDC080AA5"
-static  char * remote_addr_string = "DC:52:85:B4:AD:2B ";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static  char * remote_addr_string = REMOTE_ADDR_STRING;
 
 
 #ifdef HAVE_BTSTACK_STDIN

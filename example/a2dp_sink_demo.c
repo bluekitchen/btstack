@@ -100,7 +100,10 @@
 #define RESAMPLE_OUTPUT_FRAMES         (SBC_MAX_AUDIO_FRAMES_PER_BLOCK + RESAMPLE_ADDITIONAL_FRAMES)
 
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "00:1B:DC:08:E2:72"; // pts v5.0
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 #endif
 static bd_addr_t device_addr;
 

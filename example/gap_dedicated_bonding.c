@@ -45,7 +45,10 @@
 
 #include "btstack.h"
 
-static const char * device_addr_string = "00:1A:7D:DA:71:03";
+#ifndef REMOTE_ADDR_STRING
+#define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
+#endif
+static const char * device_addr_string = REMOTE_ADDR_STRING;
 static bd_addr_t device_addr;
 
 static const int mitm_protection_required = 0;
