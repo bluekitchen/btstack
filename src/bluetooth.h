@@ -95,7 +95,7 @@ typedef enum {
 
 
 /**
- * @brief link key
+ * @brief link key - stored in HCI / Little Endian byte order
  */
 #define LINK_KEY_LEN 16
 #define LINK_KEY_STR_LEN (LINK_KEY_LEN*2)
