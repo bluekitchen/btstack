@@ -1540,7 +1540,9 @@ static void sm_store_classic_bonding_information(sm_connection_t * sm_conn) {
 
         // store link key derived via CTKD from LTK
         log_info("sm: store link key type %u", setup->sm_link_key_type);
-        gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_link_key, setup->sm_link_key_type);
+        link_key_t link_key;
+        reverse_128(setup->sm_link_key, link_key);
+        gap_store_link_key_for_bd_addr(setup->sm_peer_address, link_key, setup->sm_link_key_type);
     }
 }
 #endif
@@ -1823,7 +1825,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY;
             break;
         case SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY:
-            reverse_128(hash, setup->sm_link_key);
+            memcpy(setup->sm_link_key, hash, 16);
             setup->sm_link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
             log_info("Derived classic link key from LE, type %u", (int) setup->sm_link_key_type);
