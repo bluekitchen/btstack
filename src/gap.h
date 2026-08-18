@@ -1253,7 +1253,7 @@ void gap_delete_all_link_keys(void);
 /** 
  * @brief Store link key for remote device with baseband address
  * @param addr
- * @param link_key
+ * @param link_key in HCI / Little Endian byte order
  * @param link_key_type
  * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
  *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
@@ -1264,7 +1264,7 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
 /**
  * @brief Get link for remote device with basband address
  * @param addr
- * @param link_key (out) is stored here
+ * @param link_key (out) is stored here in HCI / Little Endian byte order
  * @param link_key_type (out) is stored here
  * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
  *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
@@ -1286,7 +1286,7 @@ int gap_link_key_iterator_init(btstack_link_key_iterator_t * it);
  * @brief Get next Link Key
  * @param it
  * @brief addr
- * @brief link_key
+ * @brief link_key in HCI / Little Endian byte order
  * @brief type of link key
  * @return 1, if valid link key found
  * @see note on gap_link_key_iterator_init
@@ -1451,7 +1451,7 @@ uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
  * Send Link Key Reponse
  * @note Link Key (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_LINK_KEY_RESPONSE
  * @param addr
- * @param link_key
+ * @param link_key in HCI / Little Endian byte order
  * @param type or INVALID_LINK_KEY if link key not available
  * @return status
  */
