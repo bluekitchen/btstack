@@ -387,7 +387,8 @@ typedef struct sm_setup_context {
     int       sm_le_device_index;
 #endif
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-    link_key_t sm_link_key;
+    // link key stored in regular / Big Endian
+    sm_key_t        sm_link_key;
     link_key_type_t sm_link_key_type;
 #endif
 } sm_setup_context_t;

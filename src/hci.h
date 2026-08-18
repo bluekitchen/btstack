@@ -591,9 +591,9 @@ typedef struct {
     // requested security level
     gap_security_level_t requested_security_level;
     
-    // latest link key and type for Classic connection
-    // - from link key db or link key notification event
-    // LTK and LTK valid flag for LE connections
+    // Classic Connection: latest link key and type for Classic connection in HCI / Little Endian
+    // - set from link key db or link key notification event
+    // LE Connection: LTK and LTK valid flag in regular / Big Endian
     link_key_t      link_key;
     link_key_type_t link_key_type;
 
