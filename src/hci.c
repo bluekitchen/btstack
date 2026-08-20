@@ -2063,6 +2063,7 @@ static void hci_initializing_run(void){
                 hci_reserve_packet_buffer();
                 hci_stack->chipset_result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
                 bool send_cmd = false;
+                bool restore_num_commmands = false;
                 switch (hci_stack->chipset_result){
                     case BTSTACK_CHIPSET_VALID_COMMAND:
                         send_cmd = true;
@@ -2077,6 +2078,11 @@ static void hci_initializing_run(void){
                                 btstack_assert(false);
                                 break;
                         }
+                        break;
+                    case BTSTACK_CHIPSET_VALID_COMMAND_WITHOUT_EVENT:
+                        // just send command keep substate as we but don't exepct an event
+                        send_cmd = true;
+                        restore_num_commmands = true;
                         break;
                     case BTSTACK_CHIPSET_WARMSTART_REQUIRED:
                         send_cmd = true;
@@ -2102,6 +2108,10 @@ static void hci_initializing_run(void){
 
                 if (send_cmd){
                     hci_send_prepared_cmd_packet();
+                    // on some Controllers, the firmware is sent in HCI commands with a single HCI event for the last one
+                    if (restore_num_commmands) {
+                        hci_stack->num_cmd_packets++;
+                    }
                     break;
                 } else {
                     hci_release_packet_buffer();
