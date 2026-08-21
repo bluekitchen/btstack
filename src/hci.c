@@ -2045,12 +2045,23 @@ static void hci_initializing_run(void){
                 hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
                 hci_send_prepared_cmd_packet();
-                // STLC25000D: baudrate change happens within 0.5 s after command was send,
-                // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
-                if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
-                    btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
-                    btstack_run_loop_add_timer(&hci_stack->timeout);
-               }
+                switch (hci_stack->manufacturer) {
+                    case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:
+                        // STLC25000D: baudrate change happens within 0.5 s after command was send,
+                        // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
+                        btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
+                        btstack_run_loop_add_timer(&hci_stack->timeout);
+                        break;
+                    case BLUETOOTH_COMPANY_ID_QUALCOMM:
+                        // Qualcomm Atheros Bluetooth Controller send command complete at new baud rate
+                        // use timer to change baud rate after 2 ms (HCI command at 11520 takes 350 us)
+                        btstack_run_loop_set_timer(&hci_stack->timeout, 2);
+                        btstack_run_loop_add_timer(&hci_stack->timeout);
+                        break;
+                    default:
+                        // wait for the HCI Command Complete Event on the initial baud rate
+                        break;
+                }
                break;
             }
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
