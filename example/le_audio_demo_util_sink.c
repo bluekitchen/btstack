@@ -708,6 +708,9 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
             }
         } else {
             resample_factor = btstack_sample_rate_compensation_update(&sample_rate_compensation, time_ms, le_audio_demo_sink_num_samples_per_frame, playback_sample_rate);
+            for (uint8_t channel = 0; channel < le_audio_demo_sink_num_channels; channel++) {
+                btstack_resample_set_factor(&lc3_data[channel].resampler, resample_factor);
+            }
         }
     }
 #endif
