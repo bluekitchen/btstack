@@ -1,0 +1,9 @@
+[submodule "3rd-party/lhdcv5-decoder"]
+	path = 3rd-party/lhdcv5-decoder
+	url = https://github.com/WillyBilly06/LHDC-V5-Decoder.git
+[submodule "3rd-party/lhdcv5-encoder"]
+	path = 3rd-party/lhdcv5-encoder
+	url = https://github.com/WillyBilly06/LHDC-V5-Encoder.git
+[submodule "3rd-party/portaudio"]
+	path = 3rd-party/portaudio
+	url = https://github.com/PortAudio/portaudio.git
