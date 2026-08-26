@@ -220,7 +220,7 @@ static void pbap_client_phonebook_size_parser_process_data(pbap_client_phonebook
                 break;
             case PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_LEN:
                 phonebook_size_parser->len = *data_buffer;
-                phonebook_size_parser->state = PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE;
+                phonebook_size_parser->pos = 0;
                 switch (phonebook_size_parser->type){
                     case PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE:
                         if (phonebook_size_parser->len != 2){
@@ -230,7 +230,10 @@ static void pbap_client_phonebook_size_parser_process_data(pbap_client_phonebook
                         break;
                     default:
                         break;
-                    }
+                }
+                phonebook_size_parser->state = phonebook_size_parser->len == 0 ?
+                        PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_TYPE :
+                        PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE;
                 break;
             case PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE:
                 bytes_to_consume = btstack_min(phonebook_size_parser->len - phonebook_size_parser->pos, data_len);
@@ -278,6 +281,7 @@ static void obex_auth_parser_process_data(pbap_client_obex_auth_parser_t * auth_
                 break;
             case OBEX_AUTH_PARSER_STATE_W4_LEN:
                 auth_parser->len = *data_buffer;
+                auth_parser->pos = 0;
                 switch (auth_parser->type){
                     case 0:
                         if (auth_parser->len != 0x10){
@@ -298,7 +302,7 @@ static void obex_auth_parser_process_data(pbap_client_obex_auth_parser_t * auth_
                     default:
                         break;
                 }
-                auth_parser->state = OBEX_AUTH_PARSER_STATE_W4_VALUE;
+                auth_parser->state = auth_parser->len == 0 ? OBEX_AUTH_PARSER_STATE_W4_TYPE : OBEX_AUTH_PARSER_STATE_W4_VALUE;
                 break;
             case OBEX_AUTH_PARSER_STATE_W4_VALUE:
                 bytes_to_consume = btstack_min(auth_parser->len - auth_parser->pos, data_len);
