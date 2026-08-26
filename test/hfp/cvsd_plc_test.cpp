@@ -370,6 +370,16 @@ TEST(CVSD_PLC, TestSineWave){
     process_wav_file_with_plc("results/sine_test_with_bad_frames.wav", "results/sine_test_with_bad_frames_after_plc.wav");
 }
 
+TEST(CVSD_PLC, ZeroSamplesAreNoOp){
+    btstack_cvsd_plc_state_t state;
+    btstack_cvsd_plc_init(&state);
+
+    btstack_cvsd_plc_bad_frame(&state, 0, NULL);
+    btstack_cvsd_plc_good_frame(&state, 0, NULL, NULL);
+    btstack_cvsd_plc_process_data(&state, false, NULL, 0, NULL);
+    CHECK_EQUAL(0, state.frame_count);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

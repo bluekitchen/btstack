@@ -76,7 +76,7 @@ typedef struct cvsd_plc_state {
     int max_consecutive_bad_frames_nr;
 } btstack_cvsd_plc_state_t;
 
-// All int16 audio samples are in host endiness
+// All int16 audio samples are in host endiness. num_samples must be in [0, CVSD_FS].
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state);
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *out); 
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *in, int16_t *out);
