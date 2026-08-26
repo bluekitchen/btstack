@@ -146,7 +146,7 @@ uint8_t avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_clien
  *        - avrcp_controller_get_now_playing_info or
  *        - avrcp_controller_get_element_attributes(... AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART ...)
  * @param avrcp_cover_art_cid
- * @param image_handle non-NULL image-handle string, retained until the operation completes
+ * @param image_handle non-NULL image-handle string of exactly 7 characters, retained until the operation completes
  * @return status
  */
 uint8_t avrcp_cover_art_client_get_linked_thumbnail(uint16_t avrcp_cover_art_cid, const char * image_handle);
@@ -157,7 +157,7 @@ uint8_t avrcp_cover_art_client_get_linked_thumbnail(uint16_t avrcp_cover_art_cid
  *        - avrcp_controller_get_element_attributes(... AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART ...)
  *        and given image descriptor
  * @param avrcp_cover_art_cid
- * @param image_handle non-NULL image-handle string, retained until the operation completes
+ * @param image_handle non-NULL image-handle string of exactly 7 characters, retained until the operation completes
  * @param image_descriptor optional image-descriptor string, retained until the operation completes
  * @return status
  */
@@ -168,7 +168,7 @@ uint8_t avrcp_cover_art_client_get_image(uint16_t avrcp_cover_art_cid, const cha
  *        - avrcp_controller_get_now_playing_info or
  *        - avrcp_controller_get_element_attributes(... AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART ...)
  * @param avrcp_cover_art_cid
- * @param image_handle non-NULL image-handle string, retained until the operation completes
+ * @param image_handle non-NULL image-handle string of exactly 7 characters, retained until the operation completes
  * @return status
  */
 uint8_t avrcp_cover_art_client_get_image_properties(uint16_t avrcp_cover_art_cid, const char * image_handle);

@@ -227,7 +227,7 @@ static void avrcp_cover_art_client_handle_can_send_now(avrcp_cover_art_client_t 
                 if (cover_art_client->image_descriptor != NULL){
                     goep_client_header_add_variable(cover_art_client->goep_cid, OBEX_HEADER_IMG_DESCRIPTOR, (const uint8_t *) cover_art_client->image_descriptor, (uint16_t) strlen(cover_art_client->image_descriptor));
                 }
-                uint8_t image_handle_len = btstack_max(7, (uint16_t) strlen(cover_art_client->image_handle));
+                uint16_t image_handle_len = (uint16_t) strlen(cover_art_client->image_handle);
                 goep_client_header_add_unicode_prefix(cover_art_client->goep_cid, OBEX_HEADER_IMG_HANDLE, cover_art_client->image_handle, image_handle_len);
             }
             // state
@@ -491,6 +491,7 @@ avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btsta
 static uint8_t avrcp_cover_art_client_get_object(uint16_t avrcp_cover_art_cid, const char * object_type, const char * image_handle, const char * image_descriptor){
     btstack_assert(object_type != NULL);
     btstack_assert(image_handle != NULL);
+    btstack_assert(strlen(image_handle) == 7);
 
     avrcp_cover_art_client_t * cover_art_client = avrcp_cover_art_client_for_cover_art_cid(avrcp_cover_art_cid);
     if (cover_art_client == NULL){
