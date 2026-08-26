@@ -129,7 +129,7 @@ typedef struct {
     uint8_t pos;
     // data
     uint8_t  authentication_options;
-    uint16_t authentication_nonce[16];
+    uint8_t  authentication_nonce[16];
 } pbap_client_obex_auth_parser_t;
 
 typedef struct pbap_client {
