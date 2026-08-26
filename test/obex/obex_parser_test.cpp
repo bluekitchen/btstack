@@ -146,9 +146,11 @@ TEST(OBEX_PARSER, SetPathResponse){
 static uint8_t  test_tag_id;
 static uint8_t  test_tag_buffer[100];
 static uint16_t test_tag_len;
+static uint16_t test_tag_count;
 
 void app_param_parser_callback(void * user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t * data_buffer, uint8_t data_len){
     UNUSED(user_data);
+    test_tag_count++;
     if (obex_app_param_parser_tag_store(test_tag_buffer, sizeof(test_tag_buffer), total_len, data_offset, data_buffer, data_len) == OBEX_APP_PARAM_PARSER_TAG_COMPLETE){
         test_tag_len = total_len;
         test_tag_id  = tag_id;
@@ -160,6 +162,7 @@ TEST_GROUP(APP_PARAM_PARSER){
         void setup(void){
             test_tag_id = 0;
             test_tag_len = 0;
+            test_tag_count = 0;
         }
         void teardown(void){
         }
@@ -208,6 +211,17 @@ TEST(APP_PARAM_PARSER, InvalidTagLen){
     CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_INVALID, parser_state);
     CHECK_EQUAL(0, test_tag_id);
     CHECK_EQUAL(0, test_tag_len);
+}
+
+TEST(APP_PARAM_PARSER, ZeroLengthTag){
+    const uint8_t message[] = { 0x01, 0x00, 0x02, 0x01, 0xaa };
+    obex_app_param_parser_init(&parser, &app_param_parser_callback, sizeof(message), NULL);
+
+    obex_app_param_parser_params_state_t parser_state = obex_app_param_parser_process_data(&parser, message, sizeof(message));
+    CHECK_EQUAL(OBEX_APP_PARAM_PARSER_PARAMS_STATE_COMPLETE, parser_state);
+    CHECK_EQUAL(2, test_tag_count);
+    CHECK_EQUAL(2, test_tag_id);
+    CHECK_EQUAL(1, test_tag_len);
 }
 
 int main (int argc, const char * argv[]){

@@ -295,7 +295,12 @@ obex_app_param_parser_params_state_t obex_app_param_parser_process_data(obex_app
                     RETURN_OBEX_STATE(OBEX_APP_PARAM_PARSER_PARAMS_STATE_INVALID);
                 }
                 parser->tag_pos = 0;
-                parser->state = OBEX_APP_PARAM_PARSER_STATE_W4_VALUE;
+                if (parser->tag_len == 0){
+                    (*parser->callback)(parser->user_data, parser->tag_id, 0, 0, data_buffer, 0);
+                    parser->state = OBEX_APP_PARAM_PARSER_STATE_W4_TYPE;
+                } else {
+                    parser->state = OBEX_APP_PARAM_PARSER_STATE_W4_VALUE;
+                }
                 break;
             case OBEX_APP_PARAM_PARSER_STATE_W4_VALUE:
                 bytes_to_consume = btstack_min(parser->tag_len - parser->tag_pos, data_len);
