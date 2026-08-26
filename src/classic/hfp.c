@@ -45,6 +45,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "bluetooth_company_id.h"
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -2029,6 +2030,91 @@ bool hfp_sco_setup_active(void){
     return hfp_sco_establishment_active != NULL;
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
+typedef struct {
+    uint8_t  transmit_coding_format;
+    uint8_t  receive_coding_format;
+    uint32_t input_bandwidth;
+    uint32_t output_bandwidth;
+    uint8_t  input_coding_format;
+    uint8_t  output_coding_format;
+    uint8_t  input_coded_data_size;
+    uint8_t  output_coded_data_size;
+    uint8_t  input_transport_unit_size;
+    uint8_t  output_transport_unit_size;
+} hfp_enhanced_sco_parameters_t;
+
+static hfp_enhanced_sco_parameters_t hfp_enhanced_sco_parameters_for_codec(uint8_t codec){
+    hfp_enhanced_sco_parameters_t parameters;
+    switch (codec){
+        case HFP_CODEC_CVSD:
+            // Host PCM16 <-> HCI <-> Controller CVSD codec <-> SCO/eSCO.
+            parameters.transmit_coding_format     = 0x02; // CVSD
+            parameters.receive_coding_format      = 0x02; // CVSD
+            parameters.input_bandwidth            = 16000;
+            parameters.output_bandwidth           = 16000;
+            parameters.input_coding_format        = 0x04; // Linear PCM
+            parameters.output_coding_format       = 0x04; // Linear PCM
+            parameters.input_coded_data_size      = 16;
+            parameters.output_coded_data_size     = 16;
+            parameters.input_transport_unit_size  = 16;
+            parameters.output_transport_unit_size = 16;
+            break;
+        default:
+            // BTstack exchanges its H2/mSBC stream over HCI; the Controller is transparent.
+            parameters.transmit_coding_format     = 0x03; // Transparent
+            parameters.receive_coding_format      = 0x03; // Transparent
+            parameters.input_bandwidth            = 8000;
+            parameters.output_bandwidth           = 8000;
+            parameters.input_coding_format        = 0x03; // Transparent
+            parameters.output_coding_format       = 0x03; // Transparent
+            parameters.input_coded_data_size      = 16;
+            parameters.output_coded_data_size     = 16;
+            parameters.input_transport_unit_size  = 1;
+            parameters.output_transport_unit_size = 1;
+            break;
+    }
+    return parameters;
+}
+
+static void hfp_send_enhanced_setup_synchronous_connection(hfp_connection_t * hfp_connection, uint16_t max_latency,
+                                                            uint16_t packet_types, uint8_t retransmission_effort){
+    const hfp_enhanced_sco_parameters_t parameters = hfp_enhanced_sco_parameters_for_codec(hfp_connection->negotiated_codec);
+    hci_send_cmd(&hci_enhanced_setup_synchronous_connection, hfp_connection->acl_handle,
+        8000, 8000,
+        parameters.transmit_coding_format, 0, 0, parameters.receive_coding_format, 0, 0,
+        60, 60,
+        parameters.input_bandwidth, parameters.output_bandwidth,
+        parameters.input_coding_format, 0, 0, parameters.output_coding_format, 0, 0,
+        parameters.input_coded_data_size, parameters.output_coded_data_size,
+        0x02, 0x02, 0, 0,
+        0x00, 0x00, // HCI data path
+        parameters.input_transport_unit_size, parameters.output_transport_unit_size,
+        max_latency, packet_types, retransmission_effort);
+}
+
+static void hfp_send_enhanced_accept_synchronous_connection(hfp_connection_t * hfp_connection, uint16_t max_latency,
+                                                             uint16_t packet_types, uint8_t retransmission_effort){
+    const hfp_enhanced_sco_parameters_t parameters = hfp_enhanced_sco_parameters_for_codec(hfp_connection->negotiated_codec);
+    hci_send_cmd(&hci_enhanced_accept_synchronous_connection, hfp_connection->remote_addr,
+        8000, 8000,
+        parameters.transmit_coding_format, 0, 0, parameters.receive_coding_format, 0, 0,
+        60, 60,
+        parameters.input_bandwidth, parameters.output_bandwidth,
+        parameters.input_coding_format, 0, 0, parameters.output_coding_format, 0, 0,
+        parameters.input_coded_data_size, parameters.output_coded_data_size,
+        0x02, 0x02, 0, 0,
+        0x00, 0x00, // HCI data path
+        parameters.input_transport_unit_size, parameters.output_transport_unit_size,
+        max_latency, packet_types, retransmission_effort);
+}
+
+static bool hfp_use_enhanced_synchronous_connection_commands(void){
+    return (hci_get_manufacturer() == BLUETOOTH_COMPANY_ID_QUALCOMM)
+        && hci_enhanced_synchronous_connection_supported();
+}
+#endif
+
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
 
     hfp_sco_establishment_active = hfp_connection;
@@ -2049,6 +2135,14 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
 
     // get packet types - bits 6-9 are 'don't allow'
     uint16_t packet_types_flipped = packet_types ^ 0x03c0;
+#ifdef ENABLE_SCO_OVER_HCI
+    if (hfp_use_enhanced_synchronous_connection_commands()){
+        // Setup SCO connection with data path HCI
+        hfp_send_enhanced_setup_synchronous_connection(hfp_connection, hfp_link_settings[setting].max_latency,
+                                                        packet_types_flipped, hfp_link_settings[setting].retransmission_effort);
+        return;
+    }
+#endif
 #if defined(ENABLE_SCO_OVER_PCM) && defined(ENABLE_NXP_PCM_WBS)
     uint8_t  radio_coding_format = 3;
     uint32_t host_bandwidth      = 0;
@@ -2194,6 +2288,14 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool u
     log_info("Sending hci_accept_connection_request: packet types 0x%04x, sco_voice_setting 0x%02x",
             packet_types, sco_voice_setting);
 
+#ifdef ENABLE_SCO_OVER_HCI
+    if (hfp_use_enhanced_synchronous_connection_commands()){
+        // Accept SCO connection with data path HCI
+        hfp_send_enhanced_accept_synchronous_connection(hfp_connection, max_latency, packet_types_flipped,
+                                                         retransmission_effort);
+        return;
+    }
+#endif
 #if defined(ENABLE_SCO_OVER_PCM) && defined(ENABLE_NXP_PCM_WBS)
     uint8_t radio_coding_format = 3;
     uint32_t host_bandwidth = 0;
