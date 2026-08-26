@@ -921,24 +921,34 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_COMMAND_STATUS:
-            if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
-                if (hfp_sco_establishment_active == NULL) break;
-                status = hci_event_command_status_get_status(packet);
-                if (status == ERROR_CODE_SUCCESS) break;
-                
-                hfp_connection = hfp_sco_establishment_active;
-                if (hfp_handle_failed_sco_connection(status)) {
-                    // trigger hfp run for role
-                    hfp_emit_event_for_context(hfp_connection, packet, size);
-                    break;
-                }
+            switch (hci_event_command_status_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
+                case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
+                case HCI_OPCODE_HCI_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION:
+                case HCI_OPCODE_HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION:
+                    if (hfp_sco_establishment_active == NULL) break;
+                    status = hci_event_command_status_get_status(packet);
+                    if (status == ERROR_CODE_SUCCESS) break;
 
-                hfp_connection->accept_sco = 0;
-                hfp_connection->establish_audio_connection = 0;
-                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_sco_establishment_active = NULL;
-                hfp_emit_sco_connection_established(hfp_connection, status,
-                                                    hfp_connection->negotiated_codec, 0, 0);
+                    log_info("Synchronous connection command 0x%04x failed, status 0x%02x",
+                             hci_event_command_status_get_command_opcode(packet), status);
+                
+                    hfp_connection = hfp_sco_establishment_active;
+                    if (hfp_handle_failed_sco_connection(status)) {
+                        // trigger hfp run for role
+                        hfp_emit_event_for_context(hfp_connection, packet, size);
+                        break;
+                    }
+
+                    hfp_connection->accept_sco = 0;
+                    hfp_connection->establish_audio_connection = 0;
+                    hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                    hfp_sco_establishment_active = NULL;
+                    hfp_emit_sco_connection_established(hfp_connection, status,
+                                                        hfp_connection->negotiated_codec, 0, 0);
+                    break;
+                default:
+                    break;
             }
             // to allow sending HCI Commands
             forward_if_pending = true;
