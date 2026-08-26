@@ -376,6 +376,16 @@ TEST(LINK_KEY_DB, NumKeys){
     CHECK(NVM_NUM_LINK_KEYS ==  2);
 }
 
+TEST(LINK_KEY_DB, IgnoreTruncatedEntry){
+    uint8_t truncated_entry = 0;
+    uint32_t tag = ((uint32_t)'B' << 24u) | ((uint32_t)'T' << 16u) | ((uint32_t)'L' << 8u);
+    CHECK_EQUAL(0, btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &truncated_entry, sizeof(truncated_entry)));
+
+    link_key_t test_link_key;
+    link_key_type_t test_link_key_type;
+    CHECK_EQUAL(0, btstack_link_key_db->get_link_key(addr1, test_link_key, &test_link_key_type));
+}
+
 TEST(LINK_KEY_DB, KeyReplacement){
 	link_key_t test_link_key;
     link_key_type_t test_link_key_type;
