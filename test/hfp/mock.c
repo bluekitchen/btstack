@@ -430,6 +430,10 @@ bool hci_extended_sco_link_supported(void){
     return true;
 }
 
+bool hci_enhanced_synchronous_connection_supported(void){
+    return false;
+}
+
 bool gap_secure_connection(hci_con_handle_t con_handle){
     UNUSED(con_handle);
     return true;
