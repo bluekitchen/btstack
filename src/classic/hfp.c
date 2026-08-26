@@ -66,6 +66,18 @@
 #error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
 #endif
 
+#if defined(ENABLE_NXP_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
+#error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
+#if defined(ENABLE_RTK_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
+#error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
+#if defined(ENABLE_SCO_OVER_HCI) && defined(ENABLE_SCO_OVER_PCM)
+#error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM."
+#endif
+
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
 
