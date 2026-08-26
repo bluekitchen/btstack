@@ -163,6 +163,8 @@
     X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES                 ,  2, 6) \
     X( SUPPORTED_HCI_COMMAND_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE         , 10, 4) \
     X( SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE                              , 14, 7) \
+    X( SUPPORTED_HCI_COMMAND_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION         , 29, 3) \
+    X( SUPPORTED_HCI_COMMAND_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST, 29, 4) \
     X( SUPPORTED_HCI_COMMAND_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING        , 18, 3) \
     X( SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE                      , 20, 4) \
     X( SUPPORTED_HCI_COMMAND_SET_EVENT_MASK_PAGE_2                         , 22, 2) \
@@ -1566,6 +1568,13 @@ bool hci_le_supported(void){
 static bool hci_command_supported(uint8_t command_index){
     return (hci_stack->local_supported_commands & (1LU << command_index)) != 0;
 }
+
+#ifdef ENABLE_CLASSIC
+bool hci_enhanced_synchronous_connection_supported(void){
+    return hci_command_supported(SUPPORTED_HCI_COMMAND_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION)
+        && hci_command_supported(SUPPORTED_HCI_COMMAND_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST);
+}
+#endif
 
 #ifdef ENABLE_BLE
 

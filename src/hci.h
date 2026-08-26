@@ -1860,6 +1860,12 @@ void hci_remote_features_query(hci_con_handle_t con_handle);
 bool hci_extended_sco_link_supported(void);
 
 /**
+ * @brief Check if the Controller supports the Enhanced Setup Synchronous Connection and
+ * Enhanced Accept Synchronous Connection Request commands.
+ */
+bool hci_enhanced_synchronous_connection_supported(void);
+
+/**
  * Check if SSP is supported on both sides. Called by L2CAP
  */
 bool gap_ssp_supported_on_both_sides(hci_con_handle_t handle);
