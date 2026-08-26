@@ -246,6 +246,9 @@ static uint8_t goep_client_start_connect(goep_client_t * goep_client){
         &goep_client->ertm_config, goep_client->ertm_buffer,
         goep_client->ertm_buffer_size, &goep_client->bearer_cid);
     }
+    // l2cap_psm also selects the active bearer for subsequent operations.
+    // Clear an SDP-advertised PSM when falling back to RFCOMM.
+    goep_client->l2cap_psm = 0;
 #endif
     log_info("Remote GOEP RFCOMM Server Channel: %u", goep_client->rfcomm_port);
     return rfcomm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->rfcomm_port, &goep_client->bearer_cid);
@@ -902,4 +905,3 @@ int goep_client_execute_with_final_bit(uint16_t goep_cid, bool final){
         return rfcomm_send_prepared(goep_client->bearer_cid, pos);
     }
 }
-
