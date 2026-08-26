@@ -511,10 +511,10 @@ uint8_t goep_server_decline_connection(uint16_t goep_cid){
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    connection->state = GOEP_SERVER_W4_CONNECTED;
     if (connection->state != GOEP_SERVER_W4_ACCEPT_REJECT){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    connection->state = GOEP_SERVER_W4_CONNECTED;
 #ifdef ENABLE_GOEP_L2CAP
     if (connection->type == GOEP_CONNECTION_L2CAP){
         l2cap_decline_connection(connection->bearer_cid);
