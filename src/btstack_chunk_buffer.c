@@ -54,7 +54,7 @@ uint32_t btstack_chunk_buffer_bytes_available(btstack_chunk_buffer_t * context) 
 }
 
 uint32_t btstack_chunk_buffer_read(btstack_chunk_buffer_t * context, uint8_t * buffer, uint32_t buffer_size){
-    uint16_t bytes_to_copy = btstack_min(buffer_size, context->chunk_size);
+    uint32_t bytes_to_copy = btstack_min(buffer_size, context->chunk_size);
     memcpy(buffer, context->chunk_buffer, bytes_to_copy);
     context->chunk_buffer += bytes_to_copy;
     context->chunk_size -= bytes_to_copy;
