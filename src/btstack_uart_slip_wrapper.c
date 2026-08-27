@@ -157,11 +157,14 @@ static void btstack_uart_slip_wrapper_receive_frame(uint8_t *buffer, uint16_t le
 // SLIP End
 
 static int btstack_uart_slip_wrapper_init(const btstack_uart_config_t * config){
+    btstack_assert(config != NULL);
+    btstack_assert(config->baudrate > 0);
     btstack_uart_slip_wrapper_baudrate = config->baudrate;
     return original_uart->init(config);
 }
 
 static int btstack_uart_slip_wrapper_set_baudrate(uint32_t baudrate){
+    btstack_assert(baudrate > 0);
     if (original_uart->set_baudrate != NULL){
         btstack_uart_slip_wrapper_baudrate = baudrate;
         return original_uart->set_baudrate(baudrate);
