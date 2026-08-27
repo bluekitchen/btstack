@@ -153,8 +153,8 @@ static void btstack_slip_decoder_reset(void){
 }
 
 static void btstack_slip_decoder_store_byte(uint8_t input){
-	if (decoder_pos >= decoder_max_size){
-	    log_error("btstack_slip_decoder_store_byte: packet to long");
+    if (decoder_pos >= decoder_max_size){
+	    log_info("btstack_slip_decoder_store_byte: packet too long");
 	    btstack_slip_decoder_reset();
 	}
 	decoder_buffer[decoder_pos++] = input;
