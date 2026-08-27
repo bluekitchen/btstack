@@ -326,13 +326,6 @@ static void btstack_sbc_decoder_bluedroid_process_sbc_data(btstack_sbc_decoder_b
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
                 log_info("SBC decode: checksum error");
-                // Did the codec consume any bytes?
-                if (bytes_processed > 0){
-                    // Good. Nothing to do.
-                } else {
-                    // Skip the bogus frame by skipping the header.
-                    bytes_processed = 1;
-                }
                 break;
 
             case OI_STATUS_INVALID_PARAMETERS:
@@ -348,9 +341,13 @@ static void btstack_sbc_decoder_bluedroid_process_sbc_data(btstack_sbc_decoder_b
             default:
                 // Anything else went wrong.
                 // Skip a few bytes and try again.
-                bytes_processed = 1;
                 log_info("SBC decode: unknown status %d", status);
                 break;
+        }
+
+        // Any result that reaches here must consume data to make recovery progress.
+        if (keep_decoding && (bytes_processed == 0)){
+            bytes_processed = 1;
         }
 
         // Remove decoded frame from decoder_state->frame_buffer.
@@ -526,13 +523,6 @@ static void btstack_sbc_decoder_bluedroid_process_msbc_data(btstack_sbc_decoder_
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
                 log_debug("OI_CODEC_SBC_CHECKSUM_MISMATCH");
-                // Did the codec consume any bytes?
-                if (bytes_processed > 0){
-                    // Good. Nothing to do.
-                } else {
-                    // Skip the bogus frame by skipping the header.
-                    bytes_processed = 1;
-                }
                 break;
 
             case OI_STATUS_INVALID_PARAMETERS:
@@ -547,6 +537,11 @@ static void btstack_sbc_decoder_bluedroid_process_msbc_data(btstack_sbc_decoder_
             default:
                 log_info("Frame decode error: %d", status);
                 break;
+        }
+
+        // Any result that reaches here must consume data to make recovery progress.
+        if (bytes_processed == 0){
+            bytes_processed = 1;
         }
 
         // on success, while loop was restarted, so all processed bytes have been "bad"
