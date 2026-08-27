@@ -164,6 +164,9 @@ void OI_AssertFail(const char* file, int line, const char* reason){
 #endif
 
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
+    btstack_assert(state != NULL);
+    btstack_assert(callback != NULL);
+
     if (sbc_decoder_state_singleton && (sbc_decoder_state_singleton != state) ){
         log_error("SBC decoder: different sbc decoder state already registered");
     }
@@ -522,6 +525,11 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
 }
 
 void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, const uint8_t * buffer, int size){
+    btstack_assert(state != NULL);
+    btstack_assert(state->handle_pcm_data != NULL);
+    btstack_assert(size >= 0);
+    btstack_assert((buffer != NULL) || (size == 0));
+
     if (state->mode == SBC_MODE_mSBC){
         btstack_sbc_decoder_process_msbc_data(state, packet_status_flag, buffer, size);
     } else {

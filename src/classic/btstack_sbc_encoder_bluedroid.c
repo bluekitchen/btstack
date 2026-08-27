@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "btstack_bool.h"
 #include "btstack_sbc.h"
 #include "btstack_sbc_plc.h"
 #include "btstack_debug.h"
@@ -71,20 +72,62 @@ typedef struct {
 static btstack_sbc_encoder_state_t * sbc_encoder_state_singleton = NULL;
 static bludroid_encoder_state_t bd_encoder_state;
 
+static bool btstack_sbc_encoder_configuration_valid(btstack_sbc_mode_t mode, int blocks, int subbands,
+                                                    btstack_sbc_allocation_method_t allocation_method,
+                                                    int sample_rate, int bitpool,
+                                                    btstack_sbc_channel_mode_t channel_mode){
+    int max_bitpool;
+
+    if (mode == SBC_MODE_mSBC){
+        return true;
+    }
+    if (mode != SBC_MODE_STANDARD){
+        return false;
+    }
+    switch (blocks){
+        case 4:
+        case 8:
+        case 12:
+        case 16:
+            break;
+        default:
+            return false;
+    }
+    if ((subbands != 4) && (subbands != 8)){
+        return false;
+    }
+    if ((allocation_method != SBC_ALLOCATION_METHOD_LOUDNESS) && (allocation_method != SBC_ALLOCATION_METHOD_SNR)){
+        return false;
+    }
+    switch (sample_rate){
+        case 16000:
+        case 32000:
+        case 44100:
+        case 48000:
+            break;
+        default:
+            return false;
+    }
+    if ((channel_mode < SBC_CHANNEL_MODE_MONO) || (channel_mode > SBC_CHANNEL_MODE_JOINT_STEREO)){
+        return false;
+    }
+
+    max_bitpool = subbands * ((channel_mode <= SBC_CHANNEL_MODE_DUAL_CHANNEL) ? 16 : 32);
+    return (bitpool >= 2) && (bitpool <= 250) && (bitpool <= max_bitpool);
+}
 
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method, 
                         int sample_rate, int bitpool, btstack_sbc_channel_mode_t channel_mode){
+
+    btstack_assert(state != NULL);
+    btstack_assert(btstack_sbc_encoder_configuration_valid(mode, blocks, subbands, allocation_method, sample_rate, bitpool, channel_mode));
 
     if (sbc_encoder_state_singleton && (sbc_encoder_state_singleton != state) ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
     } 
     
     sbc_encoder_state_singleton = state;
-
-    if (!sbc_encoder_state_singleton){
-        log_error("SBC encoder init: sbc state is NULL");
-    }
 
     sbc_encoder_state_singleton->mode = mode;
 
@@ -131,9 +174,8 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
 
 
 void btstack_sbc_encoder_process_data(int16_t * input_buffer){
-    if (!sbc_encoder_state_singleton){
-        log_error("SBC encoder: sbc state is NULL, call btstack_sbc_encoder_init to initialize it");
-    }
+    btstack_assert(sbc_encoder_state_singleton != NULL);
+    btstack_assert(input_buffer != NULL);
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     context->ps16PcmBuffer = input_buffer;
     if (context->mSBCEnabled){
@@ -143,16 +185,19 @@ void btstack_sbc_encoder_process_data(int16_t * input_buffer){
 }
 
 int btstack_sbc_encoder_num_audio_frames(void){
+    btstack_assert(sbc_encoder_state_singleton != NULL);
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     return context->s16NumOfSubBands * context->s16NumOfBlocks;
 }
 
 uint8_t * btstack_sbc_encoder_sbc_buffer(void){
+    btstack_assert(sbc_encoder_state_singleton != NULL);
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     return context->pu8Packet;
 }
 
 uint16_t  btstack_sbc_encoder_sbc_buffer_length(void){
+    btstack_assert(sbc_encoder_state_singleton != NULL);
     SBC_ENC_PARAMS * context = &((bludroid_encoder_state_t *)sbc_encoder_state_singleton->encoder_state)->context;
     return context->u16PacketLength;
 }
