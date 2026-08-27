@@ -78,8 +78,8 @@ uint8_t btstack_slip_encoder_get_byte(void);
 
 /**
  * @brief Initialise SLIP decoder with buffer
- * @param buffer to store received data
- * @param max_size of buffer
+ * @param buffer non-NULL storage for received data
+ * @param max_size non-zero size of buffer
  */
 void btstack_slip_decoder_init(uint8_t * buffer, uint16_t max_size);
 

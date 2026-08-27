@@ -43,6 +43,9 @@
  */
 
 #include "btstack_slip.h"
+
+#include <stddef.h>
+
 #include "btstack_debug.h"
 
 typedef enum {
@@ -163,6 +166,9 @@ static void btstack_slip_decoder_store_byte(uint8_t input){
  * @param max_size of buffer
  */
 void btstack_slip_decoder_init(uint8_t * buffer, uint16_t max_size){
+    btstack_assert(buffer != NULL);
+    btstack_assert(max_size > 0);
+
 	decoder_buffer = buffer;
 	decoder_max_size = max_size;
 	btstack_slip_decoder_reset();
