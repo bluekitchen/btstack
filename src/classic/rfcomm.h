@@ -375,6 +375,8 @@ uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
 /** 
  * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
  * @param rfcomm_cid
+ * @param data non-NULL if len is nonzero
+ * @param len number of payload bytes
  * @return status
  */
 uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);

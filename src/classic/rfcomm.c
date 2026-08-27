@@ -2394,6 +2394,8 @@ uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 }
 
 uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+    btstack_assert((data != NULL) || (len == 0));
+
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
