@@ -51,6 +51,20 @@ TEST(Base64Decoder, a){
     CHECK_EQUAL_ARRAY((uint8_t *) "a", output, 1);
 }
 
+TEST(Base64Decoder, DataAfterPaddingIsInvalid){
+    const uint8_t input[] = "YWI=A";
+    uint8_t output[3];
+    int result = btstack_base64_decoder_process_block(input, strlen((const char*) input), output, sizeof(output));
+    CHECK_EQUAL(BTSTACK_BASE64_DECODER_INVALID, result);
+}
+
+TEST(Base64Decoder, ExcessPaddingIsInvalid){
+    const uint8_t input[] = "YQ===";
+    uint8_t output[3];
+    int result = btstack_base64_decoder_process_block(input, strlen((const char*) input), output, sizeof(output));
+    CHECK_EQUAL(BTSTACK_BASE64_DECODER_INVALID, result);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
