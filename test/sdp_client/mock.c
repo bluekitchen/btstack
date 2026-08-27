@@ -35,7 +35,7 @@ uint8_t *l2cap_get_outgoing_buffer(void){
     return NULL;
 }
 uint16_t l2cap_max_mtu(void){
-    return 0;
+    return 1024;
 }
 int l2cap_reserve_packet_buffer(void){
     return 0;

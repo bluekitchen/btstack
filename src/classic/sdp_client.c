@@ -124,6 +124,22 @@ static uint32_t sdp_client_service_record_handle;
 static uint32_t sdp_client_record_handle;
 #endif
 
+static void sdp_client_assert_data_element_sequence(const uint8_t * data_element_sequence){
+    btstack_assert(data_element_sequence != NULL);
+    btstack_assert(de_get_element_type(data_element_sequence) == DE_DES);
+}
+
+static void sdp_client_assert_request_fits(uint16_t fixed_size, const uint8_t * service_search_pattern, const uint8_t * attribute_id_list){
+    uint32_t request_size = fixed_size + 1u + sizeof(sdp_client_continuation_state);
+    if (service_search_pattern != NULL){
+        request_size += de_get_len(service_search_pattern);
+    }
+    if (attribute_id_list != NULL){
+        request_size += de_get_len(attribute_id_list);
+    }
+    btstack_assert(request_size <= l2cap_max_mtu());
+}
+
 // DES Parser
 void de_state_init(de_state_t * de_state){
     de_state->in_state_GET_DE_HEADER_LENGTH = 1;
@@ -751,6 +767,12 @@ uint8_t sdp_client_register_query_callback(btstack_context_callback_registration
 uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list){
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
+    btstack_assert(callback != NULL);
+    btstack_assert(remote != NULL);
+    sdp_client_assert_data_element_sequence(des_service_search_pattern);
+    sdp_client_assert_data_element_sequence(des_attribute_id_list);
+    sdp_client_assert_request_fits(5u + 2u, des_service_search_pattern, des_attribute_id_list);
+
     sdp_parser_init(callback);
     sdp_client_service_search_pattern = des_service_search_pattern;
     sdp_client_attribute_id_list = des_attribute_id_list;
@@ -768,12 +790,18 @@ uint8_t sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t rem
 
 uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid){
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
+    btstack_assert(uuid != NULL);
     return sdp_client_query(callback, remote, sdp_service_search_pattern_for_uuid128(uuid), sdp_client_des_attribute_id_list);
 }
 
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attribute_id_list){
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
+
+    btstack_assert(callback != NULL);
+    btstack_assert(remote != NULL);
+    sdp_client_assert_data_element_sequence(des_attribute_id_list);
+    sdp_client_assert_request_fits(5u + 4u + 2u, NULL, des_attribute_id_list);
 
     sdp_parser_init(callback);
     sdp_client_service_record_handle = search_service_record_handle;
@@ -789,6 +817,11 @@ uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, b
 uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern){
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
+
+    btstack_assert(callback != NULL);
+    btstack_assert(remote != NULL);
+    sdp_client_assert_data_element_sequence(des_service_search_pattern);
+    sdp_client_assert_request_fits(5u + 2u, des_service_search_pattern, NULL);
 
     sdp_parser_init(callback);
     sdp_client_service_search_pattern = des_service_search_pattern;
