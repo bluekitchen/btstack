@@ -392,13 +392,13 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
     }
 
     // drop if already stored
-    if ((message_pdu->block_ack & (1<<seg_o)) != 0){
+    if ((message_pdu->block_ack & (1u << seg_o)) != 0){
         mesh_network_message_processed_by_higher_layer(network_pdu);
         return;
     }
 
     // mark as received
-    message_pdu->block_ack |= (1<<seg_o);
+    message_pdu->block_ack |= (1u << seg_o);
 
     // store segment
     uint8_t max_segment_len = mesh_network_control(network_pdu) ? 8 : 12;
@@ -433,7 +433,7 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
     // check for complete
     int i;
     for (i=0;i<=seg_n;i++){
-        if ( (message_pdu->block_ack & (1<<i)) == 0) return;
+        if ( (message_pdu->block_ack & (1u << i)) == 0) return;
     }
 
     // store block ack in peer info
@@ -481,9 +481,9 @@ static void mesh_lower_transport_outgoing_setup_block_ack(mesh_segmented_pdu_t *
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
     uint8_t  seg_n = (message_pdu->len - 1) / max_segment_len;
     if (seg_n < 31){
-        message_pdu->block_ack = (1 << (seg_n+1)) - 1;
+        message_pdu->block_ack = (1u << (seg_n+1)) - 1u;
     } else {
-        message_pdu->block_ack = 0xffffffff;
+        message_pdu->block_ack = 0xffffffffu;
     }
 }
 
@@ -666,7 +666,7 @@ static void mesh_lower_transport_outgoing_send_next_segment(void){
     uint8_t  seg_n = (lower_transport_outgoing_message->len - 1) / max_segment_len;
 
     // find next unacknowledged segment
-    while ((lower_transport_outgoing_seg_o <= seg_n) && ((lower_transport_outgoing_message->block_ack & (1 << lower_transport_outgoing_seg_o)) == 0)){
+    while ((lower_transport_outgoing_seg_o <= seg_n) && ((lower_transport_outgoing_message->block_ack & (1u << lower_transport_outgoing_seg_o)) == 0)){
         lower_transport_outgoing_seg_o++;
     }
 
