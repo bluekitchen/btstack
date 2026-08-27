@@ -324,6 +324,10 @@ bool des_iterator_has_more(des_iterator_t * it){
     return des_iterator_get_element_len(it) != 0;
 }
 
+bool des_iterator_is_complete(des_iterator_t * it){
+    return it->pos == it->length;
+}
+
 uint8_t * des_iterator_get_element(des_iterator_t * it){
     if (des_iterator_get_element_len(it) == 0) return NULL;
     return &it->element[it->pos];
@@ -349,9 +353,8 @@ static bool de_traverse_sequence(uint8_t * element, de_traversal_callback_t hand
     des_iterator_t it;
     if (!des_iterator_init(&it, element)) return false;
 
-    while (it.pos < it.length){
+    while (des_iterator_has_more(&it)){
         uint8_t * child = des_iterator_get_element(&it);
-        if (child == NULL) return false;
 
         de_type_t elemType = des_iterator_get_type(&it);
         de_size_t elemSize = de_get_size_type(child);
@@ -359,7 +362,7 @@ static bool de_traverse_sequence(uint8_t * element, de_traversal_callback_t hand
         if (done) break;
         des_iterator_next(&it);
     }
-    return true;
+    return des_iterator_is_complete(&it);
 }
 
 // MARK: AttributeList traversal

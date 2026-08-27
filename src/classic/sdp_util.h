@@ -144,6 +144,8 @@ bool      des_iterator_init(des_iterator_t * it, uint8_t * element);
  */
 bool      des_iterator_init_with_len(des_iterator_t * it, uint8_t * element, uint32_t element_size);
 bool      des_iterator_has_more(des_iterator_t * it);
+/** @return true if all elements in the Data Element Sequence have been consumed. */
+bool      des_iterator_is_complete(des_iterator_t * it);
 de_type_t des_iterator_get_type (des_iterator_t * it);
 uint16_t  des_iterator_get_size (des_iterator_t * it);
 uint8_t * des_iterator_get_element(des_iterator_t * it);

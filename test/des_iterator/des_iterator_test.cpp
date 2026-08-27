@@ -121,6 +121,7 @@ TEST(DESParser, BoundedDESIteratorRejectsTruncatedChildElement){
 
     CHECK_TRUE(des_iterator_init_with_len(&des_list_it, truncated_child_des, sizeof(truncated_child_des)));
     CHECK_FALSE(des_iterator_has_more(&des_list_it));
+    CHECK_FALSE(des_iterator_is_complete(&des_list_it));
     POINTERS_EQUAL(NULL, des_iterator_get_element(&des_list_it));
     CHECK_EQUAL(0, des_iterator_get_element_len(&des_list_it));
 }
@@ -134,6 +135,7 @@ TEST(DESParser, BoundedDESIteratorProvidesCurrentElementLength){
     CHECK_EQUAL(2, des_iterator_get_element_len(&des_list_it));
     CHECK_TRUE(des_iterator_init_with_len(&nested_it, des_iterator_get_element(&des_list_it), des_iterator_get_element_len(&des_list_it)));
     CHECK_FALSE(des_iterator_has_more(&nested_it));
+    CHECK_TRUE(des_iterator_is_complete(&nested_it));
 }
 
 int main (int argc, const char * argv[]){
