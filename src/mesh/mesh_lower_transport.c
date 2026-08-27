@@ -334,6 +334,7 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
 
         // get akf_aid & transmic
         pdu->akf_aid_control = network_pdu->data[9] & 0x7f;
+        pdu->flags = 0;
         if ((network_pdu->data[10] & 0x80) != 0){
             pdu->flags |= MESH_TRANSPORT_FLAG_TRANSMIC_64;
         }
@@ -341,7 +342,8 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
         // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;
         pdu->block_ack = 0;
-        pdu->flags &= ~MESH_TRANSPORT_FLAG_ACK_TIMER;
+        pdu->seg_n = network_pdu->data[12] & 0x1f;
+        pdu->len = 0;
 
         // update peer info
         peer->message_pdu   = pdu;
@@ -382,6 +384,12 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
     printf("mesh_lower_transport_incoming_process_segment: seq zero %04x, seg_o %02x, seg_n %02x, transmic len: %u bit\n", seq_zero, seg_o, seg_n, transmic_len);
     mesh_print_hex("Segment", segment_data, segment_len);
 #endif
+
+    if (seg_n != message_pdu->seg_n){
+        log_info("Mesh Lower Transport: inconsistent segment count");
+        mesh_network_message_processed_by_higher_layer(network_pdu);
+        return;
+    }
 
     // drop if already stored
     if ((message_pdu->block_ack & (1<<seg_o)) != 0){
@@ -843,6 +851,18 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
     }
 }
 
+static bool mesh_lower_transport_segment_is_valid(mesh_network_pdu_t * network_pdu){
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
+    uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(network_pdu);
+    uint8_t   seg_o                   = (big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x1f;
+    uint8_t   seg_n                   = lower_transport_pdu[3] & 0x1f;
+    uint8_t   segment_len             = lower_transport_pdu_len - 4;
+    uint8_t   max_segment_len         = mesh_network_control(network_pdu) ? 8 : 12;
+
+    return (seg_o <= seg_n) && (segment_len > 0) && (segment_len <= max_segment_len) &&
+           ((seg_o == seg_n) || (segment_len == max_segment_len));
+}
+
 static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network_pdu) {// segmented?
     if (network_pdu->len < 10){
         log_info("Mesh Lower Transport: malformed Network PDU");
@@ -854,6 +874,11 @@ static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network
     if (mesh_network_segmented(network_pdu)){
         if (lower_transport_pdu_len < 4){
             log_info("Mesh Lower Transport: malformed segmented PDU");
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+            return;
+        }
+        if (!mesh_lower_transport_segment_is_valid(network_pdu)){
+            log_info("Mesh Lower Transport: malformed segment");
             mesh_network_message_processed_by_higher_layer(network_pdu);
             return;
         }
