@@ -1217,6 +1217,16 @@ TEST(MessageTest, ApplicationkeyIDTest){
     mesh_k4(&aes_cmac_request, application_key, &k4_result[0], &handle_k4_result, NULL);
 }
 
+TEST(MessageTest, TruncatedSegmentedPduIsDropped){
+    const uint8_t lower_transport_pdu[] = { 0x80 };
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    mesh_network_setup_pdu(network_pdu, 0, 0, 0, 0, 1, 1, 2, lower_transport_pdu, sizeof(lower_transport_pdu));
+
+    mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+    CHECK_EQUAL(0, recv_upper_transport_pdu_len);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

@@ -844,7 +844,19 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
 }
 
 static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network_pdu) {// segmented?
+    if (network_pdu->len < 10){
+        log_info("Mesh Lower Transport: malformed Network PDU");
+        mesh_network_message_processed_by_higher_layer(network_pdu);
+        return;
+    }
+
+    uint8_t lower_transport_pdu_len = mesh_network_pdu_len(network_pdu);
     if (mesh_network_segmented(network_pdu)){
+        if (lower_transport_pdu_len < 4){
+            log_info("Mesh Lower Transport: malformed segmented PDU");
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+            return;
+        }
         mesh_segmented_pdu_t * message_pdu = mesh_lower_transport_incoming_pdu_for_segmented_message(network_pdu);
         if (message_pdu) {
             // start acknowledgment timer if inactive
@@ -863,9 +875,20 @@ static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network
     } else {
         // control?
         if (mesh_network_control(network_pdu)){
+            if (lower_transport_pdu_len < 1){
+                log_info("Mesh Lower Transport: malformed unsegmented Control PDU");
+                mesh_network_message_processed_by_higher_layer(network_pdu);
+                return;
+            }
             // unsegmented control message (not encrypted)
             mesh_lower_transport_process_unsegmented_control_message(network_pdu);
         } else {
+            // An unsegmented Access message consists of an AID byte and a 32-bit TransMIC.
+            if (lower_transport_pdu_len < 5){
+                log_info("Mesh Lower Transport: malformed unsegmented Access PDU");
+                mesh_network_message_processed_by_higher_layer(network_pdu);
+                return;
+            }
             // unsegmented access message (encrypted)
             mesh_lower_transport_incoming_queue_for_higher_layer((mesh_pdu_t *) network_pdu);
         }
