@@ -227,15 +227,15 @@ uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t b
 /**
  * @brief returns name header size in bytes from its string len
  * @param name_len - use value returned by strlen
- * @return header size in bytes
+ * @return header size in bytes, or 0 if it exceeds OBEX's 16-bit length field
  */
-uint8_t obex_message_builder_get_header_name_len_from_strlen(uint16_t name_len);
+uint16_t obex_message_builder_get_header_name_len_from_strlen(uint16_t name_len);
 
 /**
  * @brief Add name header to current request
  * @param buffer
  * @param buffer_len
- * @param name with trailing '\0'
+ * @param name with trailing '\0' and at most 32765 characters
  * @return status
  */
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name);
@@ -245,7 +245,7 @@ uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_l
  * @param buffer
  * @param buffer_len
  * @param name
- * @param name_len
+ * @param name_len at most 32765
  * @return status
  */
 uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t buffer_len, const char * name, uint16_t name_len);
@@ -256,7 +256,7 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
  * @param buffer_len
  * @param header_id
  * @param string
- * @param string_len
+ * @param string_len at most 32765
  * @return status
  */
 uint8_t obex_message_builder_header_add_unicode_prefix(uint8_t * buffer, uint16_t buffer_len, uint8_t header_id, const char * name, uint16_t name_len);
@@ -364,4 +364,3 @@ uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffe
 }
 #endif
 #endif
-
