@@ -83,24 +83,26 @@ typedef struct {
 
 /**
  * @brief Initialize sample rate compensation
- * @param self pointer to current instance
+ * @param self non-NULL pointer to current instance
  * @param time stamp at which to start sample rate measurement
+ * @param sample_rate non-zero configured sample rate
+ * @param ratioQ15 non-zero initial ratio in Q15 format
  */
 void btstack_sample_rate_compensation_init( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t sample_rate, uint32_t ratioQ15 );
 
 /**
  * @brief reset sample rate compensation
- * @param self pointer to current instance
+ * @param self non-NULL pointer to current instance
  * @param time stamp at which to start sample rate measurement
  */
 void btstack_sample_rate_compensation_reset( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms );
 
 /**
  * @brief update sample rate compensation with the current playback sample rate decoded samples
- * @param self pointer to current instance
+ * @param self non-NULL pointer to current instance
  * @param time stamp for current samples
  * @param samples for current time stamp
- * @param playback sample rate
+ * @param playback_sample_rate non-zero playback sample rate
  */
 uint32_t btstack_sample_rate_compensation_update( btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t samples, uint32_t playback_sample_rate );
 

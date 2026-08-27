@@ -43,11 +43,16 @@
 #include "btstack_sample_rate_compensation.h"
 
 void btstack_sample_rate_compensation_reset(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms) {
+    btstack_assert(self != NULL);
     self->count = 0;
     self->last  = timestamp_ms;
 }
 
 void btstack_sample_rate_compensation_init(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t sample_rate, uint32_t ratio_Q15) {
+    btstack_assert(self != NULL);
+    btstack_assert(sample_rate > 0);
+    btstack_assert(ratio_Q15 > 0);
+
     btstack_sample_rate_compensation_reset( self, timestamp_ms );
     self->ratio_state = ratio_Q15 << 1; // Q15 to Q16 is one left shift
     self->rate_state = sample_rate << 8;
@@ -58,6 +63,9 @@ void btstack_sample_rate_compensation_init(btstack_sample_rate_compensation_t *s
 }
 
 uint32_t btstack_sample_rate_compensation_update(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms, uint32_t samples, uint32_t playback_sample_rate) {
+    btstack_assert(self != NULL);
+    btstack_assert(playback_sample_rate > 0);
+
     int32_t delta = timestamp_ms - self->last;
     if( delta >= 1000 ) {
         log_debug("current playback sample rate: %" PRId32 "", playback_sample_rate );
