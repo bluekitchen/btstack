@@ -15,6 +15,13 @@ void sdp_client_query_rfcomm_init(void);
 
 void sdp_client_reset(void);
 
+void     mock_l2cap_reset(void);
+uint16_t mock_l2cap_get_disconnect_count(void);
+uint16_t mock_l2cap_get_send_prepared_count(void);
+uint16_t mock_l2cap_get_last_transaction_id(void);
+void     mock_l2cap_emit_channel_opened(uint16_t local_cid);
+void     mock_l2cap_emit_data(uint16_t local_cid, uint8_t * packet, uint16_t size);
+
 #if defined __cplusplus
 }
 #endif
