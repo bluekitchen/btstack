@@ -1121,6 +1121,7 @@ void pbap_client_deinit(void){
 
 uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
                             uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
+    memset(client, 0, sizeof(*client));
     client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
     client->client_handler = handler;
     client->vcard_selector = 0;
