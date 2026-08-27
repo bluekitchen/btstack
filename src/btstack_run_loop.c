@@ -222,7 +222,7 @@ void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t * data_
 
 void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks){
     btstack_assert(the_run_loop != NULL);
-    btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
+    btstack_assert(the_run_loop->disable_data_source_callbacks != NULL);
     the_run_loop->disable_data_source_callbacks(data_source, callbacks);
 }
 
@@ -332,4 +332,3 @@ void btstack_run_loop_init(const btstack_run_loop_t * run_loop){
 void btstack_run_loop_deinit(void){
     the_run_loop = NULL;
 }
-
