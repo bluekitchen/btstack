@@ -2493,11 +2493,13 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     uint8_t status = 0;
     rfcomm_channel_t * channel = NULL;
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
+    bool multiplexer_created = false;
     if (multiplexer == NULL) {
         multiplexer = rfcomm_multiplexer_create_for_addr(addr);
         if (multiplexer == NULL) {
             return BTSTACK_MEMORY_ALLOC_FAILED;
         }
+        multiplexer_created = true;
         multiplexer->outgoing = 1;
     }
     
@@ -2511,9 +2513,8 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     // prepare channel
     channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
     if (channel == NULL){
-        if (multiplexer->state == RFCOMM_MULTIPLEXER_CLOSED) {
-            // free newly created multiplexer
-            btstack_memory_rfcomm_multiplexer_free(multiplexer);
+        if (multiplexer_created) {
+            rfcomm_multiplexer_free(multiplexer);
         }
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2554,9 +2555,11 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
             {
                 status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &multiplexer->l2cap_cid);
             }
-            if (status) {
-                btstack_memory_rfcomm_multiplexer_free(multiplexer);
-                btstack_memory_rfcomm_channel_free(channel);
+            if (status != ERROR_CODE_SUCCESS)  {
+                rfcomm_channel_finalize(channel);
+                if (multiplexer_created) {
+                    rfcomm_multiplexer_free(multiplexer);
+                }
                 return status;
             }
             break;
