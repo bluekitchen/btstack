@@ -1357,8 +1357,13 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
 
 // MARK: RFCOMM CHANNEL
 
+static uint8_t rfcomm_add_credits(uint8_t credits, uint8_t additional_credits){
+    uint16_t total_credits = (uint16_t) credits + additional_credits;
+    return (uint8_t) btstack_min(total_credits, UINT8_MAX);
+}
+
 static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credits){
-    channel->credits_incoming += credits;
+    channel->credits_incoming = rfcomm_add_credits(channel->credits_incoming, credits);
     rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
 }
 
@@ -1425,8 +1430,8 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     if (packet[1] == BT_RFCOMM_UIH_PF) {
         
         // add them
-        uint16_t new_credits = packet[3+length_offset];
-        channel->credits_outgoing += new_credits;
+        uint8_t new_credits = packet[3+length_offset];
+        channel->credits_outgoing = rfcomm_add_credits(channel->credits_outgoing, new_credits);
         log_info( "RFCOMM data UIH_PF, new credits channel 0x%02x: %u, now %u", channel->rfcomm_cid, new_credits, channel->credits_outgoing);
 
         // notify channel statemachine 
@@ -2712,7 +2717,7 @@ uint8_t rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     if (!channel->incoming_flow_control) return ERROR_CODE_COMMAND_DISALLOWED;
-    channel->new_credits_incoming += credits;
+    channel->new_credits_incoming = rfcomm_add_credits(channel->new_credits_incoming, credits);
 
     // process
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
