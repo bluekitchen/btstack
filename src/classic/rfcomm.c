@@ -2360,6 +2360,7 @@ uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
         log_error("l2cap cannot send now");
+        rfcomm_release_packet_buffer();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 #else
@@ -2418,11 +2419,6 @@ uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     (void)memcpy(rfcomm_payload, data, len);
     status = rfcomm_send_prepared(rfcomm_cid, len);
-
-    if (status != ERROR_CODE_SUCCESS){
-        rfcomm_release_packet_buffer();
-    }
-
     return status;
 }
 
