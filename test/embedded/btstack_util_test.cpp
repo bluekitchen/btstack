@@ -393,6 +393,21 @@ TEST(BTstackUtil, btstack_virtual_memcpy_two){
     CHECK_EQUAL(bytes_copied, 2);
 }
 
+TEST(BTstackUtil, btstack_virtual_memcpy_at_uint16_boundary){
+    static uint8_t field_data[65535];
+    uint8_t buffer[10] = {0};
+
+    for (uint16_t i = 0; i < 5; i++){
+        field_data[65530u + i] = (uint8_t)(i + 1);
+    }
+
+    uint16_t bytes_copied = btstack_virtual_memcpy(field_data, sizeof(field_data), 0, buffer, sizeof(buffer), 65530);
+    CHECK_EQUAL(5, bytes_copied);
+    for (uint16_t i = 0; i < bytes_copied; i++){
+        CHECK_EQUAL(i + 1, buffer[i]);
+    }
+}
+
 TEST(BTstackUtil, crc_updated){
     uint32_t crc_initial = btstack_crc32_init();
     CHECK_EQUAL(crc_initial, 0xffffffff);

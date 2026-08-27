@@ -741,34 +741,25 @@ uint16_t btstack_virtual_memcpy(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset, // position of field in complete data block
     uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
 
-    uint16_t after_buffer = buffer_offset + buffer_size ;
+    uint32_t field_end  = (uint32_t) field_offset  + field_len;
+    uint32_t buffer_end = (uint32_t) buffer_offset + buffer_size;
+
     // bail before buffer
-    if ((field_offset + field_len) < buffer_offset){
+    if (field_end <= buffer_offset){
         return 0;
     }
     // bail after buffer
-    if (field_offset >= after_buffer){
+    if (field_offset >= buffer_end){
         return 0;
     }
-    // calc overlap
-    uint16_t bytes_to_copy = field_len;
-    
-    uint16_t skip_at_start = 0;
-    if (field_offset < buffer_offset){
-        skip_at_start = buffer_offset - field_offset;
-        bytes_to_copy -= skip_at_start;
-    }
 
-    uint16_t skip_at_end = 0;
-    if ((field_offset + field_len) > after_buffer){
-        skip_at_end = (field_offset + field_len) - after_buffer;
-        bytes_to_copy -= skip_at_end;
-    }
-    
-    btstack_assert((skip_at_end + skip_at_start) <= field_len);
+    uint32_t copy_start = field_offset > buffer_offset ? field_offset : buffer_offset;
+    uint32_t copy_end   = field_end < buffer_end ? field_end : buffer_end;
+    uint16_t bytes_to_copy = (uint16_t)(copy_end - copy_start);
+
     btstack_assert(bytes_to_copy <= field_len);
+    btstack_assert(bytes_to_copy <= buffer_size);
 
-    memcpy(&buffer[(field_offset + skip_at_start) - buffer_offset], &field_data[skip_at_start], bytes_to_copy);
+    memcpy(&buffer[copy_start - buffer_offset], &field_data[copy_start - field_offset], bytes_to_copy);
     return bytes_to_copy;
 }
-
