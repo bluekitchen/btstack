@@ -1403,6 +1403,23 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
 
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!channel) return;
+
+    uint16_t payload_len;
+    if (length_offset == 0){
+        payload_len = packet[2] >> 1;
+    } else {
+        payload_len = (uint16_t)(packet[2] >> 1) | ((uint16_t)packet[3] << 7);
+    }
+
+    uint32_t frame_size = (uint32_t) payload_offset + payload_len + 1u;
+    if (frame_size != size){
+        log_info("RFCOMM: malformed UIH frame size %u, expected %u", size, (unsigned int) frame_size);
+        return;
+    }
+    if (payload_len > channel->max_frame_size){
+        log_info("RFCOMM: UIH payload size %u exceeds negotiated maximum %u", payload_len, channel->max_frame_size);
+        return;
+    }
     
     // handle new outgoing credits
     if (packet[1] == BT_RFCOMM_UIH_PF) {
@@ -1425,7 +1442,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
     
     // contains payload?
-    if ((size - payload_offset) > 1){
+    if (payload_len > 0){
 
         // log_info( "RFCOMM data UIH_PF, size %u, channel %p", size-payload_offset-1, rfChannel->connection);
 
@@ -1436,7 +1453,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         
         // deliver payload
         (channel->packet_handler)(RFCOMM_DATA_PACKET, channel->rfcomm_cid,
-                              &packet[payload_offset], size-payload_offset-1);
+                              &packet[payload_offset], payload_len);
     }
     
     // automatically provide new credits to remote device, if no incoming flow control
