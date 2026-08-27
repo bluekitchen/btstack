@@ -286,7 +286,8 @@ void rfcomm_set_required_security_level(gap_security_level_t security_level);
 /* 
  * @brief Create RFCOMM connection to a given server channel on a remote deivce.
  * This channel will automatically provide enough credits to the remote side.
- * @param addr
+ * @param packet_handler non-NULL handler for channel events and data
+ * @param addr non-NULL remote address
  * @param server_channel
  * @param out_cid
  * @result status
@@ -296,7 +297,8 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t
 /* 
  * @brief Create RFCOMM connection to a given server channel on a remote deivce.
  * This channel will use explicit credit management. During channel establishment, an initial  amount of credits is provided.
- * @param addr
+ * @param packet_handler non-NULL handler for channel events and data
+ * @param addr non-NULL remote address
  * @param server_channel
  * @param initial_credits
  * @param out_cid
@@ -313,7 +315,7 @@ uint8_t rfcomm_disconnect(uint16_t rfcomm_cid);
 /** 
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler.
  * This channel provides credits automatically to the remote side -> no flow control
- * @param packet handler for all channels of this service
+ * @param packet_handler non-NULL handler for all channels of this service
  * @param channel 
  * @param max_frame_size
  * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
@@ -323,7 +325,7 @@ uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t
 /** 
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. 
  * This channel will use explicit credit management. During channel establishment, an initial amount of credits is provided.
- * @param packet handler for all channels of this service
+ * @param packet_handler non-NULL handler for all channels of this service
  * @param channel 
  * @param max_frame_size
  * @param initial_credits

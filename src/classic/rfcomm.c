@@ -2464,6 +2464,9 @@ uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid){
 
 
 static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
+    btstack_assert(packet_handler != NULL);
+    btstack_assert(addr != NULL);
+
     log_info("create for addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
     
     // create new multiplexer if necessary (initial state is closed)
@@ -2585,6 +2588,8 @@ uint8_t rfcomm_disconnect(uint16_t rfcomm_cid){
 
 static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_handler, 
     uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
+
+    btstack_assert(packet_handler != NULL);
 
     log_info("register channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
