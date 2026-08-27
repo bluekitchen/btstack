@@ -194,11 +194,11 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint16_t  param_len = big_endian_read_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
+    // assert service search pattern is contained
+    if (!serviceSearchPatternLen) return 0;
     if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
         return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
     }
-    // assert service search pattern is contained
-    if (!serviceSearchPatternLen) return 0;
     param_len -= serviceSearchPatternLen;
     // assert max record count is contained
     if (param_len < 2) return 0;
@@ -294,11 +294,11 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     param_len -= 6;
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
-    if (!sdp_attribute_list_valid(attributeIDList) == false){
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
-    }
     // assert attributeIDList are in param_len
     if (!attributeIDListLen) return 0;
+    if (!sdp_attribute_list_valid(attributeIDList)){
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     param_len -= attributeIDListLen;
     // assert continuation state len is contained in param_len
     if (param_len < 1) return 0;
@@ -392,11 +392,11 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint16_t  param_len = big_endian_read_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
+    // assert serviceSearchPattern header is contained in param_len
+    if (!serviceSearchPatternLen) return 0;
     if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
         return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
     }
-    // assert serviceSearchPattern header is contained in param_len
-    if (!serviceSearchPatternLen) return 0;
     param_len -= serviceSearchPatternLen;
     // assert maximumAttributeByteCount contained in param_len
     if (param_len < 2) return 0;
@@ -404,11 +404,11 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     param_len -= 2;
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
-    if (!sdp_attribute_list_valid(attributeIDList) == false){
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
-    }
     // assert attributeIDList is contained in param_len
     if (!attributeIDListLen) return 0;
+    if (!sdp_attribute_list_valid(attributeIDList)){
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     param_len -= attributeIDListLen;
     // assert continuation state len is contained in param_len
     if (param_len < 1) return 0;

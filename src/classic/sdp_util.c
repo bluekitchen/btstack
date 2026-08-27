@@ -345,39 +345,44 @@ void des_iterator_next(des_iterator_t * it){
 
 // MARK: DataElementSequence traversal
 typedef int (*de_traversal_callback_t)(uint8_t * element, de_type_t type, de_size_t size, void *context);
-static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t handler, void *context){
-    de_type_t type = de_get_element_type(element);
-    if (type != DE_DES) return;
-    int pos = de_get_header_size(element);
-    int end_pos = de_get_len(element);
-    while (pos < end_pos){
-        de_type_t elemType = de_get_element_type(element + pos);
-        de_size_t elemSize = de_get_size_type(element + pos);
-        uint8_t done = (*handler)(element + pos, elemType, elemSize, context); 
+static bool de_traverse_sequence(uint8_t * element, de_traversal_callback_t handler, void *context){
+    des_iterator_t it;
+    if (!des_iterator_init(&it, element)) return false;
+
+    while (it.pos < it.length){
+        uint8_t * child = des_iterator_get_element(&it);
+        if (child == NULL) return false;
+
+        de_type_t elemType = des_iterator_get_type(&it);
+        de_size_t elemSize = de_get_size_type(child);
+        uint8_t done = (*handler)(child, elemType, elemSize, context);
         if (done) break;
-        pos += de_get_len(element + pos);
+        des_iterator_next(&it);
     }
+    return true;
 }
 
 // MARK: AttributeList traversal
 typedef int (*sdp_attribute_list_traversal_callback_t)(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *context);
 static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribute_list_traversal_callback_t handler, void *context){
-    de_type_t type = de_get_element_type(element);
-    if (type != DE_DES) return;
-    int pos = de_get_header_size(element);
-    int end_pos = de_get_len(element);
-    while (pos < end_pos){
-        de_type_t idType = de_get_element_type(element + pos);
-        de_size_t idSize = de_get_size_type(element + pos);
+    des_iterator_t it;
+    if (!des_iterator_init(&it, element)) return;
+
+    while (des_iterator_has_more(&it)){
+        uint8_t * attribute_id_element = des_iterator_get_element(&it);
+        de_type_t idType = des_iterator_get_type(&it);
+        de_size_t idSize = de_get_size_type(attribute_id_element);
         if ( (idType != DE_UINT) || (idSize != DE_SIZE_16) ) break; // wrong type
-        uint16_t attribute_id = big_endian_read_16(element, pos + 1);
-        pos += 3;
-        if (pos >= end_pos) break; // array out of bounds
-        de_type_t valueType = de_get_element_type(element + pos);
-        de_size_t valueSize = de_get_size_type(element + pos);
-        uint8_t done = (*handler)(attribute_id, element + pos, valueType, valueSize, context); 
+        uint16_t attribute_id = big_endian_read_16(attribute_id_element, 1);
+        des_iterator_next(&it);
+        if (!des_iterator_has_more(&it)) break;
+
+        uint8_t * attribute_value = des_iterator_get_element(&it);
+        de_type_t valueType = des_iterator_get_type(&it);
+        de_size_t valueSize = de_get_size_type(attribute_value);
+        uint8_t done = (*handler)(attribute_id, attribute_value, valueType, valueSize, context);
         if (done) break;
-        pos += de_get_len(element + pos);
+        des_iterator_next(&it);
     }
 }
 
@@ -421,7 +426,7 @@ bool sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attribute
 
 static int sdp_traversal_attribute_list_valie(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
     bool ok = true;
-    if (type == DE_UINT) {
+    if (type != DE_UINT) {
         ok = false;
     }
     if ((size != DE_SIZE_16) && (size != DE_SIZE_32)) {
@@ -444,8 +449,8 @@ static int sdp_traversal_attribute_list_valie(uint8_t * element, de_type_t type,
 
 bool sdp_attribute_list_valid(uint8_t *attributeIDList){
     bool attribute_list_valid = true;
-    de_traverse_sequence(attributeIDList, sdp_traversal_attribute_list_valie, &attribute_list_valid);
-    return attribute_list_valid;
+    bool complete = de_traverse_sequence(attributeIDList, sdp_traversal_attribute_list_valie, &attribute_list_valid);
+    return complete && attribute_list_valid;
 }
 
 static int sdp_traversal_valid_uuid(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
@@ -461,8 +466,8 @@ static int sdp_traversal_valid_uuid(uint8_t * element, de_type_t type, de_size_t
 
 bool sdp_valid_service_search_pattern(uint8_t *service_search_pattern){
     bool search_pattenr_valid = true;
-    de_traverse_sequence(service_search_pattern, sdp_traversal_valid_uuid, &search_pattenr_valid);
-    return search_pattenr_valid;
+    bool complete = de_traverse_sequence(service_search_pattern, sdp_traversal_valid_uuid, &search_pattenr_valid);
+    return complete && search_pattenr_valid;
 }
 
 // MARK: Append Attributes for AttributeIDList
