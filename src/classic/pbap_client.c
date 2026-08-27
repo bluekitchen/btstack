@@ -61,6 +61,8 @@
 #include "classic/pbap_client.h"
 #include "sdp_util.h"
 
+#define PBAP_APPLICATION_PARAMETERS_MAX_LEN (13u + (PBAP_MAX_PHONE_NUMBER_LEN + 5u) + (PBAP_MAX_SEARCH_VALUE_LEN + 2u) + 3u + 3u + 4u + 4u)
+
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
@@ -522,7 +524,7 @@ static uint16_t pbap_client_application_params_add_search_property(const pbap_cl
 static uint16_t pbap_client_application_params_add_search_value(const pbap_client_t * client, uint8_t * application_parameters, const char* search_value){
     uint16_t pos = 0;
     if (client->search_value != 0){
-        uint32_t length = (uint32_t) strlen(search_value);
+        uint8_t length = (uint8_t) strlen(search_value);
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
         application_parameters[pos++] = length;
         memcpy (&application_parameters[pos], search_value, length);
@@ -614,7 +616,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
     uint16_t path_element_start;
     uint16_t path_element_len;
     const char * path_element;
-    uint8_t  application_parameters[PBAP_MAX_PHONE_NUMBER_LEN + 10];
+    uint8_t  application_parameters[PBAP_APPLICATION_PARAMETERS_MAX_LEN];
     uint8_t  challenge_response[36];
     uint16_t pos;
 
@@ -1445,6 +1447,9 @@ uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value){
     }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
+    }
+    if (search_value != NULL){
+        btstack_assert(strlen(search_value) <= PBAP_MAX_SEARCH_VALUE_LEN);
     }
     pbap_client->search_value = search_value;
     return ERROR_CODE_SUCCESS;

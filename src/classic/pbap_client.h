@@ -57,6 +57,9 @@ extern "C" {
 // max len of phone number used for lookup in pbap_lookup_by_number
 #define PBAP_MAX_PHONE_NUMBER_LEN 32
 
+// max len of a search value used for pbap_pull_vcard_listing
+#define PBAP_MAX_SEARCH_VALUE_LEN 255
+
 // max len of name reported in PBAP_SUBEVENT_CARD_RESULT
 #define PBAP_MAX_NAME_LEN   32
 // max len of vcard handle reported in PBAP_SUBEVENT_CARD_RESULT
@@ -331,9 +334,10 @@ uint8_t pbap_set_order(uint16_t pbap_cid, uint8_t order);
 uint8_t pbap_set_search_property(uint16_t pbap_cid, uint8_t search_property);
 
 /**
- * @bbrief Set search property for pbap_pull_vcard_listing
+ * @brief Set search value for pbap_pull_vcard_listing
  * @param pbap_cid
- * @param search_value
+ * @param search_value NULL to clear, otherwise a NUL-terminated string of at most PBAP_MAX_SEARCH_VALUE_LEN bytes.
+ *                     The string must remain valid until the listing operation completes.
  * @return
  */
 uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value);
