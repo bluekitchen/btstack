@@ -266,6 +266,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
     des_iterator_t prot_it;
     uint8_t status;
     uint16_t record_index;
+    uint16_t attribute_length;
     bool goep_server_found;
 
     switch (hci_event_packet_get_type(packet)){
@@ -308,10 +309,17 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             // wait until value fully received
             if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) != sdp_event_query_attribute_byte_get_attribute_length(packet)) break;
 
+            attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+            if (de_get_len_safe(goep_client_sdp_query_attribute_value, attribute_length) != attribute_length){
+                log_info("GOEP client: malformed SDP data element for attribute %x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                break;
+            }
+
             // process attributes
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, goep_client_sdp_query_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -319,7 +327,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
                         des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
+                        if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&des_list_it))) continue;
+                        if (!des_iterator_has_more(&prot_it)) continue;
 
                         // first element is UUID
                         element = des_iterator_get_element(&prot_it);
@@ -332,6 +341,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         // second element is RFCOMM server channel or L2CAP PSM
                         element = des_iterator_get_element(&prot_it);
                         if (uuid == BLUETOOTH_PROTOCOL_RFCOMM){
+                            if ((de_get_element_type(element) != DE_UINT) || (de_get_size_type(element) != DE_SIZE_8)) continue;
                             if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
                                 goep_client->mas_info.rfcomm_port = element[de_get_header_size(element)];
                             } else {
@@ -342,7 +352,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     break;
 
                 case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, goep_client_sdp_query_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -350,7 +361,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
                         des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
+                        if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&des_list_it))) continue;
+                        if (!des_iterator_has_more(&prot_it)) continue;
                         element = des_iterator_get_element(&prot_it);
 
                         if (de_get_element_type(element) != DE_UUID) continue;
