@@ -300,6 +300,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 break;
             }
 
+            // The SDP client emits attribute bytes in order. Its offset is local parser state,
+            // not a peer-supplied value, and is bounded by attribute_length.
             // store single byte
             goep_client_sdp_query_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
