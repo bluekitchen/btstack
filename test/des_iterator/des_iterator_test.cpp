@@ -110,6 +110,32 @@ TEST(DESParser, DESIterator2){
     CHECK_EQUAL(des_iterator_has_more(&des_list_it), 0);
 }
 
+TEST(DESParser, BoundedDESIteratorRejectsTruncatedOuterElement){
+    uint8_t truncated_des[] = { 0x35, 0x02, 0x19 };
+
+    CHECK_FALSE(des_iterator_init_with_len(&des_list_it, truncated_des, sizeof(truncated_des)));
+}
+
+TEST(DESParser, BoundedDESIteratorRejectsTruncatedChildElement){
+    uint8_t truncated_child_des[] = { 0x35, 0x02, 0x19, 0x00 };
+
+    CHECK_TRUE(des_iterator_init_with_len(&des_list_it, truncated_child_des, sizeof(truncated_child_des)));
+    CHECK_FALSE(des_iterator_has_more(&des_list_it));
+    POINTERS_EQUAL(NULL, des_iterator_get_element(&des_list_it));
+    CHECK_EQUAL(0, des_iterator_get_element_len(&des_list_it));
+}
+
+TEST(DESParser, BoundedDESIteratorProvidesCurrentElementLength){
+    uint8_t nested_des[] = { 0x35, 0x02, 0x35, 0x00 };
+    des_iterator_t nested_it;
+
+    CHECK_TRUE(des_iterator_init_with_len(&des_list_it, nested_des, sizeof(nested_des)));
+    CHECK_TRUE(des_iterator_has_more(&des_list_it));
+    CHECK_EQUAL(2, des_iterator_get_element_len(&des_list_it));
+    CHECK_TRUE(des_iterator_init_with_len(&nested_it, des_iterator_get_element(&des_list_it), des_iterator_get_element_len(&des_list_it)));
+    CHECK_FALSE(des_iterator_has_more(&nested_it));
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

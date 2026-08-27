@@ -291,27 +291,55 @@ bool des_iterator_init(des_iterator_t * it, uint8_t * element){
     return true;
 }
 
+bool des_iterator_init_with_len(des_iterator_t * it, uint8_t * element, uint32_t element_size){
+    it->element = NULL;
+    it->pos = 0;
+    it->length = 0;
+
+    if (element == NULL) return false;
+    if (de_get_element_type(element) != DE_DES) return false;
+
+    uint32_t element_len = de_get_len_safe(element, element_size);
+    if (element_len != element_size) return false;
+
+    it->element = element;
+    it->pos = de_get_header_size(element);
+    it->length = element_len;
+    return true;
+}
+
 de_type_t des_iterator_get_type (des_iterator_t * it){
-    return de_get_element_type(&it->element[it->pos]);
+    uint8_t * element = des_iterator_get_element(it);
+    if (element == NULL) return DE_NIL;
+    return de_get_element_type(element);
 }
 
 uint16_t des_iterator_get_size (des_iterator_t * it){
-    int length = de_get_len(&it->element[it->pos]);
-    int header_size = de_get_header_size(&it->element[it->pos]);
-    return length - header_size;
+    uint8_t * element = des_iterator_get_element(it);
+    if (element == NULL) return 0;
+    return (uint16_t)(des_iterator_get_element_len(it) - de_get_header_size(element));
 }
 
 bool des_iterator_has_more(des_iterator_t * it){
-    return it->pos < it->length;
+    return des_iterator_get_element_len(it) != 0;
 }
 
 uint8_t * des_iterator_get_element(des_iterator_t * it){
-    if (!des_iterator_has_more(it)) return NULL;
+    if (des_iterator_get_element_len(it) == 0) return NULL;
     return &it->element[it->pos];
 }
 
+uint32_t des_iterator_get_element_len(des_iterator_t * it){
+    if (it->pos >= it->length) return 0;
+    return de_get_len_safe(&it->element[it->pos], it->length - it->pos);
+}
+
 void des_iterator_next(des_iterator_t * it){
-    int element_len = de_get_len(&it->element[it->pos]);
+    uint32_t element_len = des_iterator_get_element_len(it);
+    if (element_len == 0){
+        it->pos = it->length;
+        return;
+    }
     it->pos += element_len;
 }
 
@@ -791,4 +819,3 @@ uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
     (void)memcpy(&des_service_search_pattern_uuid128[3], uuid128, 16);
     return (uint8_t*)des_service_search_pattern_uuid128;
 }
-

@@ -126,15 +126,29 @@ uint32_t de_get_len_safe(const uint8_t * header, uint32_t size);
 // MARK: DES iterator
 typedef struct {
     uint8_t * element;
-    uint16_t pos;
-    uint16_t length;
+    uint32_t pos;
+    uint32_t length;
 } des_iterator_t;
 
+/**
+ * @brief Initialize DES iterator for a trusted Data Element Sequence.
+ * @note Use des_iterator_init_with_len for peer-provided data.
+ */
 bool      des_iterator_init(des_iterator_t * it, uint8_t * element);
+/**
+ * @brief Initialize DES iterator for an exactly sized Data Element Sequence.
+ * @param element      Data Element Sequence to iterate over
+ * @param element_size Number of bytes available in element. It must equal the
+ *                     encoded length of the Data Element Sequence.
+ * @return true if element is a complete Data Element Sequence
+ */
+bool      des_iterator_init_with_len(des_iterator_t * it, uint8_t * element, uint32_t element_size);
 bool      des_iterator_has_more(des_iterator_t * it);
 de_type_t des_iterator_get_type (des_iterator_t * it);
 uint16_t  des_iterator_get_size (des_iterator_t * it);
 uint8_t * des_iterator_get_element(des_iterator_t * it);
+/** @return Total encoded length of the current Data Element, or 0 if none is available. */
+uint32_t  des_iterator_get_element_len(des_iterator_t * it);
 void      des_iterator_next(des_iterator_t * it);
 
 // MARK: SDP
