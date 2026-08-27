@@ -19,7 +19,7 @@ TEST(SDPServer, ServiceSearchRejectsTruncatedSearchPattern){
         0x35, 0x02, 0x19
     };
 
-    CHECK_EQUAL(0, sdp_handle_service_search_request(packet, 48));
+    CHECK_EQUAL(7, sdp_handle_service_search_request(packet, 48));
 }
 
 TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdList){
@@ -29,7 +29,7 @@ TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdList){
         0x35, 0x02, 0x09
     };
 
-    CHECK_EQUAL(0, sdp_handle_service_attribute_request(packet, 48));
+    CHECK_EQUAL(7, sdp_handle_service_attribute_request(packet, 48));
 }
 
 TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdListChild){
@@ -50,7 +50,7 @@ TEST(SDPServer, ServiceSearchAttributeRejectsTruncatedAttributeIdList){
         0x35, 0x02, 0x09
     };
 
-    CHECK_EQUAL(0, sdp_handle_service_search_attribute_request(packet, 48));
+    CHECK_EQUAL(7, sdp_handle_service_search_attribute_request(packet, 48));
 }
 
 int main (int argc, const char * argv[]){

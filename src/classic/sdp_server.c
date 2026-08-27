@@ -195,7 +195,9 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
     // assert service search pattern is contained
-    if (!serviceSearchPatternLen) return 0;
+    if (!serviceSearchPatternLen) {
+        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+    }
     if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
         return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
     }
@@ -295,7 +297,9 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
     // assert attributeIDList are in param_len
-    if (!attributeIDListLen) return 0;
+    if (!attributeIDListLen) {
+        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+    }
     if (!sdp_attribute_list_valid(attributeIDList)){
         return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
     }
@@ -393,7 +397,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
     // assert serviceSearchPattern header is contained in param_len
-    if (!serviceSearchPatternLen) return 0;
+    if (!serviceSearchPatternLen) {
+        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+    }
     if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
         return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
     }
@@ -405,7 +411,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
     // assert attributeIDList is contained in param_len
-    if (!attributeIDListLen) return 0;
+    if (!attributeIDListLen) {
+        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+    }
     if (!sdp_attribute_list_valid(attributeIDList)){
         return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
     }
