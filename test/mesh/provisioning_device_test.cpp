@@ -213,7 +213,7 @@ uint8_t prov_data[] = {
     0x07,
     0x85, 0x66, 0xac, 0x46, 0x37, 0x34, 0x86, 0xe1, 0x3e, 0x4c, 0x13, 0x52, 0xd0, 0x6d, 0x34, 0x7d,
     0xce, 0xf1, 0xd1, 0x7d, 0xbd, 0xbe, 0xcc, 0x99, 0xc3, 
-    0x93, 0x87, 0xfc, 0xb0, 0x72, 0x0f, 0xd8, 0x8d };
+    0x6b, 0x8e, 0x12, 0x54, 0x26, 0x90, 0x07, 0xc4 };
 uint8_t prov_complete[] = { 0x08, };
 
 TEST(Provisioning, Prov1){
@@ -263,6 +263,7 @@ TEST(Provisioning, RejectsProvisioningDataWithInvalidMic){
     send_prov_pdu(invalid_prov_data, sizeof(invalid_prov_data));
 
     CHECK_EQUAL(MESH_PROV_FAILED, pdu_data[0]);
+    pb_adv_emit_pdu_sent(0);
 }
 
 TEST(Provisioning, RejectsTruncatedRandomPdu){
@@ -278,6 +279,24 @@ TEST(Provisioning, RejectsTruncatedRandomPdu){
     send_prov_pdu(truncated_random, sizeof(truncated_random));
 
     CHECK_EQUAL(MESH_PROV_CONFIRM, pdu_data[0]);
+}
+
+TEST(Provisioning, RejectsInvalidProvisionerConfirmation){
+    uint8_t invalid_confirm[sizeof(prov_confirm)];
+    memcpy(invalid_confirm, prov_confirm, sizeof(prov_confirm));
+    invalid_confirm[sizeof(invalid_confirm) - 1] ^= 1;
+
+    send_prov_pdu(prov_invite, sizeof(prov_invite));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_start, sizeof(prov_start));
+    send_prov_pdu(prov_public_key, sizeof(prov_public_key));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(invalid_confirm, sizeof(invalid_confirm));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_random, sizeof(prov_random));
+
+    CHECK_EQUAL(MESH_PROV_FAILED, pdu_data[0]);
+    pb_adv_emit_pdu_sent(0);
 }
 
 int main (int argc, const char * argv[]){

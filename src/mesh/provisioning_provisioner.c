@@ -94,7 +94,10 @@ static uint8_t  prov_authentication_string;
 // ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
 static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t  confirmation_provisioner[16];
+static uint8_t  confirmation_device[16];
+static uint8_t  confirmation_check[16];
 static uint8_t  random_provisioner[16];
+static uint8_t  random_device[16];
 static uint8_t  auth_value[16];
 static uint8_t  remote_ec_q[64];
 static uint8_t  dhkey[32];
@@ -539,8 +542,9 @@ static void provisioning_handle_public_key(uint16_t the_pb_adv_cid, const uint8_
 static void provisioning_handle_confirmation(uint16_t the_pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
 
     UNUSED(the_pb_adv_cid);
-    UNUSED(packet_data);
     if (packet_len != 16) return;
+
+    (void)memcpy(confirmation_device, packet_data, sizeof(confirmation_device));
 
     // 
     if (prov_emit_output_oob_active){
@@ -621,18 +625,32 @@ static void provisioning_handle_provisioning_salt_calculated(void * arg){
     mesh_k1(&prov_cmac_request, dhkey, sizeof(dhkey), provisioning_salt, (const uint8_t*) "prsk", 4, session_key, &provisioning_handle_session_key_calculated, NULL);
 }
 
+static void provisioning_handle_random_confirmation_calculated(void * arg){
+    UNUSED(arg);
+
+    if (memcmp(confirmation_check, confirmation_device, sizeof(confirmation_check)) != 0){
+        log_info("Device Confirmation invalid");
+        provisioning_handle_provisioning_error(0x04);
+        return;
+    }
+
+    // calc ProvisioningSalt = s1(ConfirmationSalt || RandomProvisioner || RandomDevice)
+    (void)memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], random_provisioner, 16);
+    (void)memcpy(&prov_confirmation_inputs[32], random_device, 16);
+    btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_provisioning_salt_calculated, NULL);
+}
+
 static void provisioning_handle_random(uint16_t the_pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
 
     UNUSED(the_pb_adv_cid);
     if (packet_len != 16) return;
 
-    // TODO: validate Confirmation
-
-    // calc ProvisioningSalt = s1(ConfirmationSalt || RandomProvisioner || RandomDevice)
-    (void)memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
-    (void)memcpy(&prov_confirmation_inputs[16], random_provisioner, 16);
-    (void)memcpy(&prov_confirmation_inputs[32], packet_data, 16);
-    btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_provisioning_salt_calculated, NULL);
+    (void)memcpy(random_device, packet_data, sizeof(random_device));
+    (void)memcpy(&prov_confirmation_inputs[0], random_device, sizeof(random_device));
+    (void)memcpy(&prov_confirmation_inputs[16], auth_value, sizeof(auth_value));
+    btstack_crypto_aes128_cmac_message(&prov_cmac_request, confirmation_key, 32, prov_confirmation_inputs,
+                                       confirmation_check, &provisioning_handle_random_confirmation_calculated, NULL);
 }
 
 static void provisioning_handle_complete(uint16_t the_pb_adv_cid){

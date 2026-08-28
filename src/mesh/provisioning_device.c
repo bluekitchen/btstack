@@ -103,12 +103,15 @@ static btstack_crypto_ccm_t         prov_ccm_request;
 
 // ConfirmationDevice
 static uint8_t confirmation_device[16];
+static uint8_t confirmation_provisioner[16];
+static uint8_t confirmation_check[16];
 // ConfirmationSalt
 static uint8_t confirmation_salt[16];
 // ConfirmationKey
 static uint8_t confirmation_key[16];
 // RandomDevice
 static uint8_t random_device[16];
+static uint8_t random_provisioner[16];
 // ProvisioningSalt
 static uint8_t provisioning_salt[16];
 // AuthValue
@@ -623,7 +626,8 @@ static void provisioning_handle_confirmation_s1_calculated(void * arg){
 
 static void provisioning_handle_confirmation(uint8_t *packet, uint16_t size){
     if (size != 16) return;
-    UNUSED(packet);
+
+    (void)memcpy(confirmation_provisioner, packet, sizeof(confirmation_provisioner));
 
     // 
     if (prov_emit_output_oob_active){
@@ -679,16 +683,30 @@ static void provisioning_handle_random_s1_calculated(void * arg){
     mesh_k1(&prov_cmac_request, dhkey, sizeof(dhkey), provisioning_salt, (const uint8_t*) "prsk", 4, session_key, &provisioning_handle_random_session_key_calculated, NULL);
 }
 
-static void provisioning_handle_random(uint8_t *packet, uint16_t size){
-    if (size != 16) return;
+static void provisioning_handle_random_confirmation_calculated(void * arg){
+    UNUSED(arg);
 
-    // TODO: validate Confirmation
+    if (memcmp(confirmation_check, confirmation_provisioner, sizeof(confirmation_check)) != 0){
+        log_info("Provisioner Confirmation invalid");
+        provisioning_handle_provisioning_error(0x04);
+        return;
+    }
 
     // calc ProvisioningSalt = s1(ConfirmationSalt || RandomProvisioner || RandomDevice)
     (void)memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
-    (void)memcpy(&prov_confirmation_inputs[16], packet, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], random_provisioner, 16);
     (void)memcpy(&prov_confirmation_inputs[32], random_device, 16);
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_random_s1_calculated, NULL);
+}
+
+static void provisioning_handle_random(uint8_t *packet, uint16_t size){
+    if (size != 16) return;
+
+    (void)memcpy(random_provisioner, packet, sizeof(random_provisioner));
+    (void)memcpy(&prov_confirmation_inputs[0], random_provisioner, sizeof(random_provisioner));
+    (void)memcpy(&prov_confirmation_inputs[16], auth_value, sizeof(auth_value));
+    btstack_crypto_aes128_cmac_message(&prov_cmac_request, confirmation_key, 32, prov_confirmation_inputs,
+                                       confirmation_check, &provisioning_handle_random_confirmation_calculated, NULL);
 }
 
 // PROV_DATA
