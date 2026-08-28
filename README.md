@@ -98,29 +98,31 @@ For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, 
 
 ## Supported Chipsets
 | Chipset                              | Type             | HCI Transport  | SCO over HCI     | BTstack folder | Comment                                        |
-| ------------------------------------ | ---------------- | -------------- | ---------------- | -------------- | ---------------------------------------------- |
+|--------------------------------------|------------------|----------------|------------------|----------------|------------------------------------------------|
 | Atmel ATWILC3000                     | LE               | H4             | n.a.             | atwilc3000     | Firmware size: 60 kB                           |
 | Broadcom UART                        | Dual mode        | H4, H5         | Probably         | bcm            | Max UART baudrate 2 mbps                       |
 | Broadcom USB Dongles                 | Dual mode        | USB            | Yes              | bcm            |                                                |
 | CSR UART                             | Dual mode        | H4, H5, BCSP   | No (didn't work) | csr            |                                                |
 | CSR USB Dongles                      | Dual mode        | USB            | Yes              | csr            |                                                |
+| Espressif ESP32, ESP32-S31           | Dual mode + Wifi | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
+| Espressif ESP32-C2,C3,C5,C6,S3,H2    | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
+| EM 9301, 9304, 9305                  | LE               | SPI            | n.a.             | em9301         | Custom HCI SPI implementation                  |
 | Infineon CYW207xx                    | Dual mode        | H4, H5, USB    | Probably         | bcm            |                                                |
 | Infineon CYW20819                    | Dual mode        | H4, H5, USB    | Probably         | bcm            | Keep CTS high during power cycle               |
 | Infineon CYW43xxx                    | Dual mode + Wifi | H4, H5         | Don't know       | bcm            | Bluetooth + Wifi Combo Controller              |
 | Infineon CYW55310                    | Dual mode        | H4             | Yes              | bcm            | autobaud-mode needed, see posix-h4-bcm         |
 | Infineon CYW5551x, CYW5551x          | Dual mode + Wifi | H4             | Yes              | bcm            | autobaud-mode needed, see posix-h4-bcm         |
 | Infineon PSoC 4                      | LE               | H4             | n.a.             |                | HCI Firmware part of PSoC Creator kit examples |
-| Dialog Semiconductor DA145xx         | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
-| Dialog Semiconductor DA1469x         | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |
-| Espressif ESP32                      | Dual mode + Wifi | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
-| Espressif ESP32-S3,C2,C3,C5,C6,H2    | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
-| EM 9301, 9304, 9305                  | LE               | SPI            | n.a.             | em9301         | Custom HCI SPI implementation                  |
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
-| Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
+| Nordic nRF52xxx, nRF5340, nRF54Lxx   | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
 | NXP 88W88997, IW416, IW61x           | Dual mode + Wifi | H4             | Yes              | nxp            | Requires initial firmware                      |
+| Qualcomm QCA6595(AU), QCA8695AU      | Dual mode        | H4             | Yes              |                | Requires initial firmware and config           |
+| Realtek RTL8763E                     | Dual mode        | VHCI           | Yes              |                | SoC with Bluetooth                             |
 | Realtek UART                         | Dual mode + Wifi | H5             | Yes              | realtek        | Requires initial firmware and config           |
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes              | realtek        | Requires initial firmware and config           |
 | Renesas RX23W                        | LE               | H4             | n.a.             |                | HCI Firmware part of BTTS                      |
+| Renesas/Dialog DA145xx               | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
+| Reensas/Dialog DA1469x               | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |
 | STM STLC2500D                        | Classic          | H4             | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported     |
 | STM32-WB                             | LE               | VHCI           | n.a.             |                | SoC with multi-protocol Radio co-processor     |
 | STM32-WB0                            | LE               | H4             | n.a.             |                | HCI Firmware part of STM32WB0 Cube Package     |
