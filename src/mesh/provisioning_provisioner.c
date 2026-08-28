@@ -540,7 +540,7 @@ static void provisioning_handle_confirmation(uint16_t the_pb_adv_cid, const uint
 
     UNUSED(the_pb_adv_cid);
     UNUSED(packet_data);
-    UNUSED(packet_len);
+    if (packet_len != 16) return;
 
     // 
     if (prov_emit_output_oob_active){
@@ -624,7 +624,7 @@ static void provisioning_handle_provisioning_salt_calculated(void * arg){
 static void provisioning_handle_random(uint16_t the_pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
 
     UNUSED(the_pb_adv_cid);
-    UNUSED(packet_len);
+    if (packet_len != 16) return;
 
     // TODO: validate Confirmation
 
@@ -678,37 +678,57 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
             // check state
             switch (provisioner_state){
                 case PROVISIONER_W4_CAPABILITIES:
-                    if (packet[0] != MESH_PROV_CAPABILITIES) provisioning_handle_provisioning_error(0x03);
+                    if (packet[0] != MESH_PROV_CAPABILITIES) {
+                        provisioning_handle_provisioning_error(0x03);
+                        break;
+                    }
                     printf("MESH_PROV_CAPABILITIES: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_capabilities(pb_adv_cid, &packet[1], size-1);
                     break;
                 case PROVISIONER_W4_PUB_KEY:
-                    if (packet[0] != MESH_PROV_PUB_KEY) provisioning_handle_provisioning_error(0x03);
+                    if (packet[0] != MESH_PROV_PUB_KEY) {
+                        provisioning_handle_provisioning_error(0x03);
+                        break;
+                    }
                     printf("MESH_PROV_PUB_KEY: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_public_key(pb_adv_cid, &packet[1], size-1);
                     break;
                 case PROVISIONER_W4_INPUT_COMPLETE:
-                    if (packet[0] != MESH_PROV_INPUT_COMPLETE) provisioning_handle_provisioning_error(0x03);
+                    if (packet[0] != MESH_PROV_INPUT_COMPLETE) {
+                        provisioning_handle_provisioning_error(0x03);
+                        break;
+                    }
+                    if (size != 1) break;
                     printf("MESH_PROV_INPUT_COMPLETE: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_input_complete(pb_adv_cid);
                     break;
                 case PROVISIONER_W4_CONFIRM:
-                    if (packet[0] != MESH_PROV_CONFIRM) provisioning_handle_provisioning_error(0x03);
+                    if (packet[0] != MESH_PROV_CONFIRM) {
+                        provisioning_handle_provisioning_error(0x03);
+                        break;
+                    }
                     printf("MESH_PROV_CONFIRM: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_confirmation(pb_adv_cid, &packet[1], size-1);
                     break;
                 case PROVISIONER_W4_RANDOM:
-                    if (packet[0] != MESH_PROV_RANDOM) provisioning_handle_provisioning_error(0x03);
+                    if (packet[0] != MESH_PROV_RANDOM) {
+                        provisioning_handle_provisioning_error(0x03);
+                        break;
+                    }
                     printf("MESH_PROV_RANDOM:  ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_random(pb_adv_cid, &packet[1], size-1);
                     break;
                 case PROVISIONER_W4_COMPLETE:
-                    if (packet[0] != MESH_PROV_COMPLETE) provisioning_handle_provisioning_error(0x03);
+                    if (packet[0] != MESH_PROV_COMPLETE) {
+                        provisioning_handle_provisioning_error(0x03);
+                        break;
+                    }
+                    if (size != 1) break;
                     printf("MESH_PROV_COMPLETE:  ");
                     provisioning_handle_complete(pb_adv_cid);
                     break;
@@ -815,4 +835,3 @@ void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t the_pb_ad
     (void)memcpy(auth_value, input_oob_data, input_oob_len);
     provisioning_handle_auth_value_ready();
 }
-
