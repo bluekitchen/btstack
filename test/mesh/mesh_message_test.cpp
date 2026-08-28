@@ -1237,6 +1237,16 @@ TEST(MessageTest, InvalidSegmentNumberIsDropped){
     CHECK_EQUAL(0, recv_upper_transport_pdu_len);
 }
 
+TEST(MessageTest, SegmentedAccessPduShorterThanTransmicIsDropped){
+    const uint8_t lower_transport_pdu[] = { 0x80, 0x00, 0x00, 0x00, 0x00 };
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    mesh_network_setup_pdu(network_pdu, 0, 0, 0, 0, 1, 1, 2, lower_transport_pdu, sizeof(lower_transport_pdu));
+
+    mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+    CHECK_EQUAL(0, recv_upper_transport_pdu_len);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
