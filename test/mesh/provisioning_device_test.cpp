@@ -265,6 +265,21 @@ TEST(Provisioning, RejectsProvisioningDataWithInvalidMic){
     CHECK_EQUAL(MESH_PROV_FAILED, pdu_data[0]);
 }
 
+TEST(Provisioning, RejectsTruncatedRandomPdu){
+    const uint8_t truncated_random[] = { MESH_PROV_RANDOM };
+
+    send_prov_pdu(prov_invite, sizeof(prov_invite));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_start, sizeof(prov_start));
+    send_prov_pdu(prov_public_key, sizeof(prov_public_key));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_confirm, sizeof(prov_confirm));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(truncated_random, sizeof(truncated_random));
+
+    CHECK_EQUAL(MESH_PROV_CONFIRM, pdu_data[0]);
+}
+
 int main (int argc, const char * argv[]){
     // log into file using HCI_DUMP_PACKETLOGGER format
     const char * log_path = "hci_dump.pklg";

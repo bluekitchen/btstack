@@ -622,7 +622,7 @@ static void provisioning_handle_confirmation_s1_calculated(void * arg){
 }
 
 static void provisioning_handle_confirmation(uint8_t *packet, uint16_t size){
-    UNUSED(size);
+    if (size != 16) return;
     UNUSED(packet);
 
     // 
@@ -680,9 +680,7 @@ static void provisioning_handle_random_s1_calculated(void * arg){
 }
 
 static void provisioning_handle_random(uint8_t *packet, uint16_t size){
-
-    UNUSED(size);
-    UNUSED(packet);
+    if (size != 16) return;
 
     // TODO: validate Confirmation
 
@@ -797,37 +795,55 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
             // check state
             switch (device_state){
                 case DEVICE_W4_INVITE:
-                    if (packet[0] != MESH_PROV_INVITE) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_INVITE) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_INVITE: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_invite(&packet[1], size-1);
                     break;
                 case DEVICE_W4_START:
-                    if (packet[0] != MESH_PROV_START) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_START) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_START:  ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_start(&packet[1], size-1);
                     break;
                 case DEVICE_W4_PUB_KEY:
-                    if (packet[0] != MESH_PROV_PUB_KEY) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_PUB_KEY) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_PUB_KEY: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_public_key(&packet[1], size-1);
                     break;
                 case DEVICE_W4_CONFIRM:
-                    if (packet[0] != MESH_PROV_CONFIRM) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_CONFIRM) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_CONFIRM: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_confirmation(&packet[1], size-1);
                     break;
                 case DEVICE_W4_RANDOM:
-                    if (packet[0] != MESH_PROV_RANDOM) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_RANDOM) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_RANDOM:  ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_random(&packet[1], size-1);
                     break;
                 case DEVICE_W4_DATA:
-                    if (packet[0] != MESH_PROV_DATA) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_DATA) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_DATA:  ");
                     provisioning_handle_data(&packet[1], size-1);
                     break;
