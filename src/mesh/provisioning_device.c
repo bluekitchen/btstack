@@ -44,6 +44,7 @@
 
 #include "btstack_memory.h"
 #include "btstack_event.h"
+#include "btstack_debug.h"
 
 #include "mesh/provisioning_device.h"
 #include "mesh/mesh_crypto.h"
@@ -118,6 +119,7 @@ static uint8_t session_key[16];
 static uint8_t session_nonce[16];
 // EncProvisioningData
 static uint8_t enc_provisioning_data[25];
+static uint8_t provisioning_data_mic[8];
 // ProvisioningData
 static uint8_t provisioning_data[25];
 
@@ -716,11 +718,13 @@ static void provisioning_handle_data_ccm(void * arg){
 
     UNUSED(arg);
 
-    // TODO: validate MIC?
     uint8_t mic[8];
     btstack_crypto_ccm_get_authentication_value(&prov_ccm_request, mic);
-    printf("MIC: ");
-    printf_hexdump(mic, 8);
+    if (memcmp(mic, provisioning_data_mic, sizeof(mic)) != 0){
+        log_info("Provisioning Data MIC invalid");
+        provisioning_handle_provisioning_error(0x07);
+        return;
+    }
 
     // allocate network key
     network_key = btstack_memory_mesh_network_key_get();
@@ -739,10 +743,10 @@ static void provisioning_handle_data_ccm(void * arg){
 }
 
 static void provisioning_handle_data(uint8_t *packet, uint16_t size){
-
-    UNUSED(size);
+    if (size != (sizeof(enc_provisioning_data) + sizeof(provisioning_data_mic))) return;
 
     (void)memcpy(enc_provisioning_data, packet, 25);
+    (void)memcpy(provisioning_data_mic, &packet[25], sizeof(provisioning_data_mic));
 
     // decode response
     btstack_crypto_ccm_init(&prov_ccm_request, session_key, session_nonce, 25, 0, 8);

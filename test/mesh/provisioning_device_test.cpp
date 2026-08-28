@@ -246,6 +246,25 @@ TEST(Provisioning, Prov1){
     pb_adv_emit_pdu_sent(0);
 }
 
+TEST(Provisioning, RejectsProvisioningDataWithInvalidMic){
+    uint8_t invalid_prov_data[sizeof(prov_data)];
+    memcpy(invalid_prov_data, prov_data, sizeof(prov_data));
+    invalid_prov_data[sizeof(invalid_prov_data) - 1] ^= 1;
+
+    send_prov_pdu(prov_invite, sizeof(prov_invite));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_start, sizeof(prov_start));
+    send_prov_pdu(prov_public_key, sizeof(prov_public_key));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_confirm, sizeof(prov_confirm));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(prov_random, sizeof(prov_random));
+    pb_adv_emit_pdu_sent(0);
+    send_prov_pdu(invalid_prov_data, sizeof(invalid_prov_data));
+
+    CHECK_EQUAL(MESH_PROV_FAILED, pdu_data[0]);
+}
+
 int main (int argc, const char * argv[]){
     // log into file using HCI_DUMP_PACKETLOGGER format
     const char * log_path = "hci_dump.pklg";
