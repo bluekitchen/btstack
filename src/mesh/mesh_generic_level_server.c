@@ -348,8 +348,8 @@ static const mesh_operation_t mesh_generic_level_model_operations[] = {
     { MESH_GENERIC_LEVEL_GET,                                   0, generic_level_get_handler },
     { MESH_GENERIC_LEVEL_SET,                                   3, generic_level_set_handler },
     { MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED,                    3, generic_level_set_unacknowledged_handler },
-    { MESH_GENERIC_DELTA_SET,                                   3, generic_delta_set_handler },
-    { MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED,                    3, generic_delta_set_unacknowledged_handler },
+    { MESH_GENERIC_DELTA_SET,                                   5, generic_delta_set_handler },
+    { MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED,                    5, generic_delta_set_unacknowledged_handler },
     { MESH_GENERIC_MOVE_SET,                                    3, generic_move_get_handler },
     { MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED,                     3, generic_move_set_unacknowledged_handler },
     { 0, 0, NULL }

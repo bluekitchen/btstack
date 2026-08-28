@@ -221,12 +221,12 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     
-    uint8_t present_value = mesh_access_parser_get_uint8(&parser);
-    uint8_t target_value = 0;
+    int16_t present_value = (int16_t) mesh_access_parser_get_uint16(&parser);
+    int16_t target_value = 0;
     uint8_t remaining_time_gdtt = 0;
 
     if (mesh_access_parser_available(&parser) == 2){
-        target_value = mesh_access_parser_get_uint8(&parser);
+        target_value = (int16_t) mesh_access_parser_get_uint16(&parser);
         remaining_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
 
@@ -251,7 +251,7 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
 }
 
 static const mesh_operation_t mesh_generic_level_model_operations[] = {
-    { MESH_GENERIC_LEVEL_STATUS, 0, generic_level_status_handler },
+    { MESH_GENERIC_LEVEL_STATUS, 2, generic_level_status_handler },
     { 0, 0, NULL }
 };
 
