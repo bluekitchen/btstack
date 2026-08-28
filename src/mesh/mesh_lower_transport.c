@@ -446,11 +446,11 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
     // send ack
     mesh_lower_transport_incoming_send_ack_for_segmented_pdu(message_pdu);
 
-    // forward to upper transport
-    mesh_lower_transport_incoming_queue_for_higher_layer((mesh_pdu_t *) message_pdu);
-
     // mark as done
     mesh_lower_transport_incoming_segmented_message_complete(message_pdu);
+
+    // forward to upper transport
+    mesh_lower_transport_incoming_queue_for_higher_layer((mesh_pdu_t *) message_pdu);
 }
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
