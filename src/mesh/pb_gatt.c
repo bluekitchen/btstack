@@ -99,7 +99,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (pdu_segment_len == 0u) return;
 
             if (sizeof(sar_buffer.reassembly_buffer) - reassembly_offset < pdu_segment_len) {
-                log_error("sar buffer too small left %d, new to store %d", MESH_PROV_MAX_PROXY_PDU - reassembly_offset, pdu_segment_len);
+                log_info("PB-GATT SAR buffer too small left %d, new to store %d", MESH_PROV_MAX_PROXY_PDU - reassembly_offset, pdu_segment_len);
                 break;
             }
 
