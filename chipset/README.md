@@ -1,6 +1,6 @@
 #
 
-In this chapter, we first explain how Bluetooth chipsets are connected physically and then provide information about popular Bluetooth chipset and their use with BTstack.
+In this chapter, we first explain how Bluetooth chipsets are connected physically and then provide information about popular Bluetooth chipsets and their use with BTstack.
 
 ## HCI Interface
 
@@ -19,20 +19,20 @@ For UART connections, different transport layer variants exist.
 The most common one is the official "UART Transport", also called H4. It requires hardware flow control via the CTS/RTS lines and assumes no errors on the UART lines.
 
 ### HCI H5
-The "Three-Wire UART Transport", also called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retransmission. While it is possible to use H5 really with "three wires" without hardware handshake, we recommend to use a full UART with hardware handshake. If your design lacks the hardware handshake, H5 is your only option.
+The "Three-Wire UART Transport", also called H5, makes use of the SLIP protocol to transmit a packet and can deal with packet loss and bit-errors by retransmission. While it is possible to use H5 with only "three wires" and without a hardware handshake, we recommend using a full UART with a hardware handshake. If your design lacks the hardware handshake, H5 is your only option.
 
 ### BCSP
-The predecessor of H5. The main difference to H5 is that Even Parity is used for BCSP. To use BCSP with BTstack, you use the H5 transport and can call *hci_transport_h5_enable_bcsp_mode*
+BCSP is the predecessor of H5. The main difference is that BCSP uses even parity. To use BCSP with BTstack, use the H5 transport and call *hci_transport_h5_enable_bcsp_mode*.
 
 ### eHCILL
-Finally, Texas Instruments extended H4 to create the "eHCILL transport" layer that allows both sides to enter sleep mode without loosing synchronisation. While it is easier to implement than H5, it it is only supported by TI chipsets and cannot handle packet loss or bit-errors.
+Finally, Texas Instruments extended H4 to create the "eHCILL transport" layer that allows both sides to enter sleep mode without losing synchronization. While it is easier to implement than H5, it is only supported by TI chipsets and cannot handle packet loss or bit-errors.
 
 ### H4 over SPI
-Chipsets from Dialog Semiconductor and EM Marin allow to send H4 formatted HCI packets via SPI. SPI has the benefit of a simpler implementation for both Host Controller and Host as it does not require an exact clock. The SPI Master, here the Host, provides the SPI Clock and the SPI Slave (Host Controller) only has to read and update it's data lines when the clock line changes. The EM9304 supports an SPI clock of up to 8 Mhz. However, an additional protocol is needed to let the Host know when the Host Controller has HCI packet for it. Often, an additional GPIO is used to signal this.
+Chipsets from Dialog Semiconductor and EM Marin allow H4-formatted HCI packets to be sent via SPI. SPI has the benefit of a simpler implementation for both Host Controller and Host, as it does not require an exact clock. The SPI Master, here the Host, provides the SPI clock and the SPI Slave (Host Controller) only has to read and update its data lines when the clock line changes. The EM9304 supports an SPI clock of up to 8 MHz. However, an additional protocol is needed to let the Host know when the Host Controller has an HCI packet for it. Often, an additional GPIO is used to signal this.
 
 ### HCI Shortcomings
 
-Unfortunately, the HCI standard misses a few relevant details:
+Unfortunately, the HCI standard lacks a few relevant details:
 
   * For UART based connections, the initial baud rate isn't defined but most Bluetooth chipsets use 115200 baud. For better throughput, a higher baud rate is necessary, but there's no standard HCI command to change it. Instead, each vendor had to come up with their own set of vendor-specific commands. Sometimes, additional steps, e.g. doing a warm reset, are necessary to activate the baud rate change as well.
 
@@ -49,8 +49,7 @@ From our experience, only Texas Instruments and EM Microelectronics provide all 
 Nordic Semiconductor does not officially have Bluetooth chipsets with HCI interface, but their documentation on the nRF5 series is complete and very informative.
 TI and Nordic also provide excellent support via their respective web forum.
 
-Infineon acquired Cypress Semiconductor Corporation in 2020, which acquired the Bluetooth + Wifi division of Broadcom in 2016 provides
-support via their Community Forum. In addition, firmware updates (PatchRAM files) for Bluetooth + Wifi controllers 
+Infineon acquired Cypress Semiconductor Corporation in 2020. Cypress had acquired Broadcom's Bluetooth + Wi-Fi division in 2016 and provides support via its Community Forum. In addition, firmware updates (PatchRAM files) for Bluetooth + Wi-Fi controllers
 are available via [Murata's Cypress GitHub](https://github.com/murata-wireless/cyw-bt-patch).
 
 CSR, which has been acquired by Qualcomm, provides all relevant information on their Support website after signing an NDA.
@@ -58,7 +57,7 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 ## Chipset Overview
 
-As the following Table has too many columns, we split it in two parts.
+As the following table has too many columns, we split it into two parts.
 
 Part 1.
 
@@ -144,14 +143,13 @@ Part 2.
 **Notes**:
 
   1. BD_ADDR: Indicates if Bluetooth chipset comes with its own valid MAC Address. Better Broadcom and CSR dongles usually come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
-  2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI in general. BTstack can receive SCO packets without problems. However, only TI CC256x has support for using SCO buffers in the Controller and a useful flow control. On CSR/Broadcom/Cypress Controllers, BTstack cannot queue multiple SCO packets in the Controller. Instead, the SCO packet must be sent periodically at the right time - without a clear indication about when this time is. The current implementation observes the timestamps of the received SCO packets to schedule sending packets. With full control over the system and no other Bluetooth data, this can be flawless, but it's rather fragile in general. For these, it's necessary to use the I2S/PCM interface for stable operation.
-  , for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
+  2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI in general. BTstack can receive SCO packets without problems. However, not all Bluetooth Controller support SCO Flow Control - newer Controller tend to support it. On CSR/Broadcom/Cypress Controllers, BTstack cannot queue multiple SCO packets in the Controller. Instead, SCO packets must be sent periodically at the right time, without a clear indication of when that is. The current implementation observes the timestamps of received SCO packets to schedule outgoing packets. With full control over the system and no other Bluetooth data, this can be flawless, but it is generally rather fragile. For stable operation with these controllers, it is necessary to use the I2S/PCM interface. For controllers marked with No, we either did not try or did not find enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
 
 ## Atmel/Microchip
 
-The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. The BLE Controller is qualified as [QDID 99659](https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402). Please note: the BLE firmware is around 60 kB. It might need a separate Wifi firmware as well.
+The ATWILC3000 Bluetooth/Wi-Fi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. The BLE Controller is qualified as [QDID 99659](https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402). Please note: the BLE firmware is around 60 kB. It might need a separate Wi-Fi firmware as well.
 
 **BD Addr** can be set with vendor-specific command although all chipsets have an official address stored. The BD_ADDR lookup results in "Newport Media Inc." which was [acquired by Atmel](http://www.atmel.com/about/news/release.aspx?reference=tcm:26-62532) in 2014.
 
@@ -161,13 +159,13 @@ The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedd
 
 ## Broadcom/Cypress/Infineon Semiconductor
 
-Before the Broadcom Wifi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipset in low quantities. Nevertheless, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wifi combos) that might already have been pre-tested for FCC and similar certifications.
+Before the Broadcom Wi-Fi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipsets in low quantities. Nevertheless, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wi-Fi combos) that might already have been pre-tested for FCC and similar certifications.
 
-A popular example is the Ampak AP6212A module that contains an BCM 43438A1 and is used on the Raspberry Pi 3, the RedBear Duo, and the RedBear IoT pHAT for older Raspberry Pi models.
+A popular example is the Ampak AP6212A module that contains a BCM 43438A1 and is used on the Raspberry Pi 3, the RedBear Duo, and the RedBear IoT pHAT for older Raspberry Pi models.
 
 The CYW20704 A2 controller supports both DLE as well as multiple LE roles and is available e.g. from [LairdTech](https://www.lairdtech.com/bt850-bt851-and-bt860-series-modules-adapter-dvks-0002) as UART module (BT860), USB module (BT850), and USB dongle.
 
-Interestingly, the CYW20704 exhibits the same UART flow control bug as the CC2564. You can add ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND to activate a workaround and/or read the bug & workardound description in the TI section below.
+Interestingly, the CYW20704 exhibits the same UART flow control bug as the CC2564. You can add ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND to activate a workaround and/or read the bug and workaround description in the TI section below.
 
 The best source for documentation on vendor specific commands so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android, but with the takeover by Cypress, documentation is directly available.
 
@@ -179,14 +177,14 @@ The CYW20819 can be used as a SoC with Cypress' Bluetooth stack. To use it as a 
 
 The CYW43xxx series contains a Wifi and Bluetooth Controller. The Bluetooth Controller can be used independent from the Wifi part.
 
-Newer Controller likes the CYW5557x series requires to enter a so-called autobaud mode by asserting CTS (low) during reset/power-up. In this mode, only a subset of 
+Newer Controllers such as the CYW55310 or the CYW5557x series require entering a so-called autobaud mode by asserting CTS (low) during reset/power-up. In this mode, only a subset of
 HCI commands are available. Please see posix-h4-bcm port to get started.
 
 **Init scripts**: For UART connected chipsets, an init script has to be uploaded after power on. For Bluetooth chipsets that are used in Broadcom Wifi+Bluetooth combos, this file often can be found as a binary file in Linux distributions with the ending *'.hcd'* or as part of the WICED SDK as C source file that contains the init script as a data array for use without a file system.
 
 To find the correct file, Broadcom chipsets return their model number when asked for their local name.
 
-BTstack supports uploading of the init script in two variants: using .hcd files looked up by name in the posix-h4 port and by linking against the init script in the WICED port. While the init script is processed, the chipsets RTS line goes high, but only 2 ms after the command complete event for the last command from the init script was sent. BTstack waits for 10 ms after receiving the command complete event for the last command to avoid sending before RTS goes high and the command fails.
+BTstack supports uploading the init script in two variants: using .hcd files looked up by name in the posix-h4 port and by linking against the init script in the WICED port. While the init script is processed, the chipset's RTS line goes high, but only 2 ms after the command complete event for the last command from the init script was sent. BTstack waits for 10 ms after receiving the command complete event for the last command to avoid sending before RTS goes high and the command fails.
 
 **BD Addr** can be set with a custom command. A fixed address is provided on some modules, e.g. the AP6212A, but not on others.
 
@@ -208,53 +206,53 @@ Similar to Broadcom, the best source for documentation is the source code for bl
 
 CSR USB dongles do not require special configuration and SCO data is routed over USB by default.
 
-CSR chipset do not require an actual init script in general, but they allow to configure the chipset via so-called PSKEYs. After setting one or more PSKEYs, a warm reset activates the new setting.
+CSR chipsets do not require an actual init script in general, but they allow the chipset to be configured via so-called PSKEYs. After setting one or more PSKEYs, a warm reset activates the new setting.
 
 **BD Addr** can be set via PSKEY. A fixed address can be provided if the chipset has some kind of persistent memory to store it. Most USB Bluetooth dongles have a fixed BD ADDR.
 
 **SCO data** can be configured via a set of PSKEYs. We haven't been able to route SCO data over HCI for UART connections yet.
 
-**Baud rate** can be set as part of the initial configuration and gets actived by the warm reset.
+**Baud rate** can be set as part of the initial configuration and is activated by the warm reset.
 
-**BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_csr.c*. During the setup, *btstack_chipset_csr_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. The baud rate is set during the general configuration.
+**BTstack integration**: The common code for all CSR chipsets is provided by *btstack_chipset_csr.c*. During setup, the *btstack_chipset_csr_instance* function is used to get a *btstack_chipset_t* instance, which is passed to the *hci_init* function. The baud rate is set during the general configuration.
 
 SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
 
 
 ## Dialog Semiconductor / Renesas
 
-Daialo Semiconductor has been aquired by Renesas in February 2021.
+Dialog Semiconductor was acquired by Renesas in February 2021.
 
-They offers the DA145xx and DA1469xx series of LE-only SoCs that can be programmed with an HCI firmware. 
-The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
+They offer the DA145xx and DA1469xx series of LE-only SoCs that can be programmed with HCI firmware.
+The HCI firmware can be uploaded at boot into SRAM or stored in OTP (one-time programmable) memory or external SPI flash.
 
-The 581 does not implement the Data Length Extension or supports multiple concurrent roles, while later versions support it.
+The 581 does not implement the Data Length Extension or support multiple concurrent roles, while later versions do.
 
-The mechanism to boot a firmware via UART/SPI has mostly stayed the same, while the set of supported interfaces and baudrates have slightly changed.
+The mechanism to boot firmware via UART/SPI has mostly stayed the same, while the set of supported interfaces and baud rates has changed slightly.
 
 The DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmware that can be compiled and downloaded into flash using the SmartSnippets Studio.
 
 Unexpected issues:
-- DA14585 cannot scan for other devices if advertising is enabled alhtough it supports multiple Peripheral/Central roles (last check: 6.0.14.1114)
+- DA14585 cannot scan for other devices if advertising is enabled, although it supports multiple Peripheral/Central roles (last check: 6.0.14.1114)
  
-**BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
+**BD Addr** is fixed to 80:EA:CA:00:00:01. There is no command in the HCI firmware to set it differently. Random addresses could be used instead.
 
 **Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware.
 
-**BTstack integration**: *btstack_chipset_da145xx.c* contains the code to download the provided HCI firmware into the SRAM of the DA145xx. After that, it can be used as any other HCI chipset. No special support needed for DA1469x after compiling and flashing the HCI firmware.
+**BTstack integration**: *btstack_chipset_da145xx.c* contains the code to download the provided HCI firmware into the SRAM of the DA145xx. After that, it can be used as any other HCI chipset. No special support is needed for DA1469x after compiling and flashing the HCI firmware.
 
 
 ## Espressif ESP32
 
-The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface.
+The ESP32 is a SoC with a built-in dual-mode Bluetooth and Wi-Fi radio. The HCI Controller is implemented in software and accessed via a so-called Virtual HCI (VHCI) interface.
 It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. Since ESP-IDF v4.3, SCO-over-HCI is usable for HSP/HFP.
 
-The newer ESP32-S3 and ESP32-C3 SoCs have a newer LE Controller that also supports 2M-PHY, but does support Classic (BR/EDR) anymore.
+The newer ESP32-S3 and ESP32-C3 SoCs have a newer LE Controller that also supports 2M PHY, but no longer supports Classic (BR/EDR).
 
-ALl can either be used as an SoC with the application running on the ESP32 itself or can be configured as a regular Bluetooth HCI Controller.
+All can either be used as an SoC with the application running on the ESP32 itself or can be configured as a regular Bluetooth HCI Controller.
 BTstack can work either on the SoC itself or on another MCU with the ESP32 connected via 4-wire UART.
 
-See Espressif's [ESP-Hosted firmware](https://github.com/espressif/esp-hosted) for use as Bluetooth/Wifi Ccontroller.
+See Espressif's [ESP-Hosted firmware](https://github.com/espressif/esp-hosted) for use as a Bluetooth/Wi-Fi controller.
 
 
 ## EM Microelectronic Marin
@@ -262,38 +260,38 @@ See Espressif's [ESP-Hosted firmware](https://github.com/espressif/esp-hosted) f
 For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset with an HCI interface. The EM9301 can be connected via SPI or UART. 
 The UART interface does not support hardware flow control and is not recommended for use with BTstack. The SPI mode uses a proprietary but documented extension to implement flow control and signal if the EM9301 has data to send.
 
-In December 2016, EM released the new EM9304 that also features an HCI mode and adds support for optional Bluetooth 4.2. features. 
+In December 2016, EM released the new EM9304 that also features an HCI mode and adds support for optional Bluetooth 4.2 features.
 It supports the Data Length Extension and up to 8 LE roles. The EM9304 is a larger MCU that allows to run custom code on it. 
-For this, an advanced mechanism to upload configuration and firmware to RAM or into an One-Time-Programmable area of 128 kB is supported. 
+For this, an advanced mechanism for uploading configuration and firmware to RAM or into a 128 kB one-time-programmable area is supported.
 It supports a superset of the vendor specific commands of the EM9301.
 
 EM9304 is used by the 'stm32-l073rz-em9304' port in BTstack. The port.c file also contains an IRQ+DMA-driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
 
-**BD Addr** must be set during startup for EM9301 since it does not have a stored fix address. The EM9304 comes with an valid address stored in OTP.
+**BD Addr** must be set during startup for EM9301 since it does not have a stored fixed address. The EM9304 comes with a valid address stored in OTP.
 
 **SCO data** is not supported since it is LE only.
 
-**Baud rate** can be set for UART mode. For SPI, the master controls the speed via the SPI Clock line. With 3.3V, 16 Mhz is supported.
+**Baud rate** can be set for UART mode. For SPI, the master controls the speed via the SPI clock line. With 3.3 V, 16 MHz is supported.
 
 **Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory (EM9304 only).
 
-**BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
+**BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During setup, the *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance, which is passed to the *hci_init* function. It allows setting the BD Addr during startup.
 
 
 ## Intel Dual Wireless 8260, 8265
 
-Wifi/Bluetooth combo cards mainly used in mobile computers. The Bluetooth part requires the upload of a firmware file and a configuration file. SCO, DLE, Multiple roles not tested.
+Wi-Fi/Bluetooth combo cards are mainly used in mobile computers. The Bluetooth part requires the upload of a firmware file and a configuration file. SCO, DLE, and multiple roles are untested.
 
 
 ## Nordic nRF5 series
 
-The Single-Mode LE chipsets from the Nordic nRF5 series chipsets usually do not have an HCI interface. Instead, they provide an LE Bluetooth Stack as a binary library, the so-called *SoftDevices*. Developer can write their Bluetooth application on top of this library. Since the chipset can be programmed, it can also be loaded with a firmware that provides a regular HCI H4 interface for a Host.
+The single-mode LE chipsets from the Nordic nRF5 series usually do not have an HCI interface. Instead, they provide an LE Bluetooth stack as a binary library, the so-called *SoftDevice*. Developers can write their Bluetooth application on top of this library. Since the chipset can be programmed, it can also be loaded with firmware that provides a regular HCI H4 interface for a Host.
 
 An interesting feature of the nRF5 chipsets is that they can support multiple LE roles at the same time, e.g. being Central in one connection and a Peripheral in another connection. Also, the nRF52 SoftDevice implementation supports the Bluetooth 4.2 Data Length Extension.
 
-Both nRF5 series, the nRF51 and the nRF52, can be used with an HCI firmware. The nRF51 does not support encrypted connections at the moment (November 18th, 2016) although this might become supported as well.
+Both nRF5 families, the nRF51 and the nRF52, can be used with HCI firmware. The nRF51 does not currently support encrypted connections (last checked November 18th, 2016), although this might become supported as well.
 
-**BD ADDR** is not set automatically. However, during production, a 64-bit random number is stored in the each chip. Nordic uses this random number as a random static address in their SoftDevice implementation.
+**BD ADDR** is not set automatically. However, during production, a 64-bit random number is stored in each chip. Nordic uses this random number as a random static address in its SoftDevice implementation.
 
 **SCO data** is not supported since it is LE only.
 
@@ -308,36 +306,36 @@ Please see the instructions in chipset/zephyr/nrf5340_dongle for nRF5340 DK and 
 
 
 ## NXP Semiconductors
-NXP Semiconductors acquired the Bluetooth + Wifi division of Marvel in 2019 and continues their products with new names.
-As the Controllers contain no Bluetooth firmware, the firmware needs to be uploaded on start.
+NXP Semiconductors acquired Marvell's Bluetooth + Wi-Fi division in 2019 and continues its products under new names.
+As the Controllers contain no Bluetooth firmware, the firmware needs to be uploaded at startup.
 BTstack supports firmware upload for older Controllers with bootloader version v1, like the NXP 88W8997.
 
-**BD ADDR** is stored in Controller.
+**BD ADDR** is stored in the Controller.
 
 **SCO data** is routed over HCI by default but does not support flow control.
 
-**Baud rate** is currently kept at 115200
+**Baud rate** is currently kept at 115200.
 
 **Init script** is required.
 
-**BTstack integration**: firmware update required and implemented by *btstack_chipset_nxp.c*  See port/posix-h4-nxp for details on how to use it.
+**BTstack integration**: A firmware update is required and implemented by *btstack_chipset_nxp.c*. See port/posix-h4-nxp for details on how to use it.
 
 
 ## Realtek
 
 Realtek provides Dual-Mode Bluetooth Controllers with USB and UART (H4/H5) interfaces as well as combined Bluetooth/WiFi Controllers, which are also available as M.2 modules for laptops.
-They commonly require to download a patch and a configuration file. Patch and configuration file can be found as part of their Linux drivers.
+They commonly require a patch and a configuration file to be downloaded. The patch and configuration files can be found as part of their Linux drivers.
 
-**BD ADDR** is stored in Controller.
+**BD ADDR** is stored in the Controller.
 
-**SCO data** can either be routed over HCI with working flow control or over I2S/PCM. The 8822CS supports mSBC codec internally.
+**SCO data** can either be routed over HCI with working flow control or over I2S/PCM. The 8822CS supports the mSBC codec internally.
 
 **Baud rate** is set by the config file.
 
 **Init script** is required.
 
-**BTstack integration**: H4/H5 Controller require firmware upload. 'rtk_attach' can be used for this on Embedded Linux. For H4 and USB Controllers, 
-*btstack_chipset_realtek.c* implements the patch and config upload mechanism. The current implementation requires POSIX support and a file system. Please get in touch if your project requires an MCU without POSIX/File system.
+**BTstack integration**: H4/H5 Controllers require firmware upload. `rtk_attach` can be used for this on Embedded Linux. For H4 and USB Controllers,
+*btstack_chipset_realtek.c* implements the patch and configuration upload mechanism. The current implementation requires POSIX support and a file system. Please get in touch if your project requires an MCU without POSIX file-system support.
 
 ### Systems with an Operating System and a File System
 
@@ -350,27 +348,27 @@ For Realtek UART H4 Controllers, the POSIX H4 port reads the Controller's HCI Lo
 Embedded Linux systems can also use Realtek's `rtk_attach` tool to upload firmware before BTstack starts. In that setup, BTstack can then use the Controller after the operating system side has completed the Realtek initialization without specific support for Realtek chipsets.
 
 ### SoCs
-BTstack can run on the RTL8763E itself. This requires the official RTL87X3E_MCU_SDK and a custom port. Pleae get in touch with us for commercial projects.
+BTstack can run on the RTL8763E itself. This requires the official RTL87X3E_MCU_SDK and a custom port. Please get in touch with us for commercial projects.
 
 ## Renesas Electronics
 
 Please see Dialog Semiconductor for DA14xxx Bluetooth SoCs above.
 
-Renesas currently has 3 LE-only SoCs: the older 16-bit RL78 and the newer RX23W and the RA4W1. 
+Renesas currently has three LE-only SoCs: the older 16-bit RL78 and the newer RX23W and RA4W1.
 For the newer SoCs, Renesas provides a pre-compiled HCI firmware as well as an HCI project for their e2 Studio IDE.
 The HCI firmware needs to be programmed into the SoC Flash.
 
-Both newer SoC provide the newer Bluetooth 5.0 features like DLE, 2M-PHY, Long Range, and Multiple Roles.
+Both newer SoCs provide Bluetooth 5.0 features such as DLE, 2M PHY, Long Range, and multiple roles.
 
 To install the HCI Firmware on the [Target Board for RX23W](https://www.renesas.com/us/en/products/software-tools/boards-and-kits/eval-kits/rx-family-target-board.html):
 	
   * Download [Bluetooth Test Tool Suite](https://www.renesas.com/eu/en/software/D6004348.html)
   * Install [Renesas Flash Programmer](https://www.renesas.com/tw/en/products/software-tools/tools/programmer/renesas-flash-programmer-programming-gui.html)
-  * Follow instruction in [Target Board for RX23W Quick Start Guide](https://www.renesas.com/us/en/doc/products/mpumcu/apn/rx/013/r20qs0014ej0100-23wtbqsg.pdf) to flash `rx23w_uart_hci_sci8_br2000k_v1.00.mot`
+  * Follow the instructions in the [Target Board for RX23W Quick Start Guide](https://www.renesas.com/us/en/doc/products/mpumcu/apn/rx/013/r20qs0014ej0100-23wtbqsg.pdf) to flash `rx23w_uart_hci_sci8_br2000k_v1.00.mot`
 
-**BD Addr** fixed to 74:90:50:FF:FF:FF. A Windows tool in the BTTS suite allows to set a public Bluetooth Address.
+**BD Addr** is fixed to 74:90:50:FF:FF:FF. A Windows tool in the BTTS suite allows a public Bluetooth address to be set.
 
-**Baud rate**: The baud rate is fixed at 115200 resp. 2000000 with the provided firmware images. With 2 mbps, there's no need to update the baudrate at run-time.
+**Baud rate**: The baud rate is fixed at 115200 and 2000000, respectively, with the provided firmware images. At 2 Mbps, there is no need to update the baud rate at run time.
 
 **BTstack integration**: No special support needed.
 
@@ -381,37 +379,37 @@ STMicroelectronics has several different Bluetooth series.
 
 ### STLC2500D
 
-It offers the Bluetooth V2.1 + EDR chipset STLC2500D that supports SPI and UART H4 connection.
+It offers the Bluetooth V2.1 + EDR chipset STLC2500D, which supports SPI and UART H4 connections.
 
-**BD Addr** can be set with custom command although all chipsets have an official address stored.
+**BD Addr** can be set with a custom command, although all chipsets have an official address stored.
 
 **SCO data** might work. We didn't try.
 
-**Baud rate** can be set with custom command. The baud rate change of the chipset happens within 0.5 seconds. At least on BTstack, knowning exactly when the command was fully sent over the UART is non-trivial, so BTstack switches to the new baud rate after 100 ms to expect the command response on the new speed.
+**Baud rate** can be set with a custom command. The baud rate change of the chipset happens within 0.5 seconds. At least in BTstack, knowing exactly when the command was fully sent over the UART is non-trivial, so BTstack switches to the new baud rate after 100 ms to expect the command response at the new speed.
 
 **Init scripts** are not required although it is possible to upload firmware patches.
 
-**BTstack integration**: Support for the STLC2500C is provided by *btstack_chipset_stlc.c*. During the setup, *btstack_chipset_stlc2500d_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and to set the BD Addr during startup.
+**BTstack integration**: Support for the STLC2500D is provided by *btstack_chipset_stlc.c*. During setup, the *btstack_chipset_stlc2500d_instance* function is used to get a *btstack_chipset_t* instance, which is passed to the *hci_init* function. It enables a higher UART baud rate and allows setting the BD Addr during startup.
 
 
 ### BlueNRG
 
-The BlueNRG series is an LE-only SoC which can be used with an HCI Firmware over a custom SPI interface. 
+The BlueNRG series is an LE-only SoC that can be used with HCI firmware over a custom SPI interface.
 
 ### STM32-WB
 
-The STM32-WB5x series microcontroller is an SoC with a multi-protocol 2.4 Ghz radio co-processor. It provides a virtual HCI interface.
+The STM32-WB5x series microcontroller is an SoC with a multi-protocol 2.4 GHz radio coprocessor. It provides a virtual HCI interface.
 
 ### STM32-WB0
 
-The STM32-WB50 series microcontroller is an SoC with a multi-protocol 2.4 Ghz radio co-processor. 
+The STM32-WB50 series microcontroller is an SoC with a multi-protocol 2.4 GHz radio coprocessor.
 The [STM32Cube MCU Package for STM32WB0 series](https://www.st.com/en/embedded-software/stm32cubewb0.html) provides the HCI firmware.
 
 To flash this firmware, you can:
 - [Download and Install STM32CubeIDE](https://www.st.com/en/development-tools/stm32cubeide.html)
 - [Download and Unzip the STM32WB0 MCU Package](https://www.st.com/en/embedded-software/stm32cubewb0.html)
 - Open STM32CubeIDE
-- Import projects`Projects/{Your DevKit}/Applications/BLE/BLE_TransparentMode/STM32CubeIDE` and make sure the option 'copy into workspace' is unchecked
+- Import the project at `Projects/{Your DevKit}/Applications/BLE/BLE_TransparentMode/STM32CubeIDE` and make sure the "copy into workspace" option is unchecked
 - In `ble_conf.h`, add the line:
   - `#define BLESTACK_CONTROLLER_ONLY 1` 
 - Replace the controller+stack library with the controller only library:
@@ -420,20 +418,20 @@ To flash this firmware, you can:
 - Connect your Nucleo board and press the "Run" button
 
 The HCI firmware is configured for 921600 baud and no hardware flow control. You can modify these settings in `MX_USART1_UART_Init()` in `main.c`.
-Use `UART_HWCONTROL_RTS_CTS` to enable hardware flowcontrol.
+Use `UART_HWCONTROL_RTS_CTS` to enable hardware flow control.
 
 
 ## Texas Instruments CC256x series
 
-The Texas Instruments CC256x series is currently in its fourth iteration and provides a Classic-only (CC2560), a Dual-mode (CC2564), and a Classic + ANT (CC2567) model. A variant of the Dual-mode chipset is also integrated into TI's WiLink 8 Wifi+Bluetooth combo modules of the WL183x, WL185x, WL187x, and WL189x series. Some of the latter support ANT as well.
+The Texas Instruments CC256x series is currently in its fourth iteration and provides a Classic-only (CC2560), a dual-mode (CC2564), and a Classic + ANT (CC2567) model. A variant of the dual-mode chipset is also integrated into TI's WiLink 8 Wi-Fi+Bluetooth combo modules of the WL183x, WL185x, WL187x, and WL189x series. Some of the latter support ANT as well.
 
-The CC256x chipset is connected via an UART connection and supports the H4, H5 (since third iteration), and eHCILL.
+The CC256x chipset is connected via a UART connection and supports H4, H5 (since the third iteration), and eHCILL.
 
 The latest generation `CC256xC` chipsets support multiple LE roles in parallel.
 
-TI provides an alternative firmware that integrates an SBC Codec in the Bluetooth Controller itself for Assisted A2DP (A3DP) and Assisted HFP (Wide-band speech support). While this can save computation and code size on the main host, it cannot be used together with BLE, making it useless in most projects.
+TI provides an alternative firmware that integrates an SBC codec in the Bluetooth Controller itself for Assisted A2DP and Assisted HFP (wide-band speech support). While this can save computation and code size on the main host, it cannot be used together with BLE, making it unsuitable for most projects.
 
-The different CC256x chipset can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric way (AKA) to identify their chipsets. The table shows the LMP Subversion and AKA number for the CC256x and the WL18xx series.
+The different CC256x chipsets can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric identifier (AKA) for its chipsets. The table shows the LMP Subversion and AKA number for the CC256x and WL18xx series.
 
 Chipset | LMP Subversion |  AKA
 --------|----------------|-------
@@ -447,14 +445,14 @@ WL18xx  |         0xac20 | 11.8.32
 
 **Baud rate** can be set with `HCI_VS_Update_UART_HCI_Baudrate`. The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. 
 
-If you've implemented the hal_uart_dma.h without an additional ring buffer (as recommended!) and you have a bit of delay, e.g. because of thread switching on a RTOS, this could cause a UART overrun.
+If you've implemented `hal_uart_dma.h` without an additional ring buffer (as recommended) and experience a delay, for example because of thread switching on an RTOS, this could cause a UART overrun.
 If this happens, BTstack provides a workaround in the HCI H4 transport implementation by adding `ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND`. 
-If this is enabled, the H4 transport layer will resort to "deep packet inspection" to first check if its a TI controller and then wait for the HCI_VS_Update_UART_HCI_Baudrate. 
+If this is enabled, the H4 transport layer will resort to "deep packet inspection" to first check whether it is a TI controller and then wait for the HCI_VS_Update_UART_HCI_Baudrate command.
 When detected, it will tweak the next UART read to expect the HCI Command Complete event.
 
 **BD Addr** can be set with `HCI_VS_Write_BD_Addr` although all chipsets have an official address stored.
 
-**Init Scripts.** In order to use the CC256x chipset an initialization script must be obtained and converted into a C file for use with BTstack. For newer revisions, TI provides a main.bts and a ble_add_on.bts that need to be combined.
+**Init Scripts:** In order to use the CC256x chipset, an initialization script must be obtained and converted into a C file for use with BTstack. For newer revisions, TI provides a `main.bts` and a `ble_add_on.bts` that need to be combined.
 
 The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download and convert the requested file. It does this by:
 
@@ -465,32 +463,31 @@ The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download 
 
     ./convert_bts_init_scripts.py main.bts [ble_add_on.bts] output_file.c
 
-**BTstack integration**: 
-- The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
-- SCO Data is be routed over HCI with `ENABLE_SCO_OVER_HCI` or to PCM/I2S with `ENABLE_SCO_OVER_PCM`. Wide-band speech is supported in both cases. For SCO-over-HCI, BTstack implements the mSBC Codec. For SCO-over-I2S, Assisted HFP can be used.
+**BTstack integration**:
+- The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During setup, the *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance, which is passed to the *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
+- SCO data are routed over HCI with `ENABLE_SCO_OVER_HCI` or to PCM/I2S with `ENABLE_SCO_OVER_PCM`. Wide-band speech is supported in both cases. For SCO-over-HCI, BTstack implements the mSBC codec. For SCO-over-I2S, Assisted HFP can be used.
 - Assisted HFP: BTstack provides support for Assisted HFP mode if enabled with `ENABLE_CC256X_ASSISTED_HFP` and SCO is routed over PCM/I2S with `ENABLE_SCO_OVER_PCM`. During startup, the PCM/I2S is configured and the HFP implementation will enable/disable the mSBC Codec for Wide-band-speech when needed.
 
 Known issues:
-- The CC2564C v1.5 may loose the connection in Peripheral role with a Slave Latency > 0 when the Central updates Connection Parameters. See [https://github.com/bluekitchen/btstack/issues/429](Issue #429)
+- The CC2564C v1.5 may lose the connection in the Peripheral role with a Slave Latency > 0 when the Central updates Connection Parameters. See [Issue #429](https://github.com/bluekitchen/btstack/issues/429).
 
 
 ## Toshiba
 
-The Toshiba TC35661 Dual-Mode chipset is available in three variants: standalone incl. binary Bluetooth stack, as a module with embedded stack or with a regular HCI interface. The HCI variant has the model number TC35661–007 resp TC35561-009 for the newer silicon.
+The Toshiba TC35661 dual-mode chipset is available in three variants: standalone including a binary Bluetooth stack, as a module with an embedded stack, or with a regular HCI interface. The HCI variant has the model number TC35661-007 or TC35561-009, respectively, for the newer silicon.
 
-We first tried their USB Evaluation Stick that contains an USB-to-UART adapter and the PAN1026 module that contains the TC35661 -501. While it does support the HCI interface and Bluetooth Classic operations worked as expected, LE HCI Commands are not supported. With the -007 and the -009 models, everything works as expected.
+We first tried their USB Evaluation Stick, which contains a USB-to-UART adapter and the PAN1026 module with the TC35661-501. While it supports the HCI interface and Bluetooth Classic operations worked as expected, LE HCI commands are not supported. With the -007 and -009 models, everything works as expected.
 
 **SCO data** does not seem to be supported.
 
 **Baud rate** can be set with custom command.
 
-**BD Addr ** must be set with custom command. It does not have a stored valid public BD Addr.
+**BD Addr** must be set with a custom command. It does not have a stored valid public BD Addr.
 
 **Init Script** is not required. A patch file might be uploaded.
 
 **BTstack integration**: Support for the TC35661 series is provided by *btstack_chipset_tc3566x.c*. During the setup, *btstack_chipset_tc3566x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and sets the BD Addr during startup.
 
 ## Qualcomm Atheros
-Support for QCA Controller over UART is supported by BTstack. It requires firmware + configuration files from Qualcomm and a custom chipset support. 
-Please get in touch for commerical projects.
-
+BTstack supports QCA Controllers over UART. It requires firmware and configuration files from Qualcomm as well as custom chipset support.
+Please get in touch for commercial projects.
