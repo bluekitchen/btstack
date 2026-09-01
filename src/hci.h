@@ -660,8 +660,8 @@ typedef struct {
     // SCO Request to Send
     bool sco_request_to_send;
 
-    // generate sco can send now based on received packets
-    uint8_t  sco_tx_ready;
+    // SCO transmit budget: packets for SCO transport, payload bytes for implicit HCI flow control
+    uint16_t sco_tx_ready;
 
     // request role switch
     hci_role_t request_role;

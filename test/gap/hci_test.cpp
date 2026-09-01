@@ -29,7 +29,7 @@ typedef struct {
     uint8_t  buffer[258];
 } hci_packet_t;
 
-#define MAX_HCI_PACKETS 10
+#define MAX_HCI_PACKETS 20
 static uint16_t transport_count_packets;
 static hci_packet_t transport_packets[MAX_HCI_PACKETS];
 static int can_send_now = 1;
@@ -747,6 +747,34 @@ TEST(HCI, le_read_buffer_size_command_complete_bounds_check) {
     CHECK_EQUAL(0x0034, hci_stack->le_data_packets_length);
     CHECK_EQUAL(0x05, hci_stack->le_acl_packets_total_num);
 }
+
+#if defined(ENABLE_CLASSIC) && defined(ENABLE_SCO_OVER_HCI)
+TEST(HCI, sco_implicit_flow_control_accumulates_received_payload_bytes) {
+    hci_connection_t * conn = hci_connection_for_handle(0x0004);
+    CHECK(conn != NULL);
+
+    hci_stack->synchronous_flow_control_enabled = 0;
+    hci_stack->sco_packets_total_num = 10;
+    hci_stack->sco_data_packet_length = 60;
+    conn->sco_payload_length = 60;
+    conn->sco_voice_setting = 0;
+    conn->sco_tx_active = 1;
+    conn->sco_tx_ready = 0;
+
+    uint8_t packet[3 + 24] = { 0x04, 0x00, 24 };
+    packet_handler(HCI_SCO_DATA_PACKET, packet, sizeof(packet));
+    CHECK_EQUAL(24, conn->sco_tx_ready);
+    CHECK_FALSE(hci_can_send_sco_packet_now_for_con_handle(conn->con_handle));
+
+    packet_handler(HCI_SCO_DATA_PACKET, packet, sizeof(packet));
+    CHECK_EQUAL(48, conn->sco_tx_ready);
+    CHECK_FALSE(hci_can_send_sco_packet_now_for_con_handle(conn->con_handle));
+
+    packet_handler(HCI_SCO_DATA_PACKET, packet, sizeof(packet));
+    CHECK_EQUAL(72, conn->sco_tx_ready);
+    CHECK_TRUE(hci_can_send_sco_packet_now_for_con_handle(conn->con_handle));
+}
+#endif
 
 #ifdef ENABLE_CLASSIC
 TEST(HCI, inquiry_result_bounds_check) {

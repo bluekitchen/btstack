@@ -1,7 +1,7 @@
 
 include ../common.make
 
-DEFINES := -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+DEFINES := -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION -DENABLE_CLASSIC -DENABLE_SCO_OVER_HCI
 INCLUDES += -I${BTSTACK_ROOT}/src
 INCLUDES += -I${BTSTACK_ROOT}/platform/posix
 INCLUDES += -I${BTSTACK_ROOT}/test/include/coverage-ble
@@ -47,4 +47,3 @@ test: build-asan/test_le_scan build-asan/hci_test
 coverage: build-coverage/test_le_scan.info build-coverage/hci_test.info
 
 clean: clean-common
-

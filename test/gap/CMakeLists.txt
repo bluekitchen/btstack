@@ -24,6 +24,7 @@ include_directories(../../platform/posix)
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})
 
 add_definitions(-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
+add_definitions(-DENABLE_CLASSIC -DENABLE_SCO_OVER_HCI)
 
 set(SOURCES
 	../../src/ad_parser.c
