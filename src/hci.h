@@ -645,10 +645,13 @@ typedef struct {
     uint32_t qos_latency;
     uint32_t qos_delay_variation;
 
-#ifdef ENABLE_SCO_OVER_HCI
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
     // track SCO rx event
     uint32_t sco_established_ms;
     uint8_t  sco_tx_active;
+
+    // SCO transmit budget in payload bytes for implicit flow control
+    uint16_t sco_tx_ready;
 #endif
 
     // SCO payload length
@@ -659,9 +662,6 @@ typedef struct {
 
     // SCO Request to Send
     bool sco_request_to_send;
-
-    // SCO transmit budget: packets for SCO transport, payload bytes for implicit HCI flow control
-    uint16_t sco_tx_ready;
 
     // request role switch
     hci_role_t request_role;

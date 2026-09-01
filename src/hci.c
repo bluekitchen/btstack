@@ -224,9 +224,11 @@ static bool hci_is_le_connection(hci_connection_t * connection);
 static uint8_t hci_send_prepared_cmd_packet(void);
 
 #ifdef ENABLE_CLASSIC
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
 static int hci_have_usb_transport(void);
+#endif
 static uint16_t hci_sco_packet_length_for_payload_length_and_voice_setting(uint16_t payload_length, uint16_t voice_setting);
-#ifdef ENABLE_SCO_OVER_HCI
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
 static uint16_t hci_sco_outgoing_payload_length(const hci_connection_t * connection);
 #endif
 static void hci_trigger_remote_features_for_connection(hci_connection_t * connection);
@@ -735,19 +737,19 @@ static int hci_number_free_sco_slots(void){
         return hci_stack->sco_packets_total_num - num_sco_packets_sent;
     } else {
         // implicit flow control
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
         int num_ready = 0;
         for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
             hci_connection_t * connection = (hci_connection_t *) it;
             if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
-#ifdef ENABLE_SCO_OVER_HCI
             uint16_t outgoing_payload_len = hci_sco_outgoing_payload_length(connection);
             if ((outgoing_payload_len == 0) || (connection->sco_tx_ready < outgoing_payload_len)) continue;
-#else
-            if (connection->sco_tx_ready == 0) continue;
-#endif
             num_ready++;
         }
         return num_ready;
+#else
+        return 0;
+#endif
     }
 }
 #endif
@@ -781,8 +783,10 @@ static int hci_transport_can_send_prepared_packet_now(uint8_t packet_type){
 static bool hci_sco_transport_can_send_prepared_packet_now(void){
 #ifdef HAVE_SCO_TRANSPORT
     return hci_stack->sco_transport != NULL;
-#else
+#elif defined(ENABLE_SCO_OVER_HCI)
     return hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET);
+#else
+    return false;
 #endif
 }
 #endif
@@ -813,29 +817,32 @@ bool hci_can_send_acl_classic_packet_now(void){
     return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_ACL);
 }
 
-static bool hci_controller_can_send_sco_for_connection(hci_connection_t * connection) {
+static bool hci_controller_can_send_sco_for_connection(const hci_connection_t * connection) {
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
     if (hci_have_usb_transport()) {
         return hci_stack->sco_can_send_now;
-    } else if (hci_stack->synchronous_flow_control_enabled) {
+    }
+    if (hci_stack->synchronous_flow_control_enabled) {
         return hci_number_free_sco_slots() > 0;
     } else {
-#ifdef ENABLE_SCO_OVER_HCI
         uint16_t outgoing_payload_len = hci_sco_outgoing_payload_length(connection);
         return (outgoing_payload_len > 0) && (connection->sco_tx_ready >= outgoing_payload_len);
-#else
-        return connection->sco_tx_ready > 0;
-#endif
     }
+#else
+    UNUSED(connection);
+#endif
+    return false;
 }
 
 // Old
 bool hci_can_send_prepared_sco_packet_now(void){
     if (!hci_sco_transport_can_send_prepared_packet_now()) return false;
+#ifdef ENABLE_SCO_OVER_HCI
     if (hci_have_usb_transport()){
         return hci_stack->sco_can_send_now;
-    } else {
-        return hci_number_free_sco_slots() > 0;    
     }
+#endif
+    return hci_number_free_sco_slots() > 0;
 }
 
 bool hci_can_send_sco_packet_now(void){
@@ -1109,17 +1116,20 @@ uint8_t hci_send_sco_packet_buffer(int size){
         }
 
         // counterpart to hci_controller_can_send_sco_for_connection
+#ifdef ENABLE_SCO_OVER_HCI
         if (hci_have_usb_transport()){
             // token used
             hci_stack->sco_can_send_now = false;
-        } else {
+        } else
+#endif
+        {
             if (hci_stack->synchronous_flow_control_enabled){
                 connection->num_packets_sent++;
             } else {
-#ifdef ENABLE_SCO_OVER_HCI
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
                 connection->sco_tx_ready -= (uint16_t)(size - 3);
 #else
-                connection->sco_tx_ready--;
+                btstack_assert(false);
 #endif
             }
         }
@@ -4731,6 +4741,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 log_info("eSCO Complete, set payload len %u", conn->sco_payload_length);
             }
 
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
+            // setup implicit SCO flow control
+            conn->sco_tx_ready = 0;
+            conn->sco_tx_active  = 0;
+            conn->sco_established_ms = btstack_run_loop_get_time_ms();
+#endif
+
 #ifdef ENABLE_SCO_OVER_HCI
             // update SCO
             if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
@@ -4740,11 +4757,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_have_usb_transport()){
                 hci_stack->sco_can_send_now = true;
             }
-
-            // setup implicit sco flow control
-            conn->sco_tx_ready = 0;
-            conn->sco_tx_active  = 0;
-            conn->sco_established_ms = btstack_run_loop_get_time_ms();
 
 #endif
 #ifdef HAVE_SCO_TRANSPORT
@@ -5280,7 +5292,7 @@ static uint16_t hci_sco_packet_length_for_payload_length_and_voice_setting(uint1
     return sco_packet_length;
 }
 
-#ifdef ENABLE_SCO_OVER_HCI
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
 static uint16_t hci_sco_outgoing_payload_length(const hci_connection_t * connection){
     uint16_t sco_packet_length = hci_sco_packet_length_for_payload_length_and_voice_setting(connection->sco_payload_length, connection->sco_voice_setting);
     if (sco_packet_length < 3u) return 0;
@@ -5288,11 +5300,14 @@ static uint16_t hci_sco_outgoing_payload_length(const hci_connection_t * connect
 }
 #endif
 
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
 static void sco_handler(uint8_t * packet, uint16_t size){
     // lookup connection struct
     hci_con_handle_t con_handle = READ_SCO_CONNECTION_HANDLE(packet);
     hci_connection_t * conn     = hci_connection_for_handle(con_handle);
     if (!conn) return;
+
+    bool implicit_sco_flow_control = true;
 
 #ifdef ENABLE_SCO_OVER_HCI
     // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
@@ -5304,54 +5319,49 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         }
     }
 
+    // USB uses USB specific flow control
     if (hci_have_usb_transport()){
-        // Nothing to do
-    } else {
-        // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
-        if ((hci_stack->synchronous_flow_control_enabled == 0) && (conn->sco_payload_length != 0)) {
-            // get multiplier 2 for CVSD (16-bit samples) and 1 for mSBC (8-bit datq)
-            int multiplier = hci_sco_get_multiplier_for_voice_setting(conn->sco_voice_setting);
+        implicit_sco_flow_control = false;
+    }
+#endif
 
-            uint16_t outgoing_payload_len = hci_sco_outgoing_payload_length(conn);
+    // track number of received bytes
+    if (implicit_sco_flow_control && (hci_stack->synchronous_flow_control_enabled == 0) && (conn->sco_payload_length != 0)) {
+        // get multiplier 2 for CVSD (16-bit samples) and 1 for mSBC (8-bit datq)
+        int multiplier = hci_sco_get_multiplier_for_voice_setting(conn->sco_voice_setting);
 
-            // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets
-            uint8_t max_sco_packets = (uint8_t) btstack_min(2 * multiplier * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
-            uint16_t max_sco_bytes = (uint16_t)(max_sco_packets * outgoing_payload_len);
-            if (conn->sco_tx_active == 0){
-                if (btstack_time_delta(btstack_run_loop_get_time_ms(), conn->sco_established_ms) > 10){
-                    conn->sco_tx_active = 1;
-                    conn->sco_tx_ready = max_sco_bytes;
-                    log_info("Start SCO sending, %u bytes", conn->sco_tx_ready);
-                    hci_notify_if_sco_can_send_now();
-                }
+        uint16_t outgoing_payload_len = hci_sco_outgoing_payload_length(conn);
+
+        // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets
+        uint8_t max_sco_packets = (uint8_t) btstack_min(2 * multiplier * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
+        uint16_t max_sco_bytes = (uint16_t)(max_sco_packets * outgoing_payload_len);
+        if (conn->sco_tx_active == 0){
+            if (btstack_time_delta(btstack_run_loop_get_time_ms(), conn->sco_established_ms) > 10){
+                conn->sco_tx_active = 1;
+                conn->sco_tx_ready = max_sco_bytes;
+                log_info("Start SCO sending, %u bytes", conn->sco_tx_ready);
+                hci_notify_if_sco_can_send_now();
+            }
+        } else {
+            // add received SCO payload bytes to the outgoing transmit budget
+            int received_payload_len = size - 3;
+            if (outgoing_payload_len == 0){
+                log_info("SCO implicit flow control disabled: controller has no outgoing SCO payload space");
             } else {
-                // add received SCO payload bytes to the outgoing transmit budget
-                int received_payload_len = size - 3;
-                if (outgoing_payload_len == 0){
-                    log_info("SCO implicit flow control disabled: controller has no outgoing SCO payload space");
+                if ((conn->sco_tx_ready + received_payload_len) < max_sco_bytes){
+                    conn->sco_tx_ready += received_payload_len;
                 } else {
-                    if ((conn->sco_tx_ready + received_payload_len) < max_sco_bytes){
-                        conn->sco_tx_ready += received_payload_len;
-                    } else {
-                        conn->sco_tx_ready = max_sco_bytes;
-                    }
-                    hci_notify_if_sco_can_send_now();
+                    conn->sco_tx_ready = max_sco_bytes;
                 }
+                hci_notify_if_sco_can_send_now();
             }
         }
     }
-#endif
 
     // deliver to app
     if (hci_stack->sco_packet_handler) {
         hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
     }
-
-#ifdef HAVE_SCO_TRANSPORT
-    // We can send one packet for each received packet
-    conn->sco_tx_ready++;
-    hci_notify_if_sco_can_send_now();
-#endif
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     conn->num_packets_completed++;
@@ -5359,6 +5369,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
     hci_run();
 #endif    
 }
+#endif
 #endif
 
 static bool hci_incoming_packet_valid(uint8_t packet_type, const uint8_t * packet, uint16_t size){
@@ -5369,7 +5380,7 @@ static bool hci_incoming_packet_valid(uint8_t packet_type, const uint8_t * packe
         case HCI_ACL_DATA_PACKET:
             if (size < HCI_ACL_HEADER_SIZE) return false;
             return (READ_ACL_LENGTH(packet) + HCI_ACL_HEADER_SIZE) == size;
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
         case HCI_SCO_DATA_PACKET:
             if (size < HCI_SCO_HEADER_SIZE) return false;
             return (READ_SCO_LENGTH(packet) + HCI_SCO_HEADER_SIZE) == size;
@@ -5419,7 +5430,7 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
         case HCI_ACL_DATA_PACKET:
             acl_handler(packet, size);
             break;
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
         case HCI_SCO_DATA_PACKET:
             sco_handler(packet, size);
             break;
@@ -10535,12 +10546,18 @@ uint16_t hci_get_sco_voice_setting(void){
     return hci_stack->sco_voice_setting;
 }
 
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
 static int hci_have_usb_transport(void){
+#ifdef ENABLE_SCO_OVER_HCI
     if (!hci_stack->hci_transport) return 0;
     const char * transport_name = hci_stack->hci_transport->name;
     if (!transport_name) return 0;
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
+#else
+    return 0;
+#endif
 }
+#endif
 
 uint16_t hci_get_sco_packet_length_for_connection(hci_con_handle_t sco_con_handle){
     hci_connection_t * connection = hci_connection_for_handle(sco_con_handle);
