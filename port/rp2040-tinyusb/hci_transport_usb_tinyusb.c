@@ -57,8 +57,8 @@ static uint8_t tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
 // Bluetooth Controller info
 static tinyusb_hci_controller_t tinyusb_hci_controller;
 
-// Outoing packet
-static uint8_t *tinyusb_tx_packet;
+// Outgoing transfer
+static bool tinyusb_tx_transfer_active;
 
 // Keep the BTstack pre-buffer hidden from TinyUSB by using pointers to the
 // actual HCI packet data.
@@ -90,7 +90,7 @@ static void hci_transport_usb_tinyusb_init(const void *transport_config) {
     UNUSED(transport_config);
     tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
     tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
-    tinyusb_tx_packet = NULL;
+    tinyusb_tx_transfer_active = false;
     tinyusb_acl_in_transfer.packet = tinyusb_acl_in_packet;
     tinyusb_acl_in_transfer.len = 0;
     tinyusb_acl_in_transfer.packet_capacity = HCI_ACL_BUFFER_SIZE;
@@ -263,7 +263,7 @@ static void tinyusb_tx_transfer_complete(tuh_xfer_t *xfer) {
     if (xfer->result != XFER_RESULT_SUCCESS) {
         log_info("HCI USB transmit transfer failed with result %u", xfer->result);
     }
-    tinyusb_tx_packet = NULL;
+    tinyusb_tx_transfer_active = false;
     tinyusb_emit_transport_packet_sent();
 }
 
@@ -387,15 +387,15 @@ static void hci_transport_usb_tinyusb_register_packet_handler(void (*handler)(ui
 
 static int hci_transport_usb_tinyusb_can_send_packet_now(uint8_t packet_type) {
     UNUSED(packet_type);
-    return tinyusb_hci_daddr != HCI_USB_INVALID_ADDRESS && tinyusb_tx_packet == NULL;
+    return tinyusb_hci_daddr != HCI_USB_INVALID_ADDRESS && !tinyusb_tx_transfer_active;
 }
 
 static int hci_transport_usb_tinyusb_send_packet(uint8_t packet_type, uint8_t *packet, int size) {
     btstack_assert(tinyusb_hci_daddr != HCI_USB_INVALID_ADDRESS);
-    btstack_assert(tinyusb_tx_packet == NULL);
+    btstack_assert(!tinyusb_tx_transfer_active);
     btstack_assert(size >= 0);
 
-    tinyusb_tx_packet = packet;
+    tinyusb_tx_transfer_active = true;
     switch (packet_type) {
         case HCI_COMMAND_DATA_PACKET: {
             static tusb_control_request_t request;
@@ -433,7 +433,7 @@ static int hci_transport_usb_tinyusb_send_packet(uint8_t packet_type, uint8_t *p
         }
 
         default:
-            tinyusb_tx_packet = NULL;
+            tinyusb_tx_transfer_active = false;
             btstack_assert(false);
             break;
     }
