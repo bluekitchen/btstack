@@ -14,6 +14,14 @@
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"
 #include "classic/btstack_link_key_db_tlv.h"
+#ifdef ENABLE_HCI_DUMP
+#include "hci_dump.h"
+#ifdef ENABLE_SEGGER_RTT
+#include "hci_dump_segger_rtt_stdout.h"
+#else
+#include "hci_dump_embedded_stdout.h"
+#endif
+#endif
 #include "hci.h"
 #include "hci_transport_usb_tinyusb.h"
 
@@ -48,6 +56,13 @@ static bool btstack_init(async_context_t *context) {
 
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_async_context_get_instance(context));
+#ifdef ENABLE_HCI_DUMP
+#ifdef ENABLE_SEGGER_RTT
+    hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+#else
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
+#endif
     hci_init(hci_transport_usb_tinyusb_instance(), NULL);
     setup_tlv();
     return true;
