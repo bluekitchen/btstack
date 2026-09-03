@@ -7,6 +7,7 @@
 #include "bluetooth.h"
 #include "btstack_debug.h"
 #include "btstack_run_loop.h"
+#include "btstack_util.h"
 #include "hci.h"
 #include "tusb.h"
 
@@ -189,6 +190,24 @@ static void tinyusb_emit_transport_packet_sent(void) {
     }
 }
 
+static void tinyusb_emit_transport_usb_info(void) {
+    uint8_t event[] = {
+        HCI_EVENT_TRANSPORT_USB_INFO,
+        6,
+        0,
+        0,
+        0,
+        0,
+        BOARD_TUH_RHPORT,
+        0,
+    };
+    little_endian_store_16(event, 2, tu_le16toh(tinyusb_device_descriptor.idVendor));
+    little_endian_store_16(event, 4, tu_le16toh(tinyusb_device_descriptor.idProduct));
+    if (packet_handler != NULL) {
+        packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+    }
+}
+
 static uint16_t tinyusb_packet_expected_len(uint8_t packet_type, const uint8_t *header) {
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -304,6 +323,7 @@ static void tinyusb_handle_device_descriptor(tuh_xfer_t *xfer) {
         tinyusb_dump_hci_controller_configuration();
         tinyusb_start_rx_transfer(&tinyusb_event_in_transfer);
         tinyusb_start_rx_transfer(&tinyusb_acl_in_transfer);
+        tinyusb_emit_transport_usb_info();
     } else if (tinyusb_hci_controller.hci_interface_number != HCI_USB_INVALID_ADDRESS) {
         log_info("Bluetooth HCI controller at device %u has unusable endpoints", xfer->daddr);
     } else {
