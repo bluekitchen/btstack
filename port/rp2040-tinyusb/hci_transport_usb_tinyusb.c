@@ -27,14 +27,15 @@ typedef struct {
     tusb_desc_endpoint_t acl_out_desc;
 } tinyusb_hci_controller_t;
 
+// All state for an incoming packet transfer
 typedef struct {
-    uint8_t *packet;
-    uint16_t len;
-    uint16_t packet_capacity;
-    uint16_t header_size;
     uint8_t packet_type;
     uint8_t endpoint_addr;
+    uint16_t packet_capacity;
+    uint16_t header_size;
+    uint16_t len;
     bool transfer_active;
+    uint8_t *packet;
 } tinyusb_rx_transfer_t;
 
 
