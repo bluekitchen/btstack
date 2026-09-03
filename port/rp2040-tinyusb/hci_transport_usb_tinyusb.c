@@ -6,41 +6,157 @@
 #include "btstack_run_loop.h"
 #include "tusb.h"
 
-static btstack_data_source_t tinyusb_data_source;
-static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+#define HCI_USB_INVALID_ADDRESS 0xff
 
-static void tinyusb_data_source_handler(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    UNUSED(ds);
-    UNUSED(callback_type);
+// USB Bluetooth HCI Class/Subclass/Protocol
+#define HCI_USB_CLASS    TUSB_CLASS_WIRELESS_CONTROLLER
+#define HCI_USB_SUBCLASS 0x01
+#define HCI_USB_PROTOCOL 0x01
+
+static btstack_timer_source_t tinyusb_timer;
+static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+static tusb_desc_device_t tinyusb_device_descriptor;
+CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_configuration_descriptor[CFG_TUH_ENUMERATION_BUFSIZE];
+static uint8_t tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+static uint8_t tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+static bool tinyusb_initialized;
+static bool tinyusb_transport_open;
+
+static void tinyusb_timer_handler(btstack_timer_source_t *ts) {
+    UNUSED(ts);
+
     tuh_task();
+    btstack_run_loop_set_timer(&tinyusb_timer, 1);
+    btstack_run_loop_add_timer(&tinyusb_timer);
 }
 
 static void hci_transport_usb_tinyusb_init(const void *transport_config) {
     UNUSED(transport_config);
+    tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_initialized = false;
+    tinyusb_transport_open = false;
+}
 
-    tusb_rhport_init_t const rh_init = {
-        .role = TUSB_ROLE_HOST,
-        .speed = TUH_OPT_HIGH_SPEED ? TUSB_SPEED_HIGH : TUSB_SPEED_FULL,
-    };
-    if (!tusb_init(BOARD_TUH_RHPORT, &rh_init)) {
-        log_error("Failed to initialize TinyUSB host");
+static bool tinyusb_configuration_has_hci_interface(const tusb_desc_configuration_t *configuration) {
+    const uint8_t *descriptor_end = (const uint8_t *) configuration + tu_le16toh(configuration->wTotalLength);
+    const uint8_t *descriptor = tu_desc_next(configuration);
+
+    while (descriptor < descriptor_end) {
+        if (tu_desc_len(descriptor) == 0) {
+            break;
+        }
+        if (tu_desc_type(descriptor) == TUSB_DESC_INTERFACE) {
+            const tusb_desc_interface_t *interface = (const tusb_desc_interface_t *) descriptor;
+            if (interface->bAlternateSetting == 0 && interface->bInterfaceClass == HCI_USB_CLASS &&
+                interface->bInterfaceSubClass == HCI_USB_SUBCLASS &&
+                interface->bInterfaceProtocol == HCI_USB_PROTOCOL) {
+                return true;
+            }
+        }
+        descriptor = tu_desc_next(descriptor);
+    }
+    return false;
+}
+
+static void tinyusb_handle_device_descriptor(tuh_xfer_t *xfer) {
+    if (xfer->result != XFER_RESULT_SUCCESS || !tinyusb_transport_open || xfer->daddr != tinyusb_candidate_daddr) {
+        tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
         return;
     }
-    btstack_run_loop_set_data_source_handler(&tinyusb_data_source, tinyusb_data_source_handler);
-    btstack_run_loop_enable_data_source_callbacks(&tinyusb_data_source, DATA_SOURCE_CALLBACK_POLL);
-    btstack_run_loop_add_data_source(&tinyusb_data_source);
+
+    tusb_desc_configuration_t configuration_header;
+    if (tuh_descriptor_get_configuration_sync(xfer->daddr, 0, &configuration_header, sizeof(configuration_header)) !=
+        XFER_RESULT_SUCCESS) {
+        log_info("Unable to read configuration header for device %u", xfer->daddr);
+        tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+        return;
+    }
+
+    const uint16_t configuration_length = tu_le16toh(configuration_header.wTotalLength);
+    if (configuration_length < sizeof(configuration_header) ||
+        configuration_length > sizeof(tinyusb_configuration_descriptor) ||
+        tuh_descriptor_get_configuration_sync(xfer->daddr, 0, tinyusb_configuration_descriptor, configuration_length) !=
+            XFER_RESULT_SUCCESS) {
+        log_info("TinyUSB: unable to read configuration descriptor for device %u", xfer->daddr);
+        tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+        return;
+    }
+
+    if (tinyusb_configuration_has_hci_interface((const tusb_desc_configuration_t *) tinyusb_configuration_descriptor)) {
+        tinyusb_hci_daddr = xfer->daddr;
+        log_info("Bluetooth HCI controller detected at device %u (%04x:%04x)", xfer->daddr,
+                 tu_le16toh(tinyusb_device_descriptor.idVendor), tu_le16toh(tinyusb_device_descriptor.idProduct));
+    } else {
+        log_info("Device %u (%04x:%04x) is not a Bluetooth HCI controller", xfer->daddr,
+                 tu_le16toh(tinyusb_device_descriptor.idVendor), tu_le16toh(tinyusb_device_descriptor.idProduct));
+    }
+    tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+}
+
+static void tinyusb_start_hci_discovery(uint8_t daddr) {
+    if (!tinyusb_transport_open || tinyusb_hci_daddr != HCI_USB_INVALID_ADDRESS ||
+        tinyusb_candidate_daddr != HCI_USB_INVALID_ADDRESS) {
+        return;
+    }
+
+    tinyusb_candidate_daddr = daddr;
+    log_info("Device %u mounted; checking for Bluetooth HCI interface", daddr);
+    if (!tuh_descriptor_get_device(daddr, &tinyusb_device_descriptor, sizeof(tinyusb_device_descriptor),
+                                   tinyusb_handle_device_descriptor, 0)) {
+        log_info("Unable to request device descriptor for device %u", daddr);
+        tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+    }
+}
+
+// Invoked by TinyUSB when a device has completed enumeration.
+void tuh_mount_cb(uint8_t daddr) {
+    tinyusb_start_hci_discovery(daddr);
+}
+
+// Invoked by TinyUSB when a device is unplugged or reset.
+void tuh_umount_cb(uint8_t daddr) {
+    if (daddr == tinyusb_candidate_daddr) {
+        tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+    }
+    if (daddr != tinyusb_hci_daddr) {
+        return;
+    }
+
+    log_info("Bluetooth HCI controller at device %u unmounted", daddr);
+    tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
 }
 
 static int hci_transport_usb_tinyusb_open(void) {
-    // A future implementation will wait for a Bluetooth USB interface to be
-    // mounted and then open its event, ACL, and optional SCO endpoints.
-    log_info("TinyUSB Bluetooth HCI transport skeleton active");
+    tinyusb_transport_open = true;
+    tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+
+    if (!tinyusb_initialized) {
+        tusb_rhport_init_t const rh_init = {
+            .role = TUSB_ROLE_HOST,
+            .speed = TUH_OPT_HIGH_SPEED ? TUSB_SPEED_HIGH : TUSB_SPEED_FULL,
+        };
+        if (!tusb_init(BOARD_TUH_RHPORT, &rh_init)) {
+            log_error("Failed to initialize TinyUSB host");
+            tinyusb_transport_open = false;
+            return -1;
+        }
+        tinyusb_initialized = true;
+    }
+
+    btstack_run_loop_set_timer_handler(&tinyusb_timer, tinyusb_timer_handler);
+    btstack_run_loop_set_timer(&tinyusb_timer, 1);
+    btstack_run_loop_add_timer(&tinyusb_timer);
+    log_info("Waiting for a USB Bluetooth HCI controller to mount");
     return 0;
 }
 
 static int hci_transport_usb_tinyusb_close(void) {
-    btstack_run_loop_disable_data_source_callbacks(&tinyusb_data_source, DATA_SOURCE_CALLBACK_POLL);
-    btstack_run_loop_remove_data_source(&tinyusb_data_source);
+    tinyusb_transport_open = false;
+    tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+    btstack_run_loop_remove_timer(&tinyusb_timer);
     return 0;
 }
 
