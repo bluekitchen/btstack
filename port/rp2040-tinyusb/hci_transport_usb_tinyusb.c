@@ -6,14 +6,13 @@
 #include "btstack_run_loop.h"
 #include "tusb.h"
 
-static btstack_timer_source_t tinyusb_timer;
+static btstack_data_source_t tinyusb_data_source;
 static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-static void tinyusb_task_handler(btstack_timer_source_t *ts) {
-    UNUSED(ts);
+static void tinyusb_data_source_handler(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    UNUSED(ds);
+    UNUSED(callback_type);
     tuh_task();
-    btstack_run_loop_set_timer(&tinyusb_timer, 1);
-    btstack_run_loop_add_timer(&tinyusb_timer);
 }
 
 static void hci_transport_usb_tinyusb_init(const void *transport_config) {
@@ -27,9 +26,9 @@ static void hci_transport_usb_tinyusb_init(const void *transport_config) {
         log_error("Failed to initialize TinyUSB host");
         return;
     }
-    btstack_run_loop_set_timer_handler(&tinyusb_timer, tinyusb_task_handler);
-    btstack_run_loop_set_timer(&tinyusb_timer, 1);
-    btstack_run_loop_add_timer(&tinyusb_timer);
+    btstack_run_loop_set_data_source_handler(&tinyusb_data_source, tinyusb_data_source_handler);
+    btstack_run_loop_enable_data_source_callbacks(&tinyusb_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&tinyusb_data_source);
 }
 
 static int hci_transport_usb_tinyusb_open(void) {
@@ -40,6 +39,8 @@ static int hci_transport_usb_tinyusb_open(void) {
 }
 
 static int hci_transport_usb_tinyusb_close(void) {
+    btstack_run_loop_disable_data_source_callbacks(&tinyusb_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_remove_data_source(&tinyusb_data_source);
     return 0;
 }
 
