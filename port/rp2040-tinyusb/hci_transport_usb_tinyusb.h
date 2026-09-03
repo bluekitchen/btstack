@@ -10,8 +10,8 @@ extern "C" {
 /**
  * USB HCI transport backed by the TinyUSB host stack.
  *
- * This is currently a skeleton: it initializes and services TinyUSB, but it
- * does not yet claim Bluetooth USB interfaces or transfer HCI packets.
+ * It discovers Bluetooth USB HCI interfaces and transfers HCI command, ACL,
+ * and event packets through the TinyUSB host stack.
  */
 const hci_transport_t * hci_transport_usb_tinyusb_instance(void);
 

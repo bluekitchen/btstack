@@ -4,8 +4,10 @@
 
 #include <string.h>
 
+#include "bluetooth.h"
 #include "btstack_debug.h"
 #include "btstack_run_loop.h"
+#include "hci.h"
 #include "tusb.h"
 
 #define HCI_USB_INVALID_ADDRESS 0xff
@@ -25,6 +27,16 @@ typedef struct {
     tusb_desc_endpoint_t acl_out_desc;
 } tinyusb_hci_controller_t;
 
+typedef struct {
+    uint8_t *packet;
+    uint16_t len;
+    uint16_t packet_capacity;
+    uint16_t header_size;
+    uint8_t packet_type;
+    uint8_t endpoint_addr;
+    bool transfer_active;
+} tinyusb_rx_transfer_t;
+
 static btstack_timer_source_t tinyusb_timer;
 static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static tusb_desc_device_t tinyusb_device_descriptor;
@@ -32,8 +44,18 @@ CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_configuration_descr
 static tinyusb_hci_controller_t tinyusb_hci_controller;
 static uint8_t tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
 static uint8_t tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+static uint8_t *tinyusb_tx_packet;
 static bool tinyusb_initialized;
 static bool tinyusb_transport_open;
+
+// Keep the BTstack pre-buffer hidden from TinyUSB by using pointers to the
+// actual HCI packet data.
+CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_acl_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE];
+static uint8_t *tinyusb_acl_in_packet = &tinyusb_acl_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
+CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_event_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_EVENT_BUFFER_SIZE];
+static uint8_t *tinyusb_event_in_packet = &tinyusb_event_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
+static tinyusb_rx_transfer_t tinyusb_acl_in_transfer;
+static tinyusb_rx_transfer_t tinyusb_event_in_transfer;
 
 static void tinyusb_timer_handler(btstack_timer_source_t *ts) {
     UNUSED(ts);
@@ -43,10 +65,32 @@ static void tinyusb_timer_handler(btstack_timer_source_t *ts) {
     btstack_run_loop_add_timer(&tinyusb_timer);
 }
 
+static void tinyusb_reset_rx_transfers(void) {
+    tinyusb_acl_in_transfer.len = 0;
+    tinyusb_acl_in_transfer.transfer_active = false;
+    tinyusb_event_in_transfer.len = 0;
+    tinyusb_event_in_transfer.transfer_active = false;
+}
+
 static void hci_transport_usb_tinyusb_init(const void *transport_config) {
     UNUSED(transport_config);
     tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
     tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_tx_packet = NULL;
+    tinyusb_acl_in_transfer.packet = tinyusb_acl_in_packet;
+    tinyusb_acl_in_transfer.len = 0;
+    tinyusb_acl_in_transfer.packet_capacity = HCI_ACL_BUFFER_SIZE;
+    tinyusb_acl_in_transfer.header_size = HCI_ACL_HEADER_SIZE;
+    tinyusb_acl_in_transfer.packet_type = HCI_ACL_DATA_PACKET;
+    tinyusb_acl_in_transfer.endpoint_addr = 0;
+    tinyusb_acl_in_transfer.transfer_active = false;
+    tinyusb_event_in_transfer.packet = tinyusb_event_in_packet;
+    tinyusb_event_in_transfer.len = 0;
+    tinyusb_event_in_transfer.packet_capacity = HCI_EVENT_BUFFER_SIZE;
+    tinyusb_event_in_transfer.header_size = HCI_EVENT_HEADER_SIZE;
+    tinyusb_event_in_transfer.packet_type = HCI_EVENT_PACKET;
+    tinyusb_event_in_transfer.endpoint_addr = 0;
+    tinyusb_event_in_transfer.transfer_active = false;
     tinyusb_initialized = false;
     tinyusb_transport_open = false;
 }
@@ -123,6 +167,92 @@ static bool tinyusb_hci_controller_usable(void) {
            tinyusb_hci_controller.acl_out_addr != 0;
 }
 
+static void tinyusb_emit_transport_packet_sent(void) {
+    static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0 };
+    if (packet_handler != NULL) {
+        packet_handler(HCI_EVENT_PACKET, (uint8_t *) packet_sent_event, sizeof(packet_sent_event));
+    }
+}
+
+static uint16_t tinyusb_packet_expected_len(uint8_t packet_type, const uint8_t *header) {
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            return HCI_EVENT_HEADER_SIZE + header[1];
+        case HCI_ACL_DATA_PACKET:
+            return HCI_ACL_HEADER_SIZE + header[2] + ((uint16_t) header[3] << 8);
+        default:
+            return 0;
+    }
+}
+
+static void tinyusb_start_rx_transfer(tinyusb_rx_transfer_t *transfer);
+
+static void tinyusb_process_rx_data(tinyusb_rx_transfer_t *transfer, uint16_t transfer_len) {
+    const uint8_t packet_type = transfer->packet_type;
+    transfer->len += transfer_len;
+    if (transfer->len < transfer->header_size) {
+        return;
+    }
+
+    const uint16_t expected_len = tinyusb_packet_expected_len(packet_type, transfer->packet);
+    if (expected_len > transfer->packet_capacity || transfer->len > expected_len) {
+        log_info("HCI USB received invalid %s packet length %u (buffer capacity %u)",
+                 packet_type == HCI_EVENT_PACKET ? "event" : "ACL", expected_len, transfer->packet_capacity);
+        transfer->len = 0;
+        return;
+    }
+
+    if (transfer->len == expected_len) {
+        if (packet_handler != NULL) {
+            packet_handler(packet_type, transfer->packet, expected_len);
+        }
+        transfer->len = 0;
+    }
+}
+
+static void tinyusb_rx_transfer_complete(tuh_xfer_t *xfer) {
+    tinyusb_rx_transfer_t *transfer = (tinyusb_rx_transfer_t *) xfer->user_data;
+    transfer->transfer_active = false;
+
+    if (xfer->result == XFER_RESULT_SUCCESS) {
+        tinyusb_process_rx_data(transfer, (uint16_t) xfer->actual_len);
+    } else {
+        log_info("HCI USB receive transfer failed with result %u", xfer->result);
+    }
+
+    if (tinyusb_hci_daddr == xfer->daddr) {
+        tinyusb_start_rx_transfer(transfer);
+    }
+}
+
+static void tinyusb_start_rx_transfer(tinyusb_rx_transfer_t *transfer) {
+    if (transfer->transfer_active || tinyusb_hci_daddr == HCI_USB_INVALID_ADDRESS) {
+        return;
+    }
+
+    btstack_assert(transfer->len < transfer->packet_capacity);
+    tuh_xfer_t xfer = {
+        .daddr = tinyusb_hci_daddr,
+        .ep_addr = transfer->endpoint_addr,
+        .buflen = transfer->packet_capacity - transfer->len,
+        .buffer = &transfer->packet[transfer->len],
+        .complete_cb = tinyusb_rx_transfer_complete,
+        .user_data = (uintptr_t) transfer,
+    };
+    transfer->transfer_active = tuh_edpt_xfer(&xfer);
+    if (!transfer->transfer_active) {
+        log_info("Unable to start HCI USB receive transfer on endpoint 0x%02x", transfer->endpoint_addr);
+    }
+}
+
+static void tinyusb_tx_transfer_complete(tuh_xfer_t *xfer) {
+    if (xfer->result != XFER_RESULT_SUCCESS) {
+        log_info("HCI USB transmit transfer failed with result %u", xfer->result);
+    }
+    tinyusb_tx_packet = NULL;
+    tinyusb_emit_transport_packet_sent();
+}
+
 static void tinyusb_handle_device_descriptor(tuh_xfer_t *xfer) {
     if (xfer->result != XFER_RESULT_SUCCESS || !tinyusb_transport_open || xfer->daddr != tinyusb_candidate_daddr) {
         tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
@@ -148,11 +278,19 @@ static void tinyusb_handle_device_descriptor(tuh_xfer_t *xfer) {
     }
 
     tinyusb_find_hci_endpoints((const tusb_desc_configuration_t *) tinyusb_configuration_descriptor);
-    if (tinyusb_hci_controller_usable()) {
+    if (tinyusb_hci_controller_usable() && tuh_edpt_open(xfer->daddr, &tinyusb_hci_controller.event_in_desc) &&
+        tuh_edpt_open(xfer->daddr, &tinyusb_hci_controller.acl_in_desc) &&
+        tuh_edpt_open(xfer->daddr, &tinyusb_hci_controller.acl_out_desc)) {
         tinyusb_hci_daddr = xfer->daddr;
+        tinyusb_event_in_transfer.endpoint_addr = tinyusb_hci_controller.event_in_addr;
+        tinyusb_acl_in_transfer.endpoint_addr = tinyusb_hci_controller.acl_in_addr;
         log_info("Bluetooth HCI controller detected at device %u (%04x:%04x)", xfer->daddr,
                  tu_le16toh(tinyusb_device_descriptor.idVendor), tu_le16toh(tinyusb_device_descriptor.idProduct));
         tinyusb_dump_hci_controller_configuration();
+        tinyusb_start_rx_transfer(&tinyusb_event_in_transfer);
+        tinyusb_start_rx_transfer(&tinyusb_acl_in_transfer);
+    } else if (tinyusb_hci_controller.hci_interface_number != HCI_USB_INVALID_ADDRESS) {
+        log_info("Bluetooth HCI controller at device %u has unusable endpoints", xfer->daddr);
     } else {
         log_info("Device %u (%04x:%04x) is not a Bluetooth HCI controller", xfer->daddr,
                  tu_le16toh(tinyusb_device_descriptor.idVendor), tu_le16toh(tinyusb_device_descriptor.idProduct));
@@ -191,6 +329,7 @@ void tuh_umount_cb(uint8_t daddr) {
 
     log_info("Bluetooth HCI controller at device %u unmounted", daddr);
     tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_reset_rx_transfers();
 }
 
 static int hci_transport_usb_tinyusb_open(void) {
@@ -222,6 +361,7 @@ static int hci_transport_usb_tinyusb_close(void) {
     tinyusb_transport_open = false;
     tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
     tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+    tinyusb_reset_rx_transfers();
     btstack_run_loop_remove_timer(&tinyusb_timer);
     return 0;
 }
@@ -233,15 +373,57 @@ static void hci_transport_usb_tinyusb_register_packet_handler(void (*handler)(ui
 
 static int hci_transport_usb_tinyusb_can_send_packet_now(uint8_t packet_type) {
     UNUSED(packet_type);
-    // No USB endpoints are claimed by the skeleton yet.
-    return 0;
+    return tinyusb_hci_daddr != HCI_USB_INVALID_ADDRESS && tinyusb_tx_packet == NULL;
 }
 
 static int hci_transport_usb_tinyusb_send_packet(uint8_t packet_type, uint8_t *packet, int size) {
-    UNUSED(packet_type);
-    UNUSED(packet);
-    UNUSED(size);
-    return -1;
+    btstack_assert(tinyusb_hci_daddr != HCI_USB_INVALID_ADDRESS);
+    btstack_assert(tinyusb_tx_packet == NULL);
+    btstack_assert(size >= 0);
+
+    tinyusb_tx_packet = packet;
+    switch (packet_type) {
+        case HCI_COMMAND_DATA_PACKET: {
+            static tusb_control_request_t request;
+            request.bmRequestType_bit.recipient = TUSB_REQ_RCPT_INTERFACE;
+            request.bmRequestType_bit.type = TUSB_REQ_TYPE_CLASS;
+            request.bmRequestType_bit.direction = TUSB_DIR_OUT;
+            request.bRequest = 0;
+            request.wValue = 0;
+            request.wIndex = tinyusb_hci_controller.hci_interface_number;
+            request.wLength = (uint16_t) size;
+
+            tuh_xfer_t xfer = {
+                .daddr = tinyusb_hci_daddr,
+                .ep_addr = 0,
+                .setup = &request,
+                .buffer = packet,
+                .complete_cb = tinyusb_tx_transfer_complete,
+                .user_data = (uintptr_t) packet,
+            };
+            btstack_assert(tuh_control_xfer(&xfer));
+            break;
+        }
+
+        case HCI_ACL_DATA_PACKET: {
+            tuh_xfer_t xfer = {
+                .daddr = tinyusb_hci_daddr,
+                .ep_addr = tinyusb_hci_controller.acl_out_addr,
+                .buflen = (uint16_t) size,
+                .buffer = packet,
+                .complete_cb = tinyusb_tx_transfer_complete,
+                .user_data = (uintptr_t) packet,
+            };
+            btstack_assert(tuh_edpt_xfer(&xfer));
+            break;
+        }
+
+        default:
+            tinyusb_tx_packet = NULL;
+            btstack_assert(false);
+            break;
+    }
+    return 0;
 }
 
 static const hci_transport_t hci_transport_usb_tinyusb = {
