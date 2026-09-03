@@ -37,16 +37,28 @@ typedef struct {
     bool transfer_active;
 } tinyusb_rx_transfer_t;
 
-static btstack_timer_source_t tinyusb_timer;
+
+// Host Stack packet handler
 static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
-static tusb_desc_device_t tinyusb_device_descriptor;
-CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_configuration_descriptor[CFG_TUH_ENUMERATION_BUFSIZE];
-static tinyusb_hci_controller_t tinyusb_hci_controller;
-static uint8_t tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
-static uint8_t tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
-static uint8_t *tinyusb_tx_packet;
+
+// We poll every 1 ms. TODO: it would be nice to use btstack_data_source_t and call btstack_run_loop_poll_data_sources_from_irq
+static btstack_timer_source_t tinyusb_timer;
 static bool tinyusb_initialized;
 static bool tinyusb_transport_open;
+
+// USB Device Descriptor
+static tusb_desc_device_t tinyusb_device_descriptor;
+CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_configuration_descriptor[CFG_TUH_ENUMERATION_BUFSIZE];
+
+// Device discovery
+static uint8_t tinyusb_candidate_daddr = HCI_USB_INVALID_ADDRESS;
+static uint8_t tinyusb_hci_daddr = HCI_USB_INVALID_ADDRESS;
+
+// Bluetooth Controller info
+static tinyusb_hci_controller_t tinyusb_hci_controller;
+
+// Outoing packet
+static uint8_t *tinyusb_tx_packet;
 
 // Keep the BTstack pre-buffer hidden from TinyUSB by using pointers to the
 // actual HCI packet data.
@@ -54,6 +66,8 @@ CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_acl_in_packet_with_
 static uint8_t *tinyusb_acl_in_packet = &tinyusb_acl_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 CFG_TUH_MEM_SECTION CFG_TUH_MEM_ALIGN static uint8_t tinyusb_event_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_EVENT_BUFFER_SIZE];
 static uint8_t *tinyusb_event_in_packet = &tinyusb_event_in_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
+
+// Active transfer - used for re-assembly
 static tinyusb_rx_transfer_t tinyusb_acl_in_transfer;
 static tinyusb_rx_transfer_t tinyusb_event_in_transfer;
 
