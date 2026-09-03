@@ -90,6 +90,11 @@ SUBDIRS_BLE := \
 SUBDIRS_UNIQ := $(sort $(SUBDIRS) $(SUBDIRS_BLE))
 test coverage-all clean: $(SUBDIRS_UNIQ)
 
+test: version-test
+
+version-test:
+	python3 version_test.py
+
 test-ble: MAKECMDGOALS = test
 test-ble: $(SUBDIRS_BLE)
 
@@ -99,7 +104,7 @@ coverage-ble: $(SUBDIRS_BLE)
 $(SUBDIRS_UNIQ):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-.PHONY: $(SUBDIRS_UNIQ)
+.PHONY: $(SUBDIRS_UNIQ) version-test
 .SUFFIXES:
 
 coverage%: export LLVM_PROFILE_FILE=coverage-%m-%p.profraw
