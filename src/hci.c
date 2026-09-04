@@ -11111,7 +11111,7 @@ static void hci_iso_create_cis_failed(uint8_t status){
     le_audio_cig_t * cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
     if ((cig == NULL) || (cig->state != LE_AUDIO_CIG_STATE_W4_CREATE_CIS)) return;
 
-    hci_iso_stream_requested_finalize(cig->cig_id);
+    hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_CIS, cig->cig_id);
     for (uint8_t i = 0; i < cig->num_cis; i++){
         cig->cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
         cig->cis_setup_active[i] = false;
