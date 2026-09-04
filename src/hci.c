@@ -4039,13 +4039,18 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
         case HCI_SUBEVENT_LE_CIS_REQUEST:
             if (size < 9u) break;
+            handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+            if (hci_iso_stream_for_con_handle(handle) != NULL){
+                log_error("CIS Request for already tracked handle 0x%04x", handle);
+                break;
+            }
             // incoming CIS request, allocate iso stream object and cache metadata
             iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_ROLE_SLAVE,
                                                HCI_ISO_STREAM_W4_USER,
                                                hci_subevent_le_cis_request_get_cig_id(packet), hci_subevent_le_cis_request_get_cis_id(packet));
             // if there's no memory, gap_cis_accept/gap_cis_reject will fail
             if (iso_stream != NULL){
-                iso_stream->cis_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+                iso_stream->cis_handle = handle;
                 iso_stream->acl_handle = hci_subevent_le_cis_request_get_acl_connection_handle(packet);
             }
             break;

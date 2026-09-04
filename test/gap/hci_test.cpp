@@ -725,6 +725,25 @@ TEST(HCI, set_cig_parameters_failure_releases_cis_streams) {
     CHECK_TRUE(hci_stack->le_audio_cigs == NULL);
     CHECK_TRUE(hci_stack->iso_streams == NULL);
 }
+
+TEST(HCI, duplicate_cis_request_does_not_allocate_another_stream) {
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_CIS;
+    stream->cis_handle = 0x0042;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[9] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CIS_REQUEST;
+    little_endian_store_16(packet, 5, stream->cis_handle);
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->iso_streams == (btstack_linked_item_t *) stream);
+    hci_stack->iso_streams = NULL;
+    btstack_memory_hci_iso_stream_free(stream);
+}
 #endif
 
 TEST(HCI, incoming_acl_packet_bounds_check) {
