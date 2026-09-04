@@ -700,6 +700,31 @@ TEST(HCI, create_big_complete_with_wrong_bis_count_is_rejected) {
     CHECK_TRUE(hci_stack->le_audio_bigs == NULL);
     CHECK_TRUE(hci_stack->iso_streams == NULL);
 }
+
+TEST(HCI, set_cig_parameters_failure_releases_cis_streams) {
+    le_audio_cig_t cig = { 0 };
+    cig.cig_id = 1;
+    btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) &cig);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_CIS;
+    stream->group_id = cig.cig_id;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[] = {
+        HCI_EVENT_COMMAND_COMPLETE, 4, 1,
+        HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS & 0xff,
+        HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS >> 8,
+        ERROR_CODE_COMMAND_DISALLOWED,
+    };
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    hci_stack->iso_active_operation_group_id = cig.cig_id;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->le_audio_cigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
 #endif
 
 TEST(HCI, incoming_acl_packet_bounds_check) {

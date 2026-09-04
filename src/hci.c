@@ -3361,6 +3361,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 } else {
                     hci_emit_cig_created(cig, status);
                     btstack_linked_list_remove(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
+                    hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_CIS, cig->cig_id);
                 }
             }
             hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
