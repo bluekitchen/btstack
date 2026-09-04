@@ -723,6 +723,40 @@ TEST(HCI, big_sync_established_failure_releases_bis_streams) {
     CHECK_TRUE(hci_stack->iso_streams == NULL);
 }
 
+TEST(HCI, cancelling_unstarted_big_releases_bis_streams) {
+    le_audio_big_t big = { 0 };
+    big.big_handle = 1;
+    big.state = LE_AUDIO_BIG_STATE_CREATE;
+    btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) &big);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big.big_handle;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gap_big_terminate(big.big_handle));
+    CHECK_TRUE(hci_stack->le_audio_bigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, cancelling_unstarted_big_sync_releases_bis_streams) {
+    le_audio_big_sync_t big_sync = { 0 };
+    big_sync.big_handle = 1;
+    big_sync.state = LE_AUDIO_BIG_STATE_CREATE;
+    btstack_linked_list_add(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) &big_sync);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big_sync.big_handle;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gap_big_sync_terminate(big_sync.big_handle));
+    CHECK_TRUE(hci_stack->le_audio_big_syncs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
 TEST(HCI, set_cig_parameters_failure_releases_cis_streams) {
     le_audio_cig_t cig = { 0 };
     cig.cig_id = 1;

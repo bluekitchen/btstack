@@ -11594,6 +11594,7 @@ uint8_t gap_big_terminate(uint8_t big_handle){
     }
     switch (big->state){
         case LE_AUDIO_BIG_STATE_CREATE:
+            hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big->big_handle);
             btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
             hci_emit_big_terminated(big);
             break;
@@ -11619,6 +11620,7 @@ uint8_t gap_big_sync_terminate(uint8_t big_handle){
     }
     switch (big_sync->state){
         case LE_AUDIO_BIG_STATE_CREATE:
+            hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_sync->big_handle);
             btstack_linked_list_remove(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
             hci_emit_big_sync_stopped(big_handle);
             break;
