@@ -859,6 +859,7 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (size < 6u) break;
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             gatt_service_client_handle_disconnect(con_handle, hci_event_disconnection_complete_get_status(packet));
             break;

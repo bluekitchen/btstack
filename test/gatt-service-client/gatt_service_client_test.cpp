@@ -87,6 +87,16 @@ TEST(GATT_SERVICE_CLIENT, missing_ccc_descriptor_advances_to_connected){
     CHECK_EQUAL(0, characteristics[0].client_configuration_handle);
 }
 
+TEST(GATT_SERVICE_CLIENT, short_disconnection_complete_is_ignored){
+    setup_notifying_battery_service();
+    connect();
+
+    uint8_t malformed_event[] = { HCI_EVENT_DISCONNECTION_COMPLETE, 0 };
+    mock_hci_emit_event(malformed_event, sizeof(malformed_event));
+
+    CHECK_EQUAL(GATT_SERVICE_CLIENT_STATE_CONNECTED, connection.state);
+}
+
 int main(int argc, char **argv){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
