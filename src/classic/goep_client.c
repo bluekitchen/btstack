@@ -209,6 +209,9 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case RFCOMM_DATA_PACKET:
             goep_client = goep_client_for_bearer_cid(channel);
             btstack_assert(goep_client != NULL);
+            if (size == 0u) {
+                break;
+            }
             goep_client->client_handler(GOEP_DATA_PACKET, goep_client->cid, packet, size);
             break;
         default:
