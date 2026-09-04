@@ -744,6 +744,33 @@ TEST(HCI, duplicate_cis_request_does_not_allocate_another_stream) {
     hci_stack->iso_streams = NULL;
     btstack_memory_hci_iso_stream_free(stream);
 }
+
+TEST(HCI, create_cis_command_status_failure_releases_requested_streams) {
+    le_audio_cig_t cig = { 0 };
+    cig.cig_id = 1;
+    cig.num_cis = 1;
+    cig.state = LE_AUDIO_CIG_STATE_W4_CREATE_CIS;
+    cig.cis_con_handles[0] = 0x0042;
+    btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) &cig);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_CIS;
+    stream->group_id = cig.cig_id;
+    stream->state = HCI_ISO_STREAM_STATE_REQUESTED;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[] = {
+        HCI_EVENT_COMMAND_STATUS, 4, ERROR_CODE_COMMAND_DISALLOWED, 1,
+        HCI_OPCODE_HCI_LE_CREATE_CIS & 0xff,
+        HCI_OPCODE_HCI_LE_CREATE_CIS >> 8,
+    };
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    hci_stack->iso_active_operation_group_id = cig.cig_id;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
 #endif
 
 TEST(HCI, incoming_acl_packet_bounds_check) {
