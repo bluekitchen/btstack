@@ -313,6 +313,9 @@ static void goep_server_packet_handler_l2cap(uint8_t packet_type, uint16_t chann
         case L2CAP_DATA_PACKET:
             goep_connection = goep_server_get_connection_for_l2cap_cid(channel);
             btstack_assert(goep_connection != NULL);
+            if (size == 0u) {
+                break;
+            }
             goep_connection->callback(GOEP_DATA_PACKET, goep_connection->goep_cid, packet, size);
             break;
         default:
@@ -400,6 +403,9 @@ static void goep_server_packet_handler_rfcomm(uint8_t packet_type, uint16_t chan
         case RFCOMM_DATA_PACKET:
             goep_connection = goep_server_get_connection_for_rfcomm_cid(channel);
             btstack_assert(goep_connection != NULL);
+            if (size == 0u) {
+                break;
+            }
             goep_connection->callback(GOEP_DATA_PACKET, goep_connection->goep_cid, packet, size);
             break;
 
