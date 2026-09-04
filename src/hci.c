@@ -3521,6 +3521,7 @@ hci_iso_create_big_failed(const le_audio_big_t *big, uint8_t status) {
 }
 
 static void hci_iso_big_sync_failed(const le_audio_big_sync_t *big_sync, uint8_t status) {
+    hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_sync->big_handle);
     btstack_linked_list_remove(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
     if (big_sync->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
         hci_emit_big_sync_created(big_sync, status);

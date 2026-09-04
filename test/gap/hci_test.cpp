@@ -701,6 +701,28 @@ TEST(HCI, create_big_complete_with_wrong_bis_count_is_rejected) {
     CHECK_TRUE(hci_stack->iso_streams == NULL);
 }
 
+TEST(HCI, big_sync_established_failure_releases_bis_streams) {
+    le_audio_big_sync_t big_sync = { 0 };
+    big_sync.big_handle = 1;
+    big_sync.state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
+    btstack_linked_list_add(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) &big_sync);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big_sync.big_handle;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[] = {
+        HCI_EVENT_LE_META, 3, HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED,
+        ERROR_CODE_COMMAND_DISALLOWED, big_sync.big_handle,
+    };
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->le_audio_big_syncs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
 TEST(HCI, set_cig_parameters_failure_releases_cis_streams) {
     le_audio_cig_t cig = { 0 };
     cig.cig_id = 1;
