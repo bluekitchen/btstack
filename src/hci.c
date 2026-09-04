@@ -3333,13 +3333,35 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
         case HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS:
             // lookup CIG
             cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
-            if (cig != NULL){
+            if ((hci_stack->iso_active_operation_type == HCI_ISO_TYPE_CIS) &&
+                (cig != NULL) && (cig->state == LE_AUDIO_CIG_STATE_W4_ESTABLISHED)){
                 if (status == ERROR_CODE_SUCCESS){
                     uint16_t min_size = OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u + (2u * cig->num_cis);
-                    if (size < min_size){
+                    bool valid_response = (size >= min_size) &&
+                                          (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 2u] == cig->num_cis);
+                    hci_con_handle_t cis_handles[MAX_NR_CIS];
+                    uint8_t i;
+                    for (i = 0; valid_response && (i < cig->num_cis); i++){
+                        cis_handles[i] = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 3u + (2u * i));
+                        if (cis_handles[i] == HCI_CON_HANDLE_INVALID){
+                            valid_response = false;
+                            break;
+                        }
+                        for (uint8_t j = 0; j < i; j++){
+                            if (cis_handles[j] == cis_handles[i]){
+                                valid_response = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!valid_response){
+                        log_error("Set CIG Parameters returned invalid CIS handles");
+                        hci_emit_cig_created(cig, ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS);
+                        btstack_linked_list_remove(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
+                        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_CIS, cig->cig_id);
+                        hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                         break;
                     }
-                    uint8_t i;
                     for (i=0;i<cig->num_cis;i++) {
                         // assign CIS handles to pre-allocated CIS
                         uint8_t cis_id = cig->params->cis_params[i].cis_id;
@@ -3350,9 +3372,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                             if ((iso_stream->group_id == hci_stack->iso_active_operation_group_id) &&
                                 (iso_stream->iso_type == HCI_ISO_TYPE_CIS) &&
                                 (iso_stream->stream_id == cis_id)){
-                                hci_con_handle_t cis_handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3+(2*i));
-                                iso_stream->cis_handle  = cis_handle;
-                                cig->cis_con_handles[i] = cis_handle;
+                                iso_stream->cis_handle  = cis_handles[i];
+                                cig->cis_con_handles[i] = cis_handles[i];
                                 break;
                             }
                         }
