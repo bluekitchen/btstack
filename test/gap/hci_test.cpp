@@ -673,6 +673,33 @@ TEST(HCI, cis_established_for_unknown_handle_is_ignored) {
     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
     packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
 }
+
+TEST(HCI, create_big_complete_with_wrong_bis_count_is_rejected) {
+    le_audio_big_t big = { 0 };
+    big.big_handle = 1;
+    big.num_bis = 2;
+    big.state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
+    btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) &big);
+
+    for (uint8_t i = 0; i < big.num_bis; i++) {
+        hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+        CHECK_TRUE(stream != NULL);
+        stream->iso_type = HCI_ISO_TYPE_BIS;
+        stream->group_id = big.big_handle;
+        btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+    }
+
+    uint8_t packet[21] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE;
+    packet[4] = big.big_handle;
+    packet[20] = big.num_bis - 1;
+
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+    CHECK_TRUE(hci_stack->le_audio_bigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
 #endif
 
 TEST(HCI, incoming_acl_packet_bounds_check) {

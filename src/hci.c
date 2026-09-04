@@ -4134,8 +4134,12 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                 if (status == ERROR_CODE_SUCCESS){
                     if (size < 21u) break;
                     big->iso_interval_1250us = little_endian_read_16(packet, 18);
-                    uint8_t num_bis = btstack_min(big->num_bis, packet[20]);
-                    if (size < (21u + (2u * num_bis))) break;
+                    uint8_t num_bis = packet[20];
+                    if ((num_bis != big->num_bis) || (size < (21u + (2u * num_bis)))){
+                        log_error("Create BIG Complete has invalid BIS count %u, expected %u", num_bis, big->num_bis);
+                        hci_iso_create_big_failed(big, ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS);
+                        break;
+                    }
 
                     // store bis_con_handles and trigger iso path setup
                     for (i=0;i<num_bis;i++){
@@ -4199,8 +4203,12 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                 if (status == ERROR_CODE_SUCCESS){
                     if (size < 17u) break;
                     big_sync->iso_interval_1250us = little_endian_read_16(packet, 14);
-                    uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
-                    if (size < (17u + (2u * packet[16]))) break;
+                    uint8_t num_bis = packet[16];
+                    if ((num_bis != big_sync->num_bis) || (size < (17u + (2u * num_bis)))){
+                        log_error("BIG Sync Established has invalid BIS count %u, expected %u", num_bis, big_sync->num_bis);
+                        hci_iso_big_sync_failed(big_sync, ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS);
+                        break;
+                    }
 
                     // store bis_con_handles and trigger iso path setup
                     for (i=0;i<num_bis;i++){
