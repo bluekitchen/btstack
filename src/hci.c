@@ -257,7 +257,6 @@ static hci_iso_stream_t * hci_iso_stream_create(hci_iso_type_t iso_type, hci_rol
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
 static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type, uint8_t group_id);
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle);
-static void hci_iso_stream_requested_finalize(uint8_t group_id);
 static void hci_iso_stream_requested_confirm(uint8_t group_id);
 static void hci_iso_create_cis_failed(uint8_t status);
 static void hci_iso_accept_cis_failed(uint8_t status);
@@ -11073,19 +11072,6 @@ static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type
         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
         if ((iso_stream->group_id == group_id) &&
             (iso_stream->iso_type == iso_type)){
-            btstack_linked_list_iterator_remove(&it);
-            btstack_memory_hci_iso_stream_free(iso_stream);
-        }
-    }
-}
-
-static void hci_iso_stream_requested_finalize(uint8_t group_id) {
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-        if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
-            (iso_stream->group_id == group_id)){
             btstack_linked_list_iterator_remove(&it);
             btstack_memory_hci_iso_stream_free(iso_stream);
         }
