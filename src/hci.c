@@ -4165,11 +4165,16 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE:
             if (size < 5u) break;
-            hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
+            if ((hci_stack->iso_active_operation_type != HCI_ISO_TYPE_BIS) ||
+                (hci_stack->iso_active_operation_group_id != packet[4])) break;
             big = hci_big_for_handle(packet[4]);
             if (big != NULL){
                 uint8_t status = packet[3];
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                 if (status == ERROR_CODE_SUCCESS){
+                    if (big->state != LE_AUDIO_BIG_STATE_W4_ESTABLISHED){
+                        break;
+                    }
                     if (size < 21u) break;
                     big->iso_interval_1250us = little_endian_read_16(packet, 18);
                     uint8_t num_bis = packet[20];
@@ -4234,11 +4239,16 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED:
             if (size < 5u) break;
-            hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
+            if ((hci_stack->iso_active_operation_type != HCI_ISO_TYPE_BIS) ||
+                (hci_stack->iso_active_operation_group_id != packet[4])) break;
             big_sync = hci_big_sync_for_handle(packet[4]);
             if (big_sync != NULL){
                 uint8_t status = packet[3];
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
                 if (status == ERROR_CODE_SUCCESS){
+                    if (big_sync->state != LE_AUDIO_BIG_STATE_W4_ESTABLISHED){
+                        break;
+                    }
                     if (size < 17u) break;
                     big_sync->iso_interval_1250us = little_endian_read_16(packet, 14);
                     uint8_t num_bis = packet[16];
