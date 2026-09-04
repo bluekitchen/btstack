@@ -4054,7 +4054,13 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                 handle = hci_subevent_le_cis_established_get_connection_handle(packet);
                 uint8_t status = hci_subevent_le_cis_established_get_status(packet);
                 iso_stream = hci_iso_stream_for_con_handle(handle);
-                btstack_assert(iso_stream != NULL);
+                // A controller event is not a trusted state transition. Ignore an
+                // unsolicited or stale CIS Established event instead of
+                // dereferencing a stream that is no longer tracked.
+                if (iso_stream == NULL){
+                    log_error("CIS Established for unknown handle 0x%04x", handle);
+                    break;
+                }
                 // track connection info
                 iso_stream->number_of_subevents  = hci_subevent_le_cis_established_get_nse(packet);
                 iso_stream->burst_number_c_to_p  = hci_subevent_le_cis_established_get_bn_c_to_p(packet);
@@ -4081,7 +4087,10 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
                 } else {
                     // CIG Setup by Central
                     le_audio_cig_t * cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
-                    btstack_assert(cig != NULL);
+                    if (cig == NULL){
+                        log_error("CIS Established without active CIG %u", hci_stack->iso_active_operation_group_id);
+                        break;
+                    }
                     // update iso stream state
                     if (status == ERROR_CODE_SUCCESS){
                         iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;

@@ -660,6 +660,21 @@ TEST(HCI, incoming_event_packet_bounds_check) {
     CHECK_EQUAL(1, received_hci_events);
 }
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+TEST(HCI, cis_established_for_unknown_handle_is_ignored) {
+    // A controller can report a stale or unsolicited CIS Established event.
+    // It must not be assumed to have a matching local ISO stream.
+    uint8_t packet[31] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CIS_ESTABLISHED;
+    little_endian_store_16(packet, 4, 0x0042);
+
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+}
+#endif
+
 TEST(HCI, incoming_acl_packet_bounds_check) {
     hci_register_acl_packet_handler(&test_acl_packet_handler);
 
