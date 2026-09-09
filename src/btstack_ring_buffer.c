@@ -63,9 +63,13 @@ void btstack_ring_buffer_reset(btstack_ring_buffer_t * ring_buffer){
 }
 
 uint32_t btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer){
-    if (ring_buffer->full) return ring_buffer->size;
+    if (ring_buffer->full){
+        return ring_buffer->size;
+    }
     int diff = ring_buffer->last_written_index - ring_buffer->last_read_index;
-    if (diff >= 0) return diff;
+    if (diff >= 0){
+        return diff;
+    }
     return diff + ring_buffer->size;
 }
 
@@ -86,7 +90,9 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     }
 
     // simplify logic below by asserting data_length > 0
-    if (data_length == 0u) return 0u;
+    if (data_length == 0u){
+        return 0u;
+    }
 
     uint32_t  remaining_data_length = data_length;
     const uint8_t * remaining_data = data;
@@ -124,7 +130,9 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     *number_of_bytes_read = remaining_data_length;
 
     // simplify logic below by asserting remaining_data_length > 0
-    if (remaining_data_length == 0u) return;
+    if (remaining_data_length == 0u){
+        return;
+    }
 
     uint8_t * remaining_data = data;
 
@@ -151,4 +159,3 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     // clear full flag
     ring_buffer->full = 0;
 } 
-
