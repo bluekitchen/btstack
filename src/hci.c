@@ -3910,6 +3910,11 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	hci_emit_nr_connections_changed();
 }
 
+static void hci_handle_le_connection_complete_event_if_valid(uint8_t * packet, uint16_t size, uint16_t min_size){
+    if (size < min_size) return;
+    hci_handle_le_connection_complete_event(packet);
+}
+
 static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
@@ -3976,16 +3981,13 @@ static void hci_handle_le_meta_event(uint8_t * packet, uint16_t size){
 #endif
 #endif
         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-            if (size < 21u) break;
-            hci_handle_le_connection_complete_event(packet);
+            hci_handle_le_connection_complete_event_if_valid(packet, size, 21u);
             break;
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
-            if (size < 33u) break;
-            hci_handle_le_connection_complete_event(packet);
+            hci_handle_le_connection_complete_event_if_valid(packet, size, 33u);
             break;
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
-            if (size < 36u) break;
-            hci_handle_le_connection_complete_event(packet);
+            hci_handle_le_connection_complete_event_if_valid(packet, size, 36u);
             break;
 
         // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
