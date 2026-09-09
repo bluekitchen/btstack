@@ -2863,15 +2863,13 @@ static void sm_run(void){
     if (sm_run_ready() == false) return;
     
     // non-connection related behaviour
-    bool done = sm_run_non_connection_logic();
-    if (done) return;
+    if (sm_run_non_connection_logic()) return;
 
     // assert that we can send at least commands - cmd might have been sent by crypto engine
     if (!hci_can_send_command_packet_now()) return;
 
     // handle basic actions that don't requires the full context
-    done = sm_run_basic();
-    if (done) return;
+    if (sm_run_basic()) return;
 
     //
     // active connection handling
