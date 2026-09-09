@@ -68,7 +68,7 @@ static bool is_Bluetooth_Base_UUID(uint8_t const *uuid){
         return false;
     }
     return true;
-    
+
 }
 
 static uint16_t uuid16_from_uuid(uint16_t uuid_len, uint8_t * uuid){
@@ -248,7 +248,7 @@ static void att_update_value_len(att_iterator_t *it, uint16_t offset, hci_con_ha
 
 // copy attribute value from offset into buffer with given size
 static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size, hci_con_handle_t con_handle){
-    
+
     // DYNAMIC 
     if ((it->flags & (uint16_t)ATT_PROPERTY_DYNAMIC) != 0u){
         return (*att_read_callback)(con_handle, it->handle, offset, buffer, buffer_size);
@@ -1009,26 +1009,9 @@ handle_read_multiple_request(att_connection_t *att_connection, uint8_t *request_
 //  confidential information, and therefore the Service and Characteristic Discovery procedures
 //  shall always be permitted. " 
 //
-static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size,
-                                            uint16_t start_handle, uint16_t end_handle,
-                                            uint16_t attribute_type_len, uint8_t * attribute_type){
-    
-    UNUSED(att_connection);
-
-    log_info("ATT_READ_BY_GROUP_TYPE_REQUEST: from %04X to %04X, buffer size %u, type: ", start_handle, end_handle, response_buffer_size);
-    log_info_hexdump(attribute_type, attribute_type_len);
-    uint8_t request_type = ATT_READ_BY_GROUP_TYPE_REQUEST;
-    
-    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
-        return setup_error_invalid_handle(response_buffer, request_type, start_handle);
-    }
-
-    // assert UUID is primary or secondary service uuid
-    uint16_t uuid16 = uuid16_from_uuid(attribute_type_len, attribute_type);
-    if ((uuid16 != (uint16_t)GATT_PRIMARY_SERVICE_UUID) && (uuid16 != (uint16_t)GATT_SECONDARY_SERVICE_UUID)){
-        return setup_error(response_buffer, request_type, start_handle, ATT_ERROR_UNSUPPORTED_GROUP_TYPE);
-    }
-
+static uint16_t att_read_by_group_type_response(uint8_t * response_buffer, uint16_t response_buffer_size,
+                                                uint16_t start_handle, uint16_t end_handle,
+                                                uint16_t attribute_type_len, uint8_t * attribute_type){
     uint16_t offset   = 1;
     uint16_t pair_len = 0;
     bool     in_group = false;
@@ -1040,7 +1023,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        
+
         if ((it.handle != 0u) && (it.handle < start_handle)){
             continue;
         }
@@ -1055,7 +1038,7 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
         if (in_group &&
             ((it.handle == 0u) || new_service_started)){
             // log_info("End of group, handle 0x%04x, val_len: %u", prev_handle, pair_len - 4);
-            
+
             little_endian_store_16(response_buffer, offset, group_start_handle);
             offset += 2u;
             little_endian_store_16(response_buffer, offset, prev_handle);
@@ -1064,20 +1047,20 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
                          pair_len - 4u);
             offset += pair_len - 4u;
             in_group = false;
-            
+
             // check if space for another handle pair available
             if ((offset + pair_len) > response_buffer_size){
                 break;
             }
         }
-        
+
         // keep track of previous handle
         prev_handle = it.handle;
-        
+
         // does current attribute match
         // log_info("compare: %04x == %04x", *(uint16_t*) context->attribute_type, *(uint16_t*) uuid);
         if ((it.handle != 0u) && att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) {
-            
+
             // check if value has same len as last one
             uint16_t this_pair_len = 4u + it.value_len;
             if (offset > 1u){
@@ -1085,21 +1068,45 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
                     break;
                 }
             }
-            
+
             // log_info("Begin of group, handle 0x%04x", it.handle);
-            
+
             // first
             if (offset == 1u) {
                 pair_len = this_pair_len;
                 response_buffer[offset] = (uint8_t) this_pair_len;
                 offset++;
             }
-            
+
             group_start_handle = it.handle;
             group_start_value  = it.value;
             in_group = true;
         }
-    }        
+    }
+    return offset;
+}
+
+static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size,
+                                            uint16_t start_handle, uint16_t end_handle,
+                                            uint16_t attribute_type_len, uint8_t * attribute_type){
+
+    UNUSED(att_connection);
+
+    log_info("ATT_READ_BY_GROUP_TYPE_REQUEST: from %04X to %04X, buffer size %u, type: ", start_handle, end_handle, response_buffer_size);
+    log_info_hexdump(attribute_type, attribute_type_len);
+    uint8_t request_type = ATT_READ_BY_GROUP_TYPE_REQUEST;
+
+    if (!att_db_is_handle_range_valid(start_handle, end_handle)){
+        return setup_error_invalid_handle(response_buffer, request_type, start_handle);
+    }
+
+    // assert UUID is primary or secondary service uuid
+    uint16_t uuid16 = uuid16_from_uuid(attribute_type_len, attribute_type);
+    if ((uuid16 != (uint16_t)GATT_PRIMARY_SERVICE_UUID) && (uuid16 != (uint16_t)GATT_SECONDARY_SERVICE_UUID)){
+        return setup_error(response_buffer, request_type, start_handle, ATT_ERROR_UNSUPPORTED_GROUP_TYPE);
+    }
+
+    uint16_t offset = att_read_by_group_type_response(response_buffer, response_buffer_size, start_handle, end_handle, attribute_type_len, attribute_type);
     
     if (offset == 1u){
         return setup_error_atribute_not_found(response_buffer, request_type, start_handle);
@@ -1376,6 +1383,27 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
     return prepare_handle_value(att_connection, attribute_handle, value, value_len, response_buffer);
 }
     
+static uint16_t att_handle_read_request(att_connection_t * att_connection, uint8_t * request_buffer, uint16_t request_len,
+                                        uint8_t * response_buffer, uint16_t response_buffer_size){
+    switch (request_buffer[0]){
+        case ATT_READ_BY_TYPE_REQUEST:
+            return handle_read_by_type_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+        case ATT_READ_REQUEST:
+            return handle_read_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+        case ATT_READ_BLOB_REQUEST:
+            return handle_read_blob_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+        case ATT_READ_MULTIPLE_REQUEST:
+            return handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size, false);
+        case ATT_READ_MULTIPLE_VARIABLE_REQ:
+            return handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size, true);
+        case ATT_READ_BY_GROUP_TYPE_REQUEST:
+            return handle_read_by_group_type_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+        default:
+            btstack_unreachable();
+            return 0;
+    }
+}
+
 // MARK: Dispatcher
 uint16_t att_handle_request(att_connection_t * att_connection,
                             uint8_t * request_buffer,
@@ -1395,25 +1423,13 @@ uint16_t att_handle_request(att_connection_t * att_connection,
         case ATT_FIND_BY_TYPE_VALUE_REQUEST:
             response_len = handle_find_by_type_value_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
-        case ATT_READ_BY_TYPE_REQUEST:  
-            response_len = handle_read_by_type_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
-            break;
-        case ATT_READ_REQUEST:  
-            response_len = handle_read_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
-            break;
-        case ATT_READ_BLOB_REQUEST:  
-            response_len = handle_read_blob_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
-            break;
-        case ATT_READ_MULTIPLE_REQUEST:  
-            response_len = handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer,
-                                                        response_buffer_size, false);
-            break;
+        case ATT_READ_BY_TYPE_REQUEST:
+        case ATT_READ_REQUEST:
+        case ATT_READ_BLOB_REQUEST:
+        case ATT_READ_MULTIPLE_REQUEST:
         case ATT_READ_MULTIPLE_VARIABLE_REQ:
-            response_len = handle_read_multiple_request(att_connection, request_buffer, request_len, response_buffer,
-                                                        response_buffer_size, true);
-            break;
         case ATT_READ_BY_GROUP_TYPE_REQUEST:
-            response_len = handle_read_by_group_type_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+            response_len = att_handle_read_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
         case ATT_WRITE_REQUEST:
             response_len = handle_write_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
