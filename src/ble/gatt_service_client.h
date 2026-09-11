@@ -348,6 +348,7 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(co
 
 /**
  * Substitute subevent ID with the given one, and send the event
+ * @note Only use if the GATT Service Client's user uses the GATT Service Client CID itself as it is not updated
  * @param callback
  * @param packet
  * @param size
