@@ -89,22 +89,13 @@ static heart_rate_t heart_rate;
 
 static uint16_t heart_rate_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(attribute_handle);
-    UNUSED(offset);
-    UNUSED(buffer_size);
     
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, heart_rate.measurement_client_configuration_descriptor_notify);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(heart_rate.measurement_client_configuration_descriptor_notify, offset, buffer, buffer_size);
     }
     
     if (attribute_handle == heart_rate.sensor_location_value_handle){
-        if (buffer && (buffer_size >= 1u)){
-            buffer[0] = heart_rate.sensor_location;
-        }
-        return 1;
+        return att_read_callback_handle_byte(heart_rate.sensor_location, offset, buffer, buffer_size);
     }
     return 0;
 }
