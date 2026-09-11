@@ -295,6 +295,7 @@ static const patch_info_usb fw_patch_table_usb[] = {
     {0xc03f, 0x8822, "mp_rtl8822cu_fw", "rtl8822cu_fw", "rtl8822cu_config", NULL, 0, RTL8822CU}, /* RTL8822CE-VS */
 
     {0x8771, 0x8761, "mp_rtl8761b_fw", "rtl8761bu_fw", "rtl8761bu_config", NULL, 0, RTL8761BU}, /* RTL8761BU only */
+    {0x0604, 0x8761, "mp_rtl8761b_fw", "rtl8761bu_fw", "rtl8761bu_config", NULL, 0, RTL8761BU}, /* TP-Link UB500 (RTL8761BU) */
     {0xa725, 0x8761, "mp_rtl8761b_fw", "rtl8725au_fw", "rtl8725au_config", NULL, 0, RTL8761BU}, /* RTL8725AU */
     {0xa72A, 0x8761, "mp_rtl8761b_fw", "rtl8725au_fw", "rtl8725au_config", NULL, 0, RTL8761BU}, /* RTL8725AU BT only */
 
@@ -1317,10 +1318,14 @@ static void chipset_init(const void *config) {
             state = STATE_PHASE_2_DONE;
             return;
         }
-        btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_usb->patch_name);
-        btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_usb->config_name);
-        firmware_file_path = &firmware_file[0];
-        config_file_path   = &config_file[0];
+        if (firmware_file_path == NULL) {
+            btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_usb->patch_name);
+            firmware_file_path = &firmware_file[0];
+        }
+        if (config_file_path == NULL) {
+            btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_usb->config_name);
+            config_file_path   = &config_file[0];
+        }
         rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
         rtb_cfg.chip_type      = patch_usb->chip_type;
         state = STATE_PHASE_1_READ_LMP_SUBVERSION;
