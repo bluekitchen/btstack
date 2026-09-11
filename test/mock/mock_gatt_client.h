@@ -69,6 +69,7 @@ typedef struct {
     uint16_t  value_len;
 
     uint8_t notification_status_code;
+    uint16_t client_characteristic_configuration;
     gatt_client_notification_t * notification;
 } mock_gatt_client_characteristic_t;
 
@@ -127,4 +128,3 @@ void mock_hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t r
 #endif
 
 #endif
-

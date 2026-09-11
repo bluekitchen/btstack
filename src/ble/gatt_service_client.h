@@ -130,6 +130,7 @@ typedef struct gatt_service_client {
     // characteristics
     uint8_t  characteristics_desc_num;       // uuids_num, either are all UUIDs 2-bytes, or 16-bytes
     const uint16_t *  characteristics_desc16;  // uuid16s
+    const gatt_service_client_uuid_with_cccd_t * characteristics_desc16_with_cccds;
     const uuid128_t * characteristics_desc128; // uuid128s
     
     btstack_packet_handler_t packet_handler;
@@ -152,6 +153,17 @@ void gatt_service_client_init(void);
  */
 void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *client, btstack_packet_handler_t connection_and_notification_handler,
                                          const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num);
+
+/**
+ * @brief Register new GATT Service Client with a list of Characteristic UUID16s and requested CCCD configurations
+ * @param client
+ * @param connection_and_notification_handler packet handler that receives events: GATT_EVENT_NOTIFICATION, GATT_EVENT_IDENTIFICATION and two HCI_EVENT_GATTSERVICE_META subevents: GATTSERVICE_SUBEVENT_CLIENT_CONNECTED/DISCONNECTED
+ * @param characteristic_uuid16s_with_cccds characteristic UUID16s and requested GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_* values; use 0 to not subscribe
+ * @param characteristic_uuid16s_with_cccds_num
+ */
+void gatt_service_client_register_client_with_uuid16s_and_cccds(gatt_service_client_t *client, btstack_packet_handler_t connection_and_notification_handler,
+                                         const gatt_service_client_uuid_with_cccd_t *characteristic_uuid16s_with_cccds,
+                                         uint16_t characteristic_uuid16s_with_cccds_num);
 
 /**
  * @brief Register new GATT Service Client with list of Characteristic UUID128s

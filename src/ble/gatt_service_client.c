@@ -249,6 +249,9 @@ uint8_t gatt_service_client_get_service_index(const gatt_service_client_connecti
 
 uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t characteristic_index){
     if (characteristic_index < client->characteristics_desc_num){
+        if (client->characteristics_desc16_with_cccds != NULL){
+            return client->characteristics_desc16_with_cccds[characteristic_index].uuid16;
+        }
         return client->characteristics_desc16[characteristic_index];
     } else {
         return 0;
@@ -370,11 +373,32 @@ static void gatt_service_client_handle_connected(const gatt_service_client_t * c
     gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
 }
 
+static uint16_t gatt_service_client_configuration_for_characteristic(const gatt_service_client_t * client,
+                                                                      const gatt_service_client_connection_t * connection,
+                                                                      uint8_t characteristic_index) {
+    uint16_t properties = connection->characteristics[characteristic_index].properties;
+    uint8_t cccd = GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION |
+                   GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+
+    if (client->characteristics_desc16_with_cccds != NULL){
+        cccd = client->characteristics_desc16_with_cccds[characteristic_index].cccd;
+    }
+
+    if (((cccd & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) != 0u) &&
+        ((properties & ATT_PROPERTY_INDICATE) != 0u)){
+        return GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION;
+    }
+    if (((cccd & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) != 0u) &&
+        ((properties & ATT_PROPERTY_NOTIFY) != 0u)){
+        return GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+    }
+    return 0;
+}
+
 static bool gatt_service_client_more_descriptor_queries(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < client->characteristics_desc_num)) {
-        uint16_t notify_or_indicate = ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE;
-        if ((connection->characteristics[connection->characteristic_index].properties & notify_or_indicate) != 0u){
+        if (gatt_service_client_configuration_for_characteristic(client, connection, connection->characteristic_index) != 0u){
             next_query_found = true;
             break;
         }
@@ -405,20 +429,13 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
         characteristic.end_handle = connection->characteristics[connection->characteristic_index].end_handle;
         characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
-        if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u){
+        uint16_t configuration = gatt_service_client_configuration_for_characteristic(client, connection, connection->characteristic_index);
+        if (configuration != 0u){
             status = gatt_client_write_client_characteristic_configuration_with_context(
                     &gatt_service_client_gatt_packet_handler,
                     connection->con_handle,
                     &characteristic,
-                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION,
-                    client->service_id,
-                    connection->cid);
-        } else if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
-            status = gatt_client_write_client_characteristic_configuration_with_context(
-                    &gatt_service_client_gatt_packet_handler,
-                    connection->con_handle,
-                    &characteristic,
-                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION,
+                    configuration,
                     client->service_id,
                     connection->cid);
         }
@@ -515,7 +532,7 @@ static void gatt_service_client_send_next_query(void * context) {
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read client characteristic descriptors for characteristic[%u, uuid16 0x%04x, value_handle 0x%04x]:\n",
                 connection->characteristic_index, 
-                client->characteristics_desc16[connection->characteristic_index],
+                gatt_service_client_characteristic_uuid16_for_index(client, connection->characteristic_index),
                 connection->characteristics[connection->characteristic_index].value_handle);
 #endif
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
@@ -545,7 +562,7 @@ static void gatt_service_client_send_next_query(void * context) {
 
             printf("[%u, uuid16 0x%04x, ccd handle 0x%04x]\n",
                 connection->characteristic_index, 
-                client->characteristics_desc16[connection->characteristic_index],
+                gatt_service_client_characteristic_uuid16_for_index(client, connection->characteristic_index),
                 connection->characteristics[connection->characteristic_index].client_configuration_handle);
 #endif
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
@@ -672,7 +689,9 @@ static uint8_t gatt_service_client_get_uninitialized_characteristic_index(
         for (i = 0; i < client->characteristics_desc_num; i++){
             bool characteristic_found = false;
 
-            if (client->characteristics_desc16 != NULL) {
+            if (client->characteristics_desc16_with_cccds != NULL) {
+                characteristic_found = client->characteristics_desc16_with_cccds[i].uuid16 == characteristic->uuid16;
+            } else if (client->characteristics_desc16 != NULL) {
                 characteristic_found = client->characteristics_desc16[i] == characteristic->uuid16;
             } else {
                 characteristic_found = memcmp(client->characteristics_desc128[i], characteristic->uuid128, 16) == 0;
@@ -933,7 +952,25 @@ void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *cli
     client->cid_counter = 0;
     client->packet_handler = packet_handler;
     client->characteristics_desc16 = characteristic_uuid16s;
+    client->characteristics_desc16_with_cccds = NULL;
     client->characteristics_desc_num = characteristic_uuid16s_num;
+    client->characteristics_desc128 = NULL;
+    btstack_linked_list_add(&gatt_service_clients, &client->item);
+}
+
+void gatt_service_client_register_client_with_uuid16s_and_cccds(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+                                         const gatt_service_client_uuid_with_cccd_t *characteristic_uuid16s_with_cccds,
+                                         uint16_t characteristic_uuid16s_with_cccds_num) {
+
+    btstack_assert(gatt_service_client_initialized);
+
+    gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
+    client->service_id = gatt_service_client_service_cid;
+    client->cid_counter = 0;
+    client->packet_handler = packet_handler;
+    client->characteristics_desc16 = NULL;
+    client->characteristics_desc16_with_cccds = characteristic_uuid16s_with_cccds;
+    client->characteristics_desc_num = characteristic_uuid16s_with_cccds_num;
     client->characteristics_desc128 = NULL;
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
@@ -948,6 +985,7 @@ void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *cl
     client->cid_counter = 0;
     client->packet_handler = packet_handler;
     client->characteristics_desc16 = NULL;
+    client->characteristics_desc16_with_cccds = NULL;
     client->characteristics_desc128 = characteristic_uuid128s;
     client->characteristics_desc_num = characteristic_uuid128s_num;
     btstack_linked_list_add(&gatt_service_clients, &client->item);

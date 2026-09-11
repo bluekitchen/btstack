@@ -29,7 +29,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 TEST_GROUP(GATT_SERVICE_CLIENT){
     gatt_service_client_t client;
     gatt_service_client_connection_t connection;
-    gatt_service_client_characteristic_t characteristics[1];
+    gatt_service_client_characteristic_t characteristics[2];
     const uint16_t characteristic_uuids[1] = { ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL };
 
     void setup(void){
@@ -85,6 +85,60 @@ TEST(GATT_SERVICE_CLIENT, missing_ccc_descriptor_advances_to_connected){
     CHECK_TRUE(connected);
     CHECK_EQUAL(GATT_SERVICE_CLIENT_STATE_CONNECTED, connection.state);
     CHECK_EQUAL(0, characteristics[0].client_configuration_handle);
+}
+
+TEST(GATT_SERVICE_CLIENT, uuid16s_and_cccds_only_subscribe_to_requested_characteristics){
+    static const gatt_service_client_uuid_with_cccd_t characteristic_uuids_with_cccds[] = {
+        { ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION | GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION },
+        { ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATE, 0 },
+    };
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gatt_service_client_unregister_client(&client));
+    gatt_service_client_register_client_with_uuid16s_and_cccds(&client, packet_handler,
+        characteristic_uuids_with_cccds, sizeof(characteristic_uuids_with_cccds) / sizeof(characteristic_uuids_with_cccds[0]));
+
+    mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+    mock_gatt_client_characteristic_t * first_characteristic =
+        mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, ATT_PROPERTY_NOTIFY);
+    mock_gatt_client_characteristic_descriptor_t * first_ccc =
+        mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+    mock_gatt_client_characteristic_t * second_characteristic =
+        mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATE, ATT_PROPERTY_NOTIFY);
+    mock_gatt_client_characteristic_descriptor_t * second_ccc =
+        mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gatt_service_client_connect_primary_service_with_uuid16(
+        con_handle, &client, &connection, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE, characteristics, 2));
+    mock_gatt_client_run();
+
+    CHECK_TRUE(connected);
+    CHECK_EQUAL(first_ccc->handle, characteristics[0].client_configuration_handle);
+    CHECK_EQUAL(0, characteristics[1].client_configuration_handle);
+    CHECK_EQUAL(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION, first_characteristic->client_characteristic_configuration);
+    CHECK_EQUAL(0, second_characteristic->client_characteristic_configuration);
+    CHECK_TRUE(second_ccc->handle != characteristics[1].client_configuration_handle);
+}
+
+TEST(GATT_SERVICE_CLIENT, uuid16s_and_cccds_prefer_requested_indication){
+    static const gatt_service_client_uuid_with_cccd_t characteristic_uuids_with_cccds[] = {
+        { ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION | GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION },
+    };
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gatt_service_client_unregister_client(&client));
+    gatt_service_client_register_client_with_uuid16s_and_cccds(&client, packet_handler,
+        characteristic_uuids_with_cccds, sizeof(characteristic_uuids_with_cccds) / sizeof(characteristic_uuids_with_cccds[0]));
+
+    mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+    mock_gatt_client_characteristic_t * characteristic = mock_gatt_client_add_characteristic_uuid16(
+        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, ATT_PROPERTY_INDICATE | ATT_PROPERTY_NOTIFY);
+    mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gatt_service_client_connect_primary_service_with_uuid16(
+        con_handle, &client, &connection, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE, characteristics, 1));
+    mock_gatt_client_run();
+
+    CHECK_TRUE(connected);
+    CHECK_EQUAL(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION, characteristic->client_characteristic_configuration);
 }
 
 TEST(GATT_SERVICE_CLIENT, short_disconnection_complete_is_ignored){

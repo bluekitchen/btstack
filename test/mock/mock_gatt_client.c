@@ -434,7 +434,6 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 }
 
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
-    UNUSED(configuration);
     mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(characteristic->value_handle);
     btstack_assert(mock_characteristic != NULL);
 
@@ -443,6 +442,7 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     }
 
     mock_gatt_client_state = MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+    mock_characteristic->client_characteristic_configuration = configuration;
 
     gatt_client.callback = callback;
     gatt_client.con_handle = con_handle;
