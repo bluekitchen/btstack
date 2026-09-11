@@ -493,7 +493,9 @@ static int cycling_power_store_measurement(cycling_power_t * instance, uint8_t *
 }
 
 int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size){
-    if (adv_size < 12u) return 0u;
+    // Flags, interval, service-data header, and mandatory measurement fields.
+    if (adv_size < 15u) return 0u;
+    adv_size = btstack_min(adv_size, CYCLING_POWER_MAX_BROACAST_MSG_SIZE);
     cycling_power_t * instance =  &cycling_power;
     int pos = 0;
     // adv flags
@@ -507,7 +509,7 @@ int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * adv_buffe
     little_endian_store_16(adv_buffer, pos, adv_interval);
     pos += 2;
     //
-    int value_len = cycling_power_store_measurement(instance, &adv_buffer[pos + 4], CYCLING_POWER_MAX_BROACAST_MSG_SIZE - (pos + 4));
+    int value_len = cycling_power_store_measurement(instance, &adv_buffer[pos + 4], adv_size - (pos + 4));
     adv_buffer[pos++] = 3 + value_len;
     adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
     little_endian_store_16(adv_buffer, pos, ORG_BLUETOOTH_SERVICE_CYCLING_POWER);

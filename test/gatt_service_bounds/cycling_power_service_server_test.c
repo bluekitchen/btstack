@@ -26,5 +26,22 @@ int main(void){
     check_read_bounds(cycling_power_service_read_callback, 5, expected_5, sizeof(expected_5));
     const uint8_t expected_6[] = {0x3};
     check_read_bounds(cycling_power_service_read_callback, 6, expected_6, sizeof(expected_6));
+    // Exercise every caller capacity, including the old 12-byte threshold.
+    cycling_power.masked_measurement_flags = CYCLING_POWER_MEASUREMENT_FLAGS_CLEARED;
+    cycling_power.default_measurement_flags = 0x1fff;
+    for (uint16_t capacity = 0; capacity <= 40; capacity++){
+        uint8_t * advertisement = malloc(capacity + 1u);
+        memset(advertisement, 0xa5, capacity + 1u);
+        int length = cycling_power_get_measurement_adv(100, advertisement, capacity);
+        assert(advertisement[capacity] == 0xa5);
+        assert(length <= capacity);
+        if (capacity < 15){
+            assert(length == 0);
+        } else {
+            assert(length >= 15);
+            assert(length <= 31);
+        }
+        free(advertisement);
+    }
     return 0;
 }
