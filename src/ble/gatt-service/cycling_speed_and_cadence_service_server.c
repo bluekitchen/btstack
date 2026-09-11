@@ -115,39 +115,25 @@ static void cycling_speed_and_cadence_service_packet_handler(uint8_t packet_type
 
 static uint16_t cycling_speed_and_cadence_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
-	UNUSED(attribute_handle);
-	UNUSED(offset);
 	cycling_speed_and_cadence_t * instance = &cycling_speed_and_cadence;
 
 	if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-		if (buffer && (buffer_size >= 2u)){
-			little_endian_store_16(buffer, 0, instance->measurement_client_configuration_descriptor_notify);
-		} 
-		return 2;
+		return att_read_callback_handle_little_endian_16(instance->measurement_client_configuration_descriptor_notify, offset, buffer, buffer_size);
 	}
 
 	if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-		if (buffer && (buffer_size >= 2u)){
-			little_endian_store_16(buffer, 0, instance->control_point_client_configuration_descriptor_indicate);
-		} 
-		return 2;
+		return att_read_callback_handle_little_endian_16(instance->control_point_client_configuration_descriptor_indicate, offset, buffer, buffer_size);
 	}
 
 	if (attribute_handle == instance->feature_handle){
-		if (buffer && (buffer_size >= 2u)){
-			uint16_t feature = (instance->wheel_revolution_data_supported << CSC_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED);
-			feature |= (instance->crank_revolution_data_supported << CSC_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED);
-			feature |= (instance->multiple_sensor_locations_supported << CSC_FLAG_MULTIPLE_SENSOR_LOCATIONS_SUPPORTED);
-			little_endian_store_16(buffer, 0, feature);
-		} 
-		return 2;
+		uint16_t feature = (instance->wheel_revolution_data_supported << CSC_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED);
+		feature |= (instance->crank_revolution_data_supported << CSC_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED);
+		feature |= (instance->multiple_sensor_locations_supported << CSC_FLAG_MULTIPLE_SENSOR_LOCATIONS_SUPPORTED);
+		return att_read_callback_handle_little_endian_16(feature, offset, buffer, buffer_size);
 	}	
 	
 	if (attribute_handle == instance->sensor_location_value_handle){
-		if (buffer && (buffer_size >= 1u)){
-			buffer[0] = instance->sensor_location;
-		} 
-		return 1;
+		return att_read_callback_handle_byte(instance->sensor_location, offset, buffer, buffer_size);
 	}	
 	return 0;
 }
