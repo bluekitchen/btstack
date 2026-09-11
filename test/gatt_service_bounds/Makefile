@@ -13,7 +13,7 @@ LDFLAGS += -Wl,--gc-sections
 endif
 
 TESTS = $(patsubst %.c,%,$(wildcard *_test.c))
-COMMON = btstack_util.o att_db.o
+COMMON = btstack_util.o att_db.o hci_dump.o
 $(addprefix build-asan/,$(TESTS)): $(addprefix build-asan/,$(COMMON))
 $(addprefix build-coverage/,$(TESTS)): $(addprefix build-coverage/,$(COMMON))
 $(addprefix build-asan/,$(addsuffix .o,$(TESTS))) $(addprefix build-coverage/,$(addsuffix .o,$(TESTS))): read_bounds.h
