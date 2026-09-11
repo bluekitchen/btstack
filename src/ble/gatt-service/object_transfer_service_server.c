@@ -1104,11 +1104,11 @@ static uint8_t ots_server_filter_buffer_valid_write(uint8_t * buffer, uint16_t b
     if (buffer_size < 1){
         return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
     }
-    uint16_t total_value_len = buffer_size + offset;
+    uint32_t total_value_len = (uint32_t) offset + buffer_size;
     if (total_value_len == 0){
         return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
     }
-    uint16_t data_size = total_value_len - 1;
+    uint32_t data_size = total_value_len - 1;
     uint16_t max_data_size = sizeof(connection->long_write_data);
 
     if (data_size > max_data_size){
@@ -1303,7 +1303,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             return ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
         }
 
-        uint16_t total_value_len = buffer_size + offset;
+        uint32_t total_value_len = (uint32_t) offset + buffer_size;
         // handle long write
         switch (transaction_mode){
             case ATT_TRANSACTION_MODE_NONE:
@@ -1342,6 +1342,9 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         }
         
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
+        if (connection->current_object == NULL){
+            return ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+        }
         if (buffer_size == 4){
             uint32_t properties = little_endian_read_32(buffer, 0);
             if ((properties >> 8) == 0) {
@@ -1352,6 +1355,9 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         }
         return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
+        if (connection->current_object == NULL){
+            return ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+        }
         if (buffer_size == 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object->first_created);
             ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED));
@@ -1360,6 +1366,9 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
         }
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
+        if (connection->current_object == NULL){
+            return ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
+        }
         if (buffer_size == 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object->last_modified);
             ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED));

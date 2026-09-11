@@ -31,6 +31,7 @@ SUBDIRS :=  \
 	gatt_client \
 	gatt_server \
 	gatt_service_server \
+	ots_server \
 	hfp \
 	hid_parser \
 	l2cap-cbm \
@@ -72,6 +73,7 @@ SUBDIRS_BLE := \
 	gatt_client \
 	gatt_server \
 	gatt_service_server \
+	ots_server \
 	hid_parser \
 	l2cap-cbm \
 	le_device_db_tlv \
