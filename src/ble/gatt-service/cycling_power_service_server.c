@@ -222,50 +222,30 @@ static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 
 static uint16_t cycling_power_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(attribute_handle);
-    UNUSED(offset);
     cycling_power_t * instance = &cycling_power;
 
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->measurement_client_configuration_descriptor_notify);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->measurement_client_configuration_descriptor_notify, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->measurement_server_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->measurement_server_configuration_descriptor_broadcast);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->measurement_server_configuration_descriptor_broadcast, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->vector_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->vector_client_configuration_descriptor_notify);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->vector_client_configuration_descriptor_notify, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->control_point_client_configuration_descriptor_indicate);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->control_point_client_configuration_descriptor_indicate, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->feature_value_handle){
-        if (buffer && (buffer_size >= 4u)){
-            little_endian_store_32(buffer, 0, instance->feature_flags);
-        } 
-        return 4;
+        return att_read_callback_handle_little_endian_32(instance->feature_flags, offset, buffer, buffer_size);
     }   
     
     if (attribute_handle == instance->sensor_location_value_handle){
-        if (buffer && (buffer_size >= 1u)){
-            buffer[0] = instance->sensor_location;
-        } 
-        return 1;
+        return att_read_callback_handle_byte(instance->sensor_location, offset, buffer, buffer_size);
     }   
     return 0;
 }
