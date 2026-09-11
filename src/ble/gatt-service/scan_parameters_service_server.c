@@ -67,7 +67,6 @@ static att_service_handler_t                    scan_parameters_service;
 static uint16_t scan_interval_window_value_handle;
 static uint16_t scan_interval_window_value_handle_client_configuration;
 
-
 static uint16_t scan_refresh_value_client_configuration;
 static hci_con_handle_t scan_refresh_value_client_configuration_connection;
 
@@ -94,15 +93,9 @@ static void scan_parameters_service_emit_state(hci_con_handle_t con_handle, uint
 
 static uint16_t scan_parameters_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(attribute_handle);
-    UNUSED(offset);
-    UNUSED(buffer);
-    UNUSED(buffer_size);
+
     if (attribute_handle == scan_refresh_value_handle_client_configuration){
-        if (buffer != NULL){
-            little_endian_store_16(buffer, 0, scan_refresh_value_client_configuration);
-        }
-        return 2;
+        return att_read_callback_handle_little_endian_16(scan_refresh_value_client_configuration, offset, buffer, buffer_size);
     }
     return 0;
 }
