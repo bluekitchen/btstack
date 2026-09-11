@@ -80,6 +80,14 @@ typedef struct {
     uint16_t end_handle;
 } gatt_service_client_characteristic_t;
 
+// used to indicate if GATT Service Client should enable Indication or Notification. Indication is preferred.
+// GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION
+// GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION
+typedef struct {
+    uint16_t uuid16;
+    uint8_t  cccd;
+} gatt_service_client_uuid_with_cccd_t;
+
 struct gatt_service_client;
 
 typedef struct {
