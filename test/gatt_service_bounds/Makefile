@@ -22,7 +22,7 @@ $(addprefix build-asan/,$(addsuffix .o,$(TESTS))) $(addprefix build-coverage/,$(
 define SERVER_DEPENDENCY
 build-asan/$(1)_test.o build-coverage/$(1)_test.o: $(BTSTACK_ROOT)/src/ble/gatt-service/$(1).c
 endef
-$(foreach server,$(patsubst %_test,%,$(TESTS)),$(eval $(call SERVER_DEPENDENCY,$(server))))
+$(foreach server,$(filter-out att_server,$(patsubst %_test,%,$(TESTS))),$(eval $(call SERVER_DEPENDENCY,$(server))))
 
 all: test
 
@@ -32,3 +32,11 @@ test: $(addprefix build-asan/,$(TESTS))
 coverage: $(addprefix build-coverage/,$(addsuffix .info,$(TESTS)))
 
 clean: clean-common
+
+build-asan/att_server_test.o build-coverage/att_server_test.o: ${BTSTACK_ROOT}/src/ble/att_server.c
+build-asan/att_server_test: build-asan/eatt_mock.o build-asan/btstack_linked_list.o build-asan/le_device_db_memory.o
+build-coverage/att_server_test: build-coverage/eatt_mock.o build-coverage/btstack_linked_list.o build-coverage/le_device_db_memory.o
+build-asan/eatt_mock.o: ../gatt_server/mock.c | build-asan
+	${CC} -c ${CFLAGS_ASAN} -DENABLE_GATT_OVER_EATT -DENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE $< -o $@
+build-coverage/eatt_mock.o: ../gatt_server/mock.c | build-coverage
+	${CC} -c ${CFLAGS_COVERAGE} -DENABLE_GATT_OVER_EATT -DENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE $< -o $@
