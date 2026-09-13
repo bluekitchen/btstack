@@ -102,9 +102,6 @@ static mesh_provisioning_t * mesh_provisioning_service_get_instance_for_con_hand
 
 static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(attribute_handle);
-    UNUSED(offset);
-    UNUSED(buffer_size);
     
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
@@ -112,10 +109,7 @@ static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_han
         return 0;
     }
     if (attribute_handle == instance->data_out_client_configuration_descriptor_handle){
-        if (buffer && buffer_size >= 2){
-            little_endian_store_16(buffer, 0, instance->data_out_client_configuration_descriptor_value);
-        }
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->data_out_client_configuration_descriptor_value, offset, buffer, buffer_size);
     }
     log_info("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
     return 0;

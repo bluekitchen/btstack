@@ -125,22 +125,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 // test profile
 #include "profile.h"
 
-static uint16_t get_read_att_value_len(uint16_t att_handle){
-    uint16_t value_len;
-    switch(att_handle){
-        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
-            value_len = chr01_value_length;
-            break;
-        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
-            value_len = 1;
-            break;
-        default:
-            value_len = 0;
-            break;
-    }
-    return value_len;
-}
-
 static uint16_t get_write_att_value_len(uint16_t att_handle){
     uint16_t value_len;
     switch(att_handle){
@@ -169,21 +153,14 @@ static uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset, uint16_t 
 
 uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     printf("READ Callback, handle %04x\n", att_handle);
-    uint16_t value_len = get_read_att_value_len(att_handle);
-    if (!buffer) return value_len;
-    
-    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset, buffer_size);
-    if (!bytes_to_copy) return 0;
-    
     switch(att_handle){
         case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
-            memcpy(buffer, &chr01_value[offset], bytes_to_copy);
-            break;
+            return att_read_callback_handle_blob(chr01_value, chr01_value_length, offset, buffer, buffer_size);
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
-            buffer[offset] = chr02_value;
-            break;
+            return att_read_callback_handle_byte(chr02_value, offset, buffer, buffer_size);
+        default:
+            return 0;
     }
-    return bytes_to_copy;
 }
 
 // write requests
@@ -244,4 +221,3 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
-
