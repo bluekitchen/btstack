@@ -70,6 +70,7 @@ typedef struct {
 
     uint8_t notification_status_code;
     uint16_t client_characteristic_configuration;
+    uint16_t client_characteristic_configuration_write_count;
     gatt_client_notification_t * notification;
 } mock_gatt_client_characteristic_t;
 

@@ -411,8 +411,7 @@ static bool gatt_service_client_more_descriptor_queries(const gatt_service_clien
 static bool gatt_service_client_have_more_notifications_to_enable(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < client->characteristics_desc_num)) {
-        if ((connection->characteristics[connection->characteristic_index].client_configuration_handle != 0u) &&
-            (gatt_service_client_configuration_for_characteristic(client, connection, connection->characteristic_index) != 0u)) {
+        if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0u) {
             next_query_found = true;
             break;
         }
@@ -432,15 +431,13 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
         characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
         uint16_t configuration = gatt_service_client_configuration_for_characteristic(client, connection, connection->characteristic_index);
-        if (configuration != 0u){
-            status = gatt_client_write_client_characteristic_configuration_with_context(
-                    &gatt_service_client_gatt_packet_handler,
-                    connection->con_handle,
-                    &characteristic,
-                    configuration,
-                    client->service_id,
-                    connection->cid);
-        }
+        status = gatt_client_write_client_characteristic_configuration_with_context(
+                &gatt_service_client_gatt_packet_handler,
+                connection->con_handle,
+                &characteristic,
+                configuration,
+                client->service_id,
+                connection->cid);
     }
     return status;
 }

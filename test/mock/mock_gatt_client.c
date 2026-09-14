@@ -443,6 +443,7 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 
     mock_gatt_client_state = MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
     mock_characteristic->client_characteristic_configuration = configuration;
+    mock_characteristic->client_characteristic_configuration_write_count++;
 
     gatt_client.callback = callback;
     gatt_client.con_handle = con_handle;
