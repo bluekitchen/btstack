@@ -113,10 +113,9 @@ TEST(GATT_SERVICE_CLIENT, uuid16s_and_cccds_only_subscribe_to_requested_characte
 
     CHECK_TRUE(connected);
     CHECK_EQUAL(first_ccc->handle, characteristics[0].client_configuration_handle);
-    CHECK_EQUAL(0, characteristics[1].client_configuration_handle);
+    CHECK_EQUAL(second_ccc->handle, characteristics[1].client_configuration_handle);
     CHECK_EQUAL(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION, first_characteristic->client_characteristic_configuration);
     CHECK_EQUAL(0, second_characteristic->client_characteristic_configuration);
-    CHECK_TRUE(second_ccc->handle != characteristics[1].client_configuration_handle);
 }
 
 TEST(GATT_SERVICE_CLIENT, uuid16s_and_cccds_prefer_requested_indication){

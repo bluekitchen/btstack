@@ -398,7 +398,8 @@ static uint16_t gatt_service_client_configuration_for_characteristic(const gatt_
 static bool gatt_service_client_more_descriptor_queries(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < client->characteristics_desc_num)) {
-        if (gatt_service_client_configuration_for_characteristic(client, connection, connection->characteristic_index) != 0u){
+        uint16_t notify_or_indicate = ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE;
+        if ((connection->characteristics[connection->characteristic_index].properties & notify_or_indicate) != 0u){
             next_query_found = true;
             break;
         }
@@ -410,7 +411,8 @@ static bool gatt_service_client_more_descriptor_queries(const gatt_service_clien
 static bool gatt_service_client_have_more_notifications_to_enable(const gatt_service_client_t * client, gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < client->characteristics_desc_num)) {
-        if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0) {
+        if ((connection->characteristics[connection->characteristic_index].client_configuration_handle != 0u) &&
+            (gatt_service_client_configuration_for_characteristic(client, connection, connection->characteristic_index) != 0u)) {
             next_query_found = true;
             break;
         }
