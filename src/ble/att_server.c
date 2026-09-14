@@ -1761,8 +1761,8 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
                     eatt_bearer = att_server_eatt_bearer_for_cid(cid);
                     btstack_assert(eatt_bearer != NULL);
                     eatt_bearer->att_connection.mtu_exchanged = true;
-                    eatt_bearer->att_connection.mtu = remote_mtu;
-                    eatt_bearer->att_connection.max_mtu = remote_mtu;
+                    eatt_bearer->att_connection.mtu = btstack_min(remote_mtu, att_server_eatt_send_buffer_size);
+                    eatt_bearer->att_connection.max_mtu = eatt_bearer->att_connection.mtu;
                     log_info("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x", cid, remote_mtu, status);
                     break;
 
