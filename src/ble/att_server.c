@@ -1640,6 +1640,7 @@ void att_server_deinit(void){
 #ifdef ENABLE_GATT_OVER_EATT
 
 #define MAX_NR_EATT_CHANNELS 5
+#define ATT_EATT_MINIMUM_MTU 64u
 
 static uint16_t att_server_eatt_receive_buffer_size;
 static uint16_t att_server_eatt_send_buffer_size;
@@ -1798,7 +1799,11 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
-    // TODO: The minimum ATT_MTU for an Enhanced ATT bearer is 64 octets.
+    const uint32_t minimum_buffer_size_per_bearer = 2u * ATT_EATT_MINIMUM_MTU;
+    const uint32_t minimum_storage_size = size_for_structs + ((uint32_t) num_eatt_bearers * minimum_buffer_size_per_bearer);
+    if (storage_size < minimum_storage_size) {
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
 
     memset(storage_buffer, 0, storage_size);
     uint16_t buffer_size_per_bearer = ((storage_size - size_for_structs) / num_eatt_bearers);
@@ -1818,7 +1823,6 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
         btstack_linked_list_add(&att_server_eatt_bearer_pool, (btstack_linked_item_t *) eatt_bearer);
         eatt_bearer++;
     }
-    // TODO: define minimum EATT MTU
-    return l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, 64, LEVEL_2, false);
+    return l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, ATT_EATT_MINIMUM_MTU, LEVEL_2, false);
 }
 #endif
