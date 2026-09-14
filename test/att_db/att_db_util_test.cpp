@@ -173,6 +173,24 @@ TEST(AttDbUtil, GattHash){
     CHECK_EQUAL_ARRAY(gatt_database_hash_expected, cmac_calculated, 16);
 }
 
+TEST(AttDbUtil, OversizedUuid16AttributeIsRejected){
+    uint8_t value = 0;
+    uint16_t original_size = att_db_util_get_size();
+
+    att_db_util_add_descriptor_uuid16(0x1234, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &value, UINT16_MAX);
+
+    CHECK_EQUAL(original_size, att_db_util_get_size());
+}
+
+TEST(AttDbUtil, OversizedUuid128AttributeIsRejected){
+    uint8_t value = 0;
+    uint16_t original_size = att_db_util_get_size();
+
+    att_db_util_add_descriptor_uuid128(counter_characteristic_uuid, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &value, UINT16_MAX);
+
+    CHECK_EQUAL(original_size, att_db_util_get_size());
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

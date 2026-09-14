@@ -38,6 +38,9 @@ void mock_clear_packet_buffer(void){
 }
 
 static void dump_packet(int packet_type, uint8_t * buffer, uint16_t size){
+	UNUSED(packet_type);
+	UNUSED(buffer);
+	UNUSED(size);
 #if 0
 	static int packet_counter = 1;
 	char var_name[80];
@@ -167,13 +170,17 @@ bool hci_can_send_command_packet_now(void){
 	return true;
 }
 bool hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
+	UNUSED(packet_type);
 	return true;
 }
 
 hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
+	UNUSED(addr);
+	UNUSED(addr_type);
 	return &the_connection;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	return &the_connection;
 }
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
@@ -195,6 +202,13 @@ void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
 
 void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
     uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy) {
+	UNUSED(adv_int_min);
+	UNUSED(adv_int_max);
+	UNUSED(adv_type);
+	UNUSED(direct_address_typ);
+	UNUSED(direct_address);
+	UNUSED(channel_map);
+	UNUSED(filter_policy);
  }
 
 uint16_t hci_get_manufacturer(void){
@@ -202,9 +216,11 @@ uint16_t hci_get_manufacturer(void){
 };
 
 void hci_le_set_own_address_type(uint8_t own_address){
+	UNUSED(own_address);
 }
 
 void hci_le_random_address_set(const bd_addr_t addr){
+	UNUSED(addr);
 }
 
 bool hci_is_le_identity_address_type(bd_addr_type_t address_type) {
@@ -218,9 +234,13 @@ bool hci_is_le_identity_address_type(bd_addr_type_t address_type) {
 }
 
 void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump){
+	UNUSED(event);
+	UNUSED(size);
+	UNUSED(dump);
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
+	UNUSED(con_handle);
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
     little_endian_store_16(event, 2, cid);
@@ -232,6 +252,8 @@ bool l2cap_can_send_connectionless_packet_now(void){
 }
 
 bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
+	UNUSED(handle);
+	UNUSED(channel_id);
 	return packet_buffer_len == 0;
 }
 
@@ -264,6 +286,7 @@ uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
 }
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
+	UNUSED(channel_id);
 	le_data_handler = packet_handler;
 }
 
@@ -280,6 +303,9 @@ void l2cap_reserve_packet_buffer(void){
 }
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
+	UNUSED(handle);
+	UNUSED(cid);
+	UNUSED(len);
 	printf("l2cap_send_prepared_connectionless\n");
 	return 0;
 }
@@ -308,6 +334,7 @@ uint8_t l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffe
 }
 
 void hci_disconnect_security_block(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	printf("hci_disconnect_security_block \n");	
 }
 

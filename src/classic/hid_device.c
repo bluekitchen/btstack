@@ -150,15 +150,11 @@ static hid_device_t * hid_device_get_instance_for_hid_cid(uint16_t hid_cid){
 }
 
 static void hid_device_setup_instance(hid_device_t *hid_device, const uint8_t *bd_addr) {
+    (void)memset(hid_device, 0, sizeof(*hid_device));
     (void)memcpy(hid_device->bd_addr, bd_addr, 6);
     hid_device->cid = hid_device_get_next_cid();
-    // reset state
     hid_device->protocol_mode = HID_PROTOCOL_MODE_REPORT;
     hid_device->con_handle    = HCI_CON_HANDLE_INVALID;
-    hid_device->incoming      = 0;
-    hid_device->connected     = 0;
-    hid_device->control_cid   = 0;
-    hid_device->interrupt_cid = 0;
 }
 
 static hid_device_t * hid_device_provide_instance_for_bd_addr(bd_addr_t bd_addr){
@@ -419,6 +415,10 @@ static hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report
 static hid_handshake_param_type_t hid_device_set_report_cmd_is_valid(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
     int pos = 0;
     int report_id = 0;
+
+    if (report_size == 0) {
+        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+    }
 
     if (btstack_hid_report_id_declared(hid_device_descriptor, hid_device_descriptor_len)){
         report_id = report[pos++];
@@ -857,6 +857,8 @@ void hid_device_init(bool boot_protocol_mode_supported, uint16_t descriptor_len,
 }
 
 void hid_device_deinit(void){
+    // Test-only: the deinit functions of all protocols/profiles have to be called before a new init
+
     hid_device_callback = NULL;
     hci_device_get_report = NULL;
     hci_device_set_report = NULL;

@@ -76,8 +76,8 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
  * @param browsing_cid
  * @param uid_counter
  * @param browsed_player_id
- * @param response
- * @param response_size
+ * @param response response data; must be non-NULL when response_len is nonzero
+ * @param response_size response data length
  * @return ERROR_CODE_SUCCESS if successful, otherwise:
  *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
  *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query. 
@@ -98,8 +98,8 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t browsing_c
  * @brief Send answer to get folder items query on event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS. The first byte of this event defines the scope of the query, see avrcp_browsing_scope_t.
  * @param browsing_cid
  * @param uid_counter
- * @param attr_list
- * @param attr_list_size
+ * @param attr_list attribute list; must be non-NULL when attr_list_size is nonzero
+ * @param attr_list_size attribute-list length
  * @return ERROR_CODE_SUCCESS if successful, otherwise:
  *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
  *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query. 
@@ -132,8 +132,8 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t browsing_cid, a
  * @brief Send answer to get item attribute response on event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES.
  * @param browsing_cid
  * @param status
- * @param attr_list
- * @param attr_list_size
+ * @param attr_list attribute list; must be non-NULL when attr_list_size is nonzero
+ * @param attr_list_size attribute-list length
  * @param num_items
  * @return ERROR_CODE_SUCCESS if successful, otherwise:
  *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,

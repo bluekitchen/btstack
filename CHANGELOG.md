@@ -10,14 +10,66 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 ### Fixed
-- SM: fix BR/EDR->LE CTKD overwrite of BR/EDR link key
-- SM: fix BR/EDR->LE CTKD check for existing LTK
-- GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
-- RFCOMM: only deliver RFCOMM data with size > 0
 
 ### Changed
-- HCI: align synchronouse transport with asynchronous by simulating a deferred packet sent event 
+
+## Release v1.8.3
+
+### Added
+- HCI: add TinyUSB H2 transport
+- HCI: provide the ISO interval in BIG Created and BIG Sync Created events
+- btstack_crypto: support CMAC messages longer than one AES block
+- btstack_util: add `btstack_atoi_n` for fixed-length numeric strings
+- A2DP Sink: add `a2dp_sink_delay_report`
+- A2DP Source: add `a2dp_source_stop_stream`
+- OTS: add Object Transfer Service client and server implementations
+- Zephyr: add support for the Ezurio Vela IF310 DK and generated configurations for Nordic development kits
+- esp32: support standard input via USB/CDC when configured as a secondary console
+- esp32: support micro-ecc from tinycrypt
+- HAL UART DMA: `HAVE_HAL_UART_BUFFERS` allows `hal_uart_dma_send_block` and `hal_uart_dma_receive_block` to
+  return true to indicate that buffer has been sent/received, without a completion callback
+
+### Fixed
+- HCI: validate malformed HCI events and ACL packet buffers to prevent out-of-bounds reads
+- HCI ISO: reliably release CIG, CIS, BIG, and BIS resources after failed setup, cancellation, or stale completion events
+- L2CAP: validate ERTM, CBM, and ECBM configuration and packet sizes; fix ERTM reassembly and out-of-order frame handling
+- BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
+- RFCOMM: validate incoming frames and send parameters, and release channels that fail setup
+- SDP: validate client and server data-element parsing, continuation state, and query parameters
+- ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
+- GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
+- GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
+- GATT Services: fix Cycling Power and Cycling Speed and Cadence supported-sensor-location responses; prevent Heart Rate notification buffer overruns
+- Mesh: validate provisioning, transport, and access PDUs, including segmented-message completion before delivery
+- GOEP, OBEX, and PBAP: validate malformed and empty packets, header sizes, and listing parameters
+- HID Host/Device: safely handle connection removal during callbacks and reject malformed or empty reports
+- HFP: handle synchronous-connection command-status failures and use enhanced SCO commands for supported QCA controllers
+- L2CAP: reject MTU smaller than 48 bytes for basic channels
+- SM: fix BR/EDR->LE CTKD overwrite of BR/EDR link key
+- SM: fix BR/EDR->LE CTKD check for existing LTK
+- A2DP: ignore unexpected responses, keep state for Delay Report response
+- AVRCP: improve browsing, cover-art, media-item, and controller response parsing; avoid buffer overruns for user-provided data
+- RFCOMM: only deliver RFCOMM data with size > 0
+- esp32 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- esp32: fix UART DMA reception and ESP-IDF v6 builds
+- MSP432P401LP-CC256x port: ise `HAVE_HAL_UART_BUFFERS` in UART HAL
+- Renesas EK-RA6M4A-DA14531 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- Renesas TB-S1JA-CC256x port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- STM32 L073RZ Nucleo EM9304 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+
+### Changed
+- HCI: synchronous transports now defer packet-sent notifications to match asynchronous transport behavior
+- HCI: unify implicit SCO flow control for HCI and custom SCO transports
+- HCI: send at most one ACL or ISO fragment per scheduling run
+- HCI: switch the UART baud rate immediately after sending baud rate command for QCA controllers
+- ATT Server and bundled GATT services: use the common ATT read callback implementation
+- Zephyr: rework configuration and controller setup; select LE/Classic through Kconfig and detect Broadcom/Cypress/Infineon controllers
+- LE Audio: update sink resampling and support optional Bluetooth-time audio HAL synchronization
+- Mesh: dispatch bearer events to every registered callback
 - esp32: use individual drivers for esp-idf 5.3 and later
+- esp32: select large app partition for esp32-s31 binaries
+- Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread
+- FreeRTOS UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
 
 
 ## Release v1.8.2
@@ -36,7 +88,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - POSIX-H4 and Windows-H4: support Zephyr-based Controllers
 - Windows-H4: support AIROC download mode
 - Web-H4: support CYW55310 and package .hcd files
-- ESP32: support external Bluetooth Controller
+- esp32: support external Bluetooth Controller
 - btstack_resample: add btstack_resample_get_min_factor_for_output_capacity
 - Tool: compile_gatt.py adds verbose mode and OpenSSL fallback if PyCryptodome is not installed
 

@@ -50,6 +50,7 @@
 #ifndef HAL_UART_DMA_H
 #define HAL_UART_DMA_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #if defined __cplusplus
@@ -89,18 +90,28 @@ int  hal_uart_dma_set_flowcontrol(int flowcontrol);
 #endif
 
 /**
- * @brief Send block. When done, callback set by hal_uart_set_block_sent must be called
+ * @brief Send block. When done, callback set by hal_uart_set_block_sent must be called.
+ *        With HAVE_HAL_UART_BUFFERS, returns true if the block was sent before returning.
  * @param buffer
  * @param lengh
  */
+#ifdef HAVE_HAL_UART_BUFFERS
+bool hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length);
+#else
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length);
+#endif
 
 /**
- * @brief Receive block. When done, callback set by hal_uart_dma_set_block_received must be called
+ * @brief Receive block. When done, callback set by hal_uart_dma_set_block_received must be called.
+ *        With HAVE_HAL_UART_BUFFERS, returns true if the block was received before returning.
  * @param buffer
  * @param lengh
  */
+#ifdef HAVE_HAL_UART_BUFFERS
+bool hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+#else
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+#endif
 
 /**
  * @brief Set or clear callback for CSR pulse - can be called from ISR context

@@ -28,6 +28,7 @@ set(SOURCES
         ../../src/btstack_util.c
         ../../src/hci_dump.c
         ../../src/hci_event_builder.c
+        ../../src/classic/avrcp_media_item_iterator.c
         ../../src/classic/avdtp_util.c
         ../../src/classic/avdtp_initiator.c
         ../../src/classic/avdtp_acceptor.c
@@ -50,3 +51,10 @@ endforeach(TEST_FILE)
 # Standalone C serialization test
 add_executable(codec_serialization_test codec_serialization_test.c)
 target_link_libraries(codec_serialization_test btstack)
+
+target_sources(a2dp_test PRIVATE
+        ../../src/btstack_util.c
+        ../../src/hci_dump.c
+        ../../src/classic/a2dp.c
+)
+set_property(TARGET a2dp_test PROPERTY LINK_LIBRARIES "${CPPUTEST_LIBRARIES}")

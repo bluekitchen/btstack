@@ -467,6 +467,67 @@ TEST(HID, MouseWithReportID){
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
+TEST(HID, EmptyReportWithReportID){
+    btstack_hid_parser_t hid_parser;
+    uint8_t report = 0;
+
+    btstack_hid_parser_init(&hid_parser, mouse_descriptor_with_report_id, sizeof(mouse_descriptor_with_report_id),
+                            HID_REPORT_TYPE_INPUT, &report, 0);
+    CHECK_FALSE(btstack_hid_parser_has_more(&hid_parser));
+}
+
+TEST(HID, EmptyReportWithoutReportID){
+    btstack_hid_parser_t hid_parser;
+    uint8_t report = 0;
+    uint16_t usage_page;
+    uint16_t usage;
+    int32_t value;
+
+    btstack_hid_parser_init(&hid_parser, mouse_descriptor_without_report_id, sizeof(mouse_descriptor_without_report_id),
+                            HID_REPORT_TYPE_INPUT, &report, 0);
+    CHECK_TRUE(btstack_hid_parser_has_more(&hid_parser));
+    btstack_hid_parser_get_field(&hid_parser, &usage_page, &usage, &value);
+    CHECK_EQUAL(0, value);
+}
+
+TEST(HID, ThirtyTwoBitField){
+    const uint8_t descriptor[] = {
+        0x05, 0x01, // Usage Page
+        0x09, 0x30, // Usage
+        0x75, 0x20, // Report Size (32)
+        0x95, 0x01, // Report Count (1)
+        0x81, 0x02  // Input (Data, Variable, Absolute)
+    };
+    const uint8_t report[] = { 0xef, 0xcd, 0xab, 0x89 };
+    btstack_hid_parser_t hid_parser;
+    uint16_t usage_page;
+    uint16_t usage;
+    int32_t value;
+
+    btstack_hid_parser_init(&hid_parser, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT, report, sizeof(report));
+    CHECK_TRUE(btstack_hid_parser_has_more(&hid_parser));
+    btstack_hid_parser_get_field(&hid_parser, &usage_page, &usage, &value);
+    CHECK_EQUAL(0x89abcdef, (uint32_t) value);
+}
+
+TEST(HID, UnalignedThirtyTwoBitFieldIsRejected){
+    const uint8_t descriptor[] = {
+        0x75, 0x01, // Report Size (1)
+        0x95, 0x01, // Report Count (1)
+        0x81, 0x01, // Input (Constant)
+        0x05, 0x01, // Usage Page
+        0x09, 0x30, // Usage
+        0x75, 0x20, // Report Size (32)
+        0x95, 0x01, // Report Count (1)
+        0x81, 0x02  // Input (Data, Variable, Absolute)
+    };
+    const uint8_t report[] = { 0, 0, 0, 0, 0 };
+    btstack_hid_parser_t hid_parser;
+
+    btstack_hid_parser_init(&hid_parser, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT, report, sizeof(report));
+    CHECK_FALSE(btstack_hid_parser_has_more(&hid_parser));
+}
+
 TEST(HID, BootKeyboard){
     static btstack_hid_parser_t hid_parser;
     btstack_hid_parser_init(&hid_parser, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), HID_REPORT_TYPE_INPUT, keyboard_report1, sizeof(keyboard_report1));

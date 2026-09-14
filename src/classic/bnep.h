@@ -78,6 +78,7 @@ typedef enum {
     BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE    = 1 << 4,
     BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_SET       = 1 << 5,
     BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE  = 1 << 6,
+    BNEP_CHANNEL_STATE_VAR_FINALIZING                       = 1 << 7,
 } BNEP_CHANNEL_STATE_VAR;
 
 typedef enum {
@@ -111,7 +112,8 @@ typedef struct {
 
     BNEP_CHANNEL_STATE_VAR state_var;     // State flag variable. Needed for asynchronous packet sending
 
-    uint16_t           max_frame_size;    // incomming max. frame size   
+    uint16_t           max_frame_size_outgoing;
+    uint16_t           max_frame_size_incoming;
     void              *connection;        // client connection
     bd_addr_t          local_addr;        // locale drvice address
 	bd_addr_t          remote_addr;       // remote device address
@@ -151,7 +153,7 @@ typedef struct {
 typedef struct {
     btstack_linked_item_t    item;           // linked list - assert: first field
     uint16_t         service_uuid;   // Service class: PANU, NAP, GN
-    uint16_t         max_frame_size; // incomming max. frame size
+    uint16_t         max_frame_size_incoming; // incoming max. ethernet frame size
     
     // internal connection
     btstack_packet_handler_t packet_handler;
@@ -190,6 +192,9 @@ void bnep_request_can_send_now_event(uint16_t bnep_cid);
 
 /**
  * @brief Send a data packet.
+ * @param bnep_cid BNEP channel identifier.
+ * @param packet Non-NULL Ethernet frame, including its 14-byte destination, source, and protocol header.
+ * @param len Frame size, at least 14 bytes.
  */
 int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len);
 
@@ -222,7 +227,7 @@ void bnep_disconnect(bd_addr_t addr);
 /**
  * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter. 
  */
-uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size);
+uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size_incoming);
 
 /**
  * @brief Unregister BNEP service.

@@ -100,6 +100,10 @@ static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint
 #ifdef HAVE_EMBEDDED_TIME_MS
     ts->timeout = hal_time_ms() + timeout_in_ms + 1;
 #endif
+#if !defined(HAVE_EMBEDDED_TICK) && !defined(HAVE_EMBEDDED_TIME_MS)
+    UNUSED(ts);
+    UNUSED(timeout_in_ms);
+#endif
 }
 
 /**
@@ -221,4 +225,3 @@ const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
 
     return &btstack_run_loop_embedded;
 }
-

@@ -97,7 +97,7 @@ foreach(EXAMPLE ${EXAMPLES})
     endif()
 
     # add Audio Player Demo Util
-    if ("audio_player" MATCHES ${EXAMPLE})
+    if ("audio_player le_audio_unicast_gateway" MATCHES ${EXAMPLE})
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/audio_player_demo_util.c)
     endif()
 

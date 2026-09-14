@@ -95,7 +95,7 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client);
 static void gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code);
-static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
     uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
 static uint8_t gatt_client_write_client_characteristic_configuration_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, gatt_client_characteristic_t * characteristic, uint16_t configuration,
@@ -517,7 +517,9 @@ static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t req
 
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
-    (void)memcpy(&request[3], value, value_length);
+    if (value_length > 0u){
+        (void)memcpy(&request[3], value, value_length);
+    }
     little_endian_store_32(request, 3 + value_length, sign_counter);
     reverse_64(sgn, &request[3 + value_length + 4]);
     
@@ -533,7 +535,9 @@ att_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t att
 
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
-    (void)memcpy(&request[3], value, value_length);
+    if (value_length > 0u){
+        (void)memcpy(&request[3], value, value_length);
+    }
     
     return gatt_client_send(gatt_client, 3u + value_length);
 }
@@ -556,7 +560,9 @@ static uint8_t att_prepare_write_request(gatt_client_t *gatt_client, uint8_t req
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     little_endian_store_16(request, 3, value_offset);
-    (void)memcpy(&request[5], &value[value_offset], blob_length);
+    if (blob_length > 0u){
+        (void)memcpy(&request[5], &value[value_offset], blob_length);
+    }
     
     return gatt_client_send(gatt_client,  5u + blob_length);
 }
@@ -1569,6 +1575,9 @@ static void trigger_next_blob_query(gatt_client_t * gatt_client, gatt_client_sta
 }
 
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    if ((notification == NULL) || (callback == NULL)){
+        return;
+    }
     notification->callback = callback;
     notification->con_handle = con_handle;
     if (characteristic == NULL){
@@ -1580,6 +1589,9 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 }
 
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
+    if (notification == NULL){
+        return;
+    }
     btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
@@ -1589,6 +1601,9 @@ void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_ser
                                                                  gatt_client_service_t * service,
                                                                  uint16_t service_id,
                                                                  uint16_t connection_id){
+    if ((notification == NULL) || (callback == NULL) || (service == NULL)){
+        return;
+    }
     notification->callback = callback;
     notification->con_handle = con_handle;
     notification->start_group_handle = service->start_group_handle;
@@ -1604,6 +1619,9 @@ void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_ser
  * @param notification struct used in gatt_client_listen_for_characteristic_value_updates
  */
 void gatt_client_stop_listening_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification){
+    if (notification == NULL){
+        return;
+    }
     btstack_linked_list_remove(&gatt_client_service_value_listeners, (btstack_linked_item_t*) notification);
 }
 
@@ -2272,6 +2290,11 @@ static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_cli
             break;
 #endif
         case P_W4_READ_BY_TYPE_RESPONSE: {
+            if (size < 2u){
+                log_info("GATT client: truncated Read By Type response");
+                gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_INVALID_PDU);
+                break;
+            }
             uint16_t pair_size = packet[1];
             // set last result handle to last valid handle, only used if pair_size invalid
             uint16_t last_result_handle = 0xffff;
@@ -2309,45 +2332,56 @@ static void gatt_client_handle_att_write_response(gatt_client_t *gatt_client) {
 }
 
 static void gatt_client_handle_att_mtu_response(gatt_client_t* gatt_client, uint8_t* packet, uint16_t size) {
-    if (size == 3){
-        bool update_gatt_server_att_mtu = false;
-        uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
-        uint16_t local_rx_mtu = l2cap_max_le_mtu();
-        switch (gatt_client->bearer_type){
-            case ATT_BEARER_UNENHANCED_LE:
-                update_gatt_server_att_mtu = true;
-                break;
-#ifdef ENABLE_GATT_OVER_CLASSIC
-            case ATT_BEARER_UNENHANCED_CLASSIC:
-                local_rx_mtu = gatt_client->mtu;
-                break;
-#endif
-            default:
-                btstack_unreachable();
-                break;
-        }
-
-        // set gatt client mtu
-        uint16_t mtu = (uint16_t) btstack_min(local_rx_mtu, remote_rx_mtu);
-        gatt_client->mtu = mtu;
-
-        // MTU exchange completed
-        gatt_client->mtu_state = MTU_EXCHANGED;
-
-        // Update GATT Server ATT MTU for Unenhanced LE Bearer
-        if (update_gatt_server_att_mtu){
-            // set per connection mtu state - for fixed channel
-            hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-            hci_connection->att_connection.mtu = gatt_client->mtu;
-            hci_connection->att_connection.mtu_exchanged = true;
-        }
-
-        // Notify clients
-        emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
-
-        // Trigger first/next query if queued
+    if (size != 3u){
+        log_info("GATT client: malformed MTU response");
+        gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
         gatt_client_notify_can_send_query(gatt_client);
+        return;
     }
+
+    bool update_gatt_server_att_mtu = false;
+    uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
+    if (remote_rx_mtu < ATT_DEFAULT_MTU){
+        log_info("GATT client: invalid remote MTU %u", remote_rx_mtu);
+        gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+        gatt_client_notify_can_send_query(gatt_client);
+        return;
+    }
+    uint16_t local_rx_mtu = l2cap_max_le_mtu();
+    switch (gatt_client->bearer_type){
+        case ATT_BEARER_UNENHANCED_LE:
+            update_gatt_server_att_mtu = true;
+            break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case ATT_BEARER_UNENHANCED_CLASSIC:
+            local_rx_mtu = gatt_client->mtu;
+            break;
+#endif
+        default:
+            btstack_unreachable();
+            break;
+    }
+
+    // set gatt client mtu
+    uint16_t mtu = (uint16_t) btstack_min(local_rx_mtu, remote_rx_mtu);
+    gatt_client->mtu = mtu;
+
+    // MTU exchange completed
+    gatt_client->mtu_state = MTU_EXCHANGED;
+
+    // Update GATT Server ATT MTU for Unenhanced LE Bearer
+    if (update_gatt_server_att_mtu){
+        // set per connection mtu state - for fixed channel
+        hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+        hci_connection->att_connection.mtu = gatt_client->mtu;
+        hci_connection->att_connection.mtu_exchanged = true;
+    }
+
+    // Notify clients
+    emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
+
+    // Trigger first/next query if queued
+    gatt_client_notify_can_send_query(gatt_client);
 }
 
 static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {
@@ -2852,6 +2886,13 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
     if (gatt_cilent_is_ready_internal(gatt_client) == 0){
         return GATT_CLIENT_IN_WRONG_STATE;
     }
+    if ((message_len > 0) && (message == NULL)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    // ATT Command, Atribute Value, 12 bytes signing trailer
+    if (message_len > (gatt_client->mtu - 15u)){
+        return GATT_CLIENT_VALUE_TOO_LONG;
+    }
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
@@ -2929,6 +2970,9 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
 
 uint8_t gatt_client_discover_primary_services_by_uuid128_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                       const uint8_t * uuid128, uint16_t service_id, uint16_t connection_id){
+    if (uuid128 == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -2962,6 +3006,9 @@ static void gatt_client_discover_characteristics_for_service_internal(gatt_clien
 
 uint8_t gatt_client_discover_characteristics_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service,
                                                                       uint16_t service_id, uint16_t connection_id){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -2977,6 +3024,9 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
 
 uint8_t gatt_client_find_included_services_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                     gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3023,6 +3073,9 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
 }
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
+    if (uuid128 == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3043,15 +3096,24 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack
 
 
 uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, uint16_t uuid16){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_discover_characteristics_for_handle_range_by_uuid16(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid16);
 }
 
 uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, const uint8_t * uuid128){
+    if (service == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_discover_characteristics_for_handle_range_by_uuid128(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid128);
 }
 
 uint8_t gatt_client_discover_characteristic_descriptors_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                      gatt_client_characteristic_t * characteristic,  uint16_t service_id, uint16_t connection_id){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3131,6 +3193,9 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
 }
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
+    if (uuid128 == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3151,6 +3216,9 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_hand
 
 
 uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
@@ -3188,14 +3256,22 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack
 }
 
 uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_long_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
-static uint8_t gatt_client_read_multiple_characteristic_values_with_state(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles, gatt_client_state_t state){
+static uint8_t gatt_client_read_multiple_characteristic_values_with_state(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t num_value_handles, uint16_t * value_handles, gatt_client_state_t state){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
         return status;
+    }
+
+    if ((num_value_handles == 0) || (value_handles == NULL) ||
+        (((uint32_t)num_value_handles * 2u + 1u) > gatt_client->mtu)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     gatt_client->callback = callback;
@@ -3206,19 +3282,30 @@ static uint8_t gatt_client_read_multiple_characteristic_values_with_state(btstac
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
+uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t num_value_handles, uint16_t * value_handles){
     return gatt_client_read_multiple_characteristic_values_with_state(callback, con_handle, num_value_handles, value_handles, P_W2_SEND_READ_MULTIPLE_REQUEST);
 }
 
 #ifdef ENABLE_GATT_OVER_EATT
-uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
+uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t num_value_handles, uint16_t * value_handles){
     return gatt_client_read_multiple_characteristic_values_with_state(callback, con_handle, num_value_handles, value_handles, P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST);
 }
 #endif
 
+static uint8_t gatt_client_validate_write_value(uint16_t value_length, const uint8_t * value){
+    if ((value_length > 0u) && (value == NULL)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3233,8 +3320,13 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     return att_write_request(gatt_client, ATT_WRITE_COMMAND, value_handle, value_length, value);
 }
 
-static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
+static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
     uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id) {
+
+    uint8_t status = gatt_client_validate_write_value(value_length, value);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
     gatt_client->callback = callback;
     gatt_client->service_id = service_id;
@@ -3244,6 +3336,7 @@ static void gatt_client_write_value_of_characteristic_internal(gatt_client_t * g
     gatt_client->attribute_value = value;
     gatt_client->state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
     gatt_client_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
@@ -3253,8 +3346,7 @@ uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_ha
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
-    gatt_client_write_value_of_characteristic_internal(gatt_client, callback, value_handle, value_length, value, service_id, connection_id);
-    return ERROR_CODE_SUCCESS;
+    return gatt_client_write_value_of_characteristic_internal(gatt_client, callback, value_handle, value_length, value, service_id, connection_id);
 }
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value) {
     return gatt_client_write_value_of_characteristic_with_context(callback, con_handle, value_handle, value_length, value, 0, 0);
@@ -3263,6 +3355,10 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
 uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3296,6 +3392,10 @@ uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t 
 uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3345,6 +3445,9 @@ static uint8_t gatt_client_write_client_characteristic_configuration_internal(ga
 
 uint8_t gatt_client_write_client_characteristic_configuration_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                               gatt_client_characteristic_t * characteristic, uint16_t configuration, uint16_t service_id, uint16_t connection_id){
+    if (characteristic == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3374,6 +3477,9 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
 }
 
 uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle);
 }
 
@@ -3397,12 +3503,19 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(
 }
 
 uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle);
 }
 
 uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3418,12 +3531,19 @@ uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btst
 }
 
 uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_write_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, value_length, value);
 }
 
 uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3443,6 +3563,9 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
 }
 
 uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value){
+    if (descriptor == NULL){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, value_length, value);
 }
 
@@ -3452,6 +3575,10 @@ uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_
 uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -3742,10 +3869,12 @@ static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client)
 static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * connection, uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
+    uint16_t attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+    uint16_t data_offset = sdp_event_query_attribute_byte_get_data_offset(packet);
 
-    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= sizeof(gatt_client_classic_sdp_buffer)) {
-        gatt_client_classic_sdp_buffer[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
-        if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+    if ((attribute_length <= sizeof(gatt_client_classic_sdp_buffer)) && (data_offset < attribute_length)) {
+        gatt_client_classic_sdp_buffer[data_offset] = sdp_event_query_attribute_byte_get_data(packet);
+        if ((uint16_t)(data_offset + 1u) == attribute_length) {
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     for (des_iterator_init(&des_list_it, gatt_client_classic_sdp_buffer); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
@@ -4014,11 +4143,12 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
     uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
     uint8_t * receive_buffers[MAX_NR_EATT_CHANNELS];
     uint16_t  new_cids[MAX_NR_EATT_CHANNELS];
-    memset(gatt_client->eatt_storage_buffer, 0, gatt_client->eatt_storage_size);
+    uint8_t * storage_cursor = gatt_client->eatt_storage_buffer;
+    memset(storage_cursor, 0, gatt_client->eatt_storage_size);
     uint8_t i;
     for (i=0;i<gatt_client->eatt_num_clients; i++){
-        receive_buffers[i] = &gatt_client->eatt_storage_buffer[REPORT_PREBUFFER_HEADER];
-        gatt_client->eatt_storage_buffer += REPORT_PREBUFFER_HEADER + max_mtu;
+        receive_buffers[i] = &storage_cursor[REPORT_PREBUFFER_HEADER];
+        storage_cursor += REPORT_PREBUFFER_HEADER + max_mtu;
     }
 
     log_info("%u EATT clients with receive buffer size %u", gatt_client->eatt_num_clients, buffer_size_per_client);
@@ -4047,8 +4177,8 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
             new_eatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
             new_eatt_client->state = P_W4_L2CAP_CONNECTION;
             new_eatt_client->l2cap_cid = new_cids[i];
-            new_eatt_client->eatt_storage_buffer = gatt_client->eatt_storage_buffer;
-            gatt_client->eatt_storage_buffer += max_mtu;
+            new_eatt_client->eatt_storage_buffer = storage_cursor;
+            storage_cursor += max_mtu;
             i++;
         }
         gatt_client->eatt_state = GATT_CLIENT_EATT_L2CAP_SETUP;
@@ -4222,14 +4352,17 @@ uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_c
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    // need one buffer for sending and one for receiving. Receiving includes pre-buffer for reports
-    uint16_t buffer_size_per_client = storage_size / num_channels;
-    uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
-    if (max_mtu < 64) {
+    if ((num_channels == 0) || (num_channels > MAX_NR_EATT_CHANNELS) || (storage_buffer == NULL)){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
-    if ((num_channels == 0) || (num_channels > MAX_NR_EATT_CHANNELS)){
+    // need one buffer for sending and one for receiving. Receiving includes pre-buffer for reports
+    uint16_t buffer_size_per_client = storage_size / num_channels;
+    if (buffer_size_per_client < REPORT_PREBUFFER_HEADER) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    uint16_t max_mtu = (buffer_size_per_client - REPORT_PREBUFFER_HEADER) / 2;
+    if (max_mtu < 64) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 

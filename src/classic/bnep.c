@@ -94,6 +94,12 @@
 #define BNEP_CONNECTION_TIMEOUT_MS 10000
 #define BNEP_CONNECTION_MAX_RETRIES 1
 
+typedef enum {
+    BNEP_CONTROL_PACKET_INVALID,
+    BNEP_CONTROL_PACKET_PROCESSED,
+    BNEP_CONTROL_PACKET_CHANNEL_CLOSED,
+} bnep_control_packet_result_t;
+
 static btstack_linked_list_t bnep_services = NULL;
 static btstack_linked_list_t bnep_channels = NULL;
 
@@ -118,7 +124,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 3, channel->l2cap_cid);
     little_endian_store_16(event, 5, channel->uuid_source);
     little_endian_store_16(event, 7, channel->uuid_dest);
-    little_endian_store_16(event, 9, channel->max_frame_size);
+    little_endian_store_16(event, 9, channel->max_frame_size_outgoing);
     reverse_bd_addr(channel->remote_addr, &event[11]);
     little_endian_store_16(event, 17, channel->con_handle);
     event[19] = setup_connection_response;
@@ -163,10 +169,13 @@ static void bnep_emit_ready_to_send(bnep_channel_t *channel)
 {
     if (!channel->packet_handler) return;
 
-    uint8_t event[4];
+    uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
     event[0] = BNEP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->l2cap_cid);
+    little_endian_store_16(event, 4, channel->uuid_source);
+    little_endian_store_16(event, 6, channel->uuid_dest);
+    reverse_bd_addr(channel->remote_addr, &event[8]);
     hci_dump_btstack_event( event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -489,6 +498,9 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     bd_addr_t       addr_source;
     uint16_t        network_protocol_type;
 
+    btstack_assert(packet != NULL);
+    btstack_assert(len >= 14u);
+
     channel = bnep_channel_for_l2cap_cid(bnep_cid);
     if (channel == NULL) {
         log_error("bnep_send cid 0x%02x doesn't exist!", bnep_cid);
@@ -553,8 +565,8 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     has_dest = (memcmp(addr_dest, channel->remote_addr, ETHER_ADDR_LEN) != 0);
 
     /* Check for MTU limits */
-    if (payload_len > channel->max_frame_size) {
-        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size, payload_len);
+    if (payload_len > channel->max_frame_size_outgoing) {
+        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size_outgoing, payload_len);
         return BNEP_DATA_LEN_EXCEEDS_MTU;
     }
     
@@ -671,6 +683,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, u
 static void bnep_channel_timer_handler(btstack_timer_source_t *timer)
 {
     bnep_channel_t *channel = btstack_run_loop_get_timer_context(timer);
+    uint16_t l2cap_cid = channel->l2cap_cid;
     // retry send setup connection at least one time
     if (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE){
         if (channel->retry_count < BNEP_CONNECTION_MAX_RETRIES){
@@ -684,7 +697,9 @@ static void bnep_channel_timer_handler(btstack_timer_source_t *timer)
 
     log_info( "bnep_channel_timeout_handler callback: shutting down connection!");
     bnep_emit_channel_timeout(channel);
-    bnep_channel_finalize(channel);
+    if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
+        bnep_channel_finalize(channel);
+    }
 }
 
 
@@ -738,7 +753,8 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
     }
 
     channel->state = BNEP_CHANNEL_STATE_CLOSED;
-    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
+    channel->max_frame_size_outgoing = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
+    channel->max_frame_size_incoming = UINT16_MAX;
     bd_addr_copy(channel->remote_addr, addr);
     gap_local_bd_addr(channel->local_addr);
 
@@ -797,6 +813,11 @@ static void bnep_channel_free(bnep_channel_t *channel)
 static void bnep_channel_finalize(bnep_channel_t *channel)
 {    
     uint16_t l2cap_cid;
+
+    if (channel->state_var & BNEP_CHANNEL_STATE_VAR_FINALIZING) {
+        return;
+    }
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_FINALIZING);
     
     /* Inform application about closed channel */
     if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) {
@@ -896,6 +917,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         } else {
             // use packet handler for service
             channel->packet_handler = service->packet_handler;
+            channel->max_frame_size_incoming = service->max_frame_size_incoming;
 
             if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU)) {
                 response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
@@ -912,21 +934,26 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     return 1 + 1 + (2 * uuid_size);
 }
 
-static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
+static bnep_control_packet_result_t bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet,
+                                                                      uint16_t size, uint16_t * consumed)
 {
+    uint16_t l2cap_cid = channel->l2cap_cid;
+    *consumed = 0;
 
     /* Sanity check packet size */
     if (size < (1 + 2)) {
-        return 0;
+        return BNEP_CONTROL_PACKET_INVALID;
     }
 
     if (channel->state != BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE) {
         /* Ignore a connection response in any state but WAIT_FOR_CONNECTION_RESPONSE */
         log_error("BNEP_CONNECTION_RESPONSE: Ignored in channel state %d", channel->state);
-        return 1 + 2;
+        *consumed = 1 + 2;
+        return BNEP_CONTROL_PACKET_PROCESSED;
     }
 
     uint16_t response_code = big_endian_read_16(packet, 1);
+    *consumed = 1 + 2;
 
     if (response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) {
         log_info("BNEP_CONNECTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
@@ -934,12 +961,18 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
         /* Stop timeout timer! */
         bnep_channel_stop_timer(channel);
         bnep_emit_open_channel_complete(channel, ERROR_CODE_SUCCESS, response_code);
+        if (bnep_channel_for_l2cap_cid(l2cap_cid) != channel) {
+            return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
+        }
+        return BNEP_CONTROL_PACKET_PROCESSED;
     } else {
         log_error("BNEP_CONNECTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
         bnep_emit_open_channel_complete(channel, BNEP_SETUP_CONNECTION_ERROR, response_code);
-        bnep_channel_finalize(channel);
+        if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
+            bnep_channel_finalize(channel);
+        }
+        return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
     }
-    return 1 + 2;
 }
 
 static int bnep_can_handle_extensions(bnep_channel_t * channel){
@@ -1127,6 +1160,12 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
 static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_dest, bd_addr_t addr_source, uint16_t network_protocol_type, uint8_t *payload, uint16_t size)
 {
     uint16_t pos = 0;
+    uint32_t ethernet_frame_size = (uint32_t) size + 2u * sizeof(bd_addr_t) + sizeof(uint16_t);
+
+    if (ethernet_frame_size > channel->max_frame_size_incoming) {
+        log_info("BNEP: Incoming ethernet frame size %u exceeds maximum %u", (unsigned int) ethernet_frame_size, channel->max_frame_size_incoming);
+        return 0;
+    }
     
 #if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 14 - 8) // 2 * sizeof(bd_addr_t) + sizeof(uint16_t) - L2CAP Header (4) - ACL Header (4)
     /* In-place modify the package and add the ethernet header in front of the payload.
@@ -1153,9 +1192,13 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     return size;
 }
 
-static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, uint16_t size, int is_extension)
+static bnep_control_packet_result_t bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet,
+                                                                 uint16_t size, int is_extension, uint16_t * consumed)
 {
     uint16_t len = 0;
+    bnep_control_packet_result_t result;
+
+    *consumed = 0;
 
     if (size > 0) {
 
@@ -1166,13 +1209,13 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
         log_info("BNEP_CONTROL: Type: %d, size: %d, is_extension: %d", bnep_control_type, size, is_extension);
         switch (bnep_control_type) {
             case BNEP_CONTROL_TYPE_COMMAND_NOT_UNDERSTOOD:
-                if (size < 2u) return 0;
+                if (size < 2u) return BNEP_CONTROL_PACKET_INVALID;
                 /* The last command we send was not understood. We should close the connection */
                 log_error("BNEP_CONTROL: Received COMMAND_NOT_UNDERSTOOD: l2cap_cid: %d, cmd: %d", channel->l2cap_cid,
                           packet[1]);
                 bnep_channel_finalize(channel);
-                len = 2; // Length of command not understood packet - bnep-type field
-                break;
+                *consumed = 2;
+                return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
             case BNEP_CONTROL_TYPE_SETUP_CONNECTION_REQUEST:
                 if (is_extension) {
                     /* Connection requests are not allowed to be send in an extension header
@@ -1180,7 +1223,7 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
                      */
                     log_error("BNEP_CONTROL: Received SETUP_CONNECTION_REQUEST in extension header: l2cap_cid: %d",
                               channel->l2cap_cid);
-                    return 0;
+                    return BNEP_CONTROL_PACKET_INVALID;
                 } else {
                     len = bnep_handle_connection_request(channel, packet, size);
                 }
@@ -1192,9 +1235,16 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
                      */
                     log_error("BNEP_CONTROL: Received SETUP_CONNECTION_RESPONSE in extension header: l2cap_cid: %d",
                               channel->l2cap_cid);
-                    return 0;
+                    return BNEP_CONTROL_PACKET_INVALID;
                 } else {
-                    len = bnep_handle_connection_response(channel, packet, size);
+                    result = bnep_handle_connection_response(channel, packet, size, &len);
+                    if (result == BNEP_CONTROL_PACKET_CHANNEL_CLOSED){
+                        *consumed = len;
+                        return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
+                    }
+                    if (result == BNEP_CONTROL_PACKET_INVALID){
+                        break;
+                    }
                 }
                 break;
             case BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET:
@@ -1224,9 +1274,11 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
          */
         bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD);        
         l2cap_request_can_send_now_event(channel->l2cap_cid);
+        return BNEP_CONTROL_PACKET_INVALID;
     }
 
-    return len;
+    *consumed = len;
+    return BNEP_CONTROL_PACKET_PROCESSED;
 }
 
 /**
@@ -1306,8 +1358,10 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 /* Emit bnep_open_channel_complete with status and free channel */
                 bnep_emit_open_channel_complete(channel, status, 0);
 
-                /* Free BNEP channel mempory */
-                bnep_channel_free(channel);
+                /* Free BNEP channel memory */
+                if (bnep_channel_for_addr(event_addr) == channel) {
+                    bnep_channel_free(channel);
+                }
                 return 1;
             }
 
@@ -1324,12 +1378,12 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                     /* Initiate the connection request */
                     channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE;
                     bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
-                    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
+                    channel->max_frame_size_outgoing = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
                     l2cap_request_can_send_now_event(channel->l2cap_cid);
                     break;
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST:
                     /* New information: channel mtu */
-                    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
+                    channel->max_frame_size_outgoing = bnep_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
                     break;
                 default:
                     log_error("L2CAP_EVENT_CHANNEL_OPENED: Invalid state: %d", channel->state);
@@ -1357,7 +1411,9 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE:
                     // emit channel open failed
                     bnep_emit_open_channel_complete(channel, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
-                    bnep_channel_finalize(channel);
+                    if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
+                        bnep_channel_finalize(channel);
+                    }
                     return 1;
                 case BNEP_CHANNEL_STATE_CONNECTED:
                     // emit channel closed
@@ -1373,9 +1429,9 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
     return 0;
 }
 
-static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
+static void bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
 {
-    int             rc = 0;
+    uint16_t        control_len;
     uint8_t         bnep_type;
     uint8_t         bnep_header_has_ext;
     uint8_t         extension_type;
@@ -1384,16 +1440,17 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
     bd_addr_t       addr_dest;
     uint16_t        network_protocol_type = 0xffff;
     bnep_channel_t *channel = NULL;
+    bnep_control_packet_result_t control_result;
     
     /* Get the bnep channel for this package */
     channel = bnep_channel_for_l2cap_cid(l2cap_cid);
     if (!channel) {
-        return rc;
+        return;
     }
 
     /* Sort out short packages */
     if (size < 2) {
-        return rc;
+        return;
     }
     
     bnep_type = BNEP_TYPE(packet[pos]);
@@ -1403,7 +1460,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
     switch(bnep_type) {
         case BNEP_PKT_TYPE_GENERAL_ETHERNET:
             if ((pos + 14) > size) {
-                return rc;
+                return;
             }
             bd_addr_copy(addr_dest, &packet[pos]);
             pos += sizeof(bd_addr_t);
@@ -1414,7 +1471,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET:
             if ((pos + 2) > size) {
-                return rc;
+                return;
             }
             bd_addr_copy(addr_dest, channel->local_addr);
             bd_addr_copy(addr_source, channel->remote_addr);
@@ -1423,7 +1480,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY:
             if ((pos + 8) > size) {
-                return rc;
+                return;
             }
             bd_addr_copy(addr_dest, channel->local_addr);
             bd_addr_copy(addr_source, &packet[pos]);
@@ -1433,7 +1490,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY:
             if ((pos + 8) > size) {
-                return rc;
+                return;
             }
             bd_addr_copy(addr_dest, &packet[pos]);
             pos += sizeof(bd_addr_t);
@@ -1442,12 +1499,15 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             pos += 2;
             break;
         case BNEP_PKT_TYPE_CONTROL:
-            rc = bnep_handle_control_packet(channel, packet + pos, size - pos, 0);
-            if (rc == 0){
+            control_result = bnep_handle_control_packet(channel, packet + pos, size - pos, 0, &control_len);
+            if (control_result == BNEP_CONTROL_PACKET_INVALID){
                 // invalid control packet
-                return 0;
+                return;
             }
-            pos += rc;
+            pos += control_len;
+            if (control_result == BNEP_CONTROL_PACKET_CHANNEL_CLOSED){
+                return;
+            }
             break;
         default:
             break;
@@ -1458,7 +1518,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             uint8_t ext_len;
 
             if (pos + 2 > size) {
-                return rc;
+                return;
             }
 
             /* Read extension type and check for further extensions */
@@ -1471,16 +1531,20 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             pos ++;
 
             if ((size - pos) < ext_len) {
-                return 0;
+                return;
             }
 
             switch (extension_type) {
                 case BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL:
-                    if (ext_len != bnep_handle_control_packet(channel, packet + pos, ext_len, 1)) {
+                    control_result = bnep_handle_control_packet(channel, packet + pos, ext_len, 1, &control_len);
+                    if ((control_result == BNEP_CONTROL_PACKET_INVALID) || (ext_len != control_len)) {
                         log_error("BNEP pkt handler: Ignore invalid control packet in extension header");
                     }
 
                     pos += ext_len;
+                    if (control_result == BNEP_CONTROL_PACKET_CHANNEL_CLOSED){
+                        return;
+                    }
                     break;
                     
                 default:
@@ -1498,14 +1562,9 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
 
     if ((bnep_type != BNEP_PKT_TYPE_CONTROL) && (network_protocol_type != 0xffff)) {
         if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) {
-            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, packet + pos, size - pos);
-        } else {
-            rc = 0;
+            (void) bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, packet + pos, size - pos);
         }
     }
-    
-    return rc;
-
 }
 
 void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
@@ -1601,12 +1660,16 @@ static void bnep_handle_can_send_now(uint16_t l2cap_cid){
         next = it->next;    // be prepared for removal of channel in state machine
         bnep_channel_t * channel = ((bnep_channel_t *) it);
         if (channel->l2cap_cid != l2cap_cid) continue;
-        //
+        uint16_t channel_l2cap_cid = channel->l2cap_cid;
         bnep_channel_event_t channel_event = { BNEP_CH_EVT_READY_TO_SEND };
         bnep_channel_state_machine(channel, &channel_event);
 
-        if (!l2cap_can_send_packet_now(channel->l2cap_cid)) {
-            l2cap_request_can_send_now_event(channel->l2cap_cid);
+        if (bnep_channel_for_l2cap_cid(channel_l2cap_cid) != channel) {
+            continue;
+        }
+
+        if (!l2cap_can_send_packet_now(channel_l2cap_cid)) {
+            l2cap_request_can_send_now_event(channel_l2cap_cid);
             return;
         }
     }
@@ -1657,14 +1720,15 @@ void bnep_disconnect(bd_addr_t addr)
     log_info("BNEP_DISCONNECT");
 
     channel = bnep_channel_for_addr(addr);
-    
-    bnep_channel_finalize(channel);
+    if (channel != NULL) {
+        bnep_channel_finalize(channel);
+    }
 }
 
 
-uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size)
+uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size_incoming)
 {
-    log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size);
+    log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size_incoming);
 
     /* Check if we already registered a service */
     bnep_service_t * service = bnep_service_for_uuid(service_uuid);
@@ -1690,7 +1754,7 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     l2cap_register_service(bnep_packet_handler, BLUETOOTH_PSM_BNEP, 0xffff, bnep_security_level);
         
     /* Setup the service struct */
-    service->max_frame_size = max_frame_size;
+    service->max_frame_size_incoming = max_frame_size_incoming;
     service->service_uuid    = service_uuid;
     service->packet_handler = packet_handler;
 
@@ -1716,4 +1780,3 @@ void bnep_unregister_service(uint16_t service_uuid)
     
     l2cap_unregister_service(BLUETOOTH_PSM_BNEP);
 }
-

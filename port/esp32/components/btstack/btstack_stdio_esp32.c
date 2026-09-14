@@ -50,7 +50,7 @@
 
 #include "sdkconfig.h"
 
-#if defined(CONFIG_ESP_CONSOLE_UART) || defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+#if defined(CONFIG_ESP_CONSOLE_UART) || defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) || defined(CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG)
 #define HAVE_CONSOLE
 #endif
 
@@ -109,7 +109,7 @@ void btstack_stdin_setup(void (*handler)(char c)){
 }
 #endif
 
-#ifdef CONFIG_ESP_CONSOLE_UART
+#if defined(CONFIG_ESP_CONSOLE_UART) && !defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) && !defined(CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG)
 /* UART Implementation */
 
 #include "driver/uart.h"
@@ -233,7 +233,7 @@ void btstack_stdio_init(void) {
     btstack_stdio_initialized = true;
 }
 
-#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+#elif defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) || defined(CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG)
 
 /* USB JTAG/Serial Implementation */
 #include "driver/usb_serial_jtag.h"
@@ -289,7 +289,7 @@ void btstack_stdio_init(void) {
 void btstack_stdio_init(void) {}
 void btstack_stdin_setup(void (*handler)(char c)){
     (void) handler;
-    ESP_LOGE(TAG, "console input requires either CONFIG_ESP_CONSOLE_UART or CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG");
+    ESP_LOGE(TAG, "console input requires CONFIG_ESP_CONSOLE_UART, CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG, or CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG");
 }
 
 #endif /* CONFIG_ESP_CONSOLE_UART */

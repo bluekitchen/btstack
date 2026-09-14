@@ -91,7 +91,7 @@ static int btstack_link_key_db_tlv_get_link_key(bd_addr_t bd_addr, link_key_t li
         link_key_nvm_t entry;
         uint32_t tag = btstack_link_key_db_tag_for_index(i);
         int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
-        if (size == 0) continue;
+        if (size != sizeof(entry)) continue;
         log_info("tag %x, addr %s", (unsigned int) tag, bd_addr_to_str(entry.bd_addr));
         if (memcmp(bd_addr, entry.bd_addr, 6)) continue;
         // found, pass back
@@ -108,7 +108,7 @@ static void btstack_link_key_db_tlv_delete_link_key(bd_addr_t bd_addr){
         link_key_nvm_t entry;
         uint32_t tag = btstack_link_key_db_tag_for_index(i);
         int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
-        if (size == 0) continue;
+        if (size != sizeof(entry)) continue;
         if (memcmp(bd_addr, entry.bd_addr, 6)) continue;
         // found, delete tag
         self->btstack_tlv_impl->delete_tag(self->btstack_tlv_context, tag);
@@ -129,7 +129,7 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
         uint32_t tag = btstack_link_key_db_tag_for_index(i);
         int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
         // empty/deleted tag
-        if (size == 0) {
+        if (size != sizeof(entry)) {
             tag_for_empty = tag;
             continue;
         }
@@ -191,7 +191,7 @@ static int  btstack_link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_
         link_key_nvm_t entry;
         uint32_t tag = btstack_link_key_db_tag_for_index(i++);
         int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
-        if (size == 0) continue;
+        if (size != sizeof(entry)) continue;
         (void)memcpy(bd_addr, entry.bd_addr, 6);
         (void)memcpy(link_key, entry.link_key, 16);
         *link_key_type = entry.link_key_type;
@@ -223,5 +223,4 @@ const btstack_link_key_db_t * btstack_link_key_db_tlv_get_instance(const btstack
     self->btstack_tlv_context = btstack_tlv_context;
     return &btstack_link_key_db_tlv;
 }
-
 

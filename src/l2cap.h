@@ -411,7 +411,7 @@ typedef struct {
     // receiver: eassembly buffer
     uint8_t * reassembly_buffer;
 
-    // receiver: num_rx_buffers of size local_mps
+    // receiver: num_rx_buffers of size local_mps + two-byte SDU Length field for START and UNSEGMENTED I-frames
     uint8_t * rx_packets_data;
 
     // sender: num_tx_buffers of size local_mps
@@ -816,7 +816,7 @@ uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid);
  * @param receive_buffers       Array of buffers used for reassembly of L2CAP Information Frames into service data unit (SDU) with given MTU
  * @return status
  */
-uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
+uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, uint16_t receive_buffer_size, uint8_t ** receive_buffers);
 
 /**
  * @brief Trigger pending connection responses after pairing completed

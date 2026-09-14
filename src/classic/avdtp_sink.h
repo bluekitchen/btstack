@@ -76,6 +76,10 @@ void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recover
 void avdtp_sink_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery);
 void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation);
 
+/**
+ * @brief Register media codec category with local stream endpoint identified by seid
+ * @note The complete serialized set of registered capabilities must fit within AVDTP_MAX_DATA_BUFFER_SIZE bytes.
+ */
 void avdtp_sink_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t *media_codec_info, uint16_t media_codec_info_len);
 void avdtp_sink_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
 

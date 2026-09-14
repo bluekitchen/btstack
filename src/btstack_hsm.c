@@ -62,6 +62,11 @@ btstack_hsm_state_t btstack_hsm_top(btstack_hsm_t * const me, btstack_hsm_event_
 }
 
 void btstack_hsm_constructor(btstack_hsm_t * const me, btstack_hsm_state_handler_t initial, btstack_hsm_state_handler_t path[], int8_t depth) {
+    btstack_assert(me != NULL);
+    btstack_assert(initial != NULL);
+    btstack_assert(path != NULL);
+    btstack_assert(depth > 0);
+
     me->state = btstack_hsm_top;
     me->temp = initial;
     me->path = path;
@@ -211,4 +216,3 @@ btstack_hsm_state_t btstack_hsm_dispatch(btstack_hsm_t * const me, btstack_hsm_e
     me->state = target;
     return status;
 }
-

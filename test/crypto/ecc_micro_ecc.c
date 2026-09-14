@@ -80,6 +80,116 @@ static int test_generate_f_rng(uint8_t * buffer, unsigned size){
     return 1;
 }
 
+static int test_generate_zero_rng(uint8_t * buffer, unsigned size){
+    memset(buffer, 0, size);
+    return 1;
+}
+
+static int test_generate_fail_rng(uint8_t * buffer, unsigned size){
+    UNUSED(buffer);
+    UNUSED(size);
+    return 0;
+}
+
+static int test_invalid_private_keys(void){
+    uint8_t private_key[uECC_BYTES];
+    uint8_t public_key[uECC_BYTES * 2];
+
+    memset(private_key, 0, sizeof(private_key));
+    if (uECC_compute_public_key(private_key, public_key) != 0){
+        printf("uECC_compute_public_key() accepted a zero private key\n");
+        return 0;
+    }
+
+    memset(private_key, 0xff, sizeof(private_key));
+    if (uECC_compute_public_key(private_key, public_key) != 0){
+        printf("uECC_compute_public_key() accepted an out-of-range private key\n");
+        return 0;
+    }
+    return 1;
+}
+
+static int test_invalid_public_keys(void){
+    // NIST P-256 prime, encoded in the big-endian form used by uECC's public API.
+    static const uint8_t p256_prime[uECC_BYTES] = {
+        0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+    };
+    uint8_t public_key[uECC_BYTES * 2];
+
+    parse_hex(public_key, set1_public_a_string);
+    memcpy(public_key, p256_prime, sizeof(p256_prime));
+    if (uECC_valid_public_key(public_key) != 0){
+        printf("uECC_valid_public_key() accepted x equal to the field prime\n");
+        return 0;
+    }
+
+    parse_hex(public_key, set1_public_a_string);
+    memcpy(&public_key[uECC_BYTES], p256_prime, sizeof(p256_prime));
+    if (uECC_valid_public_key(public_key) != 0){
+        printf("uECC_valid_public_key() accepted y equal to the field prime\n");
+        return 0;
+    }
+
+    parse_hex(public_key, set1_public_a_string);
+    public_key[uECC_BYTES * 2 - 1u] ^= 1u;
+    if (uECC_valid_public_key(public_key) != 0){
+        printf("uECC_valid_public_key() accepted a point not on the curve\n");
+        return 0;
+    }
+    return 1;
+}
+
+static int test_rng_failures(void){
+    uint8_t private_key[uECC_BYTES];
+    uint8_t public_key[uECC_BYTES * 2];
+    uint8_t shared_secret[uECC_BYTES];
+
+    parse_hex(private_key, set1_private_a_string);
+    parse_hex(public_key, set1_public_b_string);
+
+    uECC_set_rng(&test_generate_zero_rng);
+    if (uECC_make_key(public_key, private_key) != 0){
+        printf("uECC_make_key() accepted an all-zero private key from the RNG\n");
+        return 0;
+    }
+    parse_hex(public_key, set1_public_b_string);
+    if (!uECC_shared_secret(public_key, private_key, shared_secret)){
+        printf("uECC_shared_secret() failed when the RNG supplied an all-zero blinding value\n");
+        return 0;
+    }
+
+    uECC_set_rng(&test_generate_fail_rng);
+    if (uECC_make_key(public_key, private_key) != 0){
+        printf("uECC_make_key() succeeded when the RNG failed\n");
+        return 0;
+    }
+    parse_hex(public_key, set1_public_b_string);
+    if (!uECC_shared_secret(public_key, private_key, shared_secret)){
+        printf("uECC_shared_secret() failed when the RNG was unavailable\n");
+        return 0;
+    }
+
+    uECC_set_rng(&test_generate_f_rng);
+    return 1;
+}
+
+static int test_invalid_shared_secret_public_key(void){
+    uint8_t private_key[uECC_BYTES];
+    uint8_t public_key[uECC_BYTES * 2];
+    uint8_t shared_secret[uECC_BYTES];
+
+    parse_hex(private_key, set1_private_a_string);
+    memset(public_key, 0, sizeof(public_key));
+    if (uECC_shared_secret(public_key, private_key, shared_secret) != 0){
+        printf("uECC_shared_secret() accepted the point at infinity\n");
+        return 0;
+    }
+    return 1;
+}
+
 int test_set1(void){
     uint8_t private1[uECC_BYTES];
     uint8_t private2[uECC_BYTES];
@@ -227,6 +337,10 @@ int main(void){
 	btstack_assert(uECC_make_key(q, d) == 0);
 
 	uECC_set_rng(&test_generate_f_rng);
+    if (!test_invalid_private_keys()) return 1;
+    if (!test_invalid_public_keys()) return 1;
+    if (!test_rng_failures()) return 1;
+    if (!test_invalid_shared_secret_public_key()) return 1;
     test_set1();
     test_set2();
     test_generate();

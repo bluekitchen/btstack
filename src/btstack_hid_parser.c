@@ -457,6 +457,14 @@ void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_
     parser->have_report_usage_ready = false;
 }
 
+static bool btstack_hid_parser_field_is_valid(const btstack_hid_usage_item_t * item){
+    if ((item->size == 0u) || (item->size > 32u)){
+        return false;
+    }
+    uint32_t bytes_spanned = ((item->bit_pos & 7u) + item->size + 7u) >> 3u;
+    return bytes_spanned <= 4u;
+}
+
 /**
  * @brief Checks if more fields are available
  * @param parser
@@ -464,8 +472,15 @@ void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_
 bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
     while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(&parser->usage_iterator)){
         btstack_hid_usage_iterator_get_item(&parser->usage_iterator, &parser->descriptor_usage_item);
+        if (!btstack_hid_parser_field_is_valid(&parser->descriptor_usage_item)){
+            log_info("HID: unsupported field: bit pos %u, size %u", parser->descriptor_usage_item.bit_pos, parser->descriptor_usage_item.size);
+            continue;
+        }
         // ignore usages for other report ids
         if (parser->descriptor_usage_item.report_id != HID_REPORT_ID_UNDEFINED){
+            if (parser->report_len == 0u){
+                return false;
+            }
             if (parser->descriptor_usage_item.report_id != parser->report[0]){
                 continue;
             }
@@ -486,8 +501,8 @@ bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
 void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value){
 
     // fetch data from descriptor usage item
-    uint16_t bit_pos = parser->descriptor_usage_item.bit_pos;
-    uint16_t size    = parser->descriptor_usage_item.size;
+    uint32_t bit_pos = parser->descriptor_usage_item.bit_pos;
+    uint32_t size    = parser->descriptor_usage_item.size;
     *usage_page      = parser->descriptor_usage_item.usage_page;
     *usage           = parser->descriptor_usage_item.usage;
 
@@ -496,23 +511,42 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
         bit_pos += 8;
     }
 
-    // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
+    // read field (up to 32 bit) - check report len
     bool is_variable   = (parser->descriptor_usage_item.descriptor_item.item_value & 2) != 0;
     bool is_signed     = parser->descriptor_usage_item.global_logical_minimum < 0;
-    int pos_start     = btstack_min(  bit_pos >> 3, parser->report_len);
-    int pos_end       = btstack_min( (bit_pos + size - 1u) >> 3u, parser->report_len);
-    int bytes_to_read = pos_end - pos_start + 1;
-
-    int i;
-    uint32_t multi_byte_value = 0;
-    for (i=0;i < bytes_to_read;i++){
-        multi_byte_value |= parser->report[pos_start+i] << (i*8);
+    if ((size == 0u) || (size > 32u) || (((bit_pos & 7u) + size + 7u) >> 3u) > 4u || (parser->report_len == 0u)){
+        *value = 0;
+        parser->have_report_usage_ready = false;
+        return;
     }
-    uint32_t unsigned_value = (multi_byte_value >> (bit_pos & 0x07u)) & ((1u<<size)-1u);
+
+    uint32_t pos_start = bit_pos >> 3u;
+    if (pos_start >= parser->report_len){
+        *value = 0;
+        parser->have_report_usage_ready = false;
+        return;
+    }
+    uint32_t pos_end = (bit_pos + size - 1u) >> 3u;
+    uint32_t bytes_to_read = btstack_min(pos_end, parser->report_len - 1u) - pos_start + 1u;
+
+    uint32_t multi_byte_value = 0;
+    for (uint32_t i = 0; i < bytes_to_read; i++){
+        multi_byte_value |= ((uint32_t) parser->report[pos_start + i]) << (i * 8u);
+    }
+    uint32_t unsigned_value = multi_byte_value >> (bit_pos & 0x07u);
+    if (size < 32u){
+        unsigned_value &= (1u << size) - 1u;
+    }
     // log_debug("bit pos %2u, report size %u, start %u, end %u, len %u;; unsigned value %08x", parser->report_pos_in_bit, parser->global_report_size, pos_start, pos_end, parser->report_len, unsigned_value);
     if (is_variable){
-        if (is_signed && (unsigned_value & (1u<<(size-1u)))){
-            *value = unsigned_value - (1u<<size);
+        if (is_signed && (unsigned_value & (1u << (size - 1u)))){
+            if (size == 32u){
+                *value = (int32_t) (unsigned_value & 0x7fffffffu);
+                *value -= INT32_MAX;
+                *value -= 1;
+            } else {
+                *value = (int32_t) unsigned_value - (int32_t) (1u << size);
+            }
         } else {
             *value = unsigned_value;
         }

@@ -89,13 +89,13 @@ typedef struct {
 
 /**
  * Init SBC Encoder Instance
- * @param context for Bluedroid SBC Encoder
+ * @param context non-NULL storage for Bluedroid SBC Encoder
  */
 const btstack_sbc_encoder_t * btstack_sbc_encoder_bluedroid_init_instance(btstack_sbc_encoder_bluedroid_t * context);
 
 /**
  * Init SBC Decoder Instance
- * @param context for Bluedroid SBC decoder
+ * @param context non-NULL storage for Bluedroid SBC decoder
  */
 const btstack_sbc_decoder_t * btstack_sbc_decoder_bluedroid_init_instance(btstack_sbc_decoder_bluedroid_t * context);
 

@@ -111,7 +111,7 @@ TEST(BTstackUtil, reverse_bytes){
     uint8_t buffer[32];
     uint32_t value;
 
-    int i;
+    size_t i;
     for (i = 0; i < sizeof(src); i++){
         src[i] = i + 1;
     }
@@ -288,9 +288,9 @@ TEST(BTstackUtil, strcat){
     CHECK_EQUAL((7*8+1), sizeof(summaries[0]));
     summaries[0][0] = 0;
     char item_text[10];
-    sprintf(item_text, "%04x:%02d ", 1 ,2);
+    snprintf(item_text, sizeof(item_text), "%04x:%02d ", 1 ,2);
     btstack_strcat(summaries[0], sizeof(summaries[0]), item_text);
-    sprintf(item_text, "%04x:%02d ", 3 ,4);
+    snprintf(item_text, sizeof(item_text), "%04x:%02d ", 3 ,4);
     btstack_strcat(summaries[0], sizeof(summaries[0]), item_text);
     STRCMP_EQUAL("0001:02 0003:04 ", summaries[0]);
 }
@@ -319,18 +319,35 @@ TEST(BTstackUtil, btstack_time16_delta){
 }
 
 TEST(BTstackUtil, btstack_strcpy){
-    static char * field_data = "btstack";
+    static const char * field_data = "btstack";
     char buffer[10];
     
     btstack_strcpy(buffer, sizeof(buffer), field_data);
     MEMCMP_EQUAL(buffer, field_data, strlen(field_data));
 }
 
+TEST(BTstackUtil, btstack_string_copy_zero_sized_buffer){
+    char buffer[1] = { 0x55 };
+
+    CHECK_EQUAL(0, btstack_strcpy(buffer, 0, "test"));
+    CHECK_EQUAL(0x55, buffer[0]);
+
+    btstack_strcat(buffer, 0, "test");
+    CHECK_EQUAL(0x55, buffer[0]);
+}
+
+TEST(BTstackUtil, btstack_string_append_unterminated_buffer){
+    char buffer[4] = { 't', 'e', 's', 't' };
+
+    btstack_strcat(buffer, sizeof(buffer), " more");
+    const char expected[] = { 't', 'e', 's', 't' };
+    MEMCMP_EQUAL(expected, buffer, sizeof(buffer));
+}
+
 TEST(BTstackUtil, btstack_virtual_memcpy){
     uint16_t bytes_copied;
     const uint8_t field_data[] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
     uint16_t field_len = sizeof(field_data);
-    uint16_t field_offset = 0;
 
     uint8_t   buffer[100];
 
@@ -357,10 +374,8 @@ TEST(BTstackUtil, btstack_virtual_memcpy_two){
     uint16_t bytes_copied;
     const uint8_t field_data[] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
     uint16_t field_len = sizeof(field_data);
-    uint16_t field_offset = 0;
 
     uint8_t   buffer[14];
-    uint16_t  buffer_size = sizeof(buffer);
     uint16_t  records_offset = 0;
 
     bytes_copied = btstack_virtual_memcpy(field_data, field_len, records_offset, buffer, sizeof(buffer), 0);
@@ -376,6 +391,21 @@ TEST(BTstackUtil, btstack_virtual_memcpy_two){
     bytes_copied = btstack_virtual_memcpy(field_data, field_len, records_offset, buffer, sizeof(buffer), 0);
     records_offset += bytes_copied;
     CHECK_EQUAL(bytes_copied, 2);
+}
+
+TEST(BTstackUtil, btstack_virtual_memcpy_at_uint16_boundary){
+    static uint8_t field_data[65535];
+    uint8_t buffer[10] = {0};
+
+    for (uint16_t i = 0; i < 5; i++){
+        field_data[65530u + i] = (uint8_t)(i + 1);
+    }
+
+    uint16_t bytes_copied = btstack_virtual_memcpy(field_data, sizeof(field_data), 0, buffer, sizeof(buffer), 65530);
+    CHECK_EQUAL(5, bytes_copied);
+    for (uint16_t i = 0; i < bytes_copied; i++){
+        CHECK_EQUAL(i + 1, buffer[i]);
+    }
 }
 
 TEST(BTstackUtil, crc_updated){

@@ -327,9 +327,13 @@ static bool is_item_b_or_c(const btstack_linked_item_t * item, void * context) {
     return item == &itemB || item == &itemC;
 }
 static bool all_matches(const btstack_linked_item_t * item, void * context) {
+    UNUSED(item);
+    UNUSED(context);
     return true;
 }
 static bool none_matches(const btstack_linked_item_t * item, void * context) {
+    UNUSED(item);
+    UNUSED(context);
     return false;
 }
 TEST(LinkedList, SplitEmptyList) {

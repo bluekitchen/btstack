@@ -220,14 +220,13 @@ static void avdtp_initiator_handle_general_connection_responses(avdtp_connection
 
                     switch (connection->initiator_signaling_packet.packet_type){
                         case AVDTP_START_PACKET:
-                            avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
                             avdtp_initiator_parser_reset(connection);
                             avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
-                            break;
+                            return;
 
                         case AVDTP_CONTINUE_PACKET:
                             avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
-                            break;
+                            return;
 
                         case AVDTP_END_PACKET:
                             avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
@@ -236,7 +235,6 @@ static void avdtp_initiator_handle_general_connection_responses(avdtp_connection
                             break;
 
                         default: // single packet
-                            avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
                             avdtp_initiator_parser_reset(connection);
                             avdtp_initiator_parser_process_packet(connection, packet + offset, size - offset);
                             avdtp_signaling_emit_capability_done(connection->avdtp_cid, connection->initiator_remote_seid);

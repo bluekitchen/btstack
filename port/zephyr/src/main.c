@@ -12,9 +12,14 @@
 
 #include <zephyr/storage/flash_map.h>
 
-// Nordic NDK
-#if defined(CONFIG_HAS_NORDIC_DRIVERS)
-#include "nrf.h"
+#if DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+#include <zephyr/device.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
+#endif
+
+// Nordic SDK
+#if defined(CONFIG_SOC_SERIES_NRF53X)
 #include <nrfx_clock.h>
 #endif
 
@@ -38,7 +43,12 @@
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
+#ifdef ENABLE_CLASSIC
+#include "classic/btstack_link_key_db_tlv.h"
+#endif
+#ifdef ENABLE_BLE
 #include "ble/le_device_db_tlv.h"
+#endif
 
 #include "hci_transport_zephyr.h"
 #include "btstack_run_loop_zephyr.h"
@@ -46,22 +56,26 @@
 #include "hal_flash_bank_zephyr.h"
 #include "btstack_tlv_flash_bank.h"
 
+// Uncomment to wait during startup for USB CDC console to be ready
+// #define ENABLE_USB_CDC_WAIT
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static bd_addr_t static_addr = { 0 };
 static bd_addr_t local_addr = { 0 };
-
-void nrf_get_static_random_addr( bd_addr_t addr ) {
-    // nRF5 chipsets don't have an official public address
-    // Instead, a Static Random Address is assigned during manufacturing
-    // let's use it as well
-#if defined(CONFIG_SOC_SERIES_NRF51X) || defined(CONFIG_SOC_SERIES_NRF52X)
-    big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
-    big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
-#elif defined(CONFIG_SOC_SERIES_NRF53X)
-    big_endian_store_16(addr, 0, NRF_FICR->INFO.DEVICEID[1] | 0xc000 );
-    big_endian_store_32(addr, 2, NRF_FICR->INFO.DEVICEID[0]);
+#ifdef ENABLE_BLE
+static bd_addr_t local_le_random_addr = { 0 };
+static bool local_le_random_addr_set;
 #endif
+
+static void print_local_addr(void){
+#ifdef ENABLE_BLE
+    if (local_le_random_addr_set){
+        printf("BTstack up and running on %s (random).\n", bd_addr_to_str(local_le_random_addr));
+        return;
+    }
+#endif
+    gap_local_bd_addr(local_addr);
+    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
 }
 
 static void local_version_information_handler(uint8_t * packet){
@@ -82,10 +96,10 @@ static void local_version_information_handler(uint8_t * packet){
             printf("Nordic Semiconductor nRF5 chipset.\n");
             hci_set_chipset(btstack_chipset_zephyr_instance());
             break;
-        case BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC:
-            printf("PacketCraft HCI Controller\n");
-            nrf_get_static_random_addr( local_addr );
-            gap_random_address_set( local_addr );
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
+        case BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR:
+        case BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG:
+            printf("Broadcom/Cypress/Infineon Controller.\n");
             break;
         default:
             printf("Unknown manufacturer.\n");
@@ -100,10 +114,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
-                    if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_addr) ) {
-                        memcpy(local_addr, static_addr, sizeof(bd_addr_t));
-                    }
-                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+                    print_local_addr();
                     break;
                 case HCI_STATE_OFF:
                     log_info("Good bye, see you.\n");
@@ -117,23 +128,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;
-                case HCI_OPCODE_HCI_READ_BD_ADDR:
-                    params = hci_event_command_complete_get_return_parameters(packet);
-                    if(params[0] != 0)
-                        break;
-                    if(size < 12)
-                        break;
-                    reverse_48(&params[1], local_addr);
-                    break;
                 case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+#ifdef ENABLE_BLE
                     params = hci_event_command_complete_get_return_parameters(packet);
                     if(params[0] != 0)
+                        break;
+                    if(params[1] == 0)
                         break;
                     if(size < 13)
                         break;
-                    printf("Use static random address stored in nRF5 SoC.\n");
-                    reverse_48(&params[2], static_addr);
-                    gap_random_address_set(static_addr);
+                    printf("Use static random address reported by Zephyr Controller.\n");
+                    reverse_48(&params[2], local_le_random_addr);
+                    local_le_random_addr_set = true;
+                    gap_random_address_set(local_le_random_addr);
+#endif
                     break;
                 default:
                     break;
@@ -158,6 +166,27 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 static hal_flash_bank_zephyr_t  hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
+#if defined(ENABLE_USB_CDC_WAIT) && DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_console), zephyr_cdc_acm_uart)
+static void wait_for_usb_cdc_console(void)
+{
+    const struct device * console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+    uint32_t dtr = 0;
+
+    if (!device_is_ready(console)) {
+        return;
+    }
+
+    while (!dtr) {
+        uart_line_ctrl_get(console, UART_LINE_CTRL_DTR, &dtr);
+        k_sleep(K_MSEC(100));
+    }
+}
+#else
+static void wait_for_usb_cdc_console(void)
+{
+}
+#endif
+
 int main(void)
 {
 #if defined(CONFIG_SOC_SERIES_NRF53X)
@@ -165,12 +194,13 @@ int main(void)
     nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
 #endif
 
+    wait_for_usb_cdc_console();
+
     printf("BTstack booting up...\n");
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
-
 #ifdef ENABLE_HCI_DUMP
     // enable full log output while porting
 #ifdef ENABLE_SEGGER_RTT_BINARY
@@ -185,6 +215,7 @@ int main(void)
     DT_HAS_CHOSEN(zephyr_code_partition) && \
     FIXED_PARTITION_EXISTS(storage_partition)
 
+    // setup TLV
     uint32_t bank_size = FIXED_PARTITION_SIZE(storage_partition)/2;
     uint32_t bank_0_addr = FIXED_PARTITION_OFFSET(storage_partition);
     uint32_t bank_1_addr = bank_0_addr+bank_size;
@@ -205,17 +236,17 @@ int main(void)
 #else
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
 #endif
-
-    // setup global tlv
     btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-/*
+
+#ifdef ENABLE_CLASSIC
     // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     hci_set_link_key_db(btstack_link_key_db);
-*/
-
+#endif
+#ifdef ENABLE_BLE
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+#endif
 
     // init HCI
     hci_init(hci_transport_zephyr_get_instance(), NULL);

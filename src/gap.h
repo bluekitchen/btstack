@@ -251,6 +251,7 @@ typedef struct {
     uint8_t num_bis;
     hci_con_handle_t bis_con_handles[MAX_NR_BIS];
     const le_audio_big_params_t * params;
+    uint16_t iso_interval_1250us;
     // request to send
     bool can_send_now_requested;
 #ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
@@ -273,6 +274,7 @@ typedef struct {
     uint8_t num_bis;
     hci_con_handle_t bis_con_handles[MAX_NR_BIS];
     const le_audio_big_sync_params_t * params;
+    uint16_t iso_interval_1250us;
 } le_audio_big_sync_t;
 
 // -- Connected Isochronuous Group CIG

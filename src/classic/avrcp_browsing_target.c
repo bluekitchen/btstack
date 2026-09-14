@@ -61,7 +61,7 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
     
     // l2cap_reserve_packet_buffer();
     // uint8_t * packet = l2cap_get_outgoing_buffer();
-    uint8_t packet[400];
+    uint8_t packet[sizeof(connection->cmd_operands) + 3u];
     connection->packet_type = AVRCP_SINGLE_PACKET;
 
     packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
@@ -292,7 +292,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 pos += 4;
                                 // only store first 32 attribute ids
                                 if (attr_id < 32) {
-                                    browsing_connection->attr_bitmap |= (1 << attr_id);
+                                    browsing_connection->attr_bitmap |= (1u << attr_id);
                                 }
                                 attr_count--;
                             }
@@ -428,6 +428,8 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
 }
 
 uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size, uint16_t num_items){
+    btstack_assert((attr_list_size == 0u) || (attr_list != NULL));
+
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
@@ -454,14 +456,6 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
     
-    // TODO: fragmentation
-    if (attr_list_size >  sizeof(connection->cmd_operands)){
-        connection->attr_list = attr_list;
-        connection->attr_list_size = attr_list_size;
-        log_info(" todo: list too big, invoke fragmentation");
-        return 1;
-    }
-
     uint16_t num_items_to_send = 0;
     if (connection->start_item < num_items) {
         if (connection->end_item < num_items) {
@@ -478,6 +472,13 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     pos += 2;
 
     if (num_items_to_send > 0){
+        // TODO: fragmentation
+        if (attr_list_size > (sizeof(connection->cmd_operands) - pos)){
+            connection->attr_list = attr_list;
+            connection->attr_list_size = attr_list_size;
+            log_info(" todo: list too big, invoke fragmentation");
+            return 1;
+        }
         (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
         pos += attr_list_size;
         param_length += attr_list_size;
@@ -531,6 +532,8 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_
 }
 
 uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint8_t * attr_list, uint16_t attr_list_size, uint8_t num_items){
+    btstack_assert((attr_list_size == 0u) || (attr_list != NULL));
+
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
@@ -577,6 +580,8 @@ uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_b
 }
 
 uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint16_t browsed_player_id, uint8_t * response, uint16_t response_size){
+    btstack_assert((response_size == 0u) || (response != NULL));
+
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
@@ -601,7 +606,7 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
     pos += 2;
 
     // TODO: fragmentation
-    if (response_size >  sizeof(connection->cmd_operands)){
+    if (response_size > (sizeof(connection->cmd_operands) - pos)){
         connection->attr_list = response;
         connection->attr_list_size = response_size;
         log_info(" todo: list too big, invoke fragmentation");

@@ -44,6 +44,7 @@
 
 #include "btstack_memory.h"
 #include "btstack_event.h"
+#include "btstack_debug.h"
 
 #include "mesh/provisioning_device.h"
 #include "mesh/mesh_crypto.h"
@@ -102,12 +103,15 @@ static btstack_crypto_ccm_t         prov_ccm_request;
 
 // ConfirmationDevice
 static uint8_t confirmation_device[16];
+static uint8_t confirmation_provisioner[16];
+static uint8_t confirmation_check[16];
 // ConfirmationSalt
 static uint8_t confirmation_salt[16];
 // ConfirmationKey
 static uint8_t confirmation_key[16];
 // RandomDevice
 static uint8_t random_device[16];
+static uint8_t random_provisioner[16];
 // ProvisioningSalt
 static uint8_t provisioning_salt[16];
 // AuthValue
@@ -118,6 +122,7 @@ static uint8_t session_key[16];
 static uint8_t session_nonce[16];
 // EncProvisioningData
 static uint8_t enc_provisioning_data[25];
+static uint8_t provisioning_data_mic[8];
 // ProvisioningData
 static uint8_t provisioning_data[25];
 
@@ -620,8 +625,9 @@ static void provisioning_handle_confirmation_s1_calculated(void * arg){
 }
 
 static void provisioning_handle_confirmation(uint8_t *packet, uint16_t size){
-    UNUSED(size);
-    UNUSED(packet);
+    if (size != 16) return;
+
+    (void)memcpy(confirmation_provisioner, packet, sizeof(confirmation_provisioner));
 
     // 
     if (prov_emit_output_oob_active){
@@ -677,18 +683,30 @@ static void provisioning_handle_random_s1_calculated(void * arg){
     mesh_k1(&prov_cmac_request, dhkey, sizeof(dhkey), provisioning_salt, (const uint8_t*) "prsk", 4, session_key, &provisioning_handle_random_session_key_calculated, NULL);
 }
 
-static void provisioning_handle_random(uint8_t *packet, uint16_t size){
+static void provisioning_handle_random_confirmation_calculated(void * arg){
+    UNUSED(arg);
 
-    UNUSED(size);
-    UNUSED(packet);
-
-    // TODO: validate Confirmation
+    if (memcmp(confirmation_check, confirmation_provisioner, sizeof(confirmation_check)) != 0){
+        log_info("Provisioner Confirmation invalid");
+        provisioning_handle_provisioning_error(0x04);
+        return;
+    }
 
     // calc ProvisioningSalt = s1(ConfirmationSalt || RandomProvisioner || RandomDevice)
     (void)memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
-    (void)memcpy(&prov_confirmation_inputs[16], packet, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], random_provisioner, 16);
     (void)memcpy(&prov_confirmation_inputs[32], random_device, 16);
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_random_s1_calculated, NULL);
+}
+
+static void provisioning_handle_random(uint8_t *packet, uint16_t size){
+    if (size != 16) return;
+
+    (void)memcpy(random_provisioner, packet, sizeof(random_provisioner));
+    (void)memcpy(&prov_confirmation_inputs[0], random_provisioner, sizeof(random_provisioner));
+    (void)memcpy(&prov_confirmation_inputs[16], auth_value, sizeof(auth_value));
+    btstack_crypto_aes128_cmac_message(&prov_cmac_request, confirmation_key, 32, prov_confirmation_inputs,
+                                       confirmation_check, &provisioning_handle_random_confirmation_calculated, NULL);
 }
 
 // PROV_DATA
@@ -716,20 +734,31 @@ static void provisioning_handle_data_ccm(void * arg){
 
     UNUSED(arg);
 
-    // TODO: validate MIC?
     uint8_t mic[8];
     btstack_crypto_ccm_get_authentication_value(&prov_ccm_request, mic);
-    printf("MIC: ");
-    printf_hexdump(mic, 8);
+    if (memcmp(mic, provisioning_data_mic, sizeof(mic)) != 0){
+        log_info("Provisioning Data MIC invalid");
+        provisioning_handle_provisioning_error(0x07);
+        return;
+    }
+
+    uint16_t internal_index = mesh_network_key_get_free_index();
+    if (internal_index == MESH_KEYS_INVALID_INDEX){
+        provisioning_handle_provisioning_error(0x07);
+        return;
+    }
 
     // allocate network key
     network_key = btstack_memory_mesh_network_key_get();
+    if (network_key == NULL){
+        provisioning_handle_provisioning_error(0x07);
+        return;
+    }
 
     // sort provisoning data
     (void)memcpy(network_key->net_key, provisioning_data, 16);
     network_key->netkey_index = big_endian_read_16(provisioning_data, 16);
-    // assume free index available for very first network key
-    network_key->internal_index = mesh_network_key_get_free_index();
+    network_key->internal_index = internal_index;
     flags = provisioning_data[18];
     iv_index = big_endian_read_32(provisioning_data, 19);
     unicast_address = big_endian_read_16(provisioning_data, 23);
@@ -739,10 +768,10 @@ static void provisioning_handle_data_ccm(void * arg){
 }
 
 static void provisioning_handle_data(uint8_t *packet, uint16_t size){
-
-    UNUSED(size);
+    if (size != (sizeof(enc_provisioning_data) + sizeof(provisioning_data_mic))) return;
 
     (void)memcpy(enc_provisioning_data, packet, 25);
+    (void)memcpy(provisioning_data_mic, &packet[25], sizeof(provisioning_data_mic));
 
     // decode response
     btstack_crypto_ccm_init(&prov_ccm_request, session_key, session_nonce, 25, 0, 8);
@@ -793,37 +822,55 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
             // check state
             switch (device_state){
                 case DEVICE_W4_INVITE:
-                    if (packet[0] != MESH_PROV_INVITE) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_INVITE) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_INVITE: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_invite(&packet[1], size-1);
                     break;
                 case DEVICE_W4_START:
-                    if (packet[0] != MESH_PROV_START) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_START) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_START:  ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_start(&packet[1], size-1);
                     break;
                 case DEVICE_W4_PUB_KEY:
-                    if (packet[0] != MESH_PROV_PUB_KEY) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_PUB_KEY) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_PUB_KEY: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_public_key(&packet[1], size-1);
                     break;
                 case DEVICE_W4_CONFIRM:
-                    if (packet[0] != MESH_PROV_CONFIRM) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_CONFIRM) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_CONFIRM: ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_confirmation(&packet[1], size-1);
                     break;
                 case DEVICE_W4_RANDOM:
-                    if (packet[0] != MESH_PROV_RANDOM) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_RANDOM) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_RANDOM:  ");
                     printf_hexdump(&packet[1], size-1);
                     provisioning_handle_random(&packet[1], size-1);
                     break;
                 case DEVICE_W4_DATA:
-                    if (packet[0] != MESH_PROV_DATA) provisioning_handle_unexpected_pdu(packet, size);
+                    if (packet[0] != MESH_PROV_DATA) {
+                        provisioning_handle_unexpected_pdu(packet, size);
+                        break;
+                    }
                     printf("MESH_PROV_DATA:  ");
                     provisioning_handle_data(&packet[1], size-1);
                     break;

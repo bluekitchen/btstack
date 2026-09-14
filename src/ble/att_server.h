@@ -86,6 +86,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
  * @param storage_buffer
  * @param storage_size must be >= num_eatt_bearers * sizeof(att_server_eatt_bearer_t)
  * @return status   ERROR_CODE_SUCCESS
+ *                  ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if num_eatt_bearers is zero or storage_buffer is NULL
  *                  ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if buffer too small or no entry in l2cap service pool
  *                  L2CAP_SERVICE_ALREADY_REGISTERED if called twice
  */
@@ -109,6 +110,7 @@ void att_server_register_service_handler(att_service_handler_t * handler);
 /**
  * @brief Request callback when sending is possible
  * @note callback might happend during call to this function
+ * @note pending callback is discarded if the connection disconnects
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return 0 if ok, error otherwise
@@ -125,6 +127,7 @@ uint16_t att_server_get_mtu(hci_con_handle_t con_handle);
 /**
  * @brief Request callback when sending notifcation is possible
  * @note callback might happend during call to this function
+ * @note pending callback will be discarded on HCI disconnect
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
@@ -134,6 +137,7 @@ uint8_t att_server_request_to_send_notification(btstack_context_callback_registr
 /**
  * @brief Request callback when sending indication is possible
  * @note callback might happend during call to this function
+ * @note pending callback will be discarded on HCI disconnect
  * @param callback_registration to point to callback function and context information
  * @param con_handle
  * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered

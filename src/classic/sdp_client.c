@@ -85,8 +85,8 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 static uint16_t sdp_client_setup_service_search_request(uint8_t * data);
 static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data);
-static void     sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size);
-static void     sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size);
+static bool     sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size);
+static bool     sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size);
 #endif
 
 // State DES Parser
@@ -123,6 +123,22 @@ static btstack_linked_list_t sdp_client_query_requests;
 static uint32_t sdp_client_service_record_handle;
 static uint32_t sdp_client_record_handle;
 #endif
+
+static void sdp_client_assert_data_element_sequence(const uint8_t * data_element_sequence){
+    btstack_assert(data_element_sequence != NULL);
+    btstack_assert(de_get_element_type(data_element_sequence) == DE_DES);
+}
+
+static void sdp_client_assert_request_fits(uint16_t fixed_size, const uint8_t * service_search_pattern, const uint8_t * attribute_id_list){
+    uint32_t request_size = fixed_size + 1u + sizeof(sdp_client_continuation_state);
+    if (service_search_pattern != NULL){
+        request_size += de_get_len(service_search_pattern);
+    }
+    if (attribute_id_list != NULL){
+        request_size += de_get_len(attribute_id_list);
+    }
+    btstack_assert(request_size <= l2cap_max_mtu());
+}
 
 // DES Parser
 void de_state_init(de_state_t * de_state){
@@ -409,46 +425,48 @@ static void sdp_client_send_request(uint16_t channel){
 
     // prevent re-entrance
     sdp_client_state = W4_RESPONSE;
-    sdp_client_pdu_id = SDP_Invalid;
     l2cap_send_prepared(channel, request_len);
 }
 
 
-static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, uint16_t size){
+static bool sdp_client_parse_service_search_attribute_response(uint8_t* packet, uint16_t size){
 
-    uint16_t offset = 3;
-    if ((offset + 2 + 2) > size) return;  // parameterLength + attributeListByteCount
+    uint32_t offset = 3;
+    if ((offset + 2 + 2) > size) return false;  // parameterLength + attributeListByteCount
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
-    if ((offset + parameterLength) > size) return;
+    uint32_t response_end = offset + parameterLength;
+    if (response_end != size) return false;
 
     // AttributeListByteCount <= mtu
     uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
     offset+=2;
     if (attributeListByteCount > sdp_client_mtu){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.");
-        return;
+        log_info("SDP Client: AttributeListByteCount exceeds MaximumAttributeByteCount.");
+        return false;
     }
 
     // AttributeLists
-    if ((offset + attributeListByteCount) > size) return;
-    sdp_client_parse_attribute_lists(packet+offset, attributeListByteCount);
+    if ((offset + attributeListByteCount) > response_end) return false;
+    uint8_t * attribute_lists = packet + offset;
     offset+=attributeListByteCount;
 
     // continuation state len
-    if ((offset + 1) > size) return;
-    sdp_client_continuation_state_len = packet[offset];
+    if ((offset + 1) > response_end) return false;
+    uint8_t continuation_state_len = packet[offset];
     offset++;
-    if (sdp_client_continuation_state_len > 16){
-        sdp_client_continuation_state_len = 0;
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in continuation state exceedes 16.");
-        return;
+    if (continuation_state_len > sizeof(sdp_client_continuation_state)){
+        log_info("SDP Client: ContinuationState length exceeds 16.");
+        return false;
     }
 
     // continuation state
-    if ((offset + sdp_client_continuation_state_len) > size) return;
-    (void)memcpy(sdp_client_continuation_state, packet + offset, sdp_client_continuation_state_len);
-    // offset+=continuationStateLen;
+    if ((offset + continuation_state_len) != response_end) return false;
+
+    sdp_client_parse_attribute_lists(attribute_lists, attributeListByteCount);
+    sdp_client_continuation_state_len = continuation_state_len;
+    (void)memcpy(sdp_client_continuation_state, packet + offset, continuation_state_len);
+    return true;
 }
 
 void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -462,26 +480,40 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             return;
         }
 
-        sdp_client_pdu_id = (sdp_pdu_id_t)packet[0];
-        switch (sdp_client_pdu_id){
+        sdp_pdu_id_t response_pdu_id = (sdp_pdu_id_t) packet[0];
+        if ((response_pdu_id != SDP_ErrorResponse) && (response_pdu_id != sdp_client_pdu_id)){
+            log_info("SDP Client: Unexpected response PDU ID %u.", response_pdu_id);
+            l2cap_disconnect(sdp_client_sdp_cid);
+            return;
+        }
+
+        bool response_valid;
+        switch (response_pdu_id){
             case SDP_ErrorResponse:
-                log_error("Received error response with code %u, disconnecting", packet[2]);
+                log_info("SDP Client received ErrorResponse, disconnecting.");
                 l2cap_disconnect(sdp_client_sdp_cid);
                 return;
 #ifdef ENABLE_SDP_EXTRA_QUERIES
             case SDP_ServiceSearchResponse:
-                sdp_client_parse_service_search_response(packet, size);
+                response_valid = sdp_client_parse_service_search_response(packet, size);
                 break;
             case SDP_ServiceAttributeResponse:
-                sdp_client_parse_service_attribute_response(packet, size);
+                response_valid = sdp_client_parse_service_attribute_response(packet, size);
                 break;
 #endif
             case SDP_ServiceSearchAttributeResponse:
-                sdp_client_parse_service_search_attribute_response(packet, size);
+                response_valid = sdp_client_parse_service_search_attribute_response(packet, size);
                 break;
             default:
-                log_error("PDU ID %u unexpected/invalid", sdp_client_pdu_id);
+                log_info("SDP Client: Invalid response PDU ID %u.", response_pdu_id);
+                l2cap_disconnect(sdp_client_sdp_cid);
                 return;
+        }
+
+        if (!response_valid){
+            log_info("SDP Client: Malformed response PDU.");
+            l2cap_disconnect(sdp_client_sdp_cid);
+            return;
         }
 
         // continuation set or DONE?
@@ -659,14 +691,15 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
     return offset;
 }
 
-static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size){
+static bool sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size){
 
-    uint16_t offset = 3;
-    if (offset + 2 + 2 + 2 > size) return;  // parameterLength, totalServiceRecordCount, currentServiceRecordCount
+    uint32_t offset = 3;
+    if (offset + 2 + 2 + 2 > size) return false;  // parameterLength, totalServiceRecordCount, currentServiceRecordCount
 
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
-    if (offset + parameterLength > size) return;
+    uint32_t response_end = offset + parameterLength;
+    if (response_end != size) return false;
 
     uint16_t totalServiceRecordCount = big_endian_read_16(packet,offset);
     offset+=2;
@@ -674,60 +707,66 @@ static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t s
     uint16_t currentServiceRecordCount = big_endian_read_16(packet,offset);
     offset+=2;
     if (currentServiceRecordCount > totalServiceRecordCount){
-        log_error("CurrentServiceRecordCount is larger then TotalServiceRecordCount.");
-        return;
+        log_info("SDP Client: CurrentServiceRecordCount exceeds TotalServiceRecordCount.");
+        return false;
     }
     
-    if (offset + currentServiceRecordCount * 4 > size) return;
-    sdp_client_parse_service_record_handle_list(packet+offset, totalServiceRecordCount, currentServiceRecordCount);
-    offset+= currentServiceRecordCount * 4;
+    uint32_t service_record_handles_len = (uint32_t) currentServiceRecordCount * 4u;
+    if ((offset + service_record_handles_len) > response_end) return false;
+    uint8_t * service_record_handles = packet + offset;
+    offset += service_record_handles_len;
 
-    if (offset + 1 > size) return;
-    sdp_client_continuation_state_len = packet[offset];
+    if (offset + 1 > response_end) return false;
+    uint8_t continuation_state_len = packet[offset];
     offset++;
-    if (sdp_client_continuation_state_len > 16){
-        sdp_client_continuation_state_len = 0;
-        log_error("Error parsing ServiceSearchResponse: Number of bytes in continuation state exceedes 16.");
-        return;
+    if (continuation_state_len > sizeof(sdp_client_continuation_state)){
+        log_info("SDP Client: ContinuationState length exceeds 16.");
+        return false;
     }
-    if (offset + sdp_client_continuation_state_len > size) return;
-    (void)memcpy(sdp_client_continuation_state, packet + offset, sdp_client_continuation_state_len);
-    // offset+=sdp_client_continuation_state_len;
+    if (offset + continuation_state_len != response_end) return false;
+
+    sdp_client_parse_service_record_handle_list(service_record_handles, totalServiceRecordCount, currentServiceRecordCount);
+    sdp_client_continuation_state_len = continuation_state_len;
+    (void)memcpy(sdp_client_continuation_state, packet + offset, continuation_state_len);
+    return true;
 }
 
-static void sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size){
+static bool sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size){
 
-    uint16_t offset = 3;
-    if (offset + 2 + 2 > size) return;  // parameterLength, attributeListByteCount
+    uint32_t offset = 3;
+    if (offset + 2 + 2 > size) return false;  // parameterLength, attributeListByteCount
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
-    if (offset+parameterLength > size) return;
+    uint32_t response_end = offset + parameterLength;
+    if (response_end != size) return false;
 
     // AttributeListByteCount <= mtu
     uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
     offset+=2;
     if (attributeListByteCount > sdp_client_mtu){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.");
-        return;
+        log_info("SDP Client: AttributeListByteCount exceeds MaximumAttributeByteCount.");
+        return false;
     }
 
     // AttributeLists
-    if (offset+attributeListByteCount > size) return;
-    sdp_client_parse_attribute_lists(packet+offset, attributeListByteCount);
+    if (offset + attributeListByteCount > response_end) return false;
+    uint8_t * attribute_lists = packet + offset;
     offset+=attributeListByteCount;
 
     // sdp_client_continuation_state_len
-    if (offset + 1 > size) return;
-    sdp_client_continuation_state_len = packet[offset];
+    if (offset + 1 > response_end) return false;
+    uint8_t continuation_state_len = packet[offset];
     offset++;
-    if (sdp_client_continuation_state_len > 16){
-        sdp_client_continuation_state_len = 0;
-        log_error("Error parsing ServiceAttributeResponse: Number of bytes in continuation state exceedes 16.");
-        return;
+    if (continuation_state_len > sizeof(sdp_client_continuation_state)){
+        log_info("SDP Client: ContinuationState length exceeds 16.");
+        return false;
     }
-    if (offset + sdp_client_continuation_state_len > size) return;
-    (void)memcpy(sdp_client_continuation_state, packet + offset, sdp_client_continuation_state_len);
-    // offset+=sdp_client_continuation_state_len;
+    if (offset + continuation_state_len != response_end) return false;
+
+    sdp_client_parse_attribute_lists(attribute_lists, attributeListByteCount);
+    sdp_client_continuation_state_len = continuation_state_len;
+    (void)memcpy(sdp_client_continuation_state, packet + offset, continuation_state_len);
+    return true;
 }
 #endif
 
@@ -747,6 +786,12 @@ uint8_t sdp_client_register_query_callback(btstack_context_callback_registration
 uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list){
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
+    btstack_assert(callback != NULL);
+    btstack_assert(remote != NULL);
+    sdp_client_assert_data_element_sequence(des_service_search_pattern);
+    sdp_client_assert_data_element_sequence(des_attribute_id_list);
+    sdp_client_assert_request_fits(5u + 2u, des_service_search_pattern, des_attribute_id_list);
+
     sdp_parser_init(callback);
     sdp_client_service_search_pattern = des_service_search_pattern;
     sdp_client_attribute_id_list = des_attribute_id_list;
@@ -764,12 +809,18 @@ uint8_t sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t rem
 
 uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid){
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
+    btstack_assert(uuid != NULL);
     return sdp_client_query(callback, remote, sdp_service_search_pattern_for_uuid128(uuid), sdp_client_des_attribute_id_list);
 }
 
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attribute_id_list){
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
+
+    btstack_assert(callback != NULL);
+    btstack_assert(remote != NULL);
+    sdp_client_assert_data_element_sequence(des_attribute_id_list);
+    sdp_client_assert_request_fits(5u + 4u + 2u, NULL, des_attribute_id_list);
 
     sdp_parser_init(callback);
     sdp_client_service_record_handle = search_service_record_handle;
@@ -786,6 +837,11 @@ uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t r
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
+    btstack_assert(callback != NULL);
+    btstack_assert(remote != NULL);
+    sdp_client_assert_data_element_sequence(des_service_search_pattern);
+    sdp_client_assert_request_fits(5u + 2u, des_service_search_pattern, NULL);
+
     sdp_parser_init(callback);
     sdp_client_service_search_pattern = des_service_search_pattern;
     sdp_client_continuation_state_len = 0;
@@ -796,4 +852,3 @@ uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t r
     return 0;
 }
 #endif
-

@@ -46,6 +46,7 @@
  */
 
 #include "btstack_debug.h"
+#include "btstack_defines.h"
 #include "btstack_uart_block.h"
 #include "btstack_run_loop.h"
 #include "hal_uart_dma.h"
@@ -68,6 +69,25 @@ static void (*block_received)(void);
 
 static int send_complete;
 static int receive_complete;
+
+#ifdef HAVE_HAL_UART_BUFFERS
+static btstack_context_callback_registration_t send_complete_callback;
+static btstack_context_callback_registration_t receive_complete_callback;
+
+static void btstack_uart_block_freertos_send_complete(void * context){
+    UNUSED(context);
+    if (block_sent){
+        block_sent();
+    }
+}
+
+static void btstack_uart_block_freertos_receive_complete(void * context){
+    UNUSED(context);
+    if (block_received){
+        block_received();
+    }
+}
+#endif
 
 static void btstack_uart_block_freertos_received_isr(void){
     receive_complete = 1;
@@ -103,6 +123,10 @@ static void btstack_uart_block_freertos_process(btstack_data_source_t *ds, btsta
 //
 static int btstack_uart_block_freertos_init(const btstack_uart_config_t * config){
     uart_config = config;
+#ifdef HAVE_HAL_UART_BUFFERS
+    send_complete_callback.callback = &btstack_uart_block_freertos_send_complete;
+    receive_complete_callback.callback = &btstack_uart_block_freertos_receive_complete;
+#endif
     hal_uart_dma_set_block_received(&btstack_uart_block_freertos_received_isr);
     hal_uart_dma_set_block_sent(&btstack_uart_block_freertos_sent_isr);
 
@@ -135,7 +159,30 @@ static void btstack_uart_block_freertos_set_block_sent( void (*block_handler)(vo
 }
 
 static int btstack_uart_block_freertos_set_parity(int parity){
+    UNUSED(parity);
     return 0;
+}
+
+static void btstack_uart_block_freertos_send_block(const uint8_t *data, uint16_t size){
+#ifdef HAVE_HAL_UART_BUFFERS
+    bool complete = hal_uart_dma_send_block(data, size);
+    if (complete){
+        btstack_run_loop_execute_on_main_thread(&send_complete_callback);
+    }
+#else
+    hal_uart_dma_send_block(data, size);
+#endif
+}
+
+static void btstack_uart_block_freertos_receive_block(uint8_t *buffer, uint16_t len){
+#ifdef HAVE_HAL_UART_BUFFERS
+    bool complete = hal_uart_dma_receive_block(buffer, len);
+    if (complete){
+        btstack_run_loop_execute_on_main_thread(&receive_complete_callback);
+    }
+#else
+    hal_uart_dma_receive_block(buffer, len);
+#endif
 }
 
 // static void btstack_uart_block_set_sleep(uint8_t sleep){
@@ -157,8 +204,8 @@ static const btstack_uart_block_t btstack_uart_block_freertos = {
 #else
     /* int  (*set_flowcontrol)(int flowcontrol); */                   NULL,
 #endif
-    /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &hal_uart_dma_receive_block,
-    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &hal_uart_dma_send_block,    
+    /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_block_freertos_receive_block,
+    /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_block_freertos_send_block,
     /* int (*get_supported_sleep_modes); */                           NULL,
     /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL,
     /* void (*set_wakeup_handler)(void (*wakeup_handler)(void)); */   NULL,

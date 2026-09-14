@@ -45,6 +45,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "bluetooth_company_id.h"
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -64,6 +65,18 @@
 
 #if defined(ENABLE_BCM_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
 #error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
+#if defined(ENABLE_NXP_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
+#error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
+#if defined(ENABLE_RTK_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
+#error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
+#if defined(ENABLE_SCO_OVER_HCI) && defined(ENABLE_SCO_OVER_PCM)
+#error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM."
 #endif
 
 #define HFP_HF_FEATURES_SIZE 10
@@ -909,24 +922,34 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_COMMAND_STATUS:
-            if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
-                if (hfp_sco_establishment_active == NULL) break;
-                status = hci_event_command_status_get_status(packet);
-                if (status == ERROR_CODE_SUCCESS) break;
-                
-                hfp_connection = hfp_sco_establishment_active;
-                if (hfp_handle_failed_sco_connection(status)) {
-                    // trigger hfp run for role
-                    hfp_emit_event_for_context(hfp_connection, packet, size);
-                    break;
-                }
+            switch (hci_event_command_status_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
+                case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
+                case HCI_OPCODE_HCI_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION:
+                case HCI_OPCODE_HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION:
+                    if (hfp_sco_establishment_active == NULL) break;
+                    status = hci_event_command_status_get_status(packet);
+                    if (status == ERROR_CODE_SUCCESS) break;
 
-                hfp_connection->accept_sco = 0;
-                hfp_connection->establish_audio_connection = 0;
-                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_sco_establishment_active = NULL;
-                hfp_emit_sco_connection_established(hfp_connection, status,
-                                                    hfp_connection->negotiated_codec, 0, 0);
+                    log_info("Synchronous connection command 0x%04x failed, status 0x%02x",
+                             hci_event_command_status_get_command_opcode(packet), status);
+                
+                    hfp_connection = hfp_sco_establishment_active;
+                    if (hfp_handle_failed_sco_connection(status)) {
+                        // trigger hfp run for role
+                        hfp_emit_event_for_context(hfp_connection, packet, size);
+                        break;
+                    }
+
+                    hfp_connection->accept_sco = 0;
+                    hfp_connection->establish_audio_connection = 0;
+                    hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                    hfp_sco_establishment_active = NULL;
+                    hfp_emit_sco_connection_established(hfp_connection, status,
+                                                        hfp_connection->negotiated_codec, 0, 0);
+                    break;
+                default:
+                    break;
             }
             // to allow sending HCI Commands
             forward_if_pending = true;
@@ -2007,6 +2030,91 @@ bool hfp_sco_setup_active(void){
     return hfp_sco_establishment_active != NULL;
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
+typedef struct {
+    uint8_t  transmit_coding_format;
+    uint8_t  receive_coding_format;
+    uint32_t input_bandwidth;
+    uint32_t output_bandwidth;
+    uint8_t  input_coding_format;
+    uint8_t  output_coding_format;
+    uint8_t  input_coded_data_size;
+    uint8_t  output_coded_data_size;
+    uint8_t  input_transport_unit_size;
+    uint8_t  output_transport_unit_size;
+} hfp_enhanced_sco_parameters_t;
+
+static hfp_enhanced_sco_parameters_t hfp_enhanced_sco_parameters_for_codec(uint8_t codec){
+    hfp_enhanced_sco_parameters_t parameters;
+    switch (codec){
+        case HFP_CODEC_CVSD:
+            // Host PCM16 <-> HCI <-> Controller CVSD codec <-> SCO/eSCO.
+            parameters.transmit_coding_format     = 0x02; // CVSD
+            parameters.receive_coding_format      = 0x02; // CVSD
+            parameters.input_bandwidth            = 16000;
+            parameters.output_bandwidth           = 16000;
+            parameters.input_coding_format        = 0x04; // Linear PCM
+            parameters.output_coding_format       = 0x04; // Linear PCM
+            parameters.input_coded_data_size      = 16;
+            parameters.output_coded_data_size     = 16;
+            parameters.input_transport_unit_size  = 16;
+            parameters.output_transport_unit_size = 16;
+            break;
+        default:
+            // BTstack exchanges its H2/mSBC stream over HCI; the Controller is transparent.
+            parameters.transmit_coding_format     = 0x03; // Transparent
+            parameters.receive_coding_format      = 0x03; // Transparent
+            parameters.input_bandwidth            = 8000;
+            parameters.output_bandwidth           = 8000;
+            parameters.input_coding_format        = 0x03; // Transparent
+            parameters.output_coding_format       = 0x03; // Transparent
+            parameters.input_coded_data_size      = 16;
+            parameters.output_coded_data_size     = 16;
+            parameters.input_transport_unit_size  = 1;
+            parameters.output_transport_unit_size = 1;
+            break;
+    }
+    return parameters;
+}
+
+static void hfp_send_enhanced_setup_synchronous_connection(hfp_connection_t * hfp_connection, uint16_t max_latency,
+                                                            uint16_t packet_types, uint8_t retransmission_effort){
+    const hfp_enhanced_sco_parameters_t parameters = hfp_enhanced_sco_parameters_for_codec(hfp_connection->negotiated_codec);
+    hci_send_cmd(&hci_enhanced_setup_synchronous_connection, hfp_connection->acl_handle,
+        8000, 8000,
+        parameters.transmit_coding_format, 0, 0, parameters.receive_coding_format, 0, 0,
+        60, 60,
+        parameters.input_bandwidth, parameters.output_bandwidth,
+        parameters.input_coding_format, 0, 0, parameters.output_coding_format, 0, 0,
+        parameters.input_coded_data_size, parameters.output_coded_data_size,
+        0x02, 0x02, 0, 0,
+        0x00, 0x00, // HCI data path
+        parameters.input_transport_unit_size, parameters.output_transport_unit_size,
+        max_latency, packet_types, retransmission_effort);
+}
+
+static void hfp_send_enhanced_accept_synchronous_connection(hfp_connection_t * hfp_connection, uint16_t max_latency,
+                                                             uint16_t packet_types, uint8_t retransmission_effort){
+    const hfp_enhanced_sco_parameters_t parameters = hfp_enhanced_sco_parameters_for_codec(hfp_connection->negotiated_codec);
+    hci_send_cmd(&hci_enhanced_accept_synchronous_connection, hfp_connection->remote_addr,
+        8000, 8000,
+        parameters.transmit_coding_format, 0, 0, parameters.receive_coding_format, 0, 0,
+        60, 60,
+        parameters.input_bandwidth, parameters.output_bandwidth,
+        parameters.input_coding_format, 0, 0, parameters.output_coding_format, 0, 0,
+        parameters.input_coded_data_size, parameters.output_coded_data_size,
+        0x02, 0x02, 0, 0,
+        0x00, 0x00, // HCI data path
+        parameters.input_transport_unit_size, parameters.output_transport_unit_size,
+        max_latency, packet_types, retransmission_effort);
+}
+
+static bool hfp_use_enhanced_synchronous_connection_commands(void){
+    return (hci_get_manufacturer() == BLUETOOTH_COMPANY_ID_QUALCOMM)
+        && hci_enhanced_synchronous_connection_supported();
+}
+#endif
+
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
 
     hfp_sco_establishment_active = hfp_connection;
@@ -2027,6 +2135,14 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
 
     // get packet types - bits 6-9 are 'don't allow'
     uint16_t packet_types_flipped = packet_types ^ 0x03c0;
+#ifdef ENABLE_SCO_OVER_HCI
+    if (hfp_use_enhanced_synchronous_connection_commands()){
+        // Setup SCO connection with data path HCI
+        hfp_send_enhanced_setup_synchronous_connection(hfp_connection, hfp_link_settings[setting].max_latency,
+                                                        packet_types_flipped, hfp_link_settings[setting].retransmission_effort);
+        return;
+    }
+#endif
 #if defined(ENABLE_SCO_OVER_PCM) && defined(ENABLE_NXP_PCM_WBS)
     uint8_t  radio_coding_format = 3;
     uint32_t host_bandwidth      = 0;
@@ -2172,6 +2288,14 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool u
     log_info("Sending hci_accept_connection_request: packet types 0x%04x, sco_voice_setting 0x%02x",
             packet_types, sco_voice_setting);
 
+#ifdef ENABLE_SCO_OVER_HCI
+    if (hfp_use_enhanced_synchronous_connection_commands()){
+        // Accept SCO connection with data path HCI
+        hfp_send_enhanced_accept_synchronous_connection(hfp_connection, max_latency, packet_types_flipped,
+                                                         retransmission_effort);
+        return;
+    }
+#endif
 #if defined(ENABLE_SCO_OVER_PCM) && defined(ENABLE_NXP_PCM_WBS)
     uint8_t radio_coding_format = 3;
     uint32_t host_bandwidth = 0;
@@ -2419,6 +2543,8 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
 }
 
 void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators) {
+    btstack_assert(indicators_nr <= HFP_MAX_NUM_INDICATORS);
+    btstack_assert((indicators_nr == 0u) || (indicators != NULL));
     hfp_hf_indicators_nr = indicators_nr;
     hfp_hf_indicators = indicators;
 }

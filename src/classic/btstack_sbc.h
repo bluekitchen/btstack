@@ -90,14 +90,14 @@ typedef struct {
 typedef struct {
     /**
      * Configure Encoder
-     * @param encoder_context
-     * @param mode
-     * @param blocks
-     * @param subbands
-     * @param allocation_method
-     * @param sample_rate
-     * @param bitpool
-     * @param channel_mode
+     * @param encoder_context non-NULL encoder context
+     * @param mode SBC_MODE_STANDARD or SBC_MODE_mSBC
+     * @param blocks for standard SBC: 4, 8, 12, or 16; ignored for mSBC
+     * @param subbands for standard SBC: 4 or 8; ignored for mSBC
+     * @param allocation_method for standard SBC: SBC_ALLOCATION_METHOD_LOUDNESS or SBC_ALLOCATION_METHOD_SNR; ignored for mSBC
+     * @param sample_rate for standard SBC: 16000, 32000, 44100, or 48000 Hz; ignored for mSBC
+     * @param bitpool for standard SBC: 2 through min(250, 16 * subbands) for mono/dual-channel or min(250, 32 * subbands) for stereo/joint-stereo; ignored for mSBC
+     * @param channel_mode for standard SBC: a btstack_sbc_channel_mode_t value; ignored for mSBC
      * @return status
      */
     uint8_t (*configure)(void * encoder_context, btstack_sbc_mode_t mode,
@@ -106,22 +106,22 @@ typedef struct {
 
     /**
      * @brief Return number of audio frames required for one SBC packet
-     * @param encoder_context
+     * @param encoder_context non-NULL configured encoder context
      * @note  each audio frame contains 2 sample values in stereo modes
      */
     uint16_t (*num_audio_frames)(void * encoder_context);
 
     /**
      * @brief Return SBC frame length
-     * @param encoder_context
+     * @param encoder_context non-NULL configured encoder context
      */
     uint16_t (*sbc_buffer_length)(void * encoder_context);
 
     /**
      * @brief Encode PCM data
-     * @param encoder_context
-     * @param pcm_in with samples in host endianess
-     * @param sbc_out
+     * @param encoder_context non-NULL configured encoder context
+     * @param pcm_in non-NULL PCM samples in host endianess
+     * @param sbc_out non-NULL storage for the encoded SBC frame
      * @return status
      */
     uint8_t (*encode_signed_16)(void * encoder_context, const int16_t* pcm_in, uint8_t * sbc_out);
@@ -131,9 +131,9 @@ typedef struct {
 typedef struct {
     /**
      * @brief Init SBC decoder
-     * @param decoder_context
+     * @param decoder_context non-NULL decoder context
      * @param mode
-     * @param callback_handler for decoded PCM data in host endianess
+     * @param callback_handler non-NULL callback for decoded PCM data in host endianess
      * @param callback_context provided as context in call to callback_handler
      */
     void (*configure)(void * decoder_context,
@@ -146,7 +146,7 @@ typedef struct {
      * @brief Process received SBC data and deliver pcm via context_callback
      * @param decoder_context
      * @param packet_status_flag from SCO packet: 0 = OK, 1 = possibly invalid data, 2 = no data received, 3 = data partially lost
-     * @param buffer
+     * @param buffer non-NULL when size is nonzero
      * @param size
      */
     void (*decode_signed_16)(void * decoder_context, uint8_t packet_status_flag, const uint8_t * buffer, uint16_t size);
@@ -160,9 +160,9 @@ typedef struct {
 /**
  * @brief Init SBC decoder
  * @deprecated Please use btstack_sbc_decoder_bluedroid_init_instance() from btstack_sbc_bluedroid.h and call btstack_sbc_decoder->configure() instead
- * @param state
+ * @param state non-NULL decoder state
  * @param mode
- * @param callback for decoded PCM data in host endianess
+ * @param callback non-NULL callback for decoded PCM data in host endianess
  * @param context provided in callback
  */
 
@@ -173,8 +173,8 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
  * @deprecated Please use btstack_sbc_decoder->decode_signed_16() instead
  * @param state
  * @param packet_status_flag from SCO packet: 0 = OK, 1 = possibly invalid data, 2 = no data received, 3 = data partially lost
- * @param buffer
- * @param size
+ * @param buffer non-NULL when size is nonzero
+ * @param size non-negative number of bytes in buffer
  */
 void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, const uint8_t * buffer, int size);
 
@@ -201,14 +201,14 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state);
 /**
  * @brief Init SBC encoder
  * @deprecated Please use btstack_sbc_encoder_bluedroid_init_instance() from btstack_sbc_bluedroid.h and call btstack_sbc_encoder->configure() instead
- * @param state
- * @param mode 
- * @param blocks
- * @param subbands
- * @param allocation_method
- * @param sample_rate
- * @param bitpool
- * @param channel_mode
+ * @param state non-NULL encoder state
+ * @param mode SBC_MODE_STANDARD or SBC_MODE_mSBC
+ * @param blocks for standard SBC: 4, 8, 12, or 16; ignored for mSBC
+ * @param subbands for standard SBC: 4 or 8; ignored for mSBC
+ * @param allocation_method for standard SBC: SBC_ALLOCATION_METHOD_LOUDNESS or SBC_ALLOCATION_METHOD_SNR; ignored for mSBC
+ * @param sample_rate for standard SBC: 16000, 32000, 44100, or 48000 Hz; ignored for mSBC
+ * @param bitpool for standard SBC: 2 through min(250, 16 * subbands) for mono/dual-channel or min(250, 32 * subbands) for stereo/joint-stereo; ignored for mSBC
+ * @param channel_mode for standard SBC: a btstack_sbc_channel_mode_t value; ignored for mSBC
  */
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method, 
@@ -217,7 +217,7 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
 /**
  * @brief Encode PCM data
  * @deprecated Please use btstack_sbc_encoder->encode_signed_16() instead
- * @param buffer with samples in host endianess
+ * @param buffer non-NULL samples in host endianess
  */
 void btstack_sbc_encoder_process_data(int16_t * input_buffer);
 

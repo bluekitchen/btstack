@@ -136,6 +136,8 @@ typedef struct {
     uint16_t              flags;
     // retry count
     uint8_t               retry_count;
+    // highest segment number for incoming segmented messages
+    uint8_t               seg_n;
     // pdu segments
     uint16_t              len;
     btstack_linked_list_t segments;

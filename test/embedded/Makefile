@@ -25,6 +25,8 @@ COMMON = \
     btstack_util.c		\
     hci_dump.c			\
     hci_dump_buffered.c \
+    btstack_ltv_builder.c \
+    btstack_tlv_builder.c \
     l2cap_signaling.c   \
     hci_cmd.c			\
     hci_event.c         \
@@ -71,6 +73,10 @@ build-coverage/hci_event_test: ${COMMON_OBJ_COVERAGE}
 
 build-asan/hci_event_test: ${COMMON_OBJ_ASAN}
 
+build-coverage/tlv_builder_test: ${COMMON_OBJ_COVERAGE}
+
+build-asan/tlv_builder_test: ${COMMON_OBJ_ASAN}
+
 test: \
 	build-asan/btstack_util_test \
 	build-asan/embedded_test \
@@ -79,7 +85,8 @@ test: \
 	build-asan/hci_dump_test \
 	build-asan/hci_event_test \
 	build-asan/l2cap_le_signaling_test \
-	build-asan/run_loop_base_test
+	build-asan/run_loop_base_test \
+	build-asan/tlv_builder_test
 
 	build-asan/btstack_util_test
 	build-asan/embedded_test
@@ -98,6 +105,7 @@ coverage: \
 	build-coverage/hci_dump_test.info \
 	build-coverage/hci_event_test.info \
 	build-coverage/l2cap_le_signaling_test.info \
-	build-coverage/run_loop_base_test.info
+	build-coverage/run_loop_base_test.info \
+	build-coverage/tlv_builder_test.info
 
 clean: clean-common

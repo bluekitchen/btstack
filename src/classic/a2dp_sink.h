@@ -204,6 +204,15 @@ uint8_t a2dp_sink_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uint8
 uint8_t a2dp_sink_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, const uint8_t * media_codec_information, uint8_t media_codec_information_len);
 
 /**
+ * @brief Send delay report.
+ * @param a2dp_cid          A2DP channel identifier.
+ * @param local_seid        ID of a local stream endpoint.
+ * @param delay_100us       Delay in 1/10 ms units.
+ * @return status
+ */
+uint8_t a2dp_sink_delay_report(uint16_t a2dp_cid, uint8_t local_seid, uint16_t delay_100us);
+
+/**
  * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
  * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
  *       the callback receives the media configuration in the same format as the existing A2dP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION

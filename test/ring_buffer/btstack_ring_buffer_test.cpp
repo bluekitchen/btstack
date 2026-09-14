@@ -11,7 +11,7 @@ uint32_t btstack_min(uint32_t a, uint32_t b){
 
 TEST_GROUP(RingBuffer){
     btstack_ring_buffer_t ring_buffer;
-    int storage_size;
+    uint32_t storage_size;
 
     void setup(void){
         storage_size = sizeof(storage);
@@ -28,8 +28,8 @@ TEST(RingBuffer, EmptyBuffer){
 
 TEST(RingBuffer, WriteBuffer){
     uint8_t test_write_data[] = {1,2,3,4, 5};
-    int test_data_size = sizeof(test_write_data);
-    uint8_t test_read_data[test_data_size];
+    uint32_t test_data_size = sizeof(test_write_data);
+    uint8_t test_read_data[sizeof(test_write_data)];
 
     btstack_ring_buffer_write(&ring_buffer, test_write_data, test_data_size);
     CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
@@ -44,8 +44,8 @@ TEST(RingBuffer, WriteBuffer){
 
 TEST(RingBuffer, WriteFullBuffer){    
     uint8_t test_write_data[] = {1,2,3,4,5,6,7,8,9,10};
-    int test_data_size = sizeof(test_write_data);
-    uint8_t test_read_data[test_data_size];
+    uint32_t test_data_size = sizeof(test_write_data);
+    uint8_t test_read_data[sizeof(test_write_data)];
 
     btstack_ring_buffer_write(&ring_buffer, test_write_data, test_data_size);
     CHECK_EQUAL(test_data_size, btstack_ring_buffer_bytes_available(&ring_buffer));
@@ -60,8 +60,8 @@ TEST(RingBuffer, WriteFullBuffer){
 
 TEST(RingBuffer, ReadWrite){    
     uint8_t test_write_data[] = {1,2,3,4};
-    int test_data_size = sizeof(test_write_data);
-    uint8_t test_read_data[test_data_size];
+    uint32_t test_data_size = sizeof(test_write_data);
+    uint8_t test_read_data[sizeof(test_write_data)];
 
     int i;
     for (i=0;i<30;i++){
@@ -77,8 +77,8 @@ TEST(RingBuffer, ReadWrite){
 
 TEST(RingBuffer, ReadWriteChunks){    
     uint8_t test_write_data[] = {1,2,3,4,5,6};
-    int test_data_size = sizeof(test_write_data);
-    int chunk_size = 3;
+    uint32_t test_data_size = sizeof(test_write_data);
+    static const uint32_t chunk_size = 3;
     uint8_t test_read_data[chunk_size];
 
     btstack_ring_buffer_write(&ring_buffer, test_write_data, test_data_size);

@@ -71,9 +71,15 @@ static bool packet_log_enabled;
 static bool log_level_enabled[3] = { 1, 1, 1};
 
 static bool hci_dump_log_level_active(int log_level){
-    if (hci_dump_implementation == NULL) return false;
-    if (log_level >= HCI_DUMP_LOG_LEVEL_PRINT) return true;
-    if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG) return false;
+    if (hci_dump_implementation == NULL){
+        return false;
+    }
+    if (log_level >= HCI_DUMP_LOG_LEVEL_PRINT){
+        return true;
+    }
+    if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG){
+        return false;
+    }
     return log_level_enabled[log_level];
 }
 
@@ -152,8 +158,12 @@ void hci_dump_btstack_event(const uint8_t *packet, uint16_t len){
 }
 
 void hci_dump_enable_log_level(int log_level, int enable){
-    if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG) return;
-    if (log_level > HCI_DUMP_LOG_LEVEL_ERROR) return;
+    if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG){
+        return;
+    }
+    if (log_level > HCI_DUMP_LOG_LEVEL_ERROR){
+        return;
+    }
     log_level_enabled[log_level] = enable != 0;
 }
 

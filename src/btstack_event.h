@@ -7627,13 +7627,22 @@ static inline uint8_t gap_subevent_big_created_get_big_handle(const uint8_t * ev
     return event[4];
 }
 /**
+ * @brief Get field iso_interval_1250us from event GAP_SUBEVENT_BIG_CREATED
+ * @param event packet
+ * @return iso_interval_1250us
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_subevent_big_created_get_iso_interval_1250us(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
  * @brief Get field num_bis from event GAP_SUBEVENT_BIG_CREATED
  * @param event packet
  * @return num_bis
  * @note: btstack_type 1
  */
 static inline uint8_t gap_subevent_big_created_get_num_bis(const uint8_t * event){
-    return event[5];
+    return event[7];
 }
 /**
  * @brief Get element of array field bis_con_handles from event GAP_SUBEVENT_BIG_CREATED
@@ -7643,7 +7652,7 @@ static inline uint8_t gap_subevent_big_created_get_num_bis(const uint8_t * event
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_big_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * (int) index));
+    return little_endian_read_16(event, 8 + (2 * (int) index));
 }
 
 /**
@@ -7675,13 +7684,22 @@ static inline uint8_t gap_subevent_big_sync_created_get_big_handle(const uint8_t
     return event[4];
 }
 /**
+ * @brief Get field iso_interval_1250us from event GAP_SUBEVENT_BIG_SYNC_CREATED
+ * @param event packet
+ * @return iso_interval_1250us
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_subevent_big_sync_created_get_iso_interval_1250us(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
  * @brief Get field num_bis from event GAP_SUBEVENT_BIG_SYNC_CREATED
  * @param event packet
  * @return num_bis
  * @note: btstack_type 1
  */
 static inline uint8_t gap_subevent_big_sync_created_get_num_bis(const uint8_t * event){
-    return event[5];
+    return event[7];
 }
 /**
  * @brief Get element of array field bis_con_handles from event GAP_SUBEVENT_BIG_SYNC_CREATED
@@ -7691,7 +7709,7 @@ static inline uint8_t gap_subevent_big_sync_created_get_num_bis(const uint8_t * 
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_big_sync_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * (int) index));
+    return little_endian_read_16(event, 8 + (2 * (int) index));
 }
 
 /**

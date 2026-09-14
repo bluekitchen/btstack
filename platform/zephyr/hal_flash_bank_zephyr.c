@@ -29,11 +29,12 @@
  *
  */
 
+#define BTSTACK_FILE__ "hal_flash_bank_zephyr.c"
+
 /*
- *  hal_flash_bank_stm32.c
+ *  hal_flash_bank_zephyr.c
  * 
- *  HAL abstraction for Flash memory that can be written anywhere
- *  after being erased
+ *  HAL abstraction for Flash memory that uses Zephyr Flash Driver
  */
 
 #include <stdint.h>

@@ -118,6 +118,7 @@ static void sine_finalize(btstack_audio_generator_t * base){
 void btstack_audio_generator_sine_init(btstack_audio_generator_sine_t * self, uint16_t samplerate_hz, uint8_t channels,
                                        uint16_t frequency_hz){
     btstack_assert(samplerate_hz <= MAX_SAMPLETRATE_HZ);
+    btstack_assert(frequency_hz >= SINE_LOWEST_FREQUENCY);
     // calc number of samples per period
     uint16_t num_samples = samplerate_hz / frequency_hz;
     if (num_samples > SINE_MAX_SAMPLES_AT_48KHZ) {

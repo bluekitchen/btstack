@@ -635,6 +635,7 @@ typedef struct {
     uint8_t  parsed_attribute_value[AVRCP_MAX_ATTRIBUTE_SIZE];
     uint16_t parsed_attribute_value_len;
     uint16_t parsed_attribute_value_offset;
+    uint16_t parsed_attribute_value_received;
     uint8_t  parsed_num_attributes;
 
     // get folder items data
@@ -880,7 +881,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief   Connect to AVRCP service on a remote device, emits AVRCP_SUBEVENT_CONNECTION_ESTABLISHED with status
- * @param   remote_addr
+ * @param   remote_addr non-NULL remote Bluetooth address
  * @param   avrcp_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @return status     
  */

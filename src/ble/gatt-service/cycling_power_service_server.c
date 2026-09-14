@@ -222,50 +222,30 @@ static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 
 static uint16_t cycling_power_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(attribute_handle);
-    UNUSED(offset);
     cycling_power_t * instance = &cycling_power;
 
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->measurement_client_configuration_descriptor_notify);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->measurement_client_configuration_descriptor_notify, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->measurement_server_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->measurement_server_configuration_descriptor_broadcast);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->measurement_server_configuration_descriptor_broadcast, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->vector_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->vector_client_configuration_descriptor_notify);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->vector_client_configuration_descriptor_notify, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2u)){
-            little_endian_store_16(buffer, 0, instance->control_point_client_configuration_descriptor_indicate);
-        } 
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->control_point_client_configuration_descriptor_indicate, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->feature_value_handle){
-        if (buffer && (buffer_size >= 4u)){
-            little_endian_store_32(buffer, 0, instance->feature_flags);
-        } 
-        return 4;
+        return att_read_callback_handle_little_endian_32(instance->feature_flags, offset, buffer, buffer_size);
     }   
     
     if (attribute_handle == instance->sensor_location_value_handle){
-        if (buffer && (buffer_size >= 1u)){
-            buffer[0] = instance->sensor_location;
-        } 
-        return 1;
+        return att_read_callback_handle_byte(instance->sensor_location, offset, buffer, buffer_size);
     }   
     return 0;
 }
@@ -366,9 +346,9 @@ static void cycling_power_service_vector_can_send_now(void * context){
                 uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
                 uint16_t bytes_left = 0;
                 if (att_mtu > (pos + 3u)){
-                    bytes_left = btstack_min(sizeof(value), att_mtu - 3u - pos);
+                    bytes_left = btstack_min((uint16_t)(sizeof(value) - pos), (uint16_t)(att_mtu - 3u - pos));
                 }
-                while ((bytes_left > 2u) && instance->force_magnitude_count){
+                while ((bytes_left > 2u) && (instance->force_magnitude_count > 0)){
                     little_endian_store_16(value, pos, instance->vector_instantaneous_force_magnitude_N_array[0]);
                     pos += 2;
                     bytes_left -= 2u;
@@ -381,10 +361,10 @@ static void cycling_power_service_vector_can_send_now(void * context){
                 uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
                 uint16_t bytes_left = 0;
                 if (att_mtu > (pos + 3u)){
-                    bytes_left = btstack_min(sizeof(value), att_mtu - 3u - pos);
+                    bytes_left = btstack_min((uint16_t)(sizeof(value) - pos), (uint16_t)(att_mtu - 3u - pos));
                 }
 
-                while ((bytes_left > 2u) && instance->torque_magnitude_count){
+                while ((bytes_left > 2u) && (instance->torque_magnitude_count > 0)){
                     little_endian_store_16(value, pos, instance->vector_instantaneous_torque_magnitude_Nm_array[0]);
                     pos += 2;
                     bytes_left -= 2u;
@@ -513,7 +493,9 @@ static int cycling_power_store_measurement(cycling_power_t * instance, uint8_t *
 }
 
 int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size){
-    if (adv_size < 12u) return 0u;
+    // Flags, interval, service-data header, and mandatory measurement fields.
+    if (adv_size < 15u) return 0u;
+    adv_size = btstack_min(adv_size, CYCLING_POWER_MAX_BROACAST_MSG_SIZE);
     cycling_power_t * instance =  &cycling_power;
     int pos = 0;
     // adv flags
@@ -527,7 +509,7 @@ int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * adv_buffe
     little_endian_store_16(adv_buffer, pos, adv_interval);
     pos += 2;
     //
-    int value_len = cycling_power_store_measurement(instance, &adv_buffer[pos + 4], CYCLING_POWER_MAX_BROACAST_MSG_SIZE - (pos + 4));
+    int value_len = cycling_power_store_measurement(instance, &adv_buffer[pos + 4], adv_size - (pos + 4));
     adv_buffer[pos++] = 3 + value_len;
     adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
     little_endian_store_16(adv_buffer, pos, ORG_BLUETOOTH_SERVICE_CYCLING_POWER);
@@ -588,7 +570,7 @@ static void cycling_power_service_response_can_send_now(void * context){
         switch (instance->request_opcode){
             case CP_OPCODE_REQUEST_SUPPORTED_SENSOR_LOCATIONS:{
                 int i;
-                for (i=0; i<instance->num_supported_sensor_locations; i++){
+                for (i=0; (i<instance->num_supported_sensor_locations) && (pos < (int)sizeof(value)); i++){
                     value[pos++] = instance->supported_sensor_locations[i]; 
                 }
                 break;
@@ -1034,7 +1016,7 @@ void cycling_power_service_server_init(uint32_t feature_flags,
     instance->sensor_location = current_sensor_location;
     instance->num_supported_sensor_locations = 0;
     if (supported_sensor_locations != NULL){
-        instance->num_supported_sensor_locations = num_supported_sensor_locations;
+        instance->num_supported_sensor_locations = btstack_min(num_supported_sensor_locations, (uint16_t)CP_SENSOR_LOCATION_RESERVED);
         instance->supported_sensor_locations = supported_sensor_locations;
     }
     

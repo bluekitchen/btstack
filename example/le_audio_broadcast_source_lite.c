@@ -511,18 +511,23 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
-                case GAP_SUBEVENT_BIG_CREATED:
-                    printf("BIG Created with BIS Connection handles: \n");
-                    for (bis_index=0;bis_index<num_bis;bis_index++){
+                case GAP_SUBEVENT_BIG_CREATED: {
+                    uint8_t event_num_bis = gap_subevent_big_created_get_num_bis(packet);
+                    printf("BIG Created\n");
+                    printf("- ISO Interval: %u us\n", gap_subevent_big_created_get_iso_interval_1250us(packet) * 1250);
+                    printf("- BIS Connection handles: ");
+                    for (bis_index=0;bis_index<event_num_bis;bis_index++){
                         bis_con_handles[bis_index] = gap_subevent_big_created_get_bis_con_handles(packet, bis_index);
                         printf("0x%04x ", bis_con_handles[bis_index]);
                     }
+                    printf("\n");
 
                     app_state = APP_STREAMING;
 
                     printf("Start streaming\n");
                     hci_request_bis_can_send_now_events(big_params.big_handle);
                     break;
+                }
                 case GAP_SUBEVENT_BIG_TERMINATED:
                     printf("BIG TERMINATED\n");
 

@@ -54,10 +54,16 @@ extern "C" {
 #endif
 
 typedef enum {
-  BTSTACK_CHIPSET_DONE = 0,
-  BTSTACK_CHIPSET_VALID_COMMAND,
-  BTSTACK_CHIPSET_WARMSTART_REQUIRED,
-  BTSTACK_CHIPSET_NO_INIT_SCRIPT,
+    // Chipset driver is down with Controller configuration
+    BTSTACK_CHIPSET_DONE = 0,
+    // Chipset driver has provided an HCI command in the buffer and expects an event, e.g. HCI Command Complete
+    BTSTACK_CHIPSET_VALID_COMMAND,
+    // Chipset driver has provided an HCI command in the buffer but does not expects an event before sending the next command
+    BTSTACK_CHIPSET_VALID_COMMAND_WITHOUT_EVENT,
+    // The Controller requires a Warmstart
+    BTSTACK_CHIPSET_WARMSTART_REQUIRED,
+    // Chipset driver does not need to send or could not find init script
+    BTSTACK_CHIPSET_NO_INIT_SCRIPT,
 } btstack_chipset_result_t;
 
 /* API_START */

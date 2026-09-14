@@ -440,19 +440,24 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
 }
 
 uint32_t btstack_atoi(const char * str){
-    const char * the_string = str;
+    return btstack_atoi_n(str, strlen(str));
+}
+
+uint32_t btstack_atoi_n(const char * str, size_t len){
     uint32_t val = 0;
-    while (true){
-        char chr = *the_string++;
+    size_t i;
+    for (i = 0; i < len; i++){
+        char chr = str[i];
         // skip whitespace
         if (((chr >= 0x09) && (chr <= 0x0d)) || (chr == ' ')) {
             continue;
         }
-        if (!chr || (chr < '0') || (chr > '9')){
-            return val;
+        if ((chr < '0') || (chr > '9')){
+            break;
         }
         val = (val * 10u) + (uint8_t)(chr - '0');
     }
+    return val;
 }
 
 int string_len_for_uint32(uint32_t i){
@@ -674,6 +679,9 @@ uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid){
 }
 
 uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
+    if (dst_size == 0u){
+        return 0;
+    }
     uint16_t bytes_to_copy = (uint16_t) btstack_min( dst_size - 1, (uint16_t) strlen(src));
     (void) memcpy(dst, src, bytes_to_copy);
     dst[bytes_to_copy] = 0;
@@ -681,8 +689,17 @@ uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src){
 }
 
 void btstack_strcat(char * dst, uint16_t dst_size, const char * src){
+    if (dst_size == 0u){
+        return;
+    }
     uint16_t src_len = (uint16_t) strlen(src);
-    uint16_t dst_len = (uint16_t) strlen(dst);
+    uint16_t dst_len = 0;
+    while ((dst_len < dst_size) && (dst[dst_len] != '\0')){
+        dst_len++;
+    }
+    if (dst_len == dst_size){
+        return;
+    }
     uint16_t bytes_to_copy = btstack_min( src_len, dst_size - dst_len - 1);
     (void) memcpy( &dst[dst_len], src, bytes_to_copy);
     dst[dst_len + bytes_to_copy] = 0;
@@ -724,36 +741,25 @@ uint16_t btstack_virtual_memcpy(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset, // position of field in complete data block
     uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
 
-    uint16_t after_buffer = buffer_offset + buffer_size ;
+    uint32_t field_end  = (uint32_t) field_offset  + field_len;
+    uint32_t buffer_end = (uint32_t) buffer_offset + buffer_size;
+
     // bail before buffer
-    if ((field_offset + field_len) < buffer_offset){
+    if (field_end <= buffer_offset){
         return 0;
     }
     // bail after buffer
-    if (field_offset >= after_buffer){
+    if (field_offset >= buffer_end){
         return 0;
     }
-    // calc overlap
-    uint16_t bytes_to_copy = field_len;
-    
-    uint16_t skip_at_start = 0;
-    if (field_offset < buffer_offset){
-        skip_at_start = buffer_offset - field_offset;
-        bytes_to_copy -= skip_at_start;
-    }
 
-    uint16_t skip_at_end = 0;
-    if ((field_offset + field_len) > after_buffer){
-        skip_at_end = (field_offset + field_len) - after_buffer;
-        bytes_to_copy -= skip_at_end;
-    }
-    
-    btstack_assert((skip_at_end + skip_at_start) <= field_len);
+    uint32_t copy_start = field_offset > buffer_offset ? field_offset : buffer_offset;
+    uint32_t copy_end   = field_end < buffer_end ? field_end : buffer_end;
+    uint16_t bytes_to_copy = (uint16_t)(copy_end - copy_start);
+
     btstack_assert(bytes_to_copy <= field_len);
+    btstack_assert(bytes_to_copy <= buffer_size);
 
-    memcpy(&buffer[(field_offset + skip_at_start) - buffer_offset], &field_data[skip_at_start], bytes_to_copy);
+    memcpy(&buffer[copy_start - buffer_offset], &field_data[copy_start - field_offset], bytes_to_copy);
     return bytes_to_copy;
 }
-
-
-

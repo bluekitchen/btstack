@@ -313,7 +313,7 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid);
 /**
  * @brief Enable notification. Response via AVRCP_SUBEVENT_NOTIFICATION_STATE.
  * @param avrcp_cid
- * @param event_id
+ * @param event_id Valid AVRCP notification event ID.
  * @return status
  */
 uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
@@ -321,7 +321,7 @@ uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notificat
 /**
  * @brief Disable notification. Response via AVRCP_SUBEVENT_NOTIFICATION_STATE.
  * @param avrcp_cid
- * @param event_id
+ * @param event_id Valid AVRCP notification event ID.
  * @return status
  */
 uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
@@ -329,6 +329,8 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
 /**
  * @brief Get info on now playing media using subset of attribute IDs
  * @param avrcp_cid
+ * @param num_attributes Number of attribute IDs.
+ * @param attributes Attribute IDs; must be non-NULL if `num_attributes` is nonzero.
  * @return status
  */
 uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_attributes, avrcp_media_attribute_id_t * attributes);
@@ -366,9 +368,18 @@ uint8_t avrcp_controller_skip(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id);
 
+/** `attr_ids` must be non-NULL when `attr_ids_num` is nonzero. */
 uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, avrcp_player_application_setting_attribute_id_t * attr_ids);
+/** `attr_id_values` must be non-NULL when `attr_id_values_num` is nonzero. */
 uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_id_values_num, uint8_t * attr_id_values);
 
+/**
+ * @brief Inform the target about displayable character sets.
+ * @param avrcp_cid
+ * @param character_set_num Number of entries; limited to (AVRCP_MAX_COMMAND_PARAMETER_LENGTH - 1) / 2.
+ * @param character_set Character-set identifiers; must be non-NULL if character_set_num is nonzero.
+ * @return status
+ */
 uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set);
 uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 
@@ -426,8 +437,8 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
  * @param subunit_id
  * @param pdu_id
  * @param company_id
- * @param data
- * @param data_len
+ * @param data optional command payload, non-NULL when data_len is nonzero and retained until transmission completes
+ * @param data_len command payload length
  */
 uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, 
     avrcp_command_type_t command_type, 

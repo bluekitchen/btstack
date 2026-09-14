@@ -335,6 +335,8 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
 }                    
 
 static void beacon_handle_beacon_packet(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (size == 0u) return;
+
     log_info("beacon type %u", packet[0]);
     switch (packet[0]){
         case BEACON_TYPE_UNPROVISIONED_DEVICE:

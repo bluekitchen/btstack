@@ -1,0 +1,6 @@
+board:
+  name: if310
+  full_name: IF310 Development Board
+  vendor: ezurio
+  socs:
+  - name: rp2040

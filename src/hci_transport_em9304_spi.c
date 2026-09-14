@@ -228,6 +228,13 @@ static void em9304_spi_engine_run(void){
             // check slave status
             log_debug("RX: STS2 0x%02X", sStas.bytes[0]);
 
+            if (sStas.bytes[0] > sizeof(em9304_spi_engine_spi_buffer.bytes)){
+                log_info("RX: invalid data length %u", sStas.bytes[0]);
+                em9304_engine_action_done();
+                em9304_engine_start_next_transaction();
+                break;
+            }
+
             // read data
             em9304_spi_engine_state = SPI_EM9304_RX_W4_DATA_RECEIVED;
             em9304_spi_engine_rx_request_len = sStas.bytes[0];

@@ -54,8 +54,9 @@ TEST_GROUP(HAL_FLASH_bank){
 TEST(HAL_FLASH_bank, TestErased){
 	uint8_t buffer;
 	int offsets[] = { 0, 10, 100};
+	int offsets_count = sizeof(offsets) / sizeof(offsets[0]);
 	int i;
-	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
+	for (i=0;i<offsets_count;i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			hal_flash_bank_impl->read(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
@@ -67,15 +68,16 @@ TEST(HAL_FLASH_bank, TestErased){
 TEST(HAL_FLASH_bank, TestWrite){
 	uint8_t buffer;
 	int offsets[] = { 0, 10, 100};
+	int offsets_count = sizeof(offsets) / sizeof(offsets[0]);
 	int i;
-	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
+	for (i=0;i<offsets_count;i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			buffer = i;
 			hal_flash_bank_impl->write(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
 		}
 	}
-	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
+	for (i=0;i<offsets_count;i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			hal_flash_bank_impl->read(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
@@ -372,6 +374,16 @@ TEST(LINK_KEY_DB, UpdateKey){
 
 TEST(LINK_KEY_DB, NumKeys){
     CHECK(NVM_NUM_LINK_KEYS ==  2);
+}
+
+TEST(LINK_KEY_DB, IgnoreTruncatedEntry){
+    uint8_t truncated_entry = 0;
+    uint32_t tag = ((uint32_t)'B' << 24u) | ((uint32_t)'T' << 16u) | ((uint32_t)'L' << 8u);
+    CHECK_EQUAL(0, btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &truncated_entry, sizeof(truncated_entry)));
+
+    link_key_t test_link_key;
+    link_key_type_t test_link_key_type;
+    CHECK_EQUAL(0, btstack_link_key_db->get_link_key(addr1, test_link_key, &test_link_key_type));
 }
 
 TEST(LINK_KEY_DB, KeyReplacement){

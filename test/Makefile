@@ -15,6 +15,7 @@ SUBDIRS :=  \
 	avdtp_util \
 	base64 \
 	ble_client \
+	chunk_buffer \
 	btstack-event \
 	btstack_link_key_db \
 	btstack_util \
@@ -30,6 +31,8 @@ SUBDIRS :=  \
 	gatt_client \
 	gatt_server \
 	gatt_service_server \
+	gatt_service_bounds \
+	ots_server \
 	hfp \
 	hid_parser \
 	l2cap-cbm \
@@ -59,6 +62,7 @@ SUBDIRS_BLE := \
 	ad_parser \
 	att_db \
 	ble_client \
+	chunk_buffer \
 	btstack-event \
 	btstack_memory \
 	btstack_resample \
@@ -70,6 +74,8 @@ SUBDIRS_BLE := \
 	gatt_client \
 	gatt_server \
 	gatt_service_server \
+	gatt_service_bounds \
+	ots_server \
 	hid_parser \
 	l2cap-cbm \
 	le_device_db_tlv \
@@ -88,6 +94,11 @@ SUBDIRS_BLE := \
 SUBDIRS_UNIQ := $(sort $(SUBDIRS) $(SUBDIRS_BLE))
 test coverage-all clean: $(SUBDIRS_UNIQ)
 
+test: version-test
+
+version-test:
+	python3 version_test.py
+
 test-ble: MAKECMDGOALS = test
 test-ble: $(SUBDIRS_BLE)
 
@@ -97,7 +108,7 @@ coverage-ble: $(SUBDIRS_BLE)
 $(SUBDIRS_UNIQ):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-.PHONY: $(SUBDIRS_UNIQ)
+.PHONY: $(SUBDIRS_UNIQ) version-test
 .SUFFIXES:
 
 coverage%: export LLVM_PROFILE_FILE=coverage-%m-%p.profraw

@@ -46,7 +46,7 @@ TEST_GROUP(RemoteDeviceDB){
         bd_addr_copy(addr3, addr_3); 
        
         link_key_type = (link_key_type_t)4;
-        sprintf((char*)link_key, "%d", 100);
+        snprintf((char *)link_key, sizeof(link_key), "%d", 100);
     }
     
     void teardown(void){}
@@ -84,7 +84,7 @@ TEST(RemoteDeviceDB, MemoryPool){
 
 
 TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
-	sprintf((char*)link_key, "%d", 100);
+	snprintf((char *)link_key, sizeof(link_key), "%d", 100);
 	btstack_link_key_db_memory_instance()->put_link_key(addr1, link_key, link_key_type);
     // dump(db_mem_link_keys);
 
@@ -95,13 +95,13 @@ TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 }
 
 TEST(RemoteDeviceDB, SortByLastUsedKey){
-    sprintf((char*)link_key, "%d", 10);
+    snprintf((char *)link_key, sizeof(link_key), "%d", 10);
 	btstack_link_key_db_memory_instance()->put_link_key(addr1, link_key, link_key_type);
     // dump(db_mem_link_keys);
-    sprintf((char*)link_key, "%d", 20);
+    snprintf((char *)link_key, sizeof(link_key), "%d", 20);
 	btstack_link_key_db_memory_instance()->put_link_key(addr2, link_key, link_key_type);
     // dump(db_mem_link_keys);
-    sprintf((char*)link_key, "%d", 30);
+    snprintf((char *)link_key, sizeof(link_key), "%d", 30);
 	btstack_link_key_db_memory_instance()->put_link_key(addr3, link_key, link_key_type);
     // dump(db_mem_link_keys);
 

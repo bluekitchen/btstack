@@ -227,7 +227,7 @@ static void avrcp_cover_art_client_handle_can_send_now(avrcp_cover_art_client_t 
                 if (cover_art_client->image_descriptor != NULL){
                     goep_client_header_add_variable(cover_art_client->goep_cid, OBEX_HEADER_IMG_DESCRIPTOR, (const uint8_t *) cover_art_client->image_descriptor, (uint16_t) strlen(cover_art_client->image_descriptor));
                 }
-                uint8_t image_handle_len = btstack_max(7, (uint16_t) strlen(cover_art_client->image_handle));
+                uint16_t image_handle_len = (uint16_t) strlen(cover_art_client->image_handle);
                 goep_client_header_add_unicode_prefix(cover_art_client->goep_cid, OBEX_HEADER_IMG_HANDLE, cover_art_client->image_handle, image_handle_len);
             }
             // state
@@ -271,11 +271,14 @@ static void avrcp_cover_art_goep_event_handler(const uint8_t *packet, uint16_t s
                     status = goep_subevent_connection_opened_get_status(packet);
                     if (status){
                         log_info("connection failed %u", status);
+                        packet_handler = cover_art_client->packet_handler;
+                        cover_art_cid = cover_art_client->cover_art_cid;
+                        uint16_t avrcp_cid = cover_art_client->avrcp_cid;
+                        bd_addr_t addr;
+                        // cppcheck-suppress uninitvar ; addr is the target
+                        (void)memcpy(addr, cover_art_client->addr, sizeof(addr));
                         avrcp_cover_art_finalize_connection(cover_art_client);
-                        avrcp_cover_art_client_emit_connection_established(cover_art_client->packet_handler, status,
-                                                                           cover_art_client->addr,
-                                                                           cover_art_client->avrcp_cid,
-                                                                           cover_art_client->cover_art_cid);
+                        avrcp_cover_art_client_emit_connection_established(packet_handler, status, addr, avrcp_cid, cover_art_cid);
                     } else {
                         log_info("connection established");
                         cover_art_client->state = AVRCP_COVER_ART_W2_SEND_CONNECT_REQUEST;
@@ -446,6 +449,13 @@ avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btsta
                                bd_addr_t remote_addr, uint8_t *ertm_buffer, uint32_t ertm_buffer_size,
                                const l2cap_ertm_config_t *ertm_config, uint16_t *avrcp_cover_art_cid) {
 
+    btstack_assert(cover_art_client != NULL);
+    btstack_assert(packet_handler != NULL);
+    btstack_assert(remote_addr != NULL);
+    btstack_assert(ertm_buffer != NULL);
+    btstack_assert(ertm_buffer_size > 0u);
+    btstack_assert(ertm_config != NULL);
+
     avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
     avrcp_connection_t * connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
     if ((connection_target == NULL) || (connection_controller == NULL)){
@@ -479,6 +489,10 @@ avrcp_cover_art_client_connect(avrcp_cover_art_client_t *cover_art_client, btsta
 }
 
 static uint8_t avrcp_cover_art_client_get_object(uint16_t avrcp_cover_art_cid, const char * object_type, const char * image_handle, const char * image_descriptor){
+    btstack_assert(object_type != NULL);
+    btstack_assert(image_handle != NULL);
+    btstack_assert(strlen(image_handle) == 7);
+
     avrcp_cover_art_client_t * cover_art_client = avrcp_cover_art_client_for_cover_art_cid(avrcp_cover_art_cid);
     if (cover_art_client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

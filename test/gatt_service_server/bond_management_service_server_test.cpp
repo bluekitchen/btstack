@@ -35,6 +35,7 @@ void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
     // traack call if needed
 }
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
+    UNUSED(addr);
     // traack call if needed
 }
 #ifdef ENABLE_CLASSIC
@@ -51,6 +52,7 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
 
 static hci_connection_t test_connection;
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
+    UNUSED(con_handle);
     memset(test_connection.address, 0x33, 6);
     test_connection.address_type = BD_ADDR_TYPE_ACL;
     return &test_connection;
@@ -59,6 +61,10 @@ int le_device_db_max_count(void){
     return 0;
 }
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk){
+    UNUSED(index);
+    UNUSED(addr_type);
+    UNUSED(addr);
+    UNUSED(irk);
 }
 //
 

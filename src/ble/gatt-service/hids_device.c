@@ -260,10 +260,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
     }
 
     if (att_handle == instance->hid_control_point_value_handle){
-        if (buffer && (buffer_size >= 1u)){
-            buffer[0] = instance->hid_control_point_suspend;
-        } 
-        return 1;
+        return att_read_callback_handle_byte(instance->hid_control_point_suspend, offset, buffer, buffer_size);
     }
 
     uint8_t boot_report_size = 0;
@@ -294,8 +291,9 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
             return boot_report_size;
         } else {
             // Report ID 0, Type Input
-            (*hids_device_get_report_callback)(con_handle, boot_report_type, boot_report_id, boot_report_size, buffer);
-            return boot_report_size;
+            uint16_t max_size = btstack_min(boot_report_size, buffer_size);
+            (*hids_device_get_report_callback)(con_handle, boot_report_type, boot_report_id, max_size, buffer);
+            return max_size;
         }
     }
 
@@ -312,7 +310,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         } else {
             uint16_t max_size = btstack_min(report->size, buffer_size);
             (*hids_device_get_report_callback)(con_handle, report->type, report->id, max_size, buffer);
-            return report->size;
+            return max_size;
         }
     }
 

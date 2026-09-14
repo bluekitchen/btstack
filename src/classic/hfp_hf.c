@@ -163,14 +163,14 @@ static void hfp_ag_emit_event(hfp_connection_t * hfp_connection, uint8_t event_s
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_hf_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+static void hfp_hf_emit_string_event_with_len(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value, uint16_t value_len){
     btstack_assert(hfp_connection != NULL);
 #ifdef ENABLE_HFP_AT_MESSAGES
     uint8_t event[256];
 #else
     uint8_t event[40];
 #endif
-    uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
+    uint16_t string_len = btstack_min(value_len, sizeof(event) - 6);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 4 + string_len;
     event[2] = event_subtype;
@@ -178,6 +178,10 @@ static void hfp_hf_emit_string_event(hfp_connection_t * hfp_connection, uint8_t 
     memcpy((char*)&event[5], value, string_len);
     event[5 + string_len] = 0;
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 6 + string_len);
+}
+
+static void hfp_hf_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+    hfp_hf_emit_string_event_with_len(hfp_connection, event_subtype, value, (uint16_t) strlen(value));
 }
 
 static void hfp_hf_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
@@ -1738,7 +1742,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 static void hfp_hf_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     hfp_log_rfcomm_message("HFP_HF_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
-    hfp_hf_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
+    hfp_hf_emit_string_event_with_len(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet, size);
 #endif
 
     // process messages byte-wise
@@ -1878,7 +1882,7 @@ void hfp_hf_deinit(void){
 
 void hfp_hf_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
-    if (codecs_nr > HFP_MAX_NUM_CODECS) return;
+    btstack_assert((codecs_nr == 0u) || (codecs != NULL));
 
     hfp_hf_codecs_nr = codecs_nr;
     uint8_t i;
@@ -1892,10 +1896,13 @@ void hfp_hf_init_supported_features(uint32_t supported_features){
 }
 
 void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
-    btstack_assert(hfp_hf_indicators_nr < HFP_MAX_NUM_INDICATORS);
+    btstack_assert((indicators_nr >= 0) && (indicators_nr <= HFP_MAX_NUM_INDICATORS));
+    btstack_assert((indicators_nr == 0) || (indicators != NULL));
 
     hfp_hf_indicators_nr = indicators_nr;
-    memcpy(hfp_hf_indicators, indicators, sizeof(uint16_t) * hfp_hf_indicators_nr);
+    if (indicators_nr != 0){
+        memcpy(hfp_hf_indicators, indicators, sizeof(uint16_t) * hfp_hf_indicators_nr);
+    }
 
     // store copy in hfp to setup hf_indicators_supported_by_ag during SLC
     hfp_set_hf_indicators(indicators_nr, hfp_hf_indicators);

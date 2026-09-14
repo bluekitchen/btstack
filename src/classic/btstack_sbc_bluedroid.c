@@ -50,11 +50,58 @@
 
 // ENCODER
 
+static bool btstack_sbc_encoder_configuration_valid(btstack_sbc_mode_t mode, uint8_t blocks, uint8_t subbands,
+                                                    btstack_sbc_allocation_method_t allocation_method,
+                                                    uint16_t sample_rate, uint8_t bitpool,
+                                                    btstack_sbc_channel_mode_t channel_mode){
+    uint16_t max_bitpool;
+
+    if (mode == SBC_MODE_mSBC){
+        return true;
+    }
+    if (mode != SBC_MODE_STANDARD){
+        return false;
+    }
+    switch (blocks){
+        case 4:
+        case 8:
+        case 12:
+        case 16:
+            break;
+        default:
+            return false;
+    }
+    if ((subbands != 4) && (subbands != 8)){
+        return false;
+    }
+    if ((allocation_method != SBC_ALLOCATION_METHOD_LOUDNESS) && (allocation_method != SBC_ALLOCATION_METHOD_SNR)){
+        return false;
+    }
+    switch (sample_rate){
+        case 16000:
+        case 32000:
+        case 44100:
+        case 48000:
+            break;
+        default:
+            return false;
+    }
+    if ((channel_mode < SBC_CHANNEL_MODE_MONO) || (channel_mode > SBC_CHANNEL_MODE_JOINT_STEREO)){
+        return false;
+    }
+
+    max_bitpool = subbands * ((channel_mode <= SBC_CHANNEL_MODE_DUAL_CHANNEL) ? 16u : 32u);
+    return (bitpool >= 2u) && (bitpool <= 250u) && (bitpool <= max_bitpool);
+}
+
 static uint8_t btstack_sbc_encoder_bluedroid_configure(void * context, btstack_sbc_mode_t mode,
                      uint8_t blocks, uint8_t subbands, btstack_sbc_allocation_method_t allocation_method,
                      uint16_t sample_rate, uint8_t bitpool, btstack_sbc_channel_mode_t channel_mode){
 
     btstack_sbc_encoder_bluedroid_t * instance = (btstack_sbc_encoder_bluedroid_t *) context;
+
+    btstack_assert(instance != NULL);
+    btstack_assert(btstack_sbc_encoder_configuration_valid(mode, blocks, subbands, allocation_method, sample_rate, bitpool, channel_mode));
 
     instance->mode = mode;
 
@@ -104,11 +151,13 @@ static uint8_t btstack_sbc_encoder_bluedroid_configure(void * context, btstack_s
  */
 static uint16_t btstack_sbc_encoder_bluedroid_num_audio_frames(void * context){
     btstack_sbc_encoder_bluedroid_t * instance = (btstack_sbc_encoder_bluedroid_t *) context;
+    btstack_assert(instance != NULL);
     return instance->params.s16NumOfSubBands * instance->params.s16NumOfBlocks;
 }
 
 static uint16_t btstack_sbc_encoder_bluedroid_sbc_buffer_length(void * context){
     btstack_sbc_encoder_bluedroid_t * instance = (btstack_sbc_encoder_bluedroid_t *) context;
+    btstack_assert(instance != NULL);
     return instance->params.u16PacketLength;
 }
 
@@ -121,6 +170,10 @@ static uint16_t btstack_sbc_encoder_bluedroid_sbc_buffer_length(void * context){
  */
 static uint8_t btstack_sbc_encoder_bluedroid_encode_signed_16(void * context, const int16_t* pcm_in, uint8_t * sbc_out){
     btstack_sbc_encoder_bluedroid_t * instance = (btstack_sbc_encoder_bluedroid_t *) context;
+
+    btstack_assert(instance != NULL);
+    btstack_assert(pcm_in != NULL);
+    btstack_assert(sbc_out != NULL);
 
     instance->params.ps16PcmBuffer = (int16_t *) pcm_in;
     instance->params.pu8Packet =  sbc_out;
@@ -139,6 +192,7 @@ static const btstack_sbc_encoder_t btstack_sbc_encoder_bluedroid = {
 };
 
 const btstack_sbc_encoder_t * btstack_sbc_encoder_bluedroid_init_instance(btstack_sbc_encoder_bluedroid_t * context){
+    btstack_assert(context != NULL);
     memset(context, 0, sizeof(btstack_sbc_encoder_bluedroid_t));
     return &btstack_sbc_encoder_bluedroid;
 }
@@ -223,6 +277,9 @@ static int find_h2_sync(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, int * 
 
 #ifdef OI_DEBUG
 void OI_AssertFail(const char* file, int line, const char* reason){
+    UNUSED(file);
+    UNUSED(line);
+    UNUSED(reason);
     log_error("AssertFail file %s, line %d, reason %s", file, line, reason);
 }
 #endif
@@ -323,13 +380,6 @@ static void btstack_sbc_decoder_bluedroid_process_sbc_data(btstack_sbc_decoder_b
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
                 log_info("SBC decode: checksum error");
-                // Did the codec consume any bytes?
-                if (bytes_processed > 0){
-                    // Good. Nothing to do.
-                } else {
-                    // Skip the bogus frame by skipping the header.
-                    bytes_processed = 1;
-                }
                 break;
 
             case OI_STATUS_INVALID_PARAMETERS:
@@ -345,9 +395,13 @@ static void btstack_sbc_decoder_bluedroid_process_sbc_data(btstack_sbc_decoder_b
             default:
                 // Anything else went wrong.
                 // Skip a few bytes and try again.
-                bytes_processed = 1;
                 log_info("SBC decode: unknown status %d", status);
                 break;
+        }
+
+        // Any result that reaches here must consume data to make recovery progress.
+        if (keep_decoding && (bytes_processed == 0)){
+            bytes_processed = 1;
         }
 
         // Remove decoded frame from decoder_state->frame_buffer.
@@ -523,13 +577,6 @@ static void btstack_sbc_decoder_bluedroid_process_msbc_data(btstack_sbc_decoder_
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
                 log_debug("OI_CODEC_SBC_CHECKSUM_MISMATCH");
-                // Did the codec consume any bytes?
-                if (bytes_processed > 0){
-                    // Good. Nothing to do.
-                } else {
-                    // Skip the bogus frame by skipping the header.
-                    bytes_processed = 1;
-                }
                 break;
 
             case OI_STATUS_INVALID_PARAMETERS:
@@ -546,6 +593,11 @@ static void btstack_sbc_decoder_bluedroid_process_msbc_data(btstack_sbc_decoder_
                 break;
         }
 
+        // Any result that reaches here must consume data to make recovery progress.
+        if (bytes_processed == 0){
+            bytes_processed = 1;
+        }
+
         // on success, while loop was restarted, so all processed bytes have been "bad"
         state->msbc_bad_bytes += bytes_processed;
 
@@ -556,6 +608,9 @@ static void btstack_sbc_decoder_bluedroid_process_msbc_data(btstack_sbc_decoder_
 
 
 static void btstack_sbc_decoder_bluedroid_configure(void * context, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * callback_context){
+    btstack_assert(context != NULL);
+    btstack_assert(callback != NULL);
+
     btstack_sbc_decoder_bluedroid_t * state = (btstack_sbc_decoder_bluedroid_t*) context;
     OI_STATUS status = OI_STATUS_SUCCESS;
     switch (mode){
@@ -587,7 +642,12 @@ static void btstack_sbc_decoder_bluedroid_configure(void * context, btstack_sbc_
 }
 
 static void btstack_sbc_decoder_bluedroid_decode_signed_16(void * context, uint8_t packet_status_flag, const uint8_t * buffer, uint16_t size){
+    btstack_assert(context != NULL);
+
     btstack_sbc_decoder_bluedroid_t * state = (btstack_sbc_decoder_bluedroid_t*) context;
+    btstack_assert(state->handle_pcm_data != NULL);
+    btstack_assert((buffer != NULL) || (size == 0));
+
     if (state->mode == SBC_MODE_mSBC){
         btstack_sbc_decoder_bluedroid_process_msbc_data(state, packet_status_flag, buffer, size);
     } else {
@@ -601,6 +661,7 @@ static const btstack_sbc_decoder_t btstack_sbc_decoder_bluedroid = {
 };
 
 const btstack_sbc_decoder_t * btstack_sbc_decoder_bluedroid_init_instance(btstack_sbc_decoder_bluedroid_t * context){
-    memset(context, 0, sizeof(btstack_sbc_encoder_bluedroid_t));
+    btstack_assert(context != NULL);
+    memset(context, 0, sizeof(*context));
     return &btstack_sbc_decoder_bluedroid;
 }

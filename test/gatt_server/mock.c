@@ -78,9 +78,14 @@ void gap_start_scan(void){
 void gap_stop_scan(void){
 }
 uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
+	UNUSED(addr);
+	UNUSED(addr_type);
 	return 0;
 }
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
+	UNUSED(scan_type);
+	UNUSED(scan_interval);
+	UNUSED(scan_window);
 }
 
 bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
@@ -145,6 +150,7 @@ HCI_STATE hci_get_state(void){
 }
 
 uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
+	UNUSED(cmd);
 	btstack_assert(false);
 	return ERROR_CODE_SUCCESS;
 }
@@ -187,15 +193,20 @@ void l2cap_can_send_fixed_channel_packet_now_set_status(uint8_t status){
 }
 
 bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
+	UNUSED(handle);
+	UNUSED(channel_id);
 	return l2cap_can_send_fixed_channel_packet_now_status;
 }
 
 void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t channel_id){
+	UNUSED(handle);
+	UNUSED(channel_id);
 	uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
     att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
 }
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
+	UNUSED(cid);
 	att_connection_t att_connection;
     hci_setup_le_connection(handle);
 	uint8_t response[max_mtu];
@@ -212,6 +223,7 @@ void set_cmac_ready(int ready){
 }
 
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+	UNUSED(callback_handler);
 }
 
 int  sm_cmac_ready(void){
@@ -219,32 +231,48 @@ int  sm_cmac_ready(void){
 }
 
 void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash)){
+	UNUSED(key);
+	UNUSED(opcode);
+	UNUSED(attribute_handle);
+	UNUSED(message_len);
+	UNUSED(message);
+	UNUSED(sign_counter);
+	UNUSED(done_callback);
 	// sm_notify_client(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
 }
 
 int sm_le_device_index(uint16_t handle ){
+	UNUSED(handle);
 	return -1;
 }
 
 irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	return IRK_LOOKUP_SUCCEEDED;
 }
 
 void sm_request_pairing(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 }
 
 void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
+	UNUSED(a);
+	UNUSED(timeout_in_ms);
 }
 
 // Set callback that will be executed when timer expires.
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*process)(btstack_timer_source_t *_ts)){
+	UNUSED(ts);
+	UNUSED(process);
 }
 
 // Add/Remove timer source.
 void btstack_run_loop_add_timer(btstack_timer_source_t *timer){
+	UNUSED(timer);
 }
 
 int  btstack_run_loop_remove_timer(btstack_timer_source_t *timer){
+	UNUSED(timer);
 	return 1;
 }
 
@@ -254,6 +282,8 @@ void * btstack_run_loop_get_timer_context(btstack_timer_source_t *ts){
 
 // todo:
 hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
+	UNUSED(addr);
+	UNUSED(addr_type);
 	printf("hci_connection_for_bd_addr_and_type not implemented in mock backend\n");
 	return NULL;
 }
@@ -274,18 +304,23 @@ void l2cap_run(void){
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+	UNUSED(handler);
 }
 
 bool gap_authenticated(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	return false;
 }
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	return AUTHORIZATION_UNKNOWN;
 }
 uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	return 0;
 }
 bool gap_secure_connection(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
 	return false;
 }
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t con_handle){
@@ -307,6 +342,11 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t con_handle){
 
 int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
+	UNUSED(con_handle);
+	UNUSED(conn_interval_min);
+	UNUSED(conn_interval_max);
+	UNUSED(conn_latency);
+	UNUSED(supervision_timeout);
 	return 0;	
 }
 
@@ -333,9 +373,9 @@ void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new
 }
 
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
+    UNUSED(con_handle);
     if (l2cap_can_send_fixed_channel_packet_now_status){
         uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 1, 0};
         att_server_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
     }
 }
-

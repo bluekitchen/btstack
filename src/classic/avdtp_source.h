@@ -105,6 +105,7 @@ void avdtp_source_register_header_compression_category(uint8_t seid, uint8_t bac
  * @param media_codec_type
  * @param media_codec_info
  * @param media_codec_info_len
+ * @note The complete serialized set of registered capabilities must fit within AVDTP_MAX_DATA_BUFFER_SIZE bytes.
  */
 void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t *media_codec_info, uint16_t media_codec_info_len);
 

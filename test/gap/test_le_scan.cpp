@@ -32,10 +32,12 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
 
 static int hci_transport_test_set_baudrate(uint32_t baudrate){
+    UNUSED(baudrate);
     return 0;
 }
 
 static int hci_transport_test_can_send_now(uint8_t packet_type){
+    UNUSED(packet_type);
     return 1;
 }
 
@@ -51,6 +53,7 @@ static int hci_transport_test_send_packet(uint8_t packet_type, uint8_t * packet,
 }
 
 static void hci_transport_test_init(const void * transport_config){
+    UNUSED(transport_config);
 }
 
 static int hci_transport_test_open(void){

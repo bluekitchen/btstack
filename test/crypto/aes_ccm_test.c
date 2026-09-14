@@ -26,7 +26,7 @@ static int parse_hex(uint8_t * buffer, const char * hex_string){
 }
 
 static void ccm_done(void * arg){
-
+	UNUSED(arg);
 }
 
 static void message_24_upper_transport_encrypt(void){

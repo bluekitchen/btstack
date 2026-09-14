@@ -28,6 +28,7 @@ build-coverage
 .idea
 .vs
 .vscode
+.envrc
 ninja
 __pycache__
 .DS_Store

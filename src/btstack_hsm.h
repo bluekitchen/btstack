@@ -106,11 +106,11 @@ btstack_hsm_state_t btstack_hsm_super(btstack_hsm_t * const me, btstack_hsm_stat
 btstack_hsm_state_t btstack_hsm_top(btstack_hsm_t * const me, btstack_hsm_event_t const * const e);
 
 /*
- * @brief Constructs a new state hierarchical machine machine, with storage for maximum hierarchy depth.
- * @param me the current state machine
- * @param initial the initial state
- * @param array of btstack_hsm_state_handler_t elements with the same number of elements as the maximum number of nested state machines.
- * @param The number of nested state machines.
+ * @brief Constructs a new hierarchical state machine, with storage for maximum hierarchy depth.
+ * @param me non-NULL state machine storage
+ * @param initial non-NULL initial state
+ * @param path non-NULL array of btstack_hsm_state_handler_t elements
+ * @param depth positive number of elements in path, at least the maximum number of nested state machines
  */
 void btstack_hsm_constructor(btstack_hsm_t * const me, btstack_hsm_state_handler_t initial, btstack_hsm_state_handler_t path[], int8_t depth);
 

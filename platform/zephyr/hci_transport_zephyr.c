@@ -35,11 +35,20 @@
  *
  */
 
+#define BTSTACK_FILE__ "hci_transport_zephyr.c"
+
+/*
+ *  hci_transport_zephyr.c
+ *
+ *  BTstack HCI Transport implementation on top of Zephyr HCI Transport
+ */
+
 // Zephyr
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/buf.h>
 #include <zephyr/bluetooth/hci_raw.h>
+#include <zephyr/drivers/bluetooth.h>
 
 // BTstack
 #include "btstack_debug.h"
@@ -54,6 +63,11 @@ static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, ui
 
 static btstack_data_source_t hci_transport_zephyr_receive;
 static fat_variable_t rx_queue_handle = { .variable = &rx_queue, .id = K_POLL_TYPE_FIFO_DATA_AVAILABLE };
+
+#if DT_HAS_COMPAT_STATUS_OKAY(infineon_bt_hci_uart) || \
+    DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
+#define ENABLE_H4_VND_SETUP
+#endif
 
 static void hci_transport_zephyr_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type) {
     UNUSED(ds);
@@ -80,9 +94,13 @@ static void hci_transport_zephyr_handler(btstack_data_source_t * ds, btstack_dat
     net_buf_unref(buf);
 }
 
-#if DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
+#ifdef ENABLE_H4_VND_SETUP
 static const struct device *const h4_dev = DEVICE_DT_GET(DT_PARENT(DT_CHOSEN(zephyr_bt_hci)));
-extern int bt_h4_vnd_setup(const struct device *dev);
+static const struct bt_hci_setup_params h4_setup_params = {
+    // BT_ADDR_NONE tells the Zephyr vendor setup to keep the Controller's public address.
+    .public_addr = {{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }},
+};
+extern int bt_h4_vnd_setup(const struct device *dev, const struct bt_hci_setup_params *params);
 #endif
 
 /**
@@ -101,9 +119,9 @@ static void transport_init(const void *transport_config){
     /* startup Controller */
     ret = bt_enable_raw(&rx_queue);
     btstack_assert(ret == 0);
-#if DT_HAS_COMPAT_STATUS_OKAY(infineon_cyw43xxx_bt_hci)
-    ret = bt_h4_vnd_setup(h4_dev);
-    btstack_assert(ret == 0)
+#ifdef ENABLE_H4_VND_SETUP
+    ret = bt_h4_vnd_setup(h4_dev, &h4_setup_params);
+    btstack_assert(ret == 0);
 #endif
 }
 
@@ -190,14 +208,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
  * @return Newly allocated buffer or NULL if allocation failed.
  */
 struct net_buf *bt_hci_cmd_alloc(k_timeout_t timeout) {
-    struct net_buf *buf;
-    buf = bt_buf_get_tx(BT_BUF_CMD, timeout, NULL, 0);
-    if (!buf) {
-        log_error("No available command buffers!\n");
-        btstack_assert(false);
-        return NULL;
-    }
-    return buf;
+    return bt_buf_get_tx(BT_BUF_CMD, timeout, NULL, 0);
 }
 
 /** Send a HCI command synchronously.
@@ -227,22 +238,29 @@ struct net_buf *bt_hci_cmd_alloc(k_timeout_t timeout) {
 int bt_hci_cmd_send_sync(uint16_t opcode, struct net_buf *buf, struct net_buf **rsp){
     // create packet if needed from opcode
     if (!buf) {
-        buf = bt_hci_cmd_alloc( K_NO_WAIT );
+        struct bt_hci_cmd_hdr hdr = {
+            .opcode = sys_cpu_to_le16(opcode),
+            .param_len = 0,
+        };
+
+        buf = bt_buf_get_tx(BT_BUF_CMD, K_NO_WAIT, &hdr, sizeof(hdr));
         if (!buf) {
             return -ENOBUFS;
         }
+    } else {
+        struct bt_hci_cmd_hdr *hdr;
+
+        if (net_buf_tailroom(buf) < sizeof(*hdr)) {
+            return -ENOBUFS;
+        }
+
+        // [BT_HCI_H4_CMD][payload] -> [BT_HCI_H4_CMD][HDR][payload]
+        net_buf_add(buf, sizeof(*hdr));
+        memmove(&buf->data[1 + sizeof(*hdr)], &buf->data[1], buf->len - 1 - sizeof(*hdr));
+        hdr = (struct bt_hci_cmd_hdr *) &buf->data[1];
+        hdr->opcode = sys_cpu_to_le16(opcode);
+        hdr->param_len = buf->len - sizeof(*hdr) - 1;
     }
-
-    struct bt_hci_cmd_hdr *hdr;
-
-    // thanks to bt_buf_get_tx buf is now sizeof(*hdr) + 1 byte big, with the following layout
-    // [BT_HCI_H4_CMD][payload]
-    uint8_t *bytes = net_buf_push(buf, sizeof(*hdr));
-    // [HDR][BT_HCI_H4_CMD][payload]
-    bytes[0] = BT_HCI_H4_CMD;
-    hdr = (struct bt_hci_cmd_hdr*)&bytes[1];
-    hdr->opcode = sys_cpu_to_le16(opcode);
-    hdr->param_len = buf->len - sizeof(*hdr) - 1;
 
     // hci dump packet
 #ifdef SYNC_SEND_PACKETLOG
@@ -289,5 +307,3 @@ static const hci_transport_t transport = {
 const hci_transport_t * hci_transport_zephyr_get_instance(void){
     return &transport;
 }
-
-

@@ -7,7 +7,10 @@
 #include "classic/obex_message_builder.h"
 
 // mock hci_dump.c
-extern "C" void hci_dump_log(int log_level, const char * format, ...){}
+extern "C" void hci_dump_log(int log_level, const char * format, ...){
+    UNUSED(log_level);
+    UNUSED(format);
+}
 
 static const uint8_t  service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
 static const uint8_t  application_parameters[] = {0x29, 4, 0, 0, 0xFF, 0xFF};
@@ -172,6 +175,34 @@ TEST(OBEX_MESSAGE_BUILDER, CreateSetPathWithName){
     expected_message[2] += 13;
     actual_status = obex_message_builder_header_add_name(actual_message, actual_message_len, (const char *) path_element); 
     validate_success(expected_message, expected_message[2], actual_status);
+}
+
+TEST(OBEX_MESSAGE_BUILDER, NameHeaderChecksRemainingBufferSpace){
+    uint8_t message[12];
+    uint8_t expected_message[] = {OBEX_OPCODE_SETPATH, 0, 10, flags, 0, OBEX_HEADER_CONNECTION_ID, 0, 0, 0, 10};
+
+    uint8_t actual_status = obex_message_builder_request_create_set_path(message, sizeof(message), flags, connection_id);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, actual_status);
+    actual_status = obex_message_builder_header_add_name(message, sizeof(message), "x");
+    CHECK_EQUAL(ERROR_CODE_MEMORY_CAPACITY_EXCEEDED, actual_status);
+    MEMCMP_EQUAL(expected_message, message, sizeof(expected_message));
+}
+
+TEST(OBEX_MESSAGE_BUILDER, NameHeaderLengthMustFitObexLengthField){
+    CHECK_EQUAL(65535, obex_message_builder_get_header_name_len_from_strlen(32765));
+    CHECK_EQUAL(0, obex_message_builder_get_header_name_len_from_strlen(32766));
+}
+
+TEST(OBEX_MESSAGE_BUILDER, NameMustFitObexLengthField){
+    char name[32767];
+    memset(name, 'a', sizeof(name) - 1);
+    name[sizeof(name) - 1] = '\0';
+
+    uint8_t actual_status = obex_message_builder_response_create_general(actual_message, actual_message_len, OBEX_RESP_SUCCESS);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, actual_status);
+    actual_status = obex_message_builder_header_add_name(actual_message, actual_message_len, name);
+    CHECK_EQUAL(ERROR_CODE_MEMORY_CAPACITY_EXCEEDED, actual_status);
+    CHECK_EQUAL(3, obex_message_builder_get_message_length(actual_message));
 }
 
 int main (int argc, const char * argv[]){

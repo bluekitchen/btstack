@@ -48,6 +48,7 @@ COMMON = \
 	hsp_ag.c \
 	hid_device.c \
 	pan.c \
+	sdp_server.c \
 	sdp_util.c \
 	spp_server.c \
 	btstack_hid_parser.c
@@ -60,10 +61,14 @@ all: coverage test
 build-coverage/sdp_record_builder: ${COMMON_OBJ_COVERAGE}
 build-asan/sdp_record_builder: ${COMMON_OBJ_ASAN}
 
-test: build-asan/sdp_record_builder
-	build-asan/sdp_record_builder
+build-coverage/sdp_server_test: ${COMMON_OBJ_COVERAGE}
+build-asan/sdp_server_test: ${COMMON_OBJ_ASAN}
 
-coverage: build-coverage/sdp_record_builder.info
+test: build-asan/sdp_record_builder build-asan/sdp_server_test
+	build-asan/sdp_record_builder
+	build-asan/sdp_server_test
+
+coverage: build-coverage/sdp_record_builder.info build-coverage/sdp_server_test.info
 
 clean: clean-common
 	

@@ -1,14 +1,41 @@
 /*
- * Copyright (c) 2016 Nordic Semiconductor ASA
- * Copyright (c) 2015-2016 Intel Corporation
+* Copyright (C) 2017 BlueKitchen GmbH
  *
- * SPDX-License-Identifier: Apache-2.0
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL BLUEKITCHEN
+ * GMBH OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
  */
 
-//#include <errno.h>
-//#include <stddef.h>
-//#include <stdio.h>
-//#include <string.h>
+#define BTSTACK_FILE__ "btstack_run_loop_zephyr.c"
+
+/*
+ *  btstack_run_loop_zephyr.c
+ *
+ *  BTstack Run Loop Implementation on top of Zephyr RTOS
+ */
 
 // Zephyr
 #include <zephyr/kernel.h>
@@ -56,8 +83,10 @@ static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32
 static struct k_poll_signal signal;
 static fat_variable_t signal_variable = { .variable = &signal, .id = K_POLL_TYPE_SIGNAL };
 static btstack_data_source_t signal_data_source;
+static bool signal_initialized;
 
 static void btstack_run_loop_zephyr_signal( int value ) {
+    btstack_assert(signal_initialized);
     k_poll_signal_raise(&signal, value);
 }
 
@@ -94,6 +123,22 @@ static void btstack_run_loop_zephyr_signal_handler(
 
 }
 
+static void btstack_run_loop_zephyr_init_signal(void) {
+    if (signal_initialized) {
+        return;
+    }
+
+    k_poll_signal_init( &signal );
+
+    btstack_data_source_t *ds = &signal_data_source;
+    btstack_run_loop_set_data_source_handle(ds, &signal_variable);
+    btstack_run_loop_set_data_source_handler(ds, &btstack_run_loop_zephyr_signal_handler);
+    btstack_run_loop_add_data_source(ds);
+    btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+
+    signal_initialized = true;
+}
+
 #ifdef ENABLE_LOG_DEBUG
 #define STR(x) #x
 static const char *event_state_to_text[] = {
@@ -120,13 +165,7 @@ static void btstack_run_loop_zephyr_execute(void) {
     btstack_linked_list_iterator_t it;
     btstack_run_loop_zephyr_exit_requested = false;
 
-    k_poll_signal_init( &signal );
-
-    btstack_data_source_t *ds = &signal_data_source;
-    btstack_run_loop_set_data_source_handle(ds, &signal_variable);
-    btstack_run_loop_set_data_source_handler(ds, &btstack_run_loop_zephyr_signal_handler);
-    btstack_run_loop_add_data_source(ds);
-    btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+    btstack_run_loop_zephyr_init_signal();
 
     const uint32_t state_mask =
         K_POLL_STATE_SEM_AVAILABLE |
@@ -188,7 +227,9 @@ static void btstack_run_loop_zephyr_execute_on_main_thread(btstack_context_callb
 }
 
 static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
+    signal_initialized = false;
     btstack_run_loop_base_init();
+    btstack_run_loop_zephyr_init_signal();
 }
 
 static void btstack_run_loop_zephyr_poll_data_sources_from_irq(void) {
@@ -222,4 +263,3 @@ static const btstack_run_loop_t btstack_run_loop_zephyr = {
 const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
     return &btstack_run_loop_zephyr;
 }
-

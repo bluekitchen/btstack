@@ -140,6 +140,13 @@ uint8_t a2dp_source_start_stream(uint16_t a2dp_cid, uint8_t local_seid);
 uint8_t a2dp_source_pause_stream(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
+ * @brief Stop stream.
+ * @param a2dp_cid             A2DP channel identifier.
+ * @param local_seid           ID of a local stream endpoint.
+ */
+uint8_t a2dp_source_stop_stream(uint16_t a2dp_cid, uint8_t local_seid);
+
+/**
  * @brief Release stream and disconnect from remote. 
  * @param a2dp_cid 			A2DP channel identifier.
  */

@@ -313,6 +313,8 @@ static void octave_fprintf_plot_output(btstack_cvsd_plc_state_t *plc_state, FILE
 #endif
 
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
+    btstack_assert(num_samples <= CVSD_FS);
+    if (num_samples == 0u) return;
     float val;
     int   i;
     float sf = 1;
@@ -384,6 +386,8 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
 }
 
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *in, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
+    btstack_assert(num_samples <= CVSD_FS);
+    if (num_samples == 0u) return;
     float val;
     int i = 0;
 #ifdef OCTAVE_OUTPUT
@@ -476,7 +480,8 @@ static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPL
 
 
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is_bad_frame, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
-    if (num_samples == 0) return;
+    btstack_assert(num_samples <= CVSD_FS);
+    if (num_samples == 0u) return;
 
     plc_state->frame_count++;
 

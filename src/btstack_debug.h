@@ -85,8 +85,7 @@ void test_assert(bool condition);
 #endif /* btstack_assert */
 #else /* HAVE_ASSERT */
 #ifdef ENABLE_BTSTACK_ASSERT
-#include <stdnoreturn.h>
-noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
+BTSTACK_NORETURN void btstack_assert_failed(const char * file, uint16_t line_nr);
 #ifndef btstack_assert
 // use btstack macro that calls btstack_assert_failed() - provided by port
 #define btstack_assert(condition)         if (condition) {} else { btstack_assert_failed(BTSTACK_FILE__, __LINE__);  }

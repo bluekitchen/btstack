@@ -110,9 +110,9 @@ void btstack_tlv_builder_add_big_endian_32(btstack_tlv_builder_context_t * conte
 void btstack_tlv_builder_add_bytes(btstack_tlv_builder_context_t * context, const uint8_t * data, uint16_t length) {
     btstack_assert(context->write_pos != 0);
     btstack_assert(data != NULL);
+    uint16_t write_pos = context->write_pos;
     btstack_tlv_builder_increase_tag(context, length);
-    memcpy(&context->buffer[context->write_pos], data, length);
-    context->write_pos += length;
+    memcpy(&context->buffer[write_pos], data, length);
 }
 
 void btstack_tlv_builder_add_string(btstack_tlv_builder_context_t * context, const char * text) {

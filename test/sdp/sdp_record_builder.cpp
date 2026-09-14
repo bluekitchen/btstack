@@ -95,7 +95,7 @@ static uint16_t a2dp_sink_record_size(const char * service_name, const char * se
 TEST(SDPRecordBuilder, A2DP_SINK){
     const char * service_name;
     const char * service_provider_name;
-    int expected_len;
+    uint32_t expected_len;
 
     service_name = ".";
     service_provider_name = ".";
@@ -120,7 +120,7 @@ static uint16_t a2dp_source_record_size(const char * service_name, const char * 
 TEST(SDPRecordBuilder, A2DP_SOURCE){
     const char * service_name;
     const char * service_provider_name;
-    int expected_len;
+    uint32_t expected_len;
 
     service_name = ".";
     service_provider_name = ".";
@@ -147,7 +147,7 @@ static uint16_t avrcp_target_record_size(const char * service_name, const char *
 TEST(SDPRecordBuilder, AVRCP_TARGET){
     const char * service_name;
     const char * service_provider_name;
-    int expected_len;
+    uint32_t expected_len;
 
     service_name = ".";
     service_provider_name = ".";
@@ -174,7 +174,7 @@ static uint16_t avrcp_controller_record_size(const char * service_name, const ch
 TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
     const char * service_name;
     const char * service_provider_name;
-    int expected_len;
+    uint32_t expected_len;
 
     service_name = ".";
     service_provider_name = ".";
@@ -195,7 +195,7 @@ static uint16_t hid_device_record_size(uint16_t descriptor_size, const char * na
 
 TEST(SDPRecordBuilder, HID_DEVICE){
     const char * name;
-    int expected_len;
+    uint32_t expected_len;
     int descriptor_size;
 
     name = "";
@@ -222,7 +222,7 @@ static uint16_t hfp_hf_record_size(const char * name){
 
 TEST(SDPRecordBuilder, HFP_HF){
     const char * name;
-    int expected_len;
+    uint32_t expected_len;
 
     name = ".";
     expected_len = hfp_hf_record_size(name);
@@ -247,7 +247,7 @@ static uint16_t hfp_ag_record_size(const char * name){
 
 TEST(SDPRecordBuilder, HFP_AG){
     const char * name;
-    int expected_len;
+    uint32_t expected_len;
 
     name = ".";
     expected_len = hfp_ag_record_size(name);
@@ -273,7 +273,7 @@ static uint16_t hsp_ag_record_size(const char * name){
 
 TEST(SDPRecordBuilder, HSP_AG){
     const char * name;
-    int expected_len;
+    uint32_t expected_len;
 
     name = "";
     expected_len = hsp_ag_record_size(name);
@@ -298,7 +298,7 @@ static uint16_t hsp_hs_record_size(const char * name){
 
 TEST(SDPRecordBuilder, HSP_HS){
     const char * name;
-    int expected_len;
+    uint32_t expected_len;
 
     name = "";
     expected_len = hsp_hs_record_size(name);
@@ -322,7 +322,7 @@ static uint16_t device_id_record_size(void){
 }
 
 TEST(SDPRecordBuilder, DeviceID){
-    int expected_len;
+    uint32_t expected_len;
     expected_len = device_id_record_size();
     device_id_create_sdp_record(service_buffer, 0, 0, 0, 0, 0);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
@@ -376,7 +376,7 @@ static uint16_t pan_nap_sdp_record_size(uint16_t * network_packet_types, const c
 }
 
 TEST(SDPRecordBuilder, PANU){
-    int expected_len;
+    uint32_t expected_len;
     const char * name;
     const char * desc;
     uint16_t * network_packet_types;
@@ -415,7 +415,7 @@ TEST(SDPRecordBuilder, PANU){
 }
 
 TEST(SDPRecordBuilder, GN){
-    int expected_len;
+    uint32_t expected_len;
     const char * name;
     const char * desc;
     uint16_t * network_packet_types;
@@ -454,7 +454,7 @@ TEST(SDPRecordBuilder, GN){
 }
 
 TEST(SDPRecordBuilder, NAP){
-    int expected_len;
+    uint32_t expected_len;
     const char * name;
     const char * desc;
     uint16_t * network_packet_types;
@@ -503,7 +503,7 @@ static uint16_t spp_sdp_record_size_for_service_name(const char * service_name){
 }
 
 TEST(SDPRecordBuilder, SPP){
-    int expected_len = spp_sdp_record_size_for_service_name(test_string);
+    uint32_t expected_len = spp_sdp_record_size_for_service_name(test_string);
     spp_create_sdp_record(service_buffer, 0, 0, test_string);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }

@@ -116,7 +116,7 @@ static void gatt_bearer_emit_event_for_all(uint8_t * packet, uint16_t size){
     unsigned int i;
     for (i=0; i < NUM_TYPES; i++){
         if ( client_callbacks[i] == NULL) continue;
-        (*client_callbacks[last_sender])(HCI_EVENT_PACKET, 0, packet, size);
+        (*client_callbacks[i])(HCI_EVENT_PACKET, 0, packet, size);
     }
 }
 

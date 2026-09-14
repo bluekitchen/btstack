@@ -2863,15 +2863,13 @@ static void sm_run(void){
     if (sm_run_ready() == false) return;
     
     // non-connection related behaviour
-    bool done = sm_run_non_connection_logic();
-    if (done) return;
+    if (sm_run_non_connection_logic()) return;
 
     // assert that we can send at least commands - cmd might have been sent by crypto engine
     if (!hci_can_send_command_packet_now()) return;
 
     // handle basic actions that don't requires the full context
-    done = sm_run_basic();
-    if (done) return;
+    if (sm_run_basic()) return;
 
     //
     // active connection handling
@@ -3288,6 +3286,9 @@ static void sm_run(void){
                 if (IS_RESPONDER(connection->sm_role)){
                     // slave -> receive master keys if any
                     if (sm_key_distribution_all_received()){
+                        // pre-set state as sm_key_distribution_handle_all_received might emit an event,
+                        // and we don't want to end up here again.
+                        connection->sm_engine_state = SM_RESPONDER_IDLE;
                         sm_key_distribution_handle_all_received(connection);
                         sm_key_distribution_complete_responder(connection);
                         // start CTKD right away
@@ -3842,10 +3843,8 @@ static void sm_connection_init(sm_connection_t * sm_conn, hci_con_handle_t con_h
     sm_conn->sm_le_db_index = -1;
     sm_conn->sm_reencryption_active = false;
 
-    // prepare CSRK lookup (does not involve setup)
-    sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
-
     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
+    sm_conn->sm_irk_lookup_state = IRK_LOOKUP_IDLE;
 }
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -4017,6 +4016,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                                addr_type,
                                                addr);
 			                sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
+
+			                // prepare CSRK lookup (does not involve setup)
+			                sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
 
 			                // track our addr used for this connection and set state
 #ifdef ENABLE_LE_PERIPHERAL
@@ -5668,9 +5670,13 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 #endif
 
 bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    // wrong connection
+    if (!hci_connection) return false;
+    // Classic connections do not use the LE IRK lookup or re-encryption procedure.
+    if (hci_connection->address_type == BD_ADDR_TYPE_ACL) return false;
+
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-     // wrong connection
-    if (!sm_conn) return false;
     // already encrypted
     if (sm_conn->sm_connection_encrypted) return false;
     // irk status?

@@ -73,10 +73,16 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 
 static void att_client_indication_callback(void * context){
+    UNUSED(context);
 }
 static void att_client_notification_callback(void * context){
+    UNUSED(context);
 }
 static void att_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 
@@ -472,6 +478,23 @@ TEST(ATT_SERVER, connection_disconnect_complete_event) {
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
 }
 
+TEST(ATT_SERVER, pending_callbacks_are_cleared_on_disconnect) {
+    uint8_t buffer[] = { HCI_EVENT_DISCONNECTION_COMPLETE, 4, 0, 0, 0, 0 };
+
+    l2cap_can_send_fixed_channel_packet_now_set_status(0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, att_server_request_to_send_notification(&notification_callback, att_con_handle));
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, att_server_request_to_send_indication(&indication_callback, att_con_handle));
+
+    little_endian_store_16(buffer, 3, att_con_handle);
+    mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], sizeof(buffer));
+
+    // Reuse the connection and callback registrations. Both must have been removed
+    // from the previous connection's pending queues.
+    hci_setup_le_connection(att_con_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, att_server_request_to_send_notification(&notification_callback, att_con_handle));
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, att_server_request_to_send_indication(&indication_callback, att_con_handle));
+}
+
 static void test_hci_event_encryption_events(hci_con_handle_t con_handle, uint8_t con_handle_index, uint8_t * buffer, uint16_t buffer_size){
     // call with wrong con_handle
     hci_setup_le_connection(con_handle);
@@ -495,7 +518,6 @@ TEST(ATT_SERVER, att_server_multiple_notify) {
     const uint16_t value_lens[] = { 1};
     static uint8_t battery_value[] = {0x55};
     const uint8_t * value_data[]  = {battery_value };
-    uint8_t num_attributes = 1;
 
     hci_setup_le_connection(att_con_handle);
     // correct command

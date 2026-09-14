@@ -72,7 +72,10 @@ static void hci_dump_log_message_all(int log_level, const char *format, va_list 
     while (btstack_linked_list_iterator_has_next(&it)) {
         hci_dump_dispatch_item_t *list_item = (hci_dump_dispatch_item_t *)btstack_linked_list_iterator_next(&it);
         if (list_item->hci_dump->log_message) {
-            list_item->hci_dump->log_message(log_level, format, argptr);
+            va_list argptr_copy;
+            va_copy(argptr_copy, argptr);
+            list_item->hci_dump->log_message(log_level, format, argptr_copy);
+            va_end(argptr_copy);
         }
     }
 }

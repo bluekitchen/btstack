@@ -154,11 +154,19 @@ static void sdp_client_query_rfcomm_handle_service_class_list_data(uint32_t attr
                 service_class_id_list_state = GET_SERVICE_INVALID;
                 break;
             }
-            // get UUID length
-            sdp_client_rfcomm_protocol_id_bytes_to_read = de_get_data_size(&data);
-            if (sdp_client_rfcomm_protocol_id_bytes_to_read > 16) {
-                service_class_id_list_state = GET_SERVICE_INVALID;
-                break;
+            switch (de_get_size_type(&data)) {
+                case DE_SIZE_16:
+                    sdp_client_rfcomm_protocol_id_bytes_to_read = 2;
+                    break;
+                case DE_SIZE_32:
+                    sdp_client_rfcomm_protocol_id_bytes_to_read = 4;
+                    break;
+                case DE_SIZE_128:
+                    sdp_client_rfcomm_protocol_id_bytes_to_read = 16;
+                    break;
+                default:
+                    service_class_id_list_state = GET_SERVICE_INVALID;
+                    return;
             }
             service_class_id_list_state = GET_SERVICE_LIST_ITEM;
             break;

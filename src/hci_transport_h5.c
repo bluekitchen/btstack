@@ -60,6 +60,10 @@
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined or smaller than 4. Please update hci.h
 #endif
 
+#if !defined(HCI_OUTGOING_POST_BUFFER_SIZE) || (HCI_OUTGOING_POST_BUFFER_SIZE < 2)
+#error HCI_OUTGOING_POST_BUFFER_SIZE not defined or smaller than 2. Please update hci.h
+#endif
+
 typedef enum {
     LINK_UNINITIALIZED,
     LINK_INITIALIZED,

@@ -77,14 +77,9 @@ static void nordic_spp_service_emit_state(hci_con_handle_t con_handle, bool enab
 
 static uint16_t nordic_spp_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
-	UNUSED(offset);
-	UNUSED(buffer_size);
-	
+
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
-		if (buffer != NULL){
-			little_endian_store_16(buffer, 0, nordic_spp_tx_client_configuration_value);
-		}
-		return 2;
+		return att_read_callback_handle_little_endian_16(nordic_spp_tx_client_configuration_value, offset, buffer, buffer_size);
 	}
 	return 0;
 }

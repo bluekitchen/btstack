@@ -92,6 +92,22 @@
 #define UNUSED(x) (void)(x)
 #endif
 
+// Function annotation for functions that never return
+#if defined(__CC_ARM)
+#define BTSTACK_NORETURN __declspec(noreturn)
+#elif defined(_MSC_VER)
+#define BTSTACK_NORETURN __declspec(noreturn)
+#elif defined(__GNUC__) || defined(__clang__)
+#define BTSTACK_NORETURN __attribute__((noreturn))
+#elif defined(__cplusplus)
+#define BTSTACK_NORETURN [[noreturn]]
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#include <stdnoreturn.h>
+#define BTSTACK_NORETURN noreturn
+#else
+#define BTSTACK_NORETURN
+#endif
+
 // TYPES
 
 // packet handler
@@ -2157,10 +2173,11 @@ typedef SSIZE_T ssize_t;
 #define GAP_SUBEVENT_ADVERTISING_SET_REMOVED                     0x01u
 
 /**
- * @format 1111C
+ * @format 11121C
  * @param subevent_code
  * @param status
  * @param big_handle
+ * @param iso_interval_1250us
  * @param num_bis
  * @param bis_con_handles
  */
@@ -2174,10 +2191,11 @@ typedef SSIZE_T ssize_t;
 #define GAP_SUBEVENT_BIG_TERMINATED                              0x03u
 
 /**
- * @format 1111C
+ * @format 11121C
  * @param subevent_code
  * @param status
  * @param big_handle
+ * @param iso_interval_1250us
  * @param num_bis
  * @param bis_con_handles
  */

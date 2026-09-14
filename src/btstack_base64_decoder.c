@@ -80,44 +80,61 @@ int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uin
             99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99
     };
 
-    // handle '='
+    // Track padding so that any subsequent non-padding byte is rejected.
     if (c == '='){
-        if ((context->pos == 2u) || (context->pos == 3u)){
-            context->pos++;
-            return BTSTACK_BASE64_DECODER_MORE;
+        switch (context->state){
+            case BTSTACK_BASE64_DECODER_STATE_THIRD:
+                context->state = BTSTACK_BASE64_DECODER_STATE_PADDING_EXPECTED;
+                return BTSTACK_BASE64_DECODER_MORE;
+            case BTSTACK_BASE64_DECODER_STATE_FOURTH:
+                context->state = BTSTACK_BASE64_DECODER_STATE_COMPLETE;
+                return BTSTACK_BASE64_DECODER_MORE;
+            case BTSTACK_BASE64_DECODER_STATE_PADDING_EXPECTED:
+                context->state = BTSTACK_BASE64_DECODER_STATE_COMPLETE;
+                return BTSTACK_BASE64_DECODER_MORE;
+            default:
+                context->state = BTSTACK_BASE64_DECODER_STATE_INVALID;
+                return BTSTACK_BASE64_DECODER_INVALID;
         }
-    }   
+    }
+
+    // No data is valid after padding.
+    if ((context->state == BTSTACK_BASE64_DECODER_STATE_PADDING_EXPECTED) ||
+        (context->state == BTSTACK_BASE64_DECODER_STATE_COMPLETE)){
+        context->state = BTSTACK_BASE64_DECODER_STATE_INVALID;
+        return BTSTACK_BASE64_DECODER_INVALID;
+    }
 
     // lookup
     uint8_t value = table[c];
 
     // invalid character
     if (value == 99u) {
-        context->pos = 99;
+        context->state = BTSTACK_BASE64_DECODER_STATE_INVALID;
     }
 
     int result = 0;
-    switch (context->pos){
-        case 0:
+    switch (context->state){
+        case BTSTACK_BASE64_DECODER_STATE_FIRST:
             context->value = value; // 6 bit
-            context->pos++; 
+            context->state = BTSTACK_BASE64_DECODER_STATE_SECOND;
             result = BTSTACK_BASE64_DECODER_MORE;
             break;
-        case 1:
+        case BTSTACK_BASE64_DECODER_STATE_SECOND:
             result = (context->value << 2) | (value >> 4);
             context->value = value; // 4 bit
-            context->pos++; 
+            context->state = BTSTACK_BASE64_DECODER_STATE_THIRD;
             break;
-        case 2:
+        case BTSTACK_BASE64_DECODER_STATE_THIRD:
             result = (context->value << 4) | (value >> 2);
             context->value = value; // 2 bit
-            context->pos++; 
+            context->state = BTSTACK_BASE64_DECODER_STATE_FOURTH;
             break;
-        case 3:
+        case BTSTACK_BASE64_DECODER_STATE_FOURTH:
             result = (context->value << 6) | value;
-            context->pos = 0;       // done
+            context->state = BTSTACK_BASE64_DECODER_STATE_FIRST;
             break;
-        case 99:
+        case BTSTACK_BASE64_DECODER_STATE_INVALID:
             result = BTSTACK_BASE64_DECODER_INVALID;
             break;
 		default:

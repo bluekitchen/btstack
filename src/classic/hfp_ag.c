@@ -75,11 +75,16 @@ static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
 static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
+static void hfp_ag_emit_string_event_with_len(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value, uint16_t value_len);
 
 #define HFP_SUBEVENT_INVALID 0xFFFF
+#define HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE 40u
 
 // const
 static const char hfp_ag_default_service_name[] = "Voice gateway";
+static const char hfp_ag_call_hold_response_prefix[] = "\r\n" HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES ":";
+static const char hfp_ag_call_hold_response_footer[] = "\r\n\r\nOK\r\n";
+#define HFP_AG_CALL_HOLD_SERVICES_MAX_JOINED_LEN (HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE - sizeof(hfp_ag_call_hold_response_prefix) - sizeof(hfp_ag_call_hold_response_footer) + 1u)
 
 // globals
 
@@ -442,11 +447,12 @@ static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
 }
 
 static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
-    char buffer[40];
+    char buffer[HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE];
     const int size = sizeof(buffer);
-    int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
-    offset += hfp_ag_call_services_join(buffer+offset, size-offset-9);
-    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
+    const int footer_len = (int) sizeof(hfp_ag_call_hold_response_footer) - 1;
+    int offset = btstack_snprintf_assert_complete(buffer, size, "%s", hfp_ag_call_hold_response_prefix);
+    offset += hfp_ag_call_services_join(buffer + offset, size - offset - footer_len);
+    offset += btstack_snprintf_assert_complete(buffer + offset, size - offset, "%s", hfp_ag_call_hold_response_footer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -865,14 +871,14 @@ static void hfp_ag_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t 
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+static void hfp_ag_emit_string_event_with_len(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value, uint16_t value_len){
     btstack_assert(hfp_connection != NULL);
 #ifdef ENABLE_HFP_AT_MESSAGES
     uint8_t event[256];
 #else
     uint8_t event[40];
 #endif
-    uint16_t string_len = btstack_min((uint16_t) strlen(value), sizeof(event) - 6);
+    uint16_t string_len = btstack_min(value_len, sizeof(event) - 6);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 4 + string_len;
     event[2] = event_subtype;
@@ -880,6 +886,10 @@ static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t 
     memcpy((char*)&event[5], value, string_len);
     event[5 + string_len] = 0;
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 6 + string_len);
+}
+
+static void hfp_ag_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+    hfp_ag_emit_string_event_with_len(hfp_connection, event_subtype, value, (uint16_t) strlen(value));
 }
 
 static void hfp_ag_emit_slc_connection_event(uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
@@ -2548,7 +2558,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
 
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
-    hfp_ag_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
+    hfp_ag_emit_string_event_with_len(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet, size);
 #endif
 
     // process messages byte-wise
@@ -2838,7 +2848,7 @@ static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
 
 void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
-    if (codecs_nr > HFP_MAX_NUM_CODECS) return;
+    btstack_assert((codecs_nr == 0u) || (codecs != NULL));
 
     hfp_ag_codecs_nr = codecs_nr;
     uint8_t i;
@@ -2853,27 +2863,54 @@ void hfp_ag_init_supported_features(uint32_t supported_features){
 }
 
 void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators){
-    btstack_assert(ag_indicators_nr <= HFP_MAX_NUM_INDICATORS);
-    if (ag_indicators_nr > HFP_MAX_NUM_CODECS) return;
+    btstack_assert((ag_indicators_nr >= 0) && (ag_indicators_nr <= HFP_MAX_NUM_INDICATORS));
+    btstack_assert((ag_indicators_nr == 0) || (ag_indicators != NULL));
 
     hfp_ag_ag_indicators_nr = ag_indicators_nr;
-    (void)memcpy(hfp_ag_ag_indicators, ag_indicators,
-                 ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    if (ag_indicators_nr != 0){
+        (void)memcpy(hfp_ag_ag_indicators, ag_indicators,
+                     ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    }
 }
 
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators){
-    btstack_assert(hf_indicators_nr <= HFP_MAX_NUM_INDICATORS);
-    if (hf_indicators_nr > HFP_MAX_NUM_CODECS) return;
+    btstack_assert((hf_indicators_nr >= 0) && (hf_indicators_nr <= HFP_MAX_NUM_INDICATORS));
+    btstack_assert((hf_indicators_nr == 0) || (hf_indicators != NULL));
 
     hfp_ag_hf_indicators_nr = hf_indicators_nr;
-    (void)memcpy(hfp_ag_hf_indicators, hf_indicators,
-                 hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));
+    if (hf_indicators_nr != 0){
+        (void)memcpy(hfp_ag_hf_indicators, hf_indicators,
+                     hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));
+    }
+}
+
+static size_t hfp_ag_call_hold_services_joined_len(int call_hold_services_nr, const char * call_hold_services[]){
+    size_t joined_len = 2u;
+    int i;
+    for (i = 0; i < call_hold_services_nr; i++){
+        joined_len += strlen(call_hold_services[i]);
+    }
+    if (call_hold_services_nr > 1){
+        joined_len += (size_t) call_hold_services_nr - 1u;
+    }
+    return joined_len;
 }
 
 void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call_hold_services[]){
+    btstack_assert((call_hold_services_nr >= 0) && (call_hold_services_nr <= HFP_MAX_NUM_CALL_SERVICES));
+    btstack_assert((call_hold_services_nr == 0) || (call_hold_services != NULL));
+
+    int i;
+    for (i = 0; i < call_hold_services_nr; i++){
+        btstack_assert(call_hold_services[i] != NULL);
+    }
+    btstack_assert(hfp_ag_call_hold_services_joined_len(call_hold_services_nr, call_hold_services) <= HFP_AG_CALL_HOLD_SERVICES_MAX_JOINED_LEN);
+
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
-    (void)memcpy(hfp_ag_call_hold_services, call_hold_services,
-                 call_hold_services_nr * sizeof(char *));
+    if (call_hold_services_nr != 0){
+        (void)memcpy(hfp_ag_call_hold_services, call_hold_services,
+                     call_hold_services_nr * sizeof(char *));
+    }
 }
 
 void hfp_ag_init_apple_identification(const char * device, uint8_t features){
@@ -3409,6 +3446,8 @@ uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok){
 }
 
 void hfp_ag_set_subscriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
+    btstack_assert(numbers_count >= 0);
+    btstack_assert((numbers_count == 0) || (numbers != NULL));
     hfp_ag_subscriber_numbers = numbers;
     hfp_ag_subscriber_numbers_count = numbers_count;
 }

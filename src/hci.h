@@ -158,6 +158,16 @@ extern "C" {
     #endif
 #endif
 
+// additional post-buffer space for packets to Bluetooth module
+// - H5 appends its optional two-byte data-integrity check after the HCI packet
+#ifndef HCI_OUTGOING_POST_BUFFER_SIZE
+    #ifdef ENABLE_H5
+        #define HCI_OUTGOING_POST_BUFFER_SIZE 2
+    #else
+        #define HCI_OUTGOING_POST_BUFFER_SIZE 0
+    #endif
+#endif
+
 // BNEP may uncompress the IP Header by 16 bytes, GATT Client requires six additional bytes for long characteristic reads
 // wih service_id + connection_id
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
@@ -635,10 +645,13 @@ typedef struct {
     uint32_t qos_latency;
     uint32_t qos_delay_variation;
 
-#ifdef ENABLE_SCO_OVER_HCI
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
     // track SCO rx event
     uint32_t sco_established_ms;
     uint8_t  sco_tx_active;
+
+    // SCO transmit budget in payload bytes for implicit flow control
+    uint16_t sco_tx_ready;
 #endif
 
     // SCO payload length
@@ -649,9 +662,6 @@ typedef struct {
 
     // SCO Request to Send
     bool sco_request_to_send;
-
-    // generate sco can send now based on received packets
-    uint8_t  sco_tx_ready;
 
     // request role switch
     hci_role_t request_role;
@@ -1198,9 +1208,9 @@ typedef struct {
     bool                gap_secure_connections_only_mode;
 #endif
 
-    // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
+    // single buffer for HCI packet assembly plus transport pre- and post-buffer space
     uint8_t   * hci_packet_buffer;
-    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_OUTGOING_PACKET_BUFFER_SIZE];
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_OUTGOING_PACKET_BUFFER_SIZE + HCI_OUTGOING_POST_BUFFER_SIZE];
     bool      hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
@@ -1848,6 +1858,12 @@ void hci_remote_features_query(hci_con_handle_t con_handle);
  * Check if extended SCO Link is supported
  */
 bool hci_extended_sco_link_supported(void);
+
+/**
+ * @brief Check if the Controller supports the Enhanced Setup Synchronous Connection and
+ * Enhanced Accept Synchronous Connection Request commands.
+ */
+bool hci_enhanced_synchronous_connection_supported(void);
 
 /**
  * Check if SSP is supported on both sides. Called by L2CAP

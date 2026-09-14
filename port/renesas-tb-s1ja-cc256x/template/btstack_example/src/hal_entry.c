@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "hal_entry.c"
 
 #include "../src/synergy_gen/hal_data.h"
+#include "btstack_config.h"
 
 // hal_time_ms.h implementation
 #include "hal_time_ms.h"
@@ -74,6 +75,10 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #include "btstack_debug.h"
 #include "btstack_ring_buffer.h"
 #include "btstack_util.h"
+
+#ifndef HAVE_HAL_UART_BUFFERS
+#error "The Renesas TB-S1JA UART HAL buffers received data and must be built with HAVE_HAL_UART_BUFFERS enabled in btstack_config.h."
+#endif
 
 #define nShutdown_pin IOPORT_PORT_01_PIN_12
 #define rts_pin       IOPORT_PORT_03_PIN_03
@@ -164,25 +169,26 @@ int  hal_uart_dma_set_baud(uint32_t baud){
     return 0;
 }
 
-void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
+bool hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
     g_uart0.p_api->write(g_uart0.p_ctrl, data, size);
+    return false;
 }
 
-void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
+bool hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
     // fill from  ring buffer
     uint32_t number_of_bytes_read = 0;
     btstack_ring_buffer_read(&rx_ring_buffer, data, size, &number_of_bytes_read);
     size -= number_of_bytes_read;
     data += number_of_bytes_read;
     if (size == 0){
-        (*rx_done_handler)();
-        return;
+        return true;
     }
 
     // Clear RTS and read from UART
     rx_buffer = data;
     rx_len = size;
     g_ioport.p_api->pinWrite(rts_pin, IOPORT_LEVEL_LOW);
+    return false;
 }
 
 // actual port

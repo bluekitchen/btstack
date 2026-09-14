@@ -585,6 +585,11 @@ static void mesh_upper_transport_validate_access_message(void){
 
 static void mesh_upper_transport_process_access_message(void){
     uint8_t   transmic_len = ((incoming_access_decrypted->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
+    if (incoming_access_decrypted->len < transmic_len){
+        log_info("Mesh Upper Transport: Access PDU shorter than TransMIC");
+        mesh_upper_transport_process_access_message_done(incoming_access_decrypted);
+        return;
+    }
     uint8_t * upper_transport_pdu     =  incoming_access_decrypted->data;
     uint8_t   upper_transport_pdu_len = incoming_access_decrypted->len - transmic_len;
     mesh_print_hex("Upper Transport pdu", upper_transport_pdu, upper_transport_pdu_len);

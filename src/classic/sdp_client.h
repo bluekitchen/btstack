@@ -86,9 +86,11 @@ uint8_t sdp_client_register_query_callback(btstack_context_callback_registration
  * @brief Queries the SDP service of the remote device given a service search pattern and a list of attribute IDs. 
  * The remote data is handled by the SDP parser. The SDP parser delivers attribute values and done event via the callback.
  * @param callback for attributes values and done event
- * @param remote address
- * @param des_service_search_pattern 
- * @param des_attribute_id_list
+ * @param remote non-NULL address
+ * @param des_service_search_pattern non-NULL valid Data Element Sequence
+ * @param des_attribute_id_list non-NULL valid Data Element Sequence
+ * @note The complete request, including up to 16 continuation-state bytes,
+ *       must fit in l2cap_max_mtu().
  */
 uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list);
 
@@ -101,6 +103,9 @@ uint8_t sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t rem
 /*
  * @brief Searches SDP records on a remote device for all services with a given UUID.
  * @note calls sdp_client_query with service search pattern based on uuid128
+ * @param callback for attributes values and done event
+ * @param remote non-NULL address
+ * @param uuid non-NULL UUID-128
  */
 uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid128);
 
@@ -110,9 +115,11 @@ uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t re
  * The remote data is handled by the SDP parser. The SDP parser delivers attribute values and done event via the callback.
  * @note only provided if ENABLE_SDP_EXTRA_QUERIES is defined
  * @param callback for attributes values and done event 
- * @param remote address
+ * @param remote non-NULL address
  * @param search_service_record_handle 
- * @param des_attributeIDList
+ * @param des_attributeIDList non-NULL valid Data Element Sequence
+ * @note The complete request, including up to 16 continuation-state bytes,
+ *       must fit in l2cap_max_mtu().
  */
 uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attributeIDList);
 
@@ -121,8 +128,10 @@ uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, b
  * The remote data is handled by the SDP parser. The SDP parser delivers attribute values and done event via the callback.
  * @note only provided if ENABLE_SDP_EXTRA_QUERIES is defined
  * @param callback for attributes values and done event
- * @param remote address
- * @param des_service_search_pattern 
+ * @param remote non-NULL address
+ * @param des_service_search_pattern non-NULL valid Data Element Sequence
+ * @note The complete request, including up to 16 continuation-state bytes,
+ *       must fit in l2cap_max_mtu().
  */
 uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern);
 

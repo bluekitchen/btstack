@@ -71,11 +71,10 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
-    // store config
-    instance->sample_rate = sample_rate;
-    instance->frame_duration = frame_duration;
-    instance->octets_per_frame = octets_per_frame;
-    instance->samples_per_frame = btstack_lc3_samples_per_frame(sample_rate, frame_duration);
+    uint16_t samples_per_frame = btstack_lc3_samples_per_frame(sample_rate, frame_duration);
+    if (samples_per_frame > MAX_SAMPLES_PER_FRAME){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
 
     LC3PLUS_Error error;
 #ifdef ENABLE_HR_MODE
@@ -83,10 +82,20 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
 #else
     error = lc3plus_dec_init(decoder, sample_rate, 1, LC3PLUS_PLC_ADVANCED);
 #endif
-    btstack_assert(error == LC3PLUS_OK);
+    if (error != LC3PLUS_OK){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
 
     error = lc3plus_dec_set_frame_dms(decoder, duration_us / 100);
-    btstack_assert(error == LC3PLUS_OK);
+    if (error != LC3PLUS_OK){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    // store config
+    instance->sample_rate = sample_rate;
+    instance->frame_duration = frame_duration;
+    instance->octets_per_frame = octets_per_frame;
+    instance->samples_per_frame = samples_per_frame;
 
     return ERROR_CODE_SUCCESS;
 }

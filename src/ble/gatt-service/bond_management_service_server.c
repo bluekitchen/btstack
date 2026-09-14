@@ -121,38 +121,13 @@ static void bond_management_delete_bonding_information_le(hci_connection_t * con
 
 static uint16_t bond_management_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(attribute_handle);
-    UNUSED(offset);
-    UNUSED(buffer_size);
-    
+
     if (attribute_handle == bm_supported_features_value_handle){
-
-#if 0
-    
-        // According to BMS Spec, 3.2.1 Bond Management Feature Characteristic Behavior, only relevant bits should be sent
-        uint16_t relevant_octets = 0;
-
-        // The server shall only include the number of octets needed for returning the highest set feature bit
-        if (bm_supported_features > 0xFFFF){
-            relevant_octets = 3;
-        } else if (bm_supported_features > 0xFF) {
-            relevant_octets = 2;
-        } else if (bm_supported_features > 0x00){
-            relevant_octets = 1;
-        }
-#else
-        // however PTS 8.0.3 expects 3 bytes
-        uint16_t relevant_octets = 3;
-#endif
-
+        // PTS expects all three feature octets, including leading zeroes.
         uint8_t feature_buffer[3];
-        if (buffer != NULL){
-            little_endian_store_24(feature_buffer, 0, bm_supported_features);
-            (void) memcpy(buffer, feature_buffer, relevant_octets);
-        } 
-        return relevant_octets;
+        little_endian_store_24(feature_buffer, 0, bm_supported_features);
+        return att_read_callback_handle_blob(feature_buffer, sizeof(feature_buffer), offset, buffer, buffer_size);
     }
-
     return 0;
 }
 

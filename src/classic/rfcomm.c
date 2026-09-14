@@ -1357,8 +1357,13 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
 
 // MARK: RFCOMM CHANNEL
 
+static uint8_t rfcomm_add_credits(uint8_t credits, uint8_t additional_credits){
+    uint16_t total_credits = (uint16_t) credits + additional_credits;
+    return (uint8_t) btstack_min(total_credits, UINT8_MAX);
+}
+
 static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credits){
-    channel->credits_incoming += credits;
+    channel->credits_incoming = rfcomm_add_credits(channel->credits_incoming, credits);
     rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
 }
 
@@ -1403,13 +1408,30 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
 
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!channel) return;
+
+    uint16_t payload_len;
+    if (length_offset == 0){
+        payload_len = packet[2] >> 1;
+    } else {
+        payload_len = (uint16_t)(packet[2] >> 1) | ((uint16_t)packet[3] << 7);
+    }
+
+    uint32_t frame_size = (uint32_t) payload_offset + payload_len + 1u;
+    if (frame_size != size){
+        log_info("RFCOMM: malformed UIH frame size %u, expected %u", size, (unsigned int) frame_size);
+        return;
+    }
+    if (payload_len > channel->max_frame_size){
+        log_info("RFCOMM: UIH payload size %u exceeds negotiated maximum %u", payload_len, channel->max_frame_size);
+        return;
+    }
     
     // handle new outgoing credits
     if (packet[1] == BT_RFCOMM_UIH_PF) {
         
         // add them
-        uint16_t new_credits = packet[3+length_offset];
-        channel->credits_outgoing += new_credits;
+        uint8_t new_credits = packet[3+length_offset];
+        channel->credits_outgoing = rfcomm_add_credits(channel->credits_outgoing, new_credits);
         log_info( "RFCOMM data UIH_PF, new credits channel 0x%02x: %u, now %u", channel->rfcomm_cid, new_credits, channel->credits_outgoing);
 
         // notify channel statemachine 
@@ -1425,7 +1447,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
     
     // contains payload?
-    if ((size - payload_offset) > 1){
+    if (payload_len > 0){
 
         // log_info( "RFCOMM data UIH_PF, size %u, channel %p", size-payload_offset-1, rfChannel->connection);
 
@@ -1436,7 +1458,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         
         // deliver payload
         (channel->packet_handler)(RFCOMM_DATA_PACKET, channel->rfcomm_cid,
-                              &packet[payload_offset], size-payload_offset-1);
+                              &packet[payload_offset], payload_len);
     }
     
     // automatically provide new credits to remote device, if no incoming flow control
@@ -2343,6 +2365,7 @@ uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
         log_error("l2cap cannot send now");
+        rfcomm_release_packet_buffer();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 #else
@@ -2377,6 +2400,8 @@ uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 }
 
 uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+    btstack_assert((data != NULL) || (len == 0));
+
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
@@ -2399,11 +2424,6 @@ uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     (void)memcpy(rfcomm_payload, data, len);
     status = rfcomm_send_prepared(rfcomm_cid, len);
-
-    if (status != ERROR_CODE_SUCCESS){
-        rfcomm_release_packet_buffer();
-    }
-
     return status;
 }
 
@@ -2464,17 +2484,22 @@ uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid){
 
 
 static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
+    btstack_assert(packet_handler != NULL);
+    btstack_assert(addr != NULL);
+
     log_info("create for addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
     
     // create new multiplexer if necessary (initial state is closed)
     uint8_t status = 0;
     rfcomm_channel_t * channel = NULL;
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
+    bool multiplexer_created = false;
     if (multiplexer == NULL) {
         multiplexer = rfcomm_multiplexer_create_for_addr(addr);
         if (multiplexer == NULL) {
             return BTSTACK_MEMORY_ALLOC_FAILED;
         }
+        multiplexer_created = true;
         multiplexer->outgoing = 1;
     }
     
@@ -2488,9 +2513,8 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     // prepare channel
     channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
     if (channel == NULL){
-        if (multiplexer->state == RFCOMM_MULTIPLEXER_CLOSED) {
-            // free newly created multiplexer
-            btstack_memory_rfcomm_multiplexer_free(multiplexer);
+        if (multiplexer_created) {
+            rfcomm_multiplexer_free(multiplexer);
         }
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2531,9 +2555,11 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
             {
                 status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &multiplexer->l2cap_cid);
             }
-            if (status) {
-                btstack_memory_rfcomm_multiplexer_free(multiplexer);
-                btstack_memory_rfcomm_channel_free(channel);
+            if (status != ERROR_CODE_SUCCESS)  {
+                rfcomm_channel_finalize(channel);
+                if (multiplexer_created) {
+                    rfcomm_multiplexer_free(multiplexer);
+                }
                 return status;
             }
             break;
@@ -2585,6 +2611,8 @@ uint8_t rfcomm_disconnect(uint16_t rfcomm_cid){
 
 static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_handler, 
     uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
+
+    btstack_assert(packet_handler != NULL);
 
     log_info("register channel #%u mtu %u flow_control %u credits %u",
              channel, max_frame_size, incoming_flow_control, initial_credits);
@@ -2692,7 +2720,7 @@ uint8_t rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     if (!channel->incoming_flow_control) return ERROR_CODE_COMMAND_DISALLOWED;
-    channel->new_credits_incoming += credits;
+    channel->new_credits_incoming = rfcomm_add_credits(channel->new_credits_incoming, credits);
 
     // process
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);

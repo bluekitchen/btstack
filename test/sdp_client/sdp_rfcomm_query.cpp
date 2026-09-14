@@ -181,6 +181,20 @@ TEST(SDPClient, QueryClassListInvalid){
     CHECK_EQUAL(0, service_index);
 }
 
+TEST(SDPClient, QueryClassListRejectsVariableLengthUuid){
+    const uint8_t malformed_service_class_list[] = {
+        0x35, 0x09,
+        0x35, 0x07,
+        0x09, 0x00, 0x01,
+        0x35, 0x02, 0x1d, 0x00
+    };
+
+    sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, address, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY);
+    sdp_parser_handle_chunk((uint8_t *) malformed_service_class_list, sizeof(malformed_service_class_list));
+
+    CHECK_EQUAL(0, service_index);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

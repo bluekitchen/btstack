@@ -22,7 +22,7 @@ TEST_GROUP(RemoteDeviceDB){
         bd_addr_copy(bd_addr, addr_1); 
 
         link_key_type = (link_key_type_t)4;
-        sprintf((char*)link_key, "%d", 100);
+        snprintf((char *)link_key, sizeof(link_key), "%d", 100);
     }
     
     void teardown(void){}

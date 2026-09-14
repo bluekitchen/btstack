@@ -95,6 +95,8 @@ static hci_transport_t dummy_transport = {
   /*  .transport.can_send_packet_now           = */  NULL,
   /*  .transport.send_packet                   = */  NULL,
   /*  .transport.set_baudrate                  = */  NULL,
+  /*  .transport.reset_link                    = */  NULL,
+  /*  .transport.set_sco_config                = */  NULL,
 };
 
 
@@ -125,6 +127,19 @@ TEST_GROUP(ADParser){
 
 TEST(ADParser, TestAdvertisementEventMultipleReports){
     hci_le_handle_advertisement_report(adv_multi_packet, sizeof(adv_multi_packet));
+}
+
+TEST(ADParser, TestAdvertisementEventTruncatedFixedReport){
+    // One report is announced, but only its first field is present.
+    // The parser must not read the data-length field at offset + 8.
+    uint8_t truncated_report[] = { HCI_EVENT_LE_META, 3, HCI_SUBEVENT_LE_ADVERTISING_REPORT, 1, 0 };
+    hci_le_handle_advertisement_report(truncated_report, sizeof(truncated_report));
+}
+
+TEST(ADParser, TestAdvertisementEventMissingReportCount){
+    // The LE Meta Event names the Advertising Report subevent but has no count.
+    uint8_t missing_report_count[] = { HCI_EVENT_LE_META, 1, HCI_SUBEVENT_LE_ADVERTISING_REPORT };
+    hci_le_handle_advertisement_report(missing_report_count, sizeof(missing_report_count));
 }
 
 int main (int argc, const char * argv[]){

@@ -61,6 +61,8 @@
 #include "classic/pbap_client.h"
 #include "sdp_util.h"
 
+#define PBAP_APPLICATION_PARAMETERS_MAX_LEN (13u + (PBAP_MAX_PHONE_NUMBER_LEN + 5u) + (PBAP_MAX_SEARCH_VALUE_LEN + 2u) + 3u + 3u + 4u + 4u)
+
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
@@ -220,7 +222,7 @@ static void pbap_client_phonebook_size_parser_process_data(pbap_client_phonebook
                 break;
             case PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_LEN:
                 phonebook_size_parser->len = *data_buffer;
-                phonebook_size_parser->state = PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE;
+                phonebook_size_parser->pos = 0;
                 switch (phonebook_size_parser->type){
                     case PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE:
                         if (phonebook_size_parser->len != 2){
@@ -230,7 +232,10 @@ static void pbap_client_phonebook_size_parser_process_data(pbap_client_phonebook
                         break;
                     default:
                         break;
-                    }
+                }
+                phonebook_size_parser->state = phonebook_size_parser->len == 0 ?
+                        PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_TYPE :
+                        PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE;
                 break;
             case PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE:
                 bytes_to_consume = btstack_min(phonebook_size_parser->len - phonebook_size_parser->pos, data_len);
@@ -278,6 +283,7 @@ static void obex_auth_parser_process_data(pbap_client_obex_auth_parser_t * auth_
                 break;
             case OBEX_AUTH_PARSER_STATE_W4_LEN:
                 auth_parser->len = *data_buffer;
+                auth_parser->pos = 0;
                 switch (auth_parser->type){
                     case 0:
                         if (auth_parser->len != 0x10){
@@ -298,7 +304,7 @@ static void obex_auth_parser_process_data(pbap_client_obex_auth_parser_t * auth_
                     default:
                         break;
                 }
-                auth_parser->state = OBEX_AUTH_PARSER_STATE_W4_VALUE;
+                auth_parser->state = auth_parser->len == 0 ? OBEX_AUTH_PARSER_STATE_W4_TYPE : OBEX_AUTH_PARSER_STATE_W4_VALUE;
                 break;
             case OBEX_AUTH_PARSER_STATE_W4_VALUE:
                 bytes_to_consume = btstack_min(auth_parser->len - auth_parser->pos, data_len);
@@ -518,7 +524,7 @@ static uint16_t pbap_client_application_params_add_search_property(const pbap_cl
 static uint16_t pbap_client_application_params_add_search_value(const pbap_client_t * client, uint8_t * application_parameters, const char* search_value){
     uint16_t pos = 0;
     if (client->search_value != 0){
-        uint32_t length = (uint32_t) strlen(search_value);
+        uint8_t length = (uint8_t) strlen(search_value);
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
         application_parameters[pos++] = length;
         memcpy (&application_parameters[pos], search_value, length);
@@ -610,7 +616,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
     uint16_t path_element_start;
     uint16_t path_element_len;
     const char * path_element;
-    uint8_t  application_parameters[PBAP_MAX_PHONE_NUMBER_LEN + 10];
+    uint8_t  application_parameters[PBAP_APPLICATION_PARAMETERS_MAX_LEN];
     uint8_t  challenge_response[36];
     uint16_t pos;
 
@@ -1115,6 +1121,7 @@ void pbap_client_deinit(void){
 
 uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
                             uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
+    memset(client, 0, sizeof(*client));
     client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
     client->client_handler = handler;
     client->vcard_selector = 0;
@@ -1441,6 +1448,9 @@ uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value){
     }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
+    }
+    if (search_value != NULL){
+        btstack_assert(strlen(search_value) <= PBAP_MAX_SEARCH_VALUE_LEN);
     }
     pbap_client->search_value = search_value;
     return ERROR_CODE_SUCCESS;

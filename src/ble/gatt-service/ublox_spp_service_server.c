@@ -121,23 +121,15 @@ static inline void ublox_spp_service_init_credits(ublox_spp_service_t * instance
 }
 
 static uint16_t ublox_spp_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    UNUSED(offset);
-    UNUSED(buffer_size);
     ublox_spp_service_t * instance = ublox_get_instance_for_con_handle(con_handle);
     if (!instance) return 0; 
 
     if (attribute_handle == instance->fifo_client_configuration_descriptor_handle){
-        if (buffer != NULL){
-            little_endian_store_16(buffer, 0, instance->fifo_client_configuration_descriptor_value);
-        }
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->fifo_client_configuration_descriptor_value, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == instance->credits_client_configuration_descriptor_handle){
-        if (buffer != NULL){
-            little_endian_store_16(buffer, 0, instance->credits_client_configuration_descriptor_value);
-        }
-        return 2;
+        return att_read_callback_handle_little_endian_16(instance->credits_client_configuration_descriptor_value, offset, buffer, buffer_size);
     }
     return 0;
 }

@@ -313,6 +313,9 @@ static void goep_server_packet_handler_l2cap(uint8_t packet_type, uint16_t chann
         case L2CAP_DATA_PACKET:
             goep_connection = goep_server_get_connection_for_l2cap_cid(channel);
             btstack_assert(goep_connection != NULL);
+            if (size == 0u) {
+                break;
+            }
             goep_connection->callback(GOEP_DATA_PACKET, goep_connection->goep_cid, packet, size);
             break;
         default:
@@ -400,6 +403,9 @@ static void goep_server_packet_handler_rfcomm(uint8_t packet_type, uint16_t chan
         case RFCOMM_DATA_PACKET:
             goep_connection = goep_server_get_connection_for_rfcomm_cid(channel);
             btstack_assert(goep_connection != NULL);
+            if (size == 0u) {
+                break;
+            }
             goep_connection->callback(GOEP_DATA_PACKET, goep_connection->goep_cid, packet, size);
             break;
 
@@ -511,10 +517,10 @@ uint8_t goep_server_decline_connection(uint16_t goep_cid){
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    connection->state = GOEP_SERVER_W4_CONNECTED;
     if (connection->state != GOEP_SERVER_W4_ACCEPT_REJECT){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    connection->state = GOEP_SERVER_W4_CONNECTED;
 #ifdef ENABLE_GOEP_L2CAP
     if (connection->type == GOEP_CONNECTION_L2CAP){
         l2cap_decline_connection(connection->bearer_cid);

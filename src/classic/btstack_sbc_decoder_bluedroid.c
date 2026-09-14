@@ -164,6 +164,9 @@ void OI_AssertFail(const char* file, int line, const char* reason){
 #endif
 
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
+    btstack_assert(state != NULL);
+    btstack_assert(callback != NULL);
+
     if (sbc_decoder_state_singleton && (sbc_decoder_state_singleton != state) ){
         log_error("SBC decoder: different sbc decoder state already registered");
     }
@@ -288,13 +291,6 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
                 log_info("SBC decode: checksum error");
-                // Did the codec consume any bytes?
-                if (bytes_processed > 0){
-                    // Good. Nothing to do.
-                } else {
-                    // Skip the bogus frame by skipping the header.
-                    bytes_processed = 1;
-                }
                 break;
 
             case OI_STATUS_INVALID_PARAMETERS:
@@ -310,9 +306,13 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             default:
                 // Anything else went wrong. 
                 // Skip a few bytes and try again.
-                bytes_processed = 1;
                 log_info("SBC decode: unknown status %d", status);
                 break;
+        }
+
+        // Any result that reaches here must consume data to make recovery progress.
+        if (keep_decoding && (bytes_processed == 0)){
+            bytes_processed = 1;
         }
 
         // Remove decoded frame from decoder_state->frame_buffer.
@@ -495,13 +495,6 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
                 log_debug("OI_CODEC_SBC_CHECKSUM_MISMATCH");
-                // Did the codec consume any bytes?
-                if (bytes_processed > 0){
-                    // Good. Nothing to do.
-                } else {
-                    // Skip the bogus frame by skipping the header.
-                    bytes_processed = 1;
-                }
                 break;
 
             case OI_STATUS_INVALID_PARAMETERS:
@@ -518,6 +511,11 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 break;
         }
 
+        // Any result that reaches here must consume data to make recovery progress.
+        if (bytes_processed == 0){
+            bytes_processed = 1;
+        }
+
         // on success, while loop was restarted, so all processed bytes have been "bad"
         decoder_state->msbc_bad_bytes += bytes_processed;
 
@@ -527,6 +525,11 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
 }
 
 void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, const uint8_t * buffer, int size){
+    btstack_assert(state != NULL);
+    btstack_assert(state->handle_pcm_data != NULL);
+    btstack_assert(size >= 0);
+    btstack_assert((buffer != NULL) || (size == 0));
+
     if (state->mode == SBC_MODE_mSBC){
         btstack_sbc_decoder_process_msbc_data(state, packet_status_flag, buffer, size);
     } else {

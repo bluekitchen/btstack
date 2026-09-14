@@ -202,6 +202,10 @@ uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_suspend_stream(avdtp_cid, local_seid);
 }
 
+uint8_t a2dp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
+    return avdtp_stop_stream(avdtp_cid, local_seid);
+}
+
 void a2dp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_source_stream_endpoint_request_can_send_now(avdtp_cid, local_seid);
 }
@@ -305,7 +309,7 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
     // start reconfigure
     connection->a2dp_source_config_process.state = A2DP_W2_RECONFIGURE_WITH_SEID;
 
-    return avdtp_source_reconfigure(
+   return avdtp_source_reconfigure(
             avdtp_cid,
             avdtp_stream_endpoint_seid(connection->a2dp_source_config_process.local_stream_endpoint),
             connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.seid,
@@ -332,4 +336,3 @@ void a2dp_source_register_media_config_validator(uint8_t (*callback)(const avdtp
     a2dp_source_media_config_validator = callback;
     avdtp_source_register_media_config_validator(&a2dp_source_media_config_validator_callback);
 }
-

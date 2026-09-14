@@ -209,6 +209,9 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case RFCOMM_DATA_PACKET:
             goep_client = goep_client_for_bearer_cid(channel);
             btstack_assert(goep_client != NULL);
+            if (size == 0u) {
+                break;
+            }
             goep_client->client_handler(GOEP_DATA_PACKET, goep_client->cid, packet, size);
             break;
         default:
@@ -246,6 +249,9 @@ static uint8_t goep_client_start_connect(goep_client_t * goep_client){
         &goep_client->ertm_config, goep_client->ertm_buffer,
         goep_client->ertm_buffer_size, &goep_client->bearer_cid);
     }
+    // l2cap_psm also selects the active bearer for subsequent operations.
+    // Clear an SDP-advertised PSM when falling back to RFCOMM.
+    goep_client->l2cap_psm = 0;
 #endif
     log_info("Remote GOEP RFCOMM Server Channel: %u", goep_client->rfcomm_port);
     return rfcomm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->rfcomm_port, &goep_client->bearer_cid);
@@ -263,6 +269,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
     des_iterator_t prot_it;
     uint8_t status;
     uint16_t record_index;
+    uint16_t attribute_length;
     bool goep_server_found;
 
     switch (hci_event_packet_get_type(packet)){
@@ -297,16 +304,25 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 break;
             }
 
+            // The SDP client emits attribute bytes in order. Its offset is local parser state,
+            // not a peer-supplied value, and is bounded by attribute_length.
             // store single byte
             goep_client_sdp_query_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
             // wait until value fully received
             if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) != sdp_event_query_attribute_byte_get_attribute_length(packet)) break;
 
+            attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+            if (de_get_len_safe(goep_client_sdp_query_attribute_value, attribute_length) != attribute_length){
+                log_info("GOEP client: malformed SDP data element for attribute %x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                break;
+            }
+
             // process attributes
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, goep_client_sdp_query_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -314,7 +330,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
                         des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
+                        if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&des_list_it))) continue;
+                        if (!des_iterator_has_more(&prot_it)) continue;
 
                         // first element is UUID
                         element = des_iterator_get_element(&prot_it);
@@ -327,6 +344,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         // second element is RFCOMM server channel or L2CAP PSM
                         element = des_iterator_get_element(&prot_it);
                         if (uuid == BLUETOOTH_PROTOCOL_RFCOMM){
+                            if ((de_get_element_type(element) != DE_UINT) || (de_get_size_type(element) != DE_SIZE_8)) continue;
                             if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER) {
                                 goep_client->mas_info.rfcomm_port = element[de_get_header_size(element)];
                             } else {
@@ -337,7 +355,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     break;
 
                 case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, goep_client_sdp_query_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -345,7 +364,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
                         des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
+                        if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&des_list_it))) continue;
+                        if (!des_iterator_has_more(&prot_it)) continue;
                         element = des_iterator_get_element(&prot_it);
 
                         if (de_get_element_type(element) != DE_UUID) continue;
@@ -902,4 +922,3 @@ int goep_client_execute_with_final_bit(uint16_t goep_cid, bool final){
         return rfcomm_send_prepared(goep_client->bearer_cid, pos);
     }
 }
-

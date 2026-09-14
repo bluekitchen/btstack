@@ -51,6 +51,14 @@ static bool avdtp_acceptor_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes
     return (pos <= end) && (bytes_needed <= (uint16_t)(end - pos));
 }
 
+#ifdef ENABLE_TESTING_SUPPORT
+static bool avdtp_acceptor_fail_next_start_stream_request_flag;
+
+void avdtp_acceptor_fail_next_start_stream_request(void){
+    avdtp_acceptor_fail_next_start_stream_request_flag = true;
+}
+#endif
+
 static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){
     uint8_t command[2];
     command[0] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
@@ -410,7 +418,11 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->acceptor_local_seid = stream_endpoint->sep.seid;
                     break;
-                case AVDTP_SI_START:
+                case AVDTP_SI_START:{
+#ifdef ENABLE_TESTING_SUPPORT
+                    bool fail_start_stream_request = avdtp_acceptor_fail_next_start_stream_request_flag;
+                    avdtp_acceptor_fail_next_start_stream_request_flag = false;
+#endif
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED){
                         log_info("REJECT AVDTP_SI_START, BAD_STATE, state %d", stream_endpoint->state);
                         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
@@ -418,6 +430,15 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                         connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                         break;
                     }
+#ifdef ENABLE_TESTING_SUPPORT
+                    if (fail_start_stream_request){
+                        log_info("REJECT AVDTP_SI_START, test hook");
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
+                        connection->error_code = 0xc0;
+                        connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                        break;
+                    }
+#endif
 #ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
                     log_info("W2_ACCEPT_START_STREAM");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM;
@@ -426,6 +447,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM;
 #endif
                     break;
+                }
                 case AVDTP_SI_CLOSE:
                     switch (stream_endpoint->state){
                         case AVDTP_STREAM_ENDPOINT_OPENED:

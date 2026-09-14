@@ -68,6 +68,7 @@ uint32_t btstack_resample_get_min_factor_for_output_capacity(uint16_t input_fram
 
 uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer){
     btstack_assert(context->num_channels > 0);
+    btstack_assert(num_frames > 0);
 
     uint16_t dest_frames = 0;
     uint16_t dest_samples = 0;

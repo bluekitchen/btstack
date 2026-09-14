@@ -65,6 +65,7 @@ static int hci_transport_test_can_send_now(uint8_t packet_type){
 #endif
 
 static int hci_transport_test_set_baudrate(uint32_t baudrate){
+    UNUSED(baudrate);
     return 0;
 }
 
@@ -78,6 +79,7 @@ static int hci_transport_test_send_packet(uint8_t packet_type, uint8_t * packet,
 }
 
 static void hci_transport_test_init(const void * transport_config){
+    UNUSED(transport_config);
 }
 
 static int hci_transport_test_open(void){
@@ -308,6 +310,16 @@ TEST(HCI, hci_send_acl_packet_buffer_no_connection){
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 }
 
+TEST(HCI, hci_send_acl_packet_buffer_oversized){
+    hci_reserve_packet_buffer();
+    uint8_t status = hci_send_acl_packet_buffer(HCI_ACL_BUFFER_SIZE + 1u);
+    CHECK_EQUAL(ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS, status);
+
+    // The failed send must release the prepared-packet reservation.
+    hci_reserve_packet_buffer();
+    hci_release_packet_buffer();
+}
+
 TEST(HCI, hci_send_acl_packet_buffer){
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_get_outgoing_packet_buffer();
@@ -376,10 +388,12 @@ TEST(HCI, RemovePacketHandler){
     hci_remove_event_handler(NULL);
 }
 
-static void dummy_fn(const void * config){};
+static void dummy_fn(const void * config){
+    UNUSED(config);
+}
 TEST(HCI, SetChipset){
     hci_set_chipset(NULL);
-    btstack_chipset_t chipset_driver = { 0 };
+    btstack_chipset_t chipset_driver = { NULL, NULL, NULL, NULL, NULL };
     hci_set_chipset(NULL);
     chipset_driver.init = dummy_fn;
 }
@@ -609,6 +623,16 @@ TEST(HCI, acl_handling) {
     packet_handler(HCI_ACL_DATA_PACKET, packet, 2000);
 }
 
+TEST(HCI, acl_first_fragment_requires_complete_l2cap_header) {
+    uint8_t packet[] = {
+        0x01, 0x20,
+        0x01, 0x00,
+        0x00,
+    };
+
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+}
+
 TEST(HCI, incoming_event_packet_bounds_check) {
     hci_event_callback_registration.callback = &test_hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -635,6 +659,267 @@ TEST(HCI, incoming_event_packet_bounds_check) {
     packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
     CHECK_EQUAL(1, received_hci_events);
 }
+
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+TEST(HCI, cis_established_for_unknown_handle_is_ignored) {
+    // A controller can report a stale or unsolicited CIS Established event.
+    // It must not be assumed to have a matching local ISO stream.
+    uint8_t packet[31] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CIS_ESTABLISHED;
+    little_endian_store_16(packet, 4, 0x0042);
+
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+}
+
+TEST(HCI, create_big_complete_with_wrong_bis_count_is_rejected) {
+    le_audio_big_t big = { 0 };
+    big.big_handle = 1;
+    big.num_bis = 2;
+    big.state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
+    btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) &big);
+
+    for (uint8_t i = 0; i < big.num_bis; i++) {
+        hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+        CHECK_TRUE(stream != NULL);
+        stream->iso_type = HCI_ISO_TYPE_BIS;
+        stream->group_id = big.big_handle;
+        btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+    }
+
+    uint8_t packet[21] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE;
+    packet[4] = big.big_handle;
+    packet[20] = big.num_bis - 1;
+
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_BIS;
+    hci_stack->iso_active_operation_group_id = big.big_handle;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+    CHECK_TRUE(hci_stack->le_audio_bigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, big_sync_established_failure_releases_bis_streams) {
+    le_audio_big_sync_t big_sync = { 0 };
+    big_sync.big_handle = 1;
+    big_sync.state = LE_AUDIO_BIG_STATE_W4_ESTABLISHED;
+    btstack_linked_list_add(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) &big_sync);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big_sync.big_handle;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[] = {
+        HCI_EVENT_LE_META, 3, HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED,
+        ERROR_CODE_COMMAND_DISALLOWED, big_sync.big_handle,
+    };
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_BIS;
+    hci_stack->iso_active_operation_group_id = big_sync.big_handle;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->le_audio_big_syncs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, stale_big_completion_does_not_replace_bis_handles) {
+    le_audio_big_t big = { 0 };
+    big.big_handle = 1;
+    big.num_bis = 1;
+    big.bis_con_handles[0] = 0x0042;
+    big.state = LE_AUDIO_BIG_STATE_ACTIVE;
+    btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) &big);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big.big_handle;
+    stream->cis_handle = big.bis_con_handles[0];
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[23] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CREATE_BIG_COMPLETE;
+    packet[4] = big.big_handle;
+    packet[20] = big.num_bis;
+    little_endian_store_16(packet, 21, 0x0099);
+
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_EQUAL(0x0042, big.bis_con_handles[0]);
+    CHECK_EQUAL(0x0042, stream->cis_handle);
+}
+
+TEST(HCI, stale_big_sync_completion_does_not_replace_bis_handles) {
+    le_audio_big_sync_t big_sync = { 0 };
+    big_sync.big_handle = 1;
+    big_sync.num_bis = 1;
+    big_sync.bis_con_handles[0] = 0x0042;
+    big_sync.state = LE_AUDIO_BIG_STATE_ACTIVE;
+    btstack_linked_list_add(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) &big_sync);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big_sync.big_handle;
+    stream->cis_handle = big_sync.bis_con_handles[0];
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[19] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_BIG_SYNC_ESTABLISHED;
+    packet[4] = big_sync.big_handle;
+    packet[16] = big_sync.num_bis;
+    little_endian_store_16(packet, 17, 0x0099);
+
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_EQUAL(0x0042, big_sync.bis_con_handles[0]);
+    CHECK_EQUAL(0x0042, stream->cis_handle);
+}
+
+TEST(HCI, cancelling_unstarted_big_releases_bis_streams) {
+    le_audio_big_t big = { 0 };
+    big.big_handle = 1;
+    big.state = LE_AUDIO_BIG_STATE_CREATE;
+    btstack_linked_list_add(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) &big);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big.big_handle;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gap_big_terminate(big.big_handle));
+    CHECK_TRUE(hci_stack->le_audio_bigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, cancelling_unstarted_big_sync_releases_bis_streams) {
+    le_audio_big_sync_t big_sync = { 0 };
+    big_sync.big_handle = 1;
+    big_sync.state = LE_AUDIO_BIG_STATE_CREATE;
+    btstack_linked_list_add(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) &big_sync);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_BIS;
+    stream->group_id = big_sync.big_handle;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gap_big_sync_terminate(big_sync.big_handle));
+    CHECK_TRUE(hci_stack->le_audio_big_syncs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, set_cig_parameters_failure_releases_cis_streams) {
+    le_audio_cig_t cig = { 0 };
+    cig.cig_id = 1;
+    btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) &cig);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_CIS;
+    stream->group_id = cig.cig_id;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[] = {
+        HCI_EVENT_COMMAND_COMPLETE, 4, 1,
+        HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS & 0xff,
+        HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS >> 8,
+        ERROR_CODE_COMMAND_DISALLOWED,
+    };
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    hci_stack->iso_active_operation_group_id = cig.cig_id;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->le_audio_cigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, set_cig_parameters_with_wrong_cis_count_is_rejected) {
+    le_audio_cig_t cig = { 0 };
+    cig.cig_id = 1;
+    cig.num_cis = 2;
+    cig.state = LE_AUDIO_CIG_STATE_W4_ESTABLISHED;
+    btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) &cig);
+
+    for (uint8_t i = 0; i < cig.num_cis; i++) {
+        hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+        CHECK_TRUE(stream != NULL);
+        stream->iso_type = HCI_ISO_TYPE_CIS;
+        stream->group_id = cig.cig_id;
+        btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+    }
+
+    uint8_t packet[12] = { 0 };
+    packet[0] = HCI_EVENT_COMMAND_COMPLETE;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = 1;
+    little_endian_store_16(packet, 3, HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS);
+    packet[5] = ERROR_CODE_SUCCESS;
+    packet[7] = cig.num_cis - 1;
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    hci_stack->iso_active_operation_group_id = cig.cig_id;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->le_audio_cigs == NULL);
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+
+TEST(HCI, duplicate_cis_request_does_not_allocate_another_stream) {
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_CIS;
+    stream->cis_handle = 0x0042;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[9] = { 0 };
+    packet[0] = HCI_EVENT_LE_META;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = HCI_SUBEVENT_LE_CIS_REQUEST;
+    little_endian_store_16(packet, 5, stream->cis_handle);
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->iso_streams == (btstack_linked_item_t *) stream);
+    hci_stack->iso_streams = NULL;
+    btstack_memory_hci_iso_stream_free(stream);
+}
+
+TEST(HCI, create_cis_command_status_failure_releases_requested_streams) {
+    le_audio_cig_t cig = { 0 };
+    cig.cig_id = 1;
+    cig.num_cis = 1;
+    cig.state = LE_AUDIO_CIG_STATE_W4_CREATE_CIS;
+    cig.cis_con_handles[0] = 0x0042;
+    btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) &cig);
+
+    hci_iso_stream_t * stream = btstack_memory_hci_iso_stream_get();
+    CHECK_TRUE(stream != NULL);
+    stream->iso_type = HCI_ISO_TYPE_CIS;
+    stream->group_id = cig.cig_id;
+    stream->state = HCI_ISO_STREAM_STATE_REQUESTED;
+    btstack_linked_list_add(&hci_stack->iso_streams, (btstack_linked_item_t *) stream);
+
+    uint8_t packet[] = {
+        HCI_EVENT_COMMAND_STATUS, 4, ERROR_CODE_COMMAND_DISALLOWED, 1,
+        HCI_OPCODE_HCI_LE_CREATE_CIS & 0xff,
+        HCI_OPCODE_HCI_LE_CREATE_CIS >> 8,
+    };
+    hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
+    hci_stack->iso_active_operation_group_id = cig.cig_id;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+
+    CHECK_TRUE(hci_stack->iso_streams == NULL);
+}
+#endif
 
 TEST(HCI, incoming_acl_packet_bounds_check) {
     hci_register_acl_packet_handler(&test_acl_packet_handler);
@@ -835,6 +1120,7 @@ TEST(HCI, handle_command_complete_event) {
 }
 
 static void simulate_hci_command_status(uint16_t opcode, uint8_t status, uint8_t variant) {
+    UNUSED(variant);
     uint8_t packet[2 + 255];
     packet[0] = HCI_EVENT_COMMAND_STATUS;
     packet[1] = sizeof(packet) - 2;

@@ -168,14 +168,15 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
 }
 
 static void avrcp_browsing_configure_ertm(avrcp_browsing_connection_t * browsing_connection, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
+    btstack_assert(ertm_buffer != NULL);
+    btstack_assert(ertm_buffer_size > 0u);
+    btstack_assert(ertm_config != NULL);
     browsing_connection->ertm_buffer = ertm_buffer;
     browsing_connection->ertm_buffer_size = ertm_buffer_size;
-    
-    if (ertm_buffer_size > 0) {
-        (void)memcpy(&browsing_connection->ertm_config, ertm_config,
+
+    (void)memcpy(&browsing_connection->ertm_config, ertm_config,
                  sizeof(l2cap_ertm_config_t));
-        log_info("avrcp_browsing_configure_ertm");
-    }
+    log_info("avrcp_browsing_configure_ertm");
 }
 
 static avrcp_browsing_connection_t * avrcp_browsing_handle_incoming_connection(avrcp_connection_t * connection, uint16_t local_cid, uint16_t avrcp_browsing_cid){
@@ -453,6 +454,7 @@ void avrcp_browsing_deinit(void){
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
     btstack_assert(avrcp_browsing_controller_packet_handler != NULL);
     btstack_assert(avrcp_browsing_target_packet_handler != NULL);
+    btstack_assert(remote_addr != NULL);
 
     avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
     if (!connection_controller){

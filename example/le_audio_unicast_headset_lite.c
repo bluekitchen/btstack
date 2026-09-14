@@ -410,6 +410,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         }
                         if (complete) {
                             printf("All CIS Established\n");
+                            uint16_t iso_interval_1250us = gap_subevent_cis_created_get_iso_interval_1250us(packet);
+                            printf("- ISO Interval: %u us\n", iso_interval_1250us * 1250);
                             app_state = APP_STREAMING;
                             enter_streaming();
                             // Start microphone transmission if the C-to-P direction is enabled.

@@ -943,6 +943,38 @@ TEST(AttDb, att_read_callback_handle_little_endian_32){
 	}
 }
 
+TEST(AttDb, notification_value_is_truncated_to_mtu){
+    uint8_t value[ATT_DEFAULT_MTU];
+    uint8_t packet[ATT_DEFAULT_MTU];
+    for (uint16_t i = 0; i < sizeof(value); i++){
+        value[i] = (uint8_t)i;
+    }
+
+    uint16_t size = att_prepare_handle_value_notification(&att_connection, 0x1234, value, sizeof(value), packet);
+
+    CHECK_EQUAL(ATT_DEFAULT_MTU, size);
+    CHECK_EQUAL(ATT_HANDLE_VALUE_NOTIFICATION, packet[0]);
+    CHECK_EQUAL(0x34, packet[1]);
+    CHECK_EQUAL(0x12, packet[2]);
+    MEMCMP_EQUAL(value, &packet[3], ATT_DEFAULT_MTU - 3u);
+}
+
+TEST(AttDb, indication_value_is_truncated_to_mtu){
+    uint8_t value[ATT_DEFAULT_MTU];
+    uint8_t packet[ATT_DEFAULT_MTU];
+    for (uint16_t i = 0; i < sizeof(value); i++){
+        value[i] = (uint8_t)i;
+    }
+
+    uint16_t size = att_prepare_handle_value_indication(&att_connection, 0x1234, value, sizeof(value), packet);
+
+    CHECK_EQUAL(ATT_DEFAULT_MTU, size);
+    CHECK_EQUAL(ATT_HANDLE_VALUE_INDICATION, packet[0]);
+    CHECK_EQUAL(0x34, packet[1]);
+    CHECK_EQUAL(0x12, packet[2]);
+    MEMCMP_EQUAL(value, &packet[3], ATT_DEFAULT_MTU - 3u);
+}
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

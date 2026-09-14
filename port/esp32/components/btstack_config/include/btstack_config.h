@@ -13,6 +13,7 @@
 #define HAVE_EMBEDDED_TIME_MS
 #define HAVE_FREERTOS_INCLUDE_PREFIX
 #define HAVE_FREERTOS_TASK_NOTIFICATIONS
+#define HAVE_HAL_UART_BUFFERS
 #define HAVE_MALLOC
 
 #define HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE
@@ -30,12 +31,13 @@
 
 // Enable Classic/LE based on esp-idf sdkconfig
 #include "sdkconfig.h"
-#ifdef CONFIG_IDF_TARGET_ESP32
-// ESP32 as dual-mode Controller
+#include "esp_idf_version.h"
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S31)
+// ESP32 or ESP32-S31 are dual-mode Controller
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
 
-#else /* CONFIG_IDF_TARGET_ESP32 */
+#else /* CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S31 */
 // ESP32-C3 and ESP32-S3 with LE-only Controller
 #define ENABLE_BLE
 
@@ -73,8 +75,13 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
 
-// ESP32 supports ECDH HCI Commands, but micro-ecc lib is already provided anyway
+// ESP-IDF 5+ provides TinyCrypt/uECC via the bt component. Use it to avoid
+// duplicate uECC symbols and keep the no-heap ECC implementation.
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)) && defined(CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT)
+#define HAVE_ESP_IDF_TINYCRYPT_ECC_P256
+#else
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#endif
 
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
 

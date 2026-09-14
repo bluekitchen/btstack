@@ -45,6 +45,8 @@ set(SOURCES
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+add_library(btstack_classic STATIC ${SOURCES})
+target_compile_definitions(btstack_classic PRIVATE ENABLE_CLASSIC ENABLE_SCO_OVER_HCI)
 
 # create targets
 foreach(EXAMPLE_FILE test_le_scan.cpp hci_test.cpp)
@@ -53,3 +55,7 @@ foreach(EXAMPLE_FILE test_le_scan.cpp hci_test.cpp)
 	add_executable(${EXAMPLE} ${SOURCE_FILES} )
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)
+
+add_executable(hci_classic_test hci_classic_test.cpp)
+target_compile_definitions(hci_classic_test PRIVATE ENABLE_CLASSIC ENABLE_SCO_OVER_HCI)
+target_link_libraries(hci_classic_test btstack_classic)

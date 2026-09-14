@@ -157,11 +157,14 @@ static void btstack_uart_slip_wrapper_receive_frame(uint8_t *buffer, uint16_t le
 // SLIP End
 
 static int btstack_uart_slip_wrapper_init(const btstack_uart_config_t * config){
+    btstack_assert(config != NULL);
+    btstack_assert(config->baudrate > 0);
     btstack_uart_slip_wrapper_baudrate = config->baudrate;
     return original_uart->init(config);
 }
 
 static int btstack_uart_slip_wrapper_set_baudrate(uint32_t baudrate){
+    btstack_assert(baudrate > 0);
     if (original_uart->set_baudrate != NULL){
         btstack_uart_slip_wrapper_baudrate = baudrate;
         return original_uart->set_baudrate(baudrate);
@@ -170,14 +173,14 @@ static int btstack_uart_slip_wrapper_set_baudrate(uint32_t baudrate){
 }
 
 static int btstack_uart_slip_wrapper_set_parity(int parity){
-    if (original_uart->set_baudrate != NULL) {
+    if (original_uart->set_parity != NULL) {
         return original_uart->set_parity(parity);
     }
     return 0;
 }
 
 static int btstack_uart_slip_wrapper_set_flowcontrol(int flowcontrol){
-    if (original_uart->set_baudrate != NULL) {
+    if (original_uart->set_flowcontrol != NULL) {
         return original_uart->set_flowcontrol(flowcontrol);
     }
     return 0;
@@ -245,6 +248,7 @@ const btstack_uart_t * btstack_uart_slip_wrapper_instance(const btstack_uart_t *
             /* void (*receive_frame)(uint8_t *buffer, uint16_t len); */       &btstack_uart_slip_wrapper_receive_frame,
             /* void (*send_frame)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_slip_wrapper_send_frame
     };
+    btstack_assert(uart_without_slip != NULL);
     original_uart = uart_without_slip;
     return &btstack_uart_slip_wrapper;
 }

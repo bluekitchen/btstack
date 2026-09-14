@@ -57,17 +57,21 @@ void avrcp_media_item_iterator_init(avrcp_media_item_context_t *context, uint16_
 }
 
 int  avrcp_media_item_iterator_has_more(const avrcp_media_item_context_t * context){
-    return context->offset < context->length;
+    if ((context->data == NULL) || (context->offset > context->length) ||
+        ((uint16_t)(context->length - context->offset) < 8u)){
+        return 0;
+    }
+    uint16_t value_len = big_endian_read_16(context->data, context->offset + 6u);
+    return value_len <= (uint16_t)(context->length - context->offset - 8u);
 }
 
 void avrcp_media_item_iterator_next(avrcp_media_item_context_t * context){
-    int chunk_len = big_endian_read_16(context->data, context->offset + 6);
-    int new_offset = context->offset + 2 + 2 + 4 + chunk_len;
-    // avoid uint8_t overrun
-    if (new_offset > 0xffff){
-        new_offset = 0xffff;
+    if (!avrcp_media_item_iterator_has_more(context)){
+        context->offset = context->length;
+        return;
     }
-    context->offset = new_offset;
+    uint16_t chunk_len = big_endian_read_16(context->data, context->offset + 6u);
+    context->offset = (uint16_t)(context->offset + 8u + chunk_len);
 }
 
 uint32_t avrcp_media_item_iterator_get_attr_id(const avrcp_media_item_context_t * context){
@@ -85,4 +89,3 @@ uint16_t avrcp_media_item_iterator_get_attr_value_len(const avrcp_media_item_con
 const uint8_t * avrcp_media_item_iterator_get_attr_value(const avrcp_media_item_context_t * context){
     return &context->data[context->offset + 8];
 }
-

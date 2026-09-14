@@ -46,6 +46,7 @@
  */
 
 #include <string.h>
+#include "btstack_config.h"
 #include "stm32l0xx_hal.h"
 #include "port.h"
 #include "main.h"   // pin definitions
@@ -73,6 +74,7 @@
 
 // retarget printf
 #include <stdio.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -197,6 +199,10 @@ static uint16_t         hal_uart_dma_tx_size;
 static uint8_t  * hal_uart_dma_rx_buffer;
 static uint16_t   hal_uart_dma_rx_len;
 
+#ifndef HAVE_HAL_UART_BUFFERS
+#error "The STM32 L073 EM9304 HAL buffers received SPI data and must be built with HAVE_HAL_UART_BUFFERS enabled in btstack_config.h."
+#endif
+
 static void dummy_handler(void);
 
 // handlers
@@ -262,13 +268,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
     }
 }
 
-static void hal_spi_em9304_transfer_rx_data(void){
+static bool hal_spi_em9304_transfer_rx_data(void){
     while (1){
         int bytes_available = btstack_ring_buffer_bytes_available(&hal_uart_dma_rx_ring_buffer);
         log_debug("transfer_rx_data: ring buffer has %u -> hci buffer needs %u", bytes_available, hal_uart_dma_rx_len);
 
-        if (!bytes_available) return;
-        if (!hal_uart_dma_rx_len) return;
+        if (!hal_uart_dma_rx_len) return true;
+        if (!bytes_available) return false;
 
         int bytes_to_copy = btstack_min(bytes_available, hal_uart_dma_rx_len);
         uint32_t bytes_read;
@@ -277,7 +283,7 @@ static void hal_spi_em9304_transfer_rx_data(void){
         hal_uart_dma_rx_len    -= bytes_read;
 
         if (hal_uart_dma_rx_len == 0){
-            (*rx_done_handler)();
+            return true;
         }
     }
 }
@@ -343,7 +349,9 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
             hal_spi_em9304_rx_request_len = 0;
 
             // deliver new data
-            hal_spi_em9304_transfer_rx_data();
+            if (hal_spi_em9304_transfer_rx_data()){
+                (*rx_done_handler)();
+            }
             break;
 
         case SPI_EM9304_TX_W4_RDY:
@@ -429,18 +437,20 @@ int  hal_uart_dma_set_baud(uint32_t baud){
     return 0;
 }
 
-void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
+bool hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
     hal_uart_dma_tx_data = buffer;
     hal_uart_dma_tx_size = length;
     hal_spi_em9304_process(NULL, 0);
+    return false;
 }
 
-void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t length){
+bool hal_uart_dma_receive_block(uint8_t *buffer, uint16_t length){
     log_debug("hal_uart_dma_receive_block: len %u, ring buffer has %u, UART_RX_LEN %u", length, btstack_ring_buffer_bytes_available(&hal_uart_dma_rx_ring_buffer), hal_uart_dma_rx_len);
     hal_uart_dma_rx_buffer = buffer;
     hal_uart_dma_rx_len    = length;
-    hal_spi_em9304_transfer_rx_data();
+    bool complete = hal_spi_em9304_transfer_rx_data();
     hal_spi_em9304_process(NULL, 0);
+    return complete;
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void)){

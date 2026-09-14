@@ -269,11 +269,12 @@ uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffe
     return obex_message_builder_header_fillup_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length, ret_length);
 }
 
-uint8_t obex_message_builder_get_header_name_len_from_strlen(uint16_t name_len) {
-    
+uint16_t obex_message_builder_get_header_name_len_from_strlen(uint16_t name_len) {
     // non-empty string have trailing \0
     bool add_trailing_zero = name_len > 0;
-    return 1 + 2 + (name_len * 2) + (add_trailing_zero ? 2 : 0);
+    uint32_t header_len = 1u + 2u + ((uint32_t) name_len * 2u) + (add_trailing_zero ? 2u : 0u);
+    if (header_len > UINT16_MAX) return 0;
+    return (uint16_t) header_len;
 }
 
 uint8_t obex_message_builder_header_add_unicode_prefix(uint8_t * buffer, uint16_t buffer_len, uint8_t header_id, const char * name, uint16_t name_len){
@@ -281,9 +282,9 @@ uint8_t obex_message_builder_header_add_unicode_prefix(uint8_t * buffer, uint16_
     bool add_trailing_zero = name_len > 0;
 
     uint16_t header_len = obex_message_builder_get_header_name_len_from_strlen(name_len);
-    if (buffer_len < header_len) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-
     uint16_t pos = big_endian_read_16(buffer, 1);
+    if ((header_len == 0u) || (pos > buffer_len) || (header_len > (buffer_len - pos))) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+
     buffer[pos++] = header_id;
     big_endian_store_16(buffer, pos, header_len);
     pos += 2;
@@ -306,8 +307,9 @@ uint8_t obex_message_builder_header_add_name_prefix(uint8_t * buffer, uint16_t b
 }
 
 uint8_t obex_message_builder_header_add_name(uint8_t * buffer, uint16_t buffer_len, const char * name){
-    uint16_t name_len = (uint16_t) strlen(name);
-    return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, name_len);
+    size_t name_len = strlen(name);
+    if (name_len > 32765u) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, (uint16_t) name_len);
 }
 
 uint8_t obex_message_builder_get_header_type_len(char * type) {

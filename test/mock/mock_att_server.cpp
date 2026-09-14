@@ -109,4 +109,5 @@ uint16_t l2cap_max_mtu(void){
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+    UNUSED(handler);
 }

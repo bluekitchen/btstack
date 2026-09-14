@@ -560,19 +560,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         } else {
             if (!hsp_hs_callback) return;
             // strip trailing newline
-            while ((size > 0) && ((packet[size-1] == '\n') || (packet[size-1] == '\r'))){
+			while ((size > 0) && ((packet[size-1] == '\n') || (packet[size-1] == '\r'))){
                 size--;
             }
 			if ((size + 4) > 255) return;
-            // add trailing \0
-            packet[size] = 0;
-            // re-use incoming buffer to avoid reserving buffers/memcpy - ugly but efficient
-            uint8_t * event = packet - 6;
+            // Keep the trailing NUL for callbacks without modifying the received RFCOMM buffer.
+            uint8_t event[HCI_EVENT_BUFFER_SIZE + 1u];
             event[0] = HCI_EVENT_HSP_META;
             event[1] = (uint8_t) (size + 4);
             event[2] = HSP_SUBEVENT_AG_INDICATION;
             little_endian_store_16(event, 3, hsp_hs_rfcomm_handle);
             event[5] = (uint8_t) size;
+            memcpy(&event[6], packet, size);
+            event[6u + size] = 0;
             (*hsp_hs_callback)(HCI_EVENT_PACKET, 0, event, size+6);
         }
         hsp_run();

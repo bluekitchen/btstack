@@ -49,8 +49,18 @@
 extern "C" {
 #endif
 
+typedef enum {
+    BTSTACK_BASE64_DECODER_STATE_FIRST = 0,
+    BTSTACK_BASE64_DECODER_STATE_SECOND,
+    BTSTACK_BASE64_DECODER_STATE_THIRD,
+    BTSTACK_BASE64_DECODER_STATE_FOURTH,
+    BTSTACK_BASE64_DECODER_STATE_PADDING_EXPECTED,
+    BTSTACK_BASE64_DECODER_STATE_COMPLETE,
+    BTSTACK_BASE64_DECODER_STATE_INVALID = 99
+} btstack_base64_decoder_state_t;
+
 typedef struct {
-    uint8_t pos;
+    btstack_base64_decoder_state_t state;
     uint8_t value;
 } btstack_base64_decoder_t;
 

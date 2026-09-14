@@ -59,7 +59,7 @@ extern "C" {
 
 /**
  * @brief Initialize SLIP wrapper for existing btstack_uart_block_t instance without SLIP support
- * @param uart_block_without_slip
+ * @param uart_block_without_slip non-NULL UART implementation without SLIP support
  * @return btstack_uart_t instance with SLIP support for use with hci_trasnport_h5
  */
 const btstack_uart_t * btstack_uart_slip_wrapper_instance(const btstack_uart_t * uart_without_slip);
