@@ -65,9 +65,26 @@ static void (*stdin_handler)(char c);
 static void (*ctrl_c_handler)(void);
 
 static DWORD WINAPI stdin_reader_thread_process(void * p){
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     while (true){
-        key_read_buffer = _getch();
-        SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);
+        DWORD bytes_read = 0;
+        char ch = 0;
+        DWORD mode = 0;
+        if (GetConsoleMode(hStdin, &mode)) {
+            // Interactive console terminal: use _getch() for raw keypresses
+            ch = (char)_getch();
+            bytes_read = 1;
+        } else {
+            // Redirected standard input pipe or file: read byte-by-byte
+            if (!ReadFile(hStdin, &ch, 1, &bytes_read, NULL) || bytes_read == 0) {
+                Sleep(50);
+                continue;
+            }
+        }
+        if (bytes_read > 0) {
+            key_read_buffer = ch;
+            SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);
+        }
     }
     return 0;
 }

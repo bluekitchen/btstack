@@ -476,6 +476,13 @@ static void usb_submit_sco_in_transfer_at_frame(int i, ULONG * frame_number){
         return;
     }
 
+    int p;
+    for (p = 0; p < NUM_ISO_PACKETS; p++) {
+        hci_sco_packet_descriptors[i * NUM_ISO_PACKETS + p].Offset = p * iso_packet_size;
+        hci_sco_packet_descriptors[i * NUM_ISO_PACKETS + p].Length = iso_packet_size;
+        hci_sco_packet_descriptors[i * NUM_ISO_PACKETS + p].Status = 0;
+    }
+
     LARGE_INTEGER timestamp;
     ULONG current_frame_number;
     WinUsb_GetCurrentFrameNumber(usb_interface_0_handle, &current_frame_number, &timestamp);
@@ -507,6 +514,13 @@ static void usb_submit_sco_in_transfer_asap(int i, int continue_stream){
     if (sco_shutdown){
         log_info("USB SCO Shutdown:: usb_submit_sco_in_transfer_at_frame called");
         return;
+    }
+
+    int p;
+    for (p = 0; p < NUM_ISO_PACKETS; p++) {
+        hci_sco_packet_descriptors[i * NUM_ISO_PACKETS + p].Offset = p * iso_packet_size;
+        hci_sco_packet_descriptors[i * NUM_ISO_PACKETS + p].Length = iso_packet_size;
+        hci_sco_packet_descriptors[i * NUM_ISO_PACKETS + p].Status = 0;
     }
 
     LARGE_INTEGER timestamp;
@@ -727,7 +741,7 @@ static void usb_process_sco_in(btstack_data_source_t *ds,  btstack_data_source_c
         for (i=0;i<NUM_ISO_PACKETS;i++){
             USBD_ISO_PACKET_DESCRIPTOR * packet_descriptor = &hci_sco_packet_descriptors[transfer_index * NUM_ISO_PACKETS + i];
             if (packet_descriptor->Length){
-                uint8_t * iso_data = &hci_sco_in_buffer[transfer_index * SCO_PACKET_SIZE + packet_descriptor->Offset];
+                uint8_t * iso_data = &hci_sco_in_buffer[transfer_index * SCO_PACKET_SIZE + i * iso_packet_size];
                 uint16_t  iso_len  = (uint16_t) packet_descriptor->Length;
                 sco_handle_data(iso_data, iso_len);
             }
@@ -1084,7 +1098,27 @@ static int usb_try_open_device(const char * device_path){
 
     // submit all incoming transfers
     usb_submit_event_in_transfer();
-    usb_submit_acl_in_transfer();    
+    usb_submit_acl_in_transfer();
+
+    // Query device descriptor to emit USB info event
+    USB_DEVICE_DESCRIPTOR dev_desc;
+    ULONG bytes_xfer = 0;
+    if (WinUsb_GetDescriptor(usb_interface_0_handle, USB_DEVICE_DESCRIPTOR_TYPE, 0, 0, (PUCHAR)&dev_desc, sizeof(dev_desc), &bytes_xfer) && bytes_xfer == sizeof(dev_desc)) {
+        uint8_t event[10];
+        uint16_t pos = 0;
+        event[pos++] = HCI_EVENT_TRANSPORT_USB_INFO;
+        event[pos++] = 6;
+        little_endian_store_16(event, pos, dev_desc.idVendor);
+        pos += 2;
+        little_endian_store_16(event, pos, dev_desc.idProduct);
+        pos += 2;
+        event[pos++] = 0;
+        event[pos++] = 0;
+        if (packet_handler) {
+            (*packet_handler)(HCI_EVENT_PACKET, event, pos);
+        }
+    }
+
 	return 1;
 
 exit_on_error:
