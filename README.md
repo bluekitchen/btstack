@@ -33,9 +33,9 @@ Advertising, Periodic Advertising, LE Secure Connections, Classic Audio
 **Profiles:** A2DP, AVRCP incl. Browsing (CT+TG) and Cover Art (CT), GAP, GATT, HFP, HID, HSP, IOP, MAP, OPP, SPP, PAN, PBAP.
 
 **GATT Service Servers:** Battery (BAS), Bond Management (BMS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device, Immediate Alert, Link Loss (LLS),
-Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), TX Power (TPS), u-Blox SPP. 
+Mesh Provisioning, Mesh Proxy, Nordic SPP, Object Transfer Service (OTS), Scan Parameters (SCPS), TX Power (TPS), u-Blox SPP.
 
-**GATT Service Clients:** ANCS, Battery (BAS), Device Information (DID), HID-over-GATT (HOGP) Host, Immediate Alert, Link Loss, Scan Parameters (SCPS), TX Power (TXPS).
+**GATT Service Clients:** ANCS, Battery (BAS), Device Information (DID), HID-over-GATT (HOGP) Host, Immediate Alert, Link Loss, Object Transfer Service (OTS), Scan Parameters (SCPS), TX Power (TXPS).
 
 **LE Audio Profiles**: Object Transfer Profile (OTP), Volume Control Profile (VCP), Microphone Control Profile (MICP), Media Control Profile (MCP), Call Control Profile (CCP),
 Coordinated Set Identification Profile (CSIP), Basic Audio Profile (BAP), Common Audio Profile (CAP), Hearing Access Profile (HAP), Telephony and Media Audio Profile (TMAP),
