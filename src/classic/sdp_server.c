@@ -293,6 +293,9 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     if (param_len < 6) return 0;
     uint32_t  serviceRecordHandle = big_endian_read_32(packet, 5);
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 9);
+    if (maximumAttributeByteCount < 7) {
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     param_len -= 6;
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
@@ -407,6 +410,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     // assert maximumAttributeByteCount contained in param_len
     if (param_len < 2) return 0;
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 5 + serviceSearchPatternLen);
+    if (maximumAttributeByteCount < 7) {
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     param_len -= 2;
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
@@ -680,5 +686,9 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 #ifdef ENABLE_TESTING_SUPPORT
 void sdp_server_set_single_record_response(bool enable){
     sdp_server_testing_single_record_reponse = enable;
+}
+
+const uint8_t * sdp_server_get_response_buffer(void){
+    return sdp_response_buffer;
 }
 #endif
