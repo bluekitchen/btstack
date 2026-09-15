@@ -1,7 +1,7 @@
 
 include ../common.make
 
-DEFINES  := -DUNIT_TEST
+DEFINES  := -DUNIT_TEST -DENABLE_TESTING_SUPPORT
 INCLUDES := -I${BTSTACK_ROOT}/src
 INCLUDES += -I..
 

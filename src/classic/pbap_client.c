@@ -201,6 +201,7 @@ static void pbap_client_finalize(pbap_client_t *client) {
 
 static void pbap_client_vcard_listing_init_parser(pbap_client_t * client){
     yxml_init(&client->xml_parser, client->xml_buffer, sizeof(client->xml_buffer));
+    client->xml_parser_last_result = YXML_OK;
     client->parser_card_found = false;
     client->parser_name_found = false;
     client->parser_handle_found = false;
@@ -346,8 +347,12 @@ static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer,
 
 static void pbap_client_process_vcard_list_body(pbap_client_t *client, const uint8_t *data, uint16_t data_len) {
 
+    if (client->xml_parser_last_result < 0) return;
+
     while (data_len--) {
         yxml_ret_t r = yxml_parse(&client->xml_parser, *data++);
+        client->xml_parser_last_result = r;
+        if (r < 0) return;
         switch (r) {
             case YXML_ELEMSTART:
                 client->parser_card_found = strcmp("card", client->xml_parser.elem) == 0;

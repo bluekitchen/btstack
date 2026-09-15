@@ -198,8 +198,12 @@ static void mesh_segmented_pdu_flatten(btstack_linked_list_t * segments, uint8_t
         uint8_t offset = 0;
         while (offset < segment->len){
             uint8_t seg_o = segment->data[offset++];
-            (void) memcpy(&buffer[seg_o * segment_len], &segment->data[offset], segment_len);
-            offset += segment_len;
+            btstack_assert(offset < segment->len);
+            uint8_t len = segment->data[offset++];
+            btstack_assert(len <= segment_len);
+            btstack_assert((offset + len) <= segment->len);
+            (void) memcpy(&buffer[seg_o * segment_len], &segment->data[offset], len);
+            offset += len;
         }
     }
 }

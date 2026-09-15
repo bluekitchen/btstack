@@ -113,6 +113,7 @@ void sdp_deinit(void);
 
 #ifdef ENABLE_TESTING_SUPPORT
 void sdp_server_set_single_record_response(bool enabled);
+const uint8_t * sdp_server_get_response_buffer(void);
 #endif
 
 

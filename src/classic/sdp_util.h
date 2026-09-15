@@ -63,6 +63,15 @@ typedef enum {
     SDP_ServiceSearchAttributeResponse
 } sdp_pdu_id_t;
 
+typedef enum {
+    SDP_ERROR_CODE_INVALID_SDP_VERSION           = 0x0001,
+    SDP_ERROR_CODE_INVALID_SERVICE_RECORD_HANDLE = 0x0002,
+    SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX        = 0x0003,
+    SDP_ERROR_CODE_INVALID_PDU_SIZE              = 0x0004,
+    SDP_ERROR_CODE_INVALID_CONTINUATION_STATE    = 0x0005,
+    SDP_ERROR_CODE_INSUFFICIENT_RESOURCES        = 0x0006,
+} sdp_error_code_t;
+
 
 /* API_START */
     

@@ -642,6 +642,16 @@ static void process_network_pdu_validate_b(void * arg){
     // 
     uint8_t ctl_ttl     = incoming_pdu_decoded->data[1];
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+
+    // A Network PDU has a 7-byte clear/obfuscated header before the
+    // encrypted payload and NetMIC. The initial length check permits the
+    // shortest access PDU (with a 4-byte NetMIC); after de-obfuscation, a
+    // control PDU needs a longer minimum length due to its 8-byte NetMIC.
+    if (incoming_pdu_decoded->len < (7u + net_mic_len)){
+        process_network_pdu_validate();
+        return;
+    }
+
     uint8_t cypher_len  = incoming_pdu_decoded->len - 7 - net_mic_len;
 
 #ifdef LOG_NETWORK

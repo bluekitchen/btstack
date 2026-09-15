@@ -649,6 +649,25 @@ TEST(MessageTest, Message4Send){
     test_send_control_message(netkey_index, ttl, src, dest, message4_upper_transport_pdu, 1, message4_lower_transport_pdus, message4_network_pdus);
 }
 
+TEST(MessageTest, TruncatedControlNetworkPduIsDropped){
+    // This is the first 14 bytes of message4_network_pdus. It passes the
+    // generic minimum-length check, but de-obfuscates to CTL = 1 and therefore
+    // needs an 8-byte NetMIC. Previously, the ciphertext length wrapped to
+    // 255 after de-obfuscation.
+    uint8_t truncated_control_pdu[14];
+    btstack_parse_hex("5e84eba092380fb0e5d0ad970d57", sizeof(truncated_control_pdu), truncated_control_pdu);
+
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_network_received_message(truncated_control_pdu, sizeof(truncated_control_pdu), 0);
+
+    // Process the privacy-obfuscation AES operation. Rejecting the malformed
+    // PDU must not start CCM decryption.
+    CHECK_EQUAL(1, mock_process_hci_cmd());
+    CHECK_EQUAL(0, mock_process_hci_cmd());
+    CHECK_EQUAL(NULL, received_network_pdu);
+}
+
 // Message 5
 char * message5_network_pdus[] = {
     (char *) "5eafd6f53c43db5c39da1792b1fee9ec74b786c56d3a9dee",
@@ -1242,6 +1261,31 @@ TEST(MessageTest, SegmentedAccessPduShorterThanTransmicIsDropped){
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     mesh_network_setup_pdu(network_pdu, 0, 0, 0, 0, 1, 1, 2, lower_transport_pdu, sizeof(lower_transport_pdu));
 
+    mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+    CHECK_EQUAL(0, recv_upper_transport_pdu_len);
+}
+
+TEST(MessageTest, SegmentedPduWithInconsistentControlFlagIsDropped){
+    // Segment 0 is a control segment. Segment 1 falsely switches to access and
+    // carries a longer payload. Before the fix this made the upper transport
+    // reassembly parser treat a payload byte as another segment index.
+    const uint8_t control_segment[] = { 0x80, 0x00, 0x00, 0x01,
+                                        0x01, 0x02, 0x03, 0x04,
+                                        0x05, 0x06, 0x07, 0x08 };
+    const uint8_t access_segment[]  = { 0x80, 0x00, 0x00, 0x21,
+                                        0x10, 0x11, 0x12, 0x13,
+                                        0x14, 0x15, 0x16, 0x17,
+                                        0x20, 0x19, 0x1a, 0x1b };
+
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    mesh_network_setup_pdu(network_pdu, 0, 0, 1, 0, 1, 1, 2,
+                           control_segment, sizeof(control_segment));
+    mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+    network_pdu = mesh_network_pdu_get();
+    mesh_network_setup_pdu(network_pdu, 0, 0, 0, 0, 2, 1, 2,
+                           access_segment, sizeof(access_segment));
     mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
 
     CHECK_EQUAL(0, recv_upper_transport_pdu_len);
