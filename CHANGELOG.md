@@ -31,24 +31,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: validate malformed HCI events and ACL packet buffers to prevent out-of-bounds reads
 - HCI ISO: reliably release CIG, CIS, BIG, and BIS resources after failed setup, cancellation, or stale completion events
 - L2CAP: validate ERTM, CBM, and ECBM configuration and packet sizes; fix ERTM reassembly and out-of-order frame handling
-- BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
+- L2CAP: reject MTU smaller than 48 bytes for basic channels
+- RFCOMM: only deliver RFCOMM data with size > 0
 - RFCOMM: validate incoming frames and send parameters, and release channels that fail setup
 - SDP: validate client and server data-element parsing, continuation state, and query parameters
 - SDP Server: reject invalid MaximumAttributeByteCount values
-- ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
-- GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
-- GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
-- GATT Services: fix Cycling Power and Cycling Speed and Cadence supported-sensor-location responses; prevent Heart Rate notification buffer overruns
-- Mesh: validate provisioning, transport, and access PDUs, including segmented-message completion before delivery
-- GOEP, OBEX, and PBAP: validate malformed and empty packets, header sizes, and listing parameters
-- HID Host/Device: safely handle connection removal during callbacks and reject malformed or empty reports
-- HFP: handle synchronous-connection command-status failures and use enhanced SCO commands for supported QCA controllers
-- L2CAP: reject MTU smaller than 48 bytes for basic channels
 - SM: fix BR/EDR->LE CTKD overwrite of BR/EDR link key
 - SM: fix BR/EDR->LE CTKD check for existing LTK
 - A2DP: ignore unexpected responses, keep state for Delay Report response
 - AVRCP: improve browsing, cover-art, media-item, and controller response parsing; avoid buffer overruns for user-provided data
-- RFCOMM: only deliver RFCOMM data with size > 0
+- BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
+- ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
+- GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
+- GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
+- GATT Services: fix Cycling Power and Cycling Speed and Cadence supported-sensor-location responses; prevent Heart Rate notification buffer overruns
+- HID Host/Device: safely handle connection removal during callbacks and reject malformed or empty reports
+- HFP: handle synchronous-connection command-status failures and use enhanced SCO commands for supported QCA controllers
+- GOEP, OBEX, and PBAP: validate malformed and empty packets, header sizes, and listing parameters
+- PBAP Client: abort phonebook parsing upon yxml error
+- Mesh: validate provisioning, transport, and access PDUs, including segmented-message completion before delivery
 - esp32 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - esp32: fix UART DMA reception and ESP-IDF v6 builds
 - MSP432P401LP-CC256x port: ise `HAVE_HAL_UART_BUFFERS` in UART HAL

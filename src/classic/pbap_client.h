@@ -175,6 +175,7 @@ typedef struct pbap_client {
     const char * authentication_password;
     /* xml parser */
     yxml_t  xml_parser;
+    yxml_ret_t xml_parser_last_result;
     uint8_t xml_buffer[50];
     /* vcard listing parser */
     bool parser_card_found;
