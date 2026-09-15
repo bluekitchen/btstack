@@ -649,6 +649,25 @@ TEST(MessageTest, Message4Send){
     test_send_control_message(netkey_index, ttl, src, dest, message4_upper_transport_pdu, 1, message4_lower_transport_pdus, message4_network_pdus);
 }
 
+TEST(MessageTest, TruncatedControlNetworkPduIsDropped){
+    // This is the first 14 bytes of message4_network_pdus. It passes the
+    // generic minimum-length check, but de-obfuscates to CTL = 1 and therefore
+    // needs an 8-byte NetMIC. Previously, the ciphertext length wrapped to
+    // 255 after de-obfuscation.
+    uint8_t truncated_control_pdu[14];
+    btstack_parse_hex("5e84eba092380fb0e5d0ad970d57", sizeof(truncated_control_pdu), truncated_control_pdu);
+
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_network_received_message(truncated_control_pdu, sizeof(truncated_control_pdu), 0);
+
+    // Process the privacy-obfuscation AES operation. Rejecting the malformed
+    // PDU must not start CCM decryption.
+    CHECK_EQUAL(1, mock_process_hci_cmd());
+    CHECK_EQUAL(0, mock_process_hci_cmd());
+    CHECK_EQUAL(NULL, received_network_pdu);
+}
+
 // Message 5
 char * message5_network_pdus[] = {
     (char *) "5eafd6f53c43db5c39da1792b1fee9ec74b786c56d3a9dee",
