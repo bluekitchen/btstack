@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
 - RFCOMM: validate incoming frames and send parameters, and release channels that fail setup
 - SDP: validate client and server data-element parsing, continuation state, and query parameters
+- SDP Server: reject invalid MaximumAttributeByteCount values
 - ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
 - GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
 - GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
