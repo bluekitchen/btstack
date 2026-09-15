@@ -391,6 +391,20 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
         return;
     }
 
+    if (mesh_network_control(network_pdu) != (message_pdu->ctl_ttl & 0x80)){
+        log_info("Mesh Lower Transport: inconsistent control flag");
+        mesh_network_message_processed_by_higher_layer(network_pdu);
+        return;
+    }
+
+    uint8_t szmic = lower_transport_pdu[1] & 0x80;
+    uint8_t expected_szmic = (message_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) ? 0x80 : 0;
+    if (szmic != expected_szmic){
+        log_info("Mesh Lower Transport: inconsistent TransMIC size");
+        mesh_network_message_processed_by_higher_layer(network_pdu);
+        return;
+    }
+
     // drop if already stored
     if ((message_pdu->block_ack & (1u << seg_o)) != 0){
         mesh_network_message_processed_by_higher_layer(network_pdu);
