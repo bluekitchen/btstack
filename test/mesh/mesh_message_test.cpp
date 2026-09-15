@@ -1247,6 +1247,31 @@ TEST(MessageTest, SegmentedAccessPduShorterThanTransmicIsDropped){
     CHECK_EQUAL(0, recv_upper_transport_pdu_len);
 }
 
+TEST(MessageTest, SegmentedPduWithInconsistentControlFlagIsDropped){
+    // Segment 0 is a control segment. Segment 1 falsely switches to access and
+    // carries a longer payload. Before the fix this made the upper transport
+    // reassembly parser treat a payload byte as another segment index.
+    const uint8_t control_segment[] = { 0x80, 0x00, 0x00, 0x01,
+                                        0x01, 0x02, 0x03, 0x04,
+                                        0x05, 0x06, 0x07, 0x08 };
+    const uint8_t access_segment[]  = { 0x80, 0x00, 0x00, 0x21,
+                                        0x10, 0x11, 0x12, 0x13,
+                                        0x14, 0x15, 0x16, 0x17,
+                                        0x20, 0x19, 0x1a, 0x1b };
+
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    mesh_network_setup_pdu(network_pdu, 0, 0, 1, 0, 1, 1, 2,
+                           control_segment, sizeof(control_segment));
+    mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+    network_pdu = mesh_network_pdu_get();
+    mesh_network_setup_pdu(network_pdu, 0, 0, 0, 0, 2, 1, 2,
+                           access_segment, sizeof(access_segment));
+    mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+    CHECK_EQUAL(0, recv_upper_transport_pdu_len);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
