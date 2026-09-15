@@ -179,7 +179,7 @@ void sdp_unregister_service(uint32_t service_record_handle){
 // PDU
 // PDU ID (1), Transaction ID (2), Param Length (2), Param 1, Param 2, ..
 
-static int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
+static int sdp_create_error_response(uint16_t transaction_id, sdp_error_code_t error_code){
     sdp_response_buffer[0] = SDP_ErrorResponse;
     big_endian_store_16(sdp_response_buffer, 1, transaction_id);
     big_endian_store_16(sdp_response_buffer, 3, 2);
@@ -196,10 +196,10 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
     // assert service search pattern is contained
     if (!serviceSearchPatternLen) {
-        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_PDU_SIZE);
     }
     if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
     }
     param_len -= serviceSearchPatternLen;
     // assert max record count is contained
@@ -294,17 +294,17 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     uint32_t  serviceRecordHandle = big_endian_read_32(packet, 5);
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 9);
     if (maximumAttributeByteCount < 7) {
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
     }
     param_len -= 6;
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
     // assert attributeIDList are in param_len
     if (!attributeIDListLen) {
-        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_PDU_SIZE);
     }
     if (!sdp_attribute_list_valid(attributeIDList)){
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
     }
     param_len -= attributeIDListLen;
     // assert continuation state len is contained in param_len
@@ -329,7 +329,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     service_record_item_t * item = sdp_get_record_item_for_handle(serviceRecordHandle);
     if (!item){
         // service record handle doesn't exist
-        return sdp_create_error_response(transaction_id, 0x0002); /// invalid Service Record Handle
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_SERVICE_RECORD_HANDLE);
     }
     
     
@@ -401,27 +401,27 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
     // assert serviceSearchPattern header is contained in param_len
     if (!serviceSearchPatternLen) {
-        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_PDU_SIZE);
     }
     if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
     }
     param_len -= serviceSearchPatternLen;
     // assert maximumAttributeByteCount contained in param_len
     if (param_len < 2) return 0;
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 5 + serviceSearchPatternLen);
     if (maximumAttributeByteCount < 7) {
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
     }
     param_len -= 2;
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
     // assert attributeIDList is contained in param_len
     if (!attributeIDListLen) {
-        return sdp_create_error_response(transaction_id, 0x0004); /// invalid PDU size
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_PDU_SIZE);
     }
     if (!sdp_attribute_list_valid(attributeIDList)){
-        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
     }
     param_len -= attributeIDListLen;
     // assert continuation state len is contained in param_len
@@ -451,7 +451,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
             break;
         default:
             // invalidate continuation state
-            return sdp_create_error_response(transaction_id, 0x0005); /// invalid continnuation state
+            return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_CONTINUATION_STATE);
     }
 
     // log_info("--> sdp_handle_service_search_attribute_request, cont %u/%u, max %u", continuation_service_index, continuation_offset, maximumAttributeByteCount);
@@ -521,7 +521,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
 
     // avoid emptry response (most likely invalid continuation state)
     if (attributeListsByteCount < 2) {
-        return sdp_create_error_response(transaction_id, 0x0005); /// invalid continnuation state
+        return sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_CONTINUATION_STATE);
     }
 
     // Continuation State
@@ -611,7 +611,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
                     
                 default:
-                    sdp_server_response_size = sdp_create_error_response(transaction_id, 0x0004); // invalid PDU size
+                    sdp_server_response_size = sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_PDU_SIZE);
                     break;
             }
             if (!sdp_server_response_size) break;

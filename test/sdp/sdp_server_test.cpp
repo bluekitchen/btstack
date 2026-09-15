@@ -38,7 +38,7 @@ TEST(SDPServer, ServiceSearchRejectsTruncatedSearchPattern){
     };
 
     CHECK_EQUAL(7, sdp_handle_service_search_request(packet, 48));
-    check_error_response(0x0004);
+    check_error_response(SDP_ERROR_CODE_INVALID_PDU_SIZE);
 }
 
 TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdList){
@@ -49,7 +49,7 @@ TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdList){
     };
 
     CHECK_EQUAL(7, sdp_handle_service_attribute_request(packet, 48));
-    check_error_response(0x0004);
+    check_error_response(SDP_ERROR_CODE_INVALID_PDU_SIZE);
 }
 
 TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdListChild){
@@ -60,7 +60,7 @@ TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdListChild){
     };
 
     CHECK_EQUAL(7, sdp_handle_service_attribute_request(packet, 48));
-    check_error_response(0x0003);
+    check_error_response(SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
 }
 
 TEST(SDPServer, ServiceSearchAttributeRejectsTruncatedAttributeIdList){
@@ -72,7 +72,7 @@ TEST(SDPServer, ServiceSearchAttributeRejectsTruncatedAttributeIdList){
     };
 
     CHECK_EQUAL(7, sdp_handle_service_search_attribute_request(packet, 48));
-    check_error_response(0x0004);
+    check_error_response(SDP_ERROR_CODE_INVALID_PDU_SIZE);
 }
 
 TEST(SDPServer, ServiceAttributeRejectsZeroMaximumAttributeByteCount){
@@ -86,7 +86,7 @@ TEST(SDPServer, ServiceAttributeRejectsZeroMaximumAttributeByteCount){
 
     CHECK_EQUAL(0, sdp_register_service(service_record));
     CHECK_EQUAL(7, sdp_handle_service_attribute_request(packet, 48));
-    check_error_response(0x0003);
+    check_error_response(SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
 }
 
 TEST(SDPServer, ServiceSearchAttributeRejectsZeroMaximumAttributeByteCount){
@@ -100,7 +100,7 @@ TEST(SDPServer, ServiceSearchAttributeRejectsZeroMaximumAttributeByteCount){
 
     CHECK_EQUAL(0, sdp_register_service(service_record));
     CHECK_EQUAL(7, sdp_handle_service_search_attribute_request(packet, 48));
-    check_error_response(0x0003);
+    check_error_response(SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
 }
 
 int main (int argc, const char * argv[]){
