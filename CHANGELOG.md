@@ -107,6 +107,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP Target: fix response for GetElementAttributes with attribute Song Length
 - Classic profiles: improve packet parser in AVRCP, BNEP, HID Host, HSP, OBEX, RFCOMM, and SDP Server
 - GATT Service Client: reject disconnect/unregister while connection setup or active connections are in progress
+- GATT Service Client: fully initialize connection struct on connect
 - Mesh and LE Audio: improve parsers
 - btstack_crypto: fix DHKey calculation for newer mbedTLS that require f_rnd for ECC multiplications
 - a2dp_sink_demo: avoid buffer overrun for HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE

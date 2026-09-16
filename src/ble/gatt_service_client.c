@@ -973,11 +973,9 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
+    memset(connection, 0, sizeof(gatt_service_client_connection_t));
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
-    memset(connection->service_uuid128, 0, 16);
     connection->service_uuid16      = service_uuid16;
-    connection->service_index       = 0;
-    connection->start_handle        = 0;
     connection->end_handle          = 0xffff;
 
     gatt_service_client_start_connect(client, connection, con_handle, characteristics);
@@ -1004,11 +1002,9 @@ uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
+    memset(connection, 0, sizeof(gatt_service_client_connection_t));
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
     memcpy(connection->service_uuid128, service_uuid128, 16);
-    connection->service_uuid16      = 0;
-    connection->service_index       = 0;
-    connection->start_handle        = 0;
     connection->end_handle          = 0xffff;
 
     gatt_service_client_start_connect(client, connection, con_handle, characteristics);
@@ -1036,8 +1032,8 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    memset(connection, 0, sizeof(gatt_service_client_connection_t));
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_CHECK_RESTORE_BEFORE_QUERY_CHARACTERISTICS;
-    memset(connection->service_uuid128, 0, 16);
     connection->service_uuid16      = service_uuid16;
     connection->service_index       = service_index;
     connection->start_handle        = service_start_handle;
