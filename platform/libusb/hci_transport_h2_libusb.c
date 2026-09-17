@@ -337,6 +337,7 @@ static void signal_acknowledge(void);
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void signal_sco_can_send_now(void);
+static void usb_sco_start_if_ready(void);
 
 #ifdef _WIN32
 #error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment ENABLE_SCO_OVER_HCI in btstack-config.h for now"
@@ -352,6 +353,7 @@ static uint16_t sco_bytes_to_read;
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
 static bool     sco_activated;
+static bool     sco_stopping;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
@@ -454,6 +456,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
 #ifdef ENABLE_SCO_OVER_HCI
         if(( transfer->endpoint == sco_in_addr) || (transfer->endpoint == sco_out_addr)) {
             usb_transfer_list_release( sco_transfer_list, transfer );
+            usb_sco_start_if_ready();
         } else
 #endif
         {
@@ -576,6 +579,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // give the transfer back to the pool, without resubmiting 
         if( !sco_activated ) {
             usb_transfer_list_release( sco_transfer_list, transfer );
+            usb_sco_start_if_ready();
             return;
         }
 
@@ -600,6 +604,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             }
         }
         usb_transfer_list_release( sco_transfer_list, transfer );
+        usb_sco_start_if_ready();
         if( !sco_activated ) {
             return;
         }
@@ -958,14 +963,15 @@ static int usb_sco_start(void){
     int r = libusb_set_interface_alt_setting(handle, 1, alt_setting);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s\n", alt_setting, libusb_error_name(r));
+        sco_activated = false;
         return r;
     }
 
 #ifdef DEBUG
     int in_flight = usb_transfer_list_in_flight( sco_transfer_list );
-    // there need to be at least SCO_IN_BUFFER_COUNT packets available to 
-    // fill them in below
-    btstack_assert( in_flight <= SCO_OUT_BUFFER_COUNT );
+    // All transfers from a previous SCO configuration must have completed
+    // before the new configuration claims the SCO-IN transfer slots below.
+    btstack_assert( in_flight == 0 );
 #endif
 
     // incoming
@@ -990,10 +996,17 @@ static int usb_sco_start(void){
     return 0;
 }
 
+static void usb_sco_start_if_ready(void){
+    if (sco_stopping || sco_activated || (sco_num_connections == 0)) return;
+    if (usb_transfer_list_in_flight(sco_transfer_list) != 0) return;
+    (void) usb_sco_start();
+}
+
 static void usb_sco_stop(void){
 
     log_info("usb_sco_stop");
     sco_activated = false;
+    sco_stopping = true;
 
     usb_transfer_list_cancel( sco_transfer_list );
 
@@ -1001,9 +1014,12 @@ static void usb_sco_stop(void){
     int r = libusb_set_interface_alt_setting(handle, 1, 0);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s", 0, libusb_error_name(r));
+        sco_stopping = false;
         return;
     }
 
+    sco_stopping = false;
+    usb_sco_start_if_ready();
     log_info("usb_sco_stop done");
 }
 #endif
@@ -1499,15 +1515,20 @@ static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
 
     log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
 
-    if (num_connections != sco_num_connections){
+    if (num_connections > (int)(sizeof(alt_setting_8_bit) / sizeof(alt_setting_8_bit[0]))) {
+        log_error("Cannot configure %u SCO connections, maximum is %u", num_connections,
+                  (unsigned int)(sizeof(alt_setting_8_bit) / sizeof(alt_setting_8_bit[0])));
+        return;
+    }
+
+    if ((num_connections != sco_num_connections) || (voice_setting != sco_voice_setting)){
+        bool sco_was_activated = sco_activated;
         sco_voice_setting = voice_setting;
-        if (sco_num_connections){
+        sco_num_connections = num_connections;
+        if (sco_was_activated){
             usb_sco_stop();
         }
-        sco_num_connections = num_connections;
-        if (num_connections){
-            usb_sco_start();
-        }
+        usb_sco_start_if_ready();
     }
 }
 #endif
