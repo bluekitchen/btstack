@@ -26,6 +26,13 @@ static FILE *s_log_file = NULL;
 static char s_text_log_path[256] = "";
 static char s_pklg_path[256] = "";
 static bool s_cs_initialized = false;
+static diag_log_sink_t s_log_sink = NULL;
+static bool s_suppress_stdout = false;
+
+void diag_logger_set_sink(diag_log_sink_t sink, bool suppress_stdout) {
+    s_log_sink = sink;
+    s_suppress_stdout = suppress_stdout;
+}
 
 static void ensure_logs_dir(void) {
 #ifdef _WIN32
@@ -145,14 +152,22 @@ void diag_log(const char *fmt, ...) {
 #endif
     }
 
-    // Print to stdout
-    printf("%s%s\n", time_buf, msg_buf);
-    fflush(stdout);
+    // Print to stdout (unless suppressed for clean-JSON IPC mode).
+    if (!s_suppress_stdout) {
+        printf("%s%s\n", time_buf, msg_buf);
+        fflush(stdout);
+    }
 
     // Write to session log file
     if (s_log_file) {
         fprintf(s_log_file, "%s%s\n", time_buf, msg_buf);
         fflush(s_log_file);
+    }
+
+    // Forward to the IPC sink (the message without the timestamp prefix), so
+    // the host can surface engine logs in the app's activity view.
+    if (s_log_sink) {
+        s_log_sink(msg_buf);
     }
 
     if (s_cs_initialized) {

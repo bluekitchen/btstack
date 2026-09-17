@@ -57,7 +57,13 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
 
     char data;
     ssize_t result = read(stdin_source.source.fd, &data, 1);
-    if (result < 1) return;
+    if (result <= 0) {
+        // EOF or error on stdin (e.g. the parent .NET service closed the pipe):
+        // stop polling this data source so the run loop does not spin on a dead fd.
+        btstack_run_loop_disable_data_source_callbacks(&stdin_source, DATA_SOURCE_CALLBACK_READ);
+        btstack_run_loop_remove_data_source(&stdin_source);
+        return;
+    }
     if (stdin_handler == NULL) return;
 
 #ifdef ENABLE_BTSTACK_STDIN_LOGGING

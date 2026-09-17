@@ -283,9 +283,11 @@ void sco_audio_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                 audio_ring_buffer_clear(&s_tx_ring_buf);
                 s_sine_index = 0;
 
-                // Start audio rendering and capture engines immediately
-                audio_render_start();
-                audio_capture_start();
+                // NOTE: audio engine start/stop is intentionally NOT done here.
+                // main.c's on_hfp_status_changed owns the audio-engine lifecycle
+                // with edge detection (start once when SCO opens, stop once when
+                // it releases). Managing it in two places raced the notify path
+                // and could kill live call audio.
 
                 // Prime the SCO TX pipeline
                 hci_request_sco_can_send_now_event_for_con_handle(s_stats.sco_handle);
@@ -307,12 +309,17 @@ void sco_audio_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
         case HCI_EVENT_DISCONNECTION_COMPLETE: {
             hci_con_handle_t handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            if (handle == s_stats.sco_handle || s_stats.is_connected) {
+            // Only react to the teardown of OUR SCO link. Previously this also
+            // matched on `|| s_stats.is_connected`, so a disconnect on any other
+            // handle (e.g. the ACL/SLC link) while SCO was up would prematurely
+            // stop the recording and desync SCO state.
+            if (s_stats.is_connected && handle == s_stats.sco_handle &&
+                s_stats.sco_handle != HCI_CON_HANDLE_INVALID) {
                 diag_log("[SCO_AUDIO] >>> SCO DISCONNECTED (Handle: 0x%04x) <<<", s_stats.sco_handle);
                 s_stats.is_connected = false;
                 s_stats.sco_handle = HCI_CON_HANDLE_INVALID;
-                audio_render_stop();
-                audio_capture_stop();
+                // Audio engine stop is owned by main.c (edge-detected). See note
+                // in the SYNCHRONOUS_CONNECTION_COMPLETE handler above.
                 call_recorder_stop();
             }
             break;

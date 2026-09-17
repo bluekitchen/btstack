@@ -111,6 +111,7 @@ set(BTSTACK_CORE_SOURCES
 # Common BT Layer sources (dialer application glue)
 set(BT_LAYER_SOURCES
     src/diag_logger.c
+    src/ipc.c
     src/bt/bt_controller.c
     src/bt/hfp_hf.c
     src/bt/sco_audio.c
@@ -159,10 +160,13 @@ elseif(APPLE)
         src/audio/call_recorder.c
     )
 
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-    include_directories(${LIBUSB_INCLUDE_DIRS})
-    link_directories(${LIBUSB_LIBRARY_DIRS})
+    # Use the vendored, patched libusb (safe IOKit endpoint query) to bypass the
+    # macOS IOUSBHostFamily kernel panic on Apple Silicon when claiming the SCO
+    # isochronous interface. Do NOT switch this to system/pkg-config libusb.
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb third_party_libusb)
+    include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/libusb
+    )
 
     find_library(COREAUDIO_LIB CoreAudio REQUIRED)
     find_library(AUDIOTOOLBOX_LIB AudioToolbox REQUIRED)
@@ -170,7 +174,7 @@ elseif(APPLE)
     find_package(Threads REQUIRED)
 
     set(PLATFORM_LIBS
-        ${LIBUSB_LIBRARIES}
+        libusb_static
         ${COREAUDIO_LIB}
         ${AUDIOTOOLBOX_LIB}
         ${CORESERVICES_LIB}
@@ -260,6 +264,18 @@ add_executable(export_call_audio
     ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/sbc_packing.c
 )
 target_link_libraries(export_call_audio PRIVATE ${PLATFORM_LIBS})
+
+# -------------------------------------------------------------
+# Target 4: Safe USB Isochronous Interface Test (test_claim_alt)
+# libusb-based diagnostic that validates claiming the SCO iso interface
+# without panicking macOS. Only built where libusb is used (not Windows/WinUSB).
+# -------------------------------------------------------------
+if(NOT WIN32)
+    add_executable(test_claim_alt
+        src/test_claim_alt.c
+    )
+    target_link_libraries(test_claim_alt PRIVATE ${PLATFORM_LIBS})
+endif()
 
 # Copy firmware files to output directory on build
 add_custom_command(TARGET dialer-btstack POST_BUILD

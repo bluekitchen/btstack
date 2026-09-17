@@ -21,6 +21,16 @@ int diag_logger_init(const char *app_name);
 void diag_log(const char *fmt, ...);
 
 /**
+ * @brief Optional sink invoked with each fully-formatted log line (without the
+ * trailing newline). Used by IPC mode to forward logs to the host as JSON
+ * events. When a sink is set with suppress_stdout=true, diag_log no longer
+ * prints the human line to stdout (so stdout can carry clean JSON only); the
+ * file log is unaffected. Passing NULL clears the sink (default behavior).
+ */
+typedef void (*diag_log_sink_t)(const char *line);
+void diag_logger_set_sink(diag_log_sink_t sink, bool suppress_stdout);
+
+/**
  * @brief Get the path to current session text log file.
  */
 const char* diag_logger_get_text_log_path(void);

@@ -17,10 +17,24 @@ static btstack_tlv_windows_t s_tlv_context;
 #else
 #include <unistd.h>
 #include <ctype.h>
+#include <limits.h>
+#include <libgen.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 #include "btstack_tlv_posix.h"
 #include "btstack_run_loop_posix.h"
 #include "hci_transport_usb.h"
 static btstack_tlv_posix_t s_tlv_context;
+// Windows defines MAX_PATH; provide a portable equivalent on POSIX so the
+// shared firmware-path resolution code below compiles on macOS/Linux too.
+#ifndef MAX_PATH
+#ifdef PATH_MAX
+#define MAX_PATH PATH_MAX
+#else
+#define MAX_PATH 1024
+#endif
+#endif
 #endif
 
 #include "bt_controller.h"
@@ -335,6 +349,24 @@ static const char* find_existing_firmware_file(const char* relative_filename, ch
         char *last_slash = strrchr(exe_dir, '\\');
         if (!last_slash) last_slash = strrchr(exe_dir, '/');
         if (last_slash) *last_slash = '\0';
+    }
+#elif defined(__APPLE__)
+    {
+        char raw[MAX_PATH]; uint32_t sz = sizeof(raw);
+        if (_NSGetExecutablePath(raw, &sz) == 0) {
+            char tmp[MAX_PATH]; snprintf(tmp, sizeof(tmp), "%s", raw);
+            snprintf(exe_dir, sizeof(exe_dir), "%s", dirname(tmp));
+        }
+    }
+#else
+    {
+        char raw[MAX_PATH];
+        ssize_t n = readlink("/proc/self/exe", raw, sizeof(raw) - 1);
+        if (n > 0) {
+            raw[n] = '\0';
+            char tmp[MAX_PATH]; snprintf(tmp, sizeof(tmp), "%s", raw);
+            snprintf(exe_dir, sizeof(exe_dir), "%s", dirname(tmp));
+        }
     }
 #endif
 

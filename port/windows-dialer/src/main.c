@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "diag_logger.h"
 #include "bt/bt_controller.h"
@@ -12,192 +11,28 @@
 #include "audio/audio_render.h"
 #include "audio/audio_capture.h"
 #include "audio/call_recorder.h"
+#include "ipc.h"
 #include "btstack.h"
 
 static bool s_use_mic = true;
-static bool s_ipc_mode = false;
 static hfp_hf_status_t s_current_hfp_status;
 
-static bd_addr_t s_last_device_addr;
-static char s_last_device_str[18] = "";
-static bool s_has_last_device = false;
-
+// The SCO decoder path (sco_audio.c) already pushes decoded caller audio to the
+// render engine and to the VAD call_recorder. This callback therefore does not
+// re-push; it exists so the engine has a place to hook additional RX handling
+// without duplicating the render/record writes.
 static void on_sco_rx_pcm(const int16_t *samples, int num_samples) {
-    UNUSED(samples);
-    UNUSED(num_samples);
+    (void)samples;
+    (void)num_samples;
 }
 
 static void on_audio_capture_pcm(const int16_t *samples, int count) {
+    // Feed the live mic into the SCO uplink. sco_audio_push_tx_samples() also
+    // feeds the VAD call_recorder "out" channel, so recording follows the same
+    // single path on every OS.
     if (s_use_mic && sco_audio_is_connected()) {
         sco_audio_push_tx_samples(samples, count);
     }
-}
-
-// ---------------------------------------------------------------------------
-// IPC JSON Event Dispatcher
-// ---------------------------------------------------------------------------
-static void emit_ipc_json(const char *json) {
-    if (s_ipc_mode) {
-        printf("%s\n", json);
-        fflush(stdout);
-    }
-}
-
-static void emit_ipc_state(void) {
-    if (!s_ipc_mode) return;
-
-    const char *conn_state = "Disconnected";
-    if (s_current_hfp_status.is_slc_connected) {
-        conn_state = "SlcEstablished";
-    } else if (s_current_hfp_status.call_state == HFP_STATE_CONNECTING_SLC) {
-        conn_state = "Connecting";
-    }
-
-    const char *call_status = "Idle";
-    bool is_outgoing = false;
-    switch ((int)s_current_hfp_status.call_state) {
-        case (int)HFP_STATE_IDLE: call_status = "Idle"; break;
-        case (int)HFP_STATE_CONNECTING_SLC:
-        case (int)HFP_STATE_SLC_CONNECTED: call_status = "Idle"; break;
-        case (int)HFP_STATE_INCOMING_CALL: call_status = "Incoming"; break;
-        case (int)HFP_STATE_OUTGOING_CALL: call_status = "Dialing"; is_outgoing = true; break;
-        case (int)HFP_STATE_ACTIVE_CALL: call_status = "Active"; break;
-    }
-
-    char json[1024];
-    bool has_device = s_current_hfp_status.is_slc_connected && strlen(s_current_hfp_status.peer_addr_str) > 0;
-    const char *caller = strlen(s_current_hfp_status.caller_id) > 0 ? s_current_hfp_status.caller_id : "";
-    const char *caller_name = strlen(s_current_hfp_status.caller_name) > 0 ? s_current_hfp_status.caller_name : "";
-    const char *dev_name = strlen(s_current_hfp_status.device_name) > 0 ? s_current_hfp_status.device_name : "Connected Phone";
-
-    if (strcmp(call_status, "Idle") != 0) {
-        snprintf(json, sizeof(json),
-            "{\"type\":\"state\",\"connState\":\"%s\",\"deviceName\":\"%s\",\"connDeviceId\":%s%s%s,"
-            "\"calls\":[{\"index\":1,\"status\":\"%s\",\"number\":\"%s\",\"name\":\"%s\",\"isOutgoing\":%s,\"isMultiparty\":false}],"
-            "\"signalBars\":%u,\"batteryLevel\":%u,\"scoActive\":%s}",
-            conn_state,
-            dev_name,
-            has_device ? "\"" : "", has_device ? s_current_hfp_status.peer_addr_str : "null", has_device ? "\"" : "",
-            call_status, caller, caller_name, is_outgoing ? "true" : "false",
-            s_current_hfp_status.signal_strength > 5 ? 5 : s_current_hfp_status.signal_strength,
-            s_current_hfp_status.battery_level > 5 ? 5 : s_current_hfp_status.battery_level,
-            s_current_hfp_status.is_audio_connected ? "true" : "false"
-        );
-    } else {
-        snprintf(json, sizeof(json),
-            "{\"type\":\"state\",\"connState\":\"%s\",\"deviceName\":\"%s\",\"connDeviceId\":%s%s%s,"
-            "\"calls\":[],"
-            "\"signalBars\":%u,\"batteryLevel\":%u,\"scoActive\":%s}",
-            conn_state,
-            dev_name,
-            has_device ? "\"" : "", has_device ? s_current_hfp_status.peer_addr_str : "null", has_device ? "\"" : "",
-            s_current_hfp_status.signal_strength > 5 ? 5 : s_current_hfp_status.signal_strength,
-            s_current_hfp_status.battery_level > 5 ? 5 : s_current_hfp_status.battery_level,
-            s_current_hfp_status.is_audio_connected ? "true" : "false"
-        );
-    }
-
-    emit_ipc_json(json);
-}
-
-static void emit_ipc_devices(void) {
-    if (!s_ipc_mode) return;
-    char json[512];
-    if (s_current_hfp_status.is_slc_connected && strlen(s_current_hfp_status.peer_addr_str) > 0) {
-        const char *dev_name = strlen(s_current_hfp_status.device_name) > 0 ? s_current_hfp_status.device_name : "Connected Phone";
-        snprintf(json, sizeof(json),
-            "{\"type\":\"devices\",\"message\":\"[{\\\"Id\\\":\\\"%s\\\",\\\"Name\\\":\\\"%s\\\",\\\"Paired\\\":true,\\\"Connected\\\":true,\\\"AudioReady\\\":true}]\"}",
-            s_current_hfp_status.peer_addr_str,
-            dev_name
-        );
-    } else if (s_has_last_device && strlen(s_last_device_str) > 0) {
-        snprintf(json, sizeof(json),
-            "{\"type\":\"devices\",\"message\":\"[{\\\"Id\\\":\\\"%s\\\",\\\"Name\\\":\\\"Paired Phone\\\",\\\"Paired\\\":true,\\\"Connected\\\":false,\\\"AudioReady\\\":true}]\"}",
-            s_last_device_str
-        );
-    } else {
-        snprintf(json, sizeof(json), "{\"type\":\"devices\",\"message\":\"[]\"}");
-    }
-    emit_ipc_json(json);
-}
-
-static void json_sanitize_path(const char *in, char *out, size_t out_len) {
-    if (!in || !out || out_len == 0) return;
-    strncpy(out, in, out_len - 1);
-    out[out_len - 1] = '\0';
-    for (char *p = out; *p; p++) {
-        if (*p == '\\') *p = '/';
-    }
-}
-
-static void on_call_recording_started(const char *session_dir, const char *stereo_wav, const char *rx_wav, const char *tx_wav) {
-    char clean_dir[512], clean_stereo[512], clean_rx[512], clean_tx[512];
-    json_sanitize_path(session_dir, clean_dir, sizeof(clean_dir));
-    json_sanitize_path(stereo_wav, clean_stereo, sizeof(clean_stereo));
-    json_sanitize_path(rx_wav, clean_rx, sizeof(clean_rx));
-    json_sanitize_path(tx_wav, clean_tx, sizeof(clean_tx));
-
-    char json[2048];
-    const char *num = strlen(s_current_hfp_status.caller_id) > 0 ? s_current_hfp_status.caller_id : "Active Call";
-    snprintf(json, sizeof(json),
-        "{\"type\":\"call-started\",\"number\":\"%s\",\"sessionDir\":\"%s\",\"fullPath\":\"%s\",\"inPath\":\"%s\",\"outPath\":\"%s\"}",
-        num, clean_dir, clean_stereo, clean_rx, clean_tx
-    );
-    emit_ipc_json(json);
-}
-
-static void on_call_recording_stopped(const char *session_dir, const char *stereo_wav, const char *rx_wav, const char *tx_wav, double duration_sec) {
-    char clean_dir[512], clean_stereo[512], clean_rx[512], clean_tx[512];
-    json_sanitize_path(session_dir, clean_dir, sizeof(clean_dir));
-    json_sanitize_path(stereo_wav, clean_stereo, sizeof(clean_stereo));
-    json_sanitize_path(rx_wav, clean_rx, sizeof(clean_rx));
-    json_sanitize_path(tx_wav, clean_tx, sizeof(clean_tx));
-
-    char json[2048];
-    const char *num = strlen(s_current_hfp_status.caller_id) > 0 ? s_current_hfp_status.caller_id : "Active Call";
-    snprintf(json, sizeof(json),
-        "{\"type\":\"call-ended\",\"number\":\"%s\",\"sessionDir\":\"%s\",\"fullPath\":\"%s\",\"inPath\":\"%s\",\"outPath\":\"%s\",\"durationSec\":%.2f}",
-        num, clean_dir, clean_stereo, clean_rx, clean_tx, duration_sec
-    );
-    emit_ipc_json(json);
-}
-
-static void on_call_segment_ready(const char *wav_path, const char *channel, double start_sec, double end_sec) {
-    if (!s_ipc_mode) return;
-    char clean_path[512];
-    json_sanitize_path(wav_path, clean_path, sizeof(clean_path));
-
-    char json[1024];
-    snprintf(json, sizeof(json),
-        "{\"type\":\"segment-ready\",\"channel\":\"%s\",\"path\":\"%s\",\"startSec\":%.3f,\"endSec\":%.3f}",
-        channel, clean_path, start_sec, end_sec
-    );
-    emit_ipc_json(json);
-}
-
-static void on_discovery_result(const char *addr_str, const char *name, uint32_t cod, int8_t rssi) {
-    UNUSED(cod);
-    UNUSED(rssi);
-    if (!s_ipc_mode) {
-        printf("[DISCOVERY] Found: %s (%s)\n> ", addr_str, name);
-        fflush(stdout);
-        return;
-    }
-    char json[512];
-    snprintf(json, sizeof(json),
-        "{\"type\":\"nearby-device\",\"device\":{\"Id\":\"%s\",\"Name\":\"%s\",\"Paired\":false,\"Connected\":false,\"AudioReady\":true}}",
-        addr_str, name
-    );
-    emit_ipc_json(json);
-}
-
-static void on_discovery_complete(void) {
-    if (!s_ipc_mode) {
-        printf("[DISCOVERY] Discovery scan completed.\n> ");
-        fflush(stdout);
-        return;
-    }
-    emit_ipc_json("{\"type\":\"discover-done\"}");
 }
 
 static void print_status_banner(void) {
@@ -247,14 +82,43 @@ static void print_status_banner(void) {
     diag_log("---------------------------------------------------------------");
 }
 
+static bool s_ipc_slc_was_connected = false;
+static bool s_call_was_incoming = false;   // sticky: set on RING, so we know an
+                                           // answered call's direction after it
+                                           // transitions to ACTIVE.
+
 static void on_hfp_status_changed(const hfp_hf_status_t *status) {
     memcpy(&s_current_hfp_status, status, sizeof(hfp_hf_status_t));
 
+    // Track direction: an incoming call is one that rang before it went active.
+    // Reset when the call clears (back to SLC-connected/idle with no live call).
+    if ((int)status->call_state == (int)HFP_STATE_INCOMING_CALL) {
+        s_call_was_incoming = true;
+    } else if ((int)status->call_state == (int)HFP_STATE_OUTGOING_CALL) {
+        s_call_was_incoming = false;
+    } else if ((int)status->call_state == (int)HFP_STATE_SLC_CONNECTED ||
+               (int)status->call_state == (int)HFP_STATE_IDLE) {
+        s_call_was_incoming = false;
+    }
+    // Tell the IPC layer the direction of the next call-started event (the VAD
+    // recorder starts on SCO up and its callback emits call-started).
+    ipc_set_call_outgoing(!s_call_was_incoming);
+
     if (status->is_slc_connected) {
         diag_log("[HFP] SLC ESTABLISHED with %s (Ready to call 121)", status->peer_addr_str);
-        if (strlen(status->device_name) == 0 || strcmp(status->device_name, "Connected Phone") == 0) {
-            bt_controller_request_remote_name(status->peer_addr);
+    }
+
+    // In IPC mode, announce the device once when the SLC first comes up and
+    // forward every status change to the host as a JSON "state" event.
+    // Recording is owned by the VAD call_recorder, driven from sco_audio on the
+    // SCO link edge — no recording calls are made from here.
+    if (ipc_is_enabled()) {
+        if (status->is_slc_connected && !s_ipc_slc_was_connected) {
+            ipc_emit_connected_device(status->peer_addr_str,
+                                      status->device_name[0] ? status->device_name : "Phone");
         }
+        s_ipc_slc_was_connected = status->is_slc_connected;
+        ipc_emit_state(status);
     }
 
     if ((int)status->call_state == (int)HFP_STATE_INCOMING_CALL) {
@@ -263,8 +127,16 @@ static void on_hfp_status_changed(const hfp_hf_status_t *status) {
         diag_log("[HFP] CALL ACTIVE with %s", status->peer_addr_str);
     }
 
-    // When audio link opens, configure rates and start audio engine
-    if (status->is_audio_connected || sco_audio_is_connected()) {
+    // Only act on an actual change of the audio-link state. Previously this
+    // ran on EVERY status change, so an incidental notify (e.g. dial setting
+    // OUTGOING_CALL, or a volume/operator update) with is_audio_connected still
+    // false would call audio_render_stop()/audio_capture_stop() and kill live
+    // call audio. Edge-detect so start runs once when SCO opens and stop runs
+    // once when it releases. This is the single owner of the audio-engine
+    // lifecycle (sco_audio.c intentionally does not start/stop the engines).
+    static bool s_audio_engines_running = false;
+    if (status->is_audio_connected && !s_audio_engines_running) {
+        s_audio_engines_running = true;
         if (status->negotiated_codec == HFP_CODEC_MSBC) {
             audio_render_set_source_sample_rate(16000);
             audio_capture_set_target_sample_rate(16000);
@@ -272,25 +144,43 @@ static void on_hfp_status_changed(const hfp_hf_status_t *status) {
             audio_render_set_source_sample_rate(8000);
             audio_capture_set_target_sample_rate(8000);
         }
+        if (status->speaker_volume > 0) {
+            audio_render_set_volume((float)status->speaker_volume / 15.0f * 1.5f);
+        } else {
+            audio_render_set_volume(1.2f);
+        }
+        if (status->mic_gain > 0) {
+            audio_capture_set_gain((float)status->mic_gain / 15.0f * 3.0f);
+        } else {
+            audio_capture_set_gain(2.5f);
+        }
+        diag_log("[AUDIO] Starting audio rendering & capture engines (Codec: %s, Vol: %.1fx, Gain: %.1fx)...",
+                 status->negotiated_codec == HFP_CODEC_MSBC ? "mSBC (16kHz)" : "CVSD (8kHz)",
+                 status->speaker_volume > 0 ? (float)status->speaker_volume / 15.0f * 1.5f : 1.2f,
+                 status->mic_gain > 0 ? (float)status->mic_gain / 15.0f * 3.0f : 2.5f);
         audio_render_start();
         audio_capture_start();
+    } else if (!status->is_audio_connected && s_audio_engines_running) {
+        s_audio_engines_running = false;
+        audio_render_stop();
+        audio_capture_stop();
     }
-
-    if (status->speaker_volume > 0) {
-        audio_render_set_volume((float)status->speaker_volume / 15.0f * 1.5f);
-    }
-    if (status->mic_gain > 0) {
-        audio_capture_set_gain((float)status->mic_gain / 15.0f * 2.0f);
-    }
-
-    emit_ipc_state();
-    emit_ipc_devices();
 }
+
+static bd_addr_t s_last_device_addr;
+static char s_last_device_str[18] = "";
+static bool s_has_last_device = false;
 
 static void on_controller_ready(const bd_addr_t local_addr) {
     UNUSED(local_addr);
-    diag_log("[DIALER] Adapter ready! Discoverable as 'PC Dialer'");
-    
+#ifdef _WIN32
+    diag_log("[DIALER] Adapter ready! Discoverable as 'Windows Dialer (UB500)'");
+#elif defined(__APPLE__)
+    diag_log("[DIALER] Adapter ready! Discoverable as 'Mac Dialer (UB500)'");
+#else
+    diag_log("[DIALER] Adapter ready! Discoverable as 'Dialer (UB500)'");
+#endif
+
     // Automatically find and connect to last paired device
     s_has_last_device = bt_hfp_get_last_device(s_last_device_addr, s_last_device_str, sizeof(s_last_device_str));
     if (s_has_last_device) {
@@ -298,41 +188,29 @@ static void on_controller_ready(const bd_addr_t local_addr) {
         bt_hfp_connect(s_last_device_addr);
     }
 
-    if (!s_ipc_mode) {
-        print_status_banner();
-        printf("\nType 'help' for commands list or 'dial 121' to place a test call.\n> ");
-        fflush(stdout);
-    } else {
-        emit_ipc_state();
-        emit_ipc_devices();
+    if (ipc_is_enabled()) {
+        // Host-driven mode: no interactive banner/prompt. Emit an initial state
+        // so the app reflects the current adapter/connection immediately.
+        ipc_emit_state(&s_current_hfp_status);
+        return;
     }
+
+    print_status_banner();
+    printf("\nType 'help' for commands list or 'dial 121' to place a test call.\n> ");
+    fflush(stdout);
 }
 
-static const char* json_get_string_field(const char *json, const char *key, char *out_val, size_t out_len) {
-    if (!json || !key || !out_val || out_len == 0) return NULL;
-    char p1[64], p2[64];
-    snprintf(p1, sizeof(p1), "\"%s\"", key);
-    // Also try capitalized key
-    snprintf(p2, sizeof(p2), "\"%c%s\"", (key[0] >= 'a' && key[0] <= 'z') ? (key[0] - 'a' + 'A') : key[0], key + 1);
+// Interactive-console discovery result printer (non-IPC mode only).
+static void on_cli_discovery_result(const char *addr_str, const char *name, uint32_t cod, int8_t rssi) {
+    UNUSED(cod);
+    UNUSED(rssi);
+    printf("[DISCOVERY] Found: %s (%s)\n> ", addr_str, name ? name : "");
+    fflush(stdout);
+}
 
-    const char *pos = strstr(json, p1);
-    size_t key_len = strlen(p1);
-    if (!pos) {
-        pos = strstr(json, p2);
-        key_len = strlen(p2);
-    }
-    if (!pos) return NULL;
-
-    pos += key_len;
-    while (*pos && (*pos == ' ' || *pos == ':' || *pos == '\t')) pos++;
-    if (*pos != '\"') return NULL;
-    pos++;
-    size_t i = 0;
-    while (*pos && *pos != '\"' && i < out_len - 1) {
-        out_val[i++] = *pos++;
-    }
-    out_val[i] = '\0';
-    return out_val;
+static void on_cli_discovery_complete(void) {
+    printf("[DISCOVERY] Scan complete.\n> ");
+    fflush(stdout);
 }
 
 static void process_command_line(char *line) {
@@ -344,64 +222,6 @@ static void process_command_line(char *line) {
 
     if (strlen(line) == 0) return;
 
-    diag_log("[CMD] Processing: %s", line);
-
-    // Handle JSON command format e.g. {"cmd":"dial","number":"121"}
-    if (line[0] == '{') {
-        char cmd_buf[64] = "";
-        if (json_get_string_field(line, "cmd", cmd_buf, sizeof(cmd_buf))) {
-            if (_stricmp(cmd_buf, "dial") == 0) {
-                char num[64] = "";
-                if (json_get_string_field(line, "number", num, sizeof(num))) {
-                    diag_log("[CMD] JSON Dial number: %s", num);
-                    bt_hfp_dial(num);
-                }
-            } else if (_stricmp(cmd_buf, "answer") == 0) {
-                diag_log("[CMD] JSON Answer call");
-                bt_hfp_answer();
-            } else if (_stricmp(cmd_buf, "hangup") == 0) {
-                diag_log("[CMD] JSON Hangup call");
-                bt_hfp_hangup();
-            } else if (_stricmp(cmd_buf, "connect") == 0) {
-                char addr[32] = "";
-                if (json_get_string_field(line, "address", addr, sizeof(addr)) ||
-                    json_get_string_field(line, "deviceId", addr, sizeof(addr))) {
-                    diag_log("[CMD] JSON Connect address: %s", addr);
-                    bt_hfp_connect_addr_string(addr);
-                } else if (s_has_last_device) {
-                    diag_log("[CMD] JSON Connect last device: %s", s_last_device_str);
-                    bt_hfp_connect(s_last_device_addr);
-                }
-            } else if (_stricmp(cmd_buf, "disconnect") == 0) {
-                diag_log("[CMD] JSON Disconnect");
-                bt_hfp_disconnect();
-            } else if (_stricmp(cmd_buf, "dtmf") == 0) {
-                char digit[8] = "";
-                if (json_get_string_field(line, "digit", digit, sizeof(digit)) && strlen(digit) > 0) {
-                    diag_log("[CMD] JSON DTMF: %c", digit[0]);
-                    bt_hfp_send_dtmf(digit[0]);
-                }
-            } else if (_stricmp(cmd_buf, "discover") == 0 || _stricmp(cmd_buf, "discover-nearby") == 0) {
-                diag_log("[CMD] JSON Start discovery");
-                bt_controller_start_discovery(&on_discovery_result, &on_discovery_complete);
-            } else if (_stricmp(cmd_buf, "stop-discover") == 0) {
-                diag_log("[CMD] JSON Stop discovery");
-                bt_controller_stop_discovery();
-            } else if (_stricmp(cmd_buf, "status") == 0) {
-                emit_ipc_state();
-            } else if (_stricmp(cmd_buf, "quit") == 0 || _stricmp(cmd_buf, "exit") == 0) {
-                diag_log("[CMD] JSON Quit");
-                audio_render_shutdown();
-                audio_capture_shutdown();
-                bt_controller_stop();
-                diag_logger_close();
-                exit(0);
-            }
-            return;
-        }
-    }
-
-    // CLI format commands
     if (strncmp(line, "dial ", 5) == 0) {
         const char *num = line + 5;
         while (*num == ' ') num++;
@@ -438,7 +258,8 @@ static void process_command_line(char *line) {
         diag_log("[DIALER] Disconnecting HFP SLC...");
         bt_hfp_disconnect();
     } else if (strcmp(line, "discover") == 0 || strcmp(line, "scan") == 0) {
-        bt_controller_start_discovery(&on_discovery_result, &on_discovery_complete);
+        diag_log("[DIALER] Starting device discovery...");
+        bt_controller_start_discovery(&on_cli_discovery_result, &on_cli_discovery_complete);
     } else if (strcmp(line, "stop-discover") == 0 || strcmp(line, "stop") == 0) {
         bt_controller_stop_discovery();
     } else if (strcmp(line, "audio on") == 0) {
@@ -486,56 +307,59 @@ static void process_command_line(char *line) {
         printf("  dtmf <char>       - Send DTMF key tone (0-9, *, #)\n");
         printf("  vol <0-15>        - Set speaker volume\n");
         printf("  mic <0-15>        - Set microphone gain\n");
-        printf("  discover          - Scan for nearby Bluetooth devices\n");
-        printf("  stop-discover     - Stop scan\n");
         printf("  tone on|off       - Toggle 1kHz test tone vs PC microphone\n");
         printf("  audio on|off      - Transfer audio connection to/from PC\n");
         printf("  connect <address> - Connect to paired phone (e.g. connect A8:AB:B5:0C:87:F3)\n");
+        printf("  discover | scan   - Scan for nearby phones\n");
         printf("  disconnect        - Disconnect phone\n");
         printf("  exit (q)          - Quit dialer\n");
     }
 
-    if (!s_ipc_mode) {
-        printf("> ");
-        fflush(stdout);
-    }
+    printf("> ");
+    fflush(stdout);
 }
 
-static char s_stdin_buffer[256];
+static char s_stdin_buffer[512];
 static int s_stdin_pos = 0;
 
 static void stdin_process(char c) {
+    // IPC mode: accumulate a full line and hand the JSON to the IPC dispatcher.
+    // No echo, no prompt, no backspace handling (the host sends clean lines).
+    if (ipc_is_enabled()) {
+        if (c == '\n' || c == '\r') {
+            s_stdin_buffer[s_stdin_pos] = '\0';
+            if (s_stdin_pos > 0) ipc_handle_stdin_line(s_stdin_buffer);
+            s_stdin_pos = 0;
+        } else if (s_stdin_pos < (int)(sizeof(s_stdin_buffer) - 1)) {
+            s_stdin_buffer[s_stdin_pos++] = c;
+        } else {
+            s_stdin_pos = 0; // overflow guard: drop the oversized line
+        }
+        return;
+    }
+
     if (c == '\r' || c == '\n') {
         s_stdin_buffer[s_stdin_pos] = '\0';
-        if (!s_ipc_mode) putchar('\n');
+        putchar('\n');
         process_command_line(s_stdin_buffer);
         s_stdin_pos = 0;
     } else if (c == '\b' || c == 127) {
         if (s_stdin_pos > 0) {
             s_stdin_pos--;
-            if (!s_ipc_mode) {
-                printf("\b \b");
-                fflush(stdout);
-            }
+            printf("\b \b");
+            fflush(stdout);
         }
     } else if (s_stdin_pos < (int)(sizeof(s_stdin_buffer) - 1)) {
         s_stdin_buffer[s_stdin_pos++] = c;
-        if (!s_ipc_mode) {
-            putchar(c);
-            fflush(stdout);
-        }
+        putchar(c);
+        fflush(stdout);
     }
 }
 
 int main(int argc, const char * argv[]) {
-    // Check for arguments
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--ipc") == 0 || strcmp(argv[i], "-ipc") == 0 || strcmp(argv[i], "--json") == 0) {
-            s_ipc_mode = true;
-        } else if ((strcmp(argv[i], "--recordings-dir") == 0 || strcmp(argv[i], "-recordings-dir") == 0) && i + 1 < argc) {
-            call_recorder_set_recordings_root_dir(argv[++i]);
-        }
-    }
+    // Parse --ipc / --recordings-dir. In IPC mode the host (Dialer.Service)
+    // drives us with JSON over stdin and consumes JSON events on stdout.
+    ipc_parse_args(argc, argv);
 
     // Disable stdout buffering for immediate log visibility
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -543,30 +367,47 @@ int main(int argc, const char * argv[]) {
     // Initialize unified diagnostic session logger & PacketLogger binary dump
     diag_logger_init("dialer_production");
 
-    if (!s_ipc_mode) {
-        diag_log("======================================================================");
-#ifdef _WIN32
-        diag_log("   DIALER-BTSTACK: WINDOWS BLUETOOTH HFP-HF & FULL-DUPLEX AUDIO      ");
-        diag_log("   TP-Link UB500 (Realtek RTL8761BU) + WinUSB + WASAPI Audio         ");
-#elif defined(__APPLE__)
-        diag_log("   DIALER-BTSTACK: MACOS BLUETOOTH HFP-HF & FULL-DUPLEX AUDIO        ");
-        diag_log("   TP-Link UB500 (Realtek RTL8761BU) + libusb + CoreAudio            ");
-#else
-        diag_log("   DIALER-BTSTACK: BLUETOOTH HFP-HF & FULL-DUPLEX AUDIO              ");
-        diag_log("   TP-Link UB500 (Realtek RTL8761BU) + libusb                        ");
-#endif
-        diag_log("======================================================================");
+    // In IPC mode, route logs to the host as JSON events and keep stdout clean
+    // (JSON only). Must be set right after the logger init so the banner lines
+    // below are forwarded rather than printed as raw text onto the JSON stream.
+    if (ipc_is_enabled()) {
+        ipc_install_log_sink();
     }
+
+    diag_log("======================================================================");
+#ifdef _WIN32
+    diag_log("   DIALER-BTSTACK: WINDOWS BLUETOOTH HFP-HF & FULL-DUPLEX AUDIO      ");
+    diag_log("   TP-Link UB500 (Realtek RTL8761BU) + WinUSB + WASAPI Audio         ");
+#elif defined(__APPLE__)
+    diag_log("   DIALER-BTSTACK: MACOS BLUETOOTH HFP-HF & FULL-DUPLEX AUDIO        ");
+    diag_log("   TP-Link UB500 (Realtek RTL8761BU) + libusb + CoreAudio            ");
+#else
+    diag_log("   DIALER-BTSTACK: BLUETOOTH HFP-HF & FULL-DUPLEX AUDIO              ");
+    diag_log("   TP-Link UB500 (Realtek RTL8761BU) + libusb                        ");
+#endif
+    diag_log("======================================================================");
 
     // 1. Initialize Audio Subsystem
     audio_render_init();
     audio_capture_init(&on_audio_capture_pcm);
 
-    // 2. Set Call Recorder lifecycle and VAD chunk callbacks
-    call_recorder_set_callbacks(&on_call_recording_started, &on_call_recording_stopped, &on_call_segment_ready);
+    // 2. Wire the VAD call recorder's lifecycle to the host IPC events, and set
+    //    the recordings root dir the host passed via --recordings-dir.
+    call_recorder_set_callbacks(&ipc_on_recording_started,
+                                &ipc_on_recording_stopped,
+                                &ipc_on_recording_segment_ready);
+    if (ipc_recordings_dir()) {
+        call_recorder_set_recordings_root_dir(ipc_recordings_dir());
+    }
 
     // 3. Initialize Controller, USB HCI Transport & Core Protocols (L2CAP, RFCOMM, SDP)
-    const char *adapter_name = "PC Dialer";
+#ifdef _WIN32
+    const char *adapter_name = "Windows Dialer (UB500)";
+#elif defined(__APPLE__)
+    const char *adapter_name = "Mac Dialer (UB500)";
+#else
+    const char *adapter_name = "Dialer (UB500)";
+#endif
     if (bt_controller_init(adapter_name, &on_controller_ready) != 0) {
         diag_log("[ERROR] Failed to initialize BT controller");
         diag_logger_close();
@@ -597,4 +438,3 @@ int main(int argc, const char * argv[]) {
     diag_logger_close();
     return 0;
 }
-

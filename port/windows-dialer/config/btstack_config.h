@@ -23,7 +23,7 @@
 #define ENABLE_BLE
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_SCO_OVER_HCI
-// #define ENABLE_HFP_WIDE_BAND_SPEECH  // CVSD hardware codec is used for stability across USB Bluetooth dongles
+#define ENABLE_HFP_WIDE_BAND_SPEECH  // mSBC 16 kHz wideband speech (enabled; falls back to CVSD when the phone/link negotiates it)
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 #define ENABLE_PRINTF_HEXDUMP

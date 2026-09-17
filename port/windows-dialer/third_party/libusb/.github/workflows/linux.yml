@@ -1,0 +1,82 @@
+name: linux
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: setup prerequisites
+        run: |
+          sudo apt update
+          sudo apt install -y autoconf automake libtool libudev-dev m4 pkg-config clang llvm
+
+      - name: bootstrap
+        run: ./bootstrap.sh
+
+      - name: netlink
+        # Disable tests for netlink as it doesn't seem to work in the CI environment.
+        run: .private/ci-build.sh --werror --build-dir build-netlink --no-test -- --disable-udev
+
+      - name: udev
+        run: .private/ci-build.sh --werror --build-dir build-udev -- --enable-udev
+
+      - name: debug-log
+        run: .private/ci-build.sh --werror --build-dir build-debug -- --enable-debug-log
+
+      - name: disable-log
+        run: .private/ci-build.sh --werror --build-dir build-nolog -- --disable-log
+
+      - uses: mymindstorm/setup-emsdk@v16
+
+      - run: npm ci
+        working-directory: tests/webusb-test-shim
+
+      - name: emscripten
+        run: emconfigure .private/ci-build.sh --build-dir build-emscripten -- --host=wasm32-unknown-emscripten
+
+      - name: umockdev test
+        run: .private/ci-container-build.sh docker.io/amd64/ubuntu:rolling
+
+      # --- Sanitizers + BOS fuzzer smoke, inside linux job (PRs only) ---
+      - name: Sanitized rebuild (ASan/UBSan + hardening flags)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          CC: clang
+          CXX: clang++
+          CFLAGS: "-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fstack-protector-all -ftrivial-auto-var-init=pattern -Wwrite-strings"
+          CXXFLAGS: "-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fstack-protector-all -ftrivial-auto-var-init=pattern -Wwrite-strings"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: |
+          rm -rf build-asan
+          mkdir -p build-asan
+          cd build-asan
+          CC=$CC CXX=$CXX CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" ../configure
+          make -j
+
+      - name: Stage install (pkg-config + runtime)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          make -C build-asan install DESTDIR="$PWD/build-asan/stage"
+          echo "PKG_CONFIG_PATH=$PWD/build-asan/stage/usr/local/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$PWD/build-asan/stage/usr/local/lib" >> $GITHUB_ENV
+
+      - name: Build & smoke BOS descriptor fuzzer (C, sanitized, bounded)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          ASAN_OPTIONS: "detect_leaks=0:allocator_may_return_null=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+        run: |
+          # Compile against the STAGED headers/libs (DESTDIR), not /usr/local
+          clang -std=c99 tests/fuzz/fuzz_bos_descriptor.c \
+            -I"$PWD/build-asan/stage/usr/local/include/libusb-1.0" \
+            -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer \
+            -fstack-protector-all -ftrivial-auto-var-init=pattern -Wwrite-strings \
+            -L"$PWD/build-asan/stage/usr/local/lib" -lusb-1.0 \
+            -o fuzz_bos_descriptor
+
+          ./fuzz_bos_descriptor tests/fuzz/corpus/bos \
+            -seed=1 -runs=200 -max_total_time=15 -timeout=5 -rss_limit_mb=1536 -print_final_stats=1
+      # --- end sanitizers + fuzzer smoke ---

@@ -1,0 +1,7 @@
+*.ac            eol=lf
+*.am            eol=lf
+*.bat           eol=crlf
+*.sh            eol=lf
+.gitattributes  export-ignore
+.gitignore      export-ignore
+INSTALL_WIN.txt eol=crlf
