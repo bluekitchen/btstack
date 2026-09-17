@@ -15,9 +15,10 @@ endif()
 
 # ---------------------------------------------------------------------------
 # BTSTACK_ROOT points at the BTstack library that hosts this dialer port.
-# This port lives inside the BTstack fork at port/windows-dialer, so the
-# library sources are two levels up. This replaces the old third_party/btstack
-# git submodule the dialer-btstack repo used to carry.
+# This cross-platform dialer port lives inside the BTstack fork at port/dialer,
+# so the library sources are two levels up. This replaces the old
+# third_party/btstack git submodule the dialer-btstack repo used to carry.
+# The same tree builds on Windows (WinUSB + WASAPI) and macOS (libusb + CoreAudio).
 # ---------------------------------------------------------------------------
 get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
