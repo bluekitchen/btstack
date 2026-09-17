@@ -157,6 +157,12 @@ typedef enum {
     H2_W4_PAYLOAD,
 } H2_SCO_STATE;
 
+typedef enum {
+    USB_SCO_STATE_INACTIVE,
+    USB_SCO_STATE_ACTIVE,
+    USB_SCO_STATE_STOPPING,
+} usb_sco_state_t;
+
 static libusb_state_t libusb_state = LIB_USB_CLOSED;
 
 // single instance
@@ -352,8 +358,7 @@ static uint16_t sco_bytes_to_read;
 // pause/resume
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
-static bool     sco_activated;
-static bool     sco_stopping;
+static usb_sco_state_t sco_transport_state = USB_SCO_STATE_INACTIVE;
 static bool     sco_can_send_now_pending;
 
 // dynamic SCO configuration
@@ -479,7 +484,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
 static int usb_send_sco_packet(uint8_t *packet, int size){
     int r;
 
-    if( !sco_activated ) {
+    if (sco_transport_state != USB_SCO_STATE_ACTIVE) {
         log_error("sco send without beeing active!");
         return -1;
     }
@@ -578,7 +583,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
 
         // give the transfer back to the pool, without resubmiting 
-        if( !sco_activated ) {
+        if (sco_transport_state != USB_SCO_STATE_ACTIVE) {
             usb_transfer_list_release( sco_transfer_list, transfer );
             usb_sco_start_if_ready();
             return;
@@ -606,7 +611,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         }
         usb_transfer_list_release( sco_transfer_list, transfer );
         usb_sco_start_if_ready();
-        if( !sco_activated ) {
+        if (sco_transport_state != USB_SCO_STATE_ACTIVE) {
             return;
         }
         // log_info("sco out done, {{ %u/%u (%x)}, { %u/%u (%x)}, { %u/%u (%x)}}", 
@@ -941,11 +946,10 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 static int usb_sco_start(void){
 
     log_info("usb_sco_start");
-    if( sco_activated ) {
+    if (sco_transport_state != USB_SCO_STATE_INACTIVE) {
         log_error("double sco start!");
         return -1;
     }
-    sco_activated = true;
 
     sco_state_machine_init();
 
@@ -964,9 +968,10 @@ static int usb_sco_start(void){
     int r = libusb_set_interface_alt_setting(handle, 1, alt_setting);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s\n", alt_setting, libusb_error_name(r));
-        sco_activated = false;
         return r;
     }
+
+    sco_transport_state = USB_SCO_STATE_ACTIVE;
 
 #ifdef DEBUG
     int in_flight = usb_transfer_list_in_flight( sco_transfer_list );
@@ -998,7 +1003,7 @@ static int usb_sco_start(void){
 }
 
 static void usb_sco_start_if_ready(void){
-    if (sco_stopping || sco_activated || (sco_num_connections == 0)) return;
+    if ((sco_transport_state != USB_SCO_STATE_INACTIVE) || (sco_num_connections == 0)) return;
     if (usb_transfer_list_in_flight(sco_transfer_list) != 0) return;
     (void) usb_sco_start();
 }
@@ -1006,8 +1011,7 @@ static void usb_sco_start_if_ready(void){
 static void usb_sco_stop(void){
 
     log_info("usb_sco_stop");
-    sco_activated = false;
-    sco_stopping = true;
+    sco_transport_state = USB_SCO_STATE_STOPPING;
     sco_can_send_now_pending = false;
 
     usb_transfer_list_cancel( sco_transfer_list );
@@ -1016,11 +1020,11 @@ static void usb_sco_stop(void){
     int r = libusb_set_interface_alt_setting(handle, 1, 0);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s", 0, libusb_error_name(r));
-        sco_stopping = false;
+        sco_transport_state = USB_SCO_STATE_INACTIVE;
         return;
     }
 
-    sco_stopping = false;
+    sco_transport_state = USB_SCO_STATE_INACTIVE;
     usb_sco_start_if_ready();
     log_info("usb_sco_stop done");
 }
@@ -1479,7 +1483,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET: {
-            if (!sco_enabled || !sco_activated) return 0;
+            if (!sco_enabled || (sco_transport_state != USB_SCO_STATE_ACTIVE)) return 0;
             // An empty free list means all SCO transmit transfers are in flight.
             // This is normal backpressure while streaming SCO data.
             return !usb_transfer_list_empty( sco_transfer_list );
@@ -1523,10 +1527,10 @@ static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
     }
 
     if ((num_connections != sco_num_connections) || (voice_setting != sco_voice_setting)){
-        bool sco_was_activated = sco_activated;
+        bool sco_was_active = sco_transport_state == USB_SCO_STATE_ACTIVE;
         sco_voice_setting = voice_setting;
         sco_num_connections = num_connections;
-        if (sco_was_activated){
+        if (sco_was_active){
             usb_sco_stop();
         }
         usb_sco_start_if_ready();
