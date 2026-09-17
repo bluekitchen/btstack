@@ -104,8 +104,24 @@ static void on_hfp_status_changed(const hfp_hf_status_t *status) {
     // recorder starts on SCO up and its callback emits call-started).
     ipc_set_call_outgoing(!s_call_was_incoming);
 
-    if (status->is_slc_connected) {
+    if (status->is_slc_connected && !s_ipc_slc_was_connected) {
         diag_log("[HFP] SLC ESTABLISHED with %s (Ready to call 121)", status->peer_addr_str);
+
+        // Make the connected phone's name reliable and consistent:
+        //  1. If we already resolved this address during discovery, seed the
+        //     name immediately so the UI never shows the "Connected Phone"
+        //     placeholder for a device we already know.
+        //  2. Always issue a fresh remote-name request so the real friendly name
+        //     resolves (or refreshes) even if it was never seen during a scan.
+        const char *cached = bt_controller_get_cached_name(status->peer_addr);
+        if (cached && cached[0] &&
+            (status->device_name[0] == '\0' ||
+             strcmp(status->device_name, "Connected Phone") == 0)) {
+            bt_hfp_set_device_name(cached);
+        }
+        bt_controller_request_remote_name(status->peer_addr);
+    } else if (status->is_slc_connected) {
+        diag_log("[HFP] SLC connected with %s", status->peer_addr_str);
     }
 
     // In IPC mode, announce the device once when the SLC first comes up and
@@ -114,8 +130,14 @@ static void on_hfp_status_changed(const hfp_hf_status_t *status) {
     // SCO link edge — no recording calls are made from here.
     if (ipc_is_enabled()) {
         if (status->is_slc_connected && !s_ipc_slc_was_connected) {
-            ipc_emit_connected_device(status->peer_addr_str,
-                                      status->device_name[0] ? status->device_name : "Phone");
+            // Prefer a real name (current or cached); only fall back to a neutral
+            // label when nothing is known yet. The follow-up remote-name request
+            // will emit an updated state once the true name resolves.
+            const char *nm = status->device_name[0] &&
+                             strcmp(status->device_name, "Connected Phone") != 0
+                                 ? status->device_name
+                                 : bt_controller_get_cached_name(status->peer_addr);
+            ipc_emit_connected_device(status->peer_addr_str, (nm && nm[0]) ? nm : "Phone");
         }
         s_ipc_slc_was_connected = status->is_slc_connected;
         ipc_emit_state(status);
@@ -170,6 +192,16 @@ static void on_hfp_status_changed(const hfp_hf_status_t *status) {
 static bd_addr_t s_last_device_addr;
 static char s_last_device_str[18] = "";
 static bool s_has_last_device = false;
+
+// Adapter-status notifications from the controller (e.g. the USB dongle being
+// held by the OS on macOS, and automatic recovery attempts). Forwarded to the
+// host as an "adapter-status" IPC event and logged for the console.
+static void on_adapter_status(const char *message, bool retrying) {
+    diag_log("[ADAPTER] %s", message ? message : "");
+    if (ipc_is_enabled()) {
+        ipc_emit_adapter_status(message, retrying);
+    }
+}
 
 static void on_controller_ready(const bd_addr_t local_addr) {
     UNUSED(local_addr);
@@ -408,6 +440,7 @@ int main(int argc, const char * argv[]) {
 #else
     const char *adapter_name = "Dialer (UB500)";
 #endif
+    bt_controller_set_status_callback(&on_adapter_status);
     if (bt_controller_init(adapter_name, &on_controller_ready) != 0) {
         diag_log("[ERROR] Failed to initialize BT controller");
         diag_logger_close();

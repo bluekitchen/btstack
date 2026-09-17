@@ -61,6 +61,19 @@ static bt_controller_inquiry_result_callback_t s_inquiry_result_callback = NULL;
 static bt_controller_inquiry_complete_callback_t s_inquiry_complete_callback = NULL;
 static bool s_is_discovering = false;
 
+// Adapter readiness watchdog: if the HCI never reaches WORKING (e.g. the dongle
+// is held by another OS driver on macOS), power-cycle the controller a few times
+// and notify the host. Everything here is inert on a normal successful power-on
+// because the timer is cancelled the moment WORKING arrives.
+static bt_controller_status_callback_t s_status_callback = NULL;
+static btstack_timer_source_t s_ready_watchdog;
+static bool s_ready_watchdog_active = false;
+static int s_power_on_attempts = 0;
+#define BT_READY_TIMEOUT_MS 8000
+#define BT_MAX_POWER_ON_ATTEMPTS 4
+
+static void cancel_ready_watchdog(void);
+
 #define MAX_PENDING_REMOTE_NAMES 32
 typedef struct {
     bd_addr_t addr;
@@ -74,6 +87,60 @@ typedef struct {
 static pending_name_req_t s_pending_names[MAX_PENDING_REMOTE_NAMES];
 static int s_pending_name_count = 0;
 static bool s_name_request_in_flight = false;
+
+// ---------------------------------------------------------------------------
+// Resolved-name cache (address -> friendly name)
+//
+// Device names arrive inconsistently: sometimes in the inquiry EIR, sometimes
+// only via a follow-up remote-name request that may be delayed, may fail, or may
+// not happen at all on a given scan. Without a cache the UI flip-flops between a
+// real name and a placeholder across repeated scans/reconnects. This cache is the
+// single source of truth: once a real name is known for an address it is kept and
+// reused, and never regresses to a placeholder.
+// ---------------------------------------------------------------------------
+#define MAX_CACHED_NAMES 64
+typedef struct {
+    bd_addr_t addr;
+    char name[64];
+    bool used;
+} cached_name_t;
+
+static cached_name_t s_name_cache[MAX_CACHED_NAMES];
+
+// Return the cached name for addr, or NULL if none known.
+static const char *name_cache_get(const bd_addr_t addr) {
+    for (int i = 0; i < MAX_CACHED_NAMES; i++) {
+        if (s_name_cache[i].used && bd_addr_cmp(s_name_cache[i].addr, addr) == 0) {
+            return s_name_cache[i].name;
+        }
+    }
+    return NULL;
+}
+
+// Store/refresh a real (non-empty) name for addr. Ignores empty/placeholder input.
+static void name_cache_put(const bd_addr_t addr, const char *name) {
+    if (!name || name[0] == '\0') return;
+    // Update existing entry.
+    for (int i = 0; i < MAX_CACHED_NAMES; i++) {
+        if (s_name_cache[i].used && bd_addr_cmp(s_name_cache[i].addr, addr) == 0) {
+            snprintf(s_name_cache[i].name, sizeof(s_name_cache[i].name), "%s", name);
+            return;
+        }
+    }
+    // Insert into a free slot.
+    for (int i = 0; i < MAX_CACHED_NAMES; i++) {
+        if (!s_name_cache[i].used) {
+            memcpy(s_name_cache[i].addr, addr, sizeof(bd_addr_t));
+            snprintf(s_name_cache[i].name, sizeof(s_name_cache[i].name), "%s", name);
+            s_name_cache[i].used = true;
+            return;
+        }
+    }
+    // Cache full: overwrite slot 0 (simple, rare — the working set is tiny).
+    memcpy(s_name_cache[0].addr, addr, sizeof(bd_addr_t));
+    snprintf(s_name_cache[0].name, sizeof(s_name_cache[0].name), "%s", name);
+    s_name_cache[0].used = true;
+}
 
 static void trigger_next_name_request(void) {
     if (s_name_request_in_flight) return;
@@ -110,6 +177,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 snprintf(s_local_bd_addr_str, sizeof(s_local_bd_addr_str), "%s", bd_addr_to_str(s_local_bd_addr));
                 printf("[BT_CONTROLLER] HCI State: WORKING. Local BD_ADDR: %s\n", s_local_bd_addr_str);
                 s_is_ready = true;
+                // The radio powered on — stop the readiness watchdog so no retry
+                // fires, and reset the attempt counter for any future restart.
+                cancel_ready_watchdog();
+                s_power_on_attempts = 0;
 
                 // Setup persistent TLV database
                 snprintf(s_tlv_db_path, sizeof(s_tlv_db_path), "dialer_keys_%s.tlv", bd_addr_to_str_with_delimiter(s_local_bd_addr, '-'));
@@ -203,8 +274,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             gap_event_inquiry_result_get_bd_addr(packet, dev_addr);
             char addr_buf[18];
             snprintf(addr_buf, sizeof(addr_buf), "%s", bd_addr_to_str(dev_addr));
-            const char *name = "Bluetooth Phone";
-            char name_buf[64] = "Bluetooth Phone";
+            char name_buf[64] = "";
+            const char *name = "";     // empty = name not yet known (UI decides label)
             bool has_name = false;
             if (gap_event_inquiry_result_get_name_available(packet)) {
                 int nlen = gap_event_inquiry_result_get_name_len(packet);
@@ -214,17 +285,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     name_buf[nlen] = '\0';
                     name = name_buf;
                     has_name = true;
+                    name_cache_put(dev_addr, name);   // remember for future scans
+                }
+            }
+            // Fall back to a previously resolved name so the UI never regresses
+            // to a placeholder once a real name has been seen.
+            if (!has_name) {
+                const char *cached = name_cache_get(dev_addr);
+                if (cached && cached[0]) {
+                    name = cached;
+                    has_name = true;
                 }
             }
             uint32_t cod = gap_event_inquiry_result_get_class_of_device(packet);
             int8_t rssi = gap_event_inquiry_result_get_rssi_available(packet) ? gap_event_inquiry_result_get_rssi(packet) : 0;
-            
-            // Emit result to UI immediately
+
+            // Emit result to UI immediately (empty name if still unknown — the UI
+            // shows a neutral label and this entry is refreshed once the name
+            // resolves, rather than persisting a wrong "Bluetooth Phone").
             if (s_inquiry_result_callback) {
                 s_inquiry_result_callback(addr_buf, name, cod, rssi);
             }
 
-            // Enqueue remote name request if name wasn't in EIR
+            // Enqueue remote name request if name wasn't in EIR and not cached
             if (!has_name) {
                 bool already_queued = false;
                 for (int i = 0; i < s_pending_name_count; i++) {
@@ -252,17 +335,36 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             hci_event_remote_name_request_complete_get_bd_addr(packet, dev_addr);
             uint8_t status = hci_event_remote_name_request_complete_get_status(packet);
             s_name_request_in_flight = false;
-            
+
+            // Recover the cod/rssi captured for this address at inquiry time so the
+            // re-emit carries the same metadata (previously it emitted 0/0, which
+            // wiped the class-of-device on the UI's second update).
+            uint32_t cod = 0;
+            int8_t rssi = 0;
+            for (int i = 0; i < s_pending_name_count; i++) {
+                if (bd_addr_cmp(dev_addr, s_pending_names[i].addr) == 0) {
+                    cod = s_pending_names[i].cod;
+                    rssi = s_pending_names[i].rssi;
+                    // Drop this pending entry — its name is now resolved.
+                    for (int j = i; j < s_pending_name_count - 1; j++) {
+                        s_pending_names[j] = s_pending_names[j + 1];
+                    }
+                    s_pending_name_count--;
+                    break;
+                }
+            }
+
             if (status == ERROR_CODE_SUCCESS) {
                 const char *name = hci_event_remote_name_request_complete_get_remote_name(packet);
                 char addr_buf[18];
                 snprintf(addr_buf, sizeof(addr_buf), "%s", bd_addr_to_str(dev_addr));
-                printf("[BT_CONTROLLER] Remote Name resolved for %s: '%s'\n", addr_buf, name);
                 if (name && strlen(name) > 0) {
+                    printf("[BT_CONTROLLER] Remote Name resolved for %s: '%s'\n", addr_buf, name);
+                    name_cache_put(dev_addr, name);   // authoritative name, remembered
                     bt_hfp_set_device_name(name);
-                }
-                if (s_inquiry_result_callback && name && strlen(name) > 0) {
-                    s_inquiry_result_callback(addr_buf, name, 0, 0);
+                    if (s_inquiry_result_callback) {
+                        s_inquiry_result_callback(addr_buf, name, cod, rssi);
+                    }
                 }
             }
             trigger_next_name_request();
@@ -449,8 +551,21 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
     }
     hci_init(transport, NULL);
 
-    // 4. Configure chipset driver dynamically based on detected hardware
-    if (detected_vid == 0x2357 || detected_vid == 0x0bda) {
+    // 4. Configure chipset driver dynamically based on detected hardware.
+    //
+    // On Windows, probe_usb_bluetooth_dongle() fills detected_vid/pid via SetupAPI.
+    // On macOS/Linux there is no such probe (detected_vid stays 0), so we default
+    // to the Realtek RTL8761BU driver — the TP-Link UB500 is the supported dongle
+    // and the firmware/config blobs must be loaded for BR/EDR discoverability to
+    // work. Without this the chip powers on unpatched (Standard Reset) and the
+    // phone cannot see the adapter. Only fall back to the no-chipset path on
+    // Windows when a clearly non-Realtek adapter was probed.
+    bool use_realtek = (detected_vid == 0x2357 || detected_vid == 0x0bda);
+#ifndef _WIN32
+    // No USB probe on POSIX: assume the Realtek UB500 (the supported hardware).
+    use_realtek = true;
+#endif
+    if (use_realtek) {
         printf("[BT_CONTROLLER] Configuring Realtek chipset driver (VID: 0x%04X, PID: 0x%04X)...\n", detected_vid, detected_pid);
         const char *fw_path = find_existing_firmware_file("rtl8761bu_fw.bin", s_resolved_fw_path, sizeof(s_resolved_fw_path));
         if (fw_path) {
@@ -504,10 +619,75 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
     return 0;
 }
 
+void bt_controller_set_status_callback(bt_controller_status_callback_t on_status) {
+    s_status_callback = on_status;
+}
+
+static void notify_status(const char *message, bool retrying) {
+    printf("[BT_CONTROLLER] %s\n", message);
+    if (s_status_callback) {
+        s_status_callback(message, retrying);
+    }
+}
+
+static void arm_ready_watchdog(void);
+
+// Fires if the HCI has not reached WORKING within BT_READY_TIMEOUT_MS. This is
+// the recovery path for the dongle being seized by another OS driver (seen on
+// macOS with AppleUSBRealtek8153Patcher): power-cycle and retry a few times,
+// then ask the user to re-plug. On a healthy power-on this timer is cancelled
+// by the BTSTACK_EVENT_STATE=WORKING handler and never runs.
+static void ready_watchdog_handler(btstack_timer_source_t *ts) {
+    UNUSED(ts);
+    s_ready_watchdog_active = false;
+    if (s_is_ready) {
+        return; // already came up (belt-and-suspenders)
+    }
+
+    if (s_power_on_attempts < BT_MAX_POWER_ON_ATTEMPTS) {
+        char msg[192];
+        snprintf(msg, sizeof(msg),
+                 "Bluetooth adapter did not power on (attempt %d/%d) — it may be held by the OS. Retrying...",
+                 s_power_on_attempts, BT_MAX_POWER_ON_ATTEMPTS);
+        notify_status(msg, true);
+        // Clean power cycle, then retry.
+        hci_power_control(HCI_POWER_OFF);
+        hci_power_control(HCI_POWER_ON);
+        s_power_on_attempts++;
+        arm_ready_watchdog();
+    } else {
+        notify_status("Bluetooth adapter is not responding. It may be in use by macOS — "
+                      "please unplug and re-plug the USB Bluetooth dongle.", false);
+    }
+}
+
+static void arm_ready_watchdog(void) {
+    if (s_ready_watchdog_active) {
+        btstack_run_loop_remove_timer(&s_ready_watchdog);
+        s_ready_watchdog_active = false;
+    }
+    btstack_run_loop_set_timer_handler(&s_ready_watchdog, &ready_watchdog_handler);
+    btstack_run_loop_set_timer(&s_ready_watchdog, BT_READY_TIMEOUT_MS);
+    btstack_run_loop_add_timer(&s_ready_watchdog);
+    s_ready_watchdog_active = true;
+}
+
+// Cancel the readiness watchdog — called once the HCI reaches WORKING.
+static void cancel_ready_watchdog(void) {
+    if (s_ready_watchdog_active) {
+        btstack_run_loop_remove_timer(&s_ready_watchdog);
+        s_ready_watchdog_active = false;
+    }
+}
+
 int bt_controller_start(void) {
     printf("[BT_CONTROLLER] Powering on HCI Controller...\n");
+    s_power_on_attempts = 1;
     hci_power_control(HCI_POWER_ON);
     printf("[BT_CONTROLLER] hci_power_control(HCI_POWER_ON) called.\n");
+    // Arm the readiness watchdog so a dongle seized by the OS is detected and
+    // recovered automatically instead of silently sitting in a non-working state.
+    arm_ready_watchdog();
     return 0;
 }
 
@@ -516,6 +696,7 @@ void bt_controller_run(void) {
 }
 
 void bt_controller_stop(void) {
+    cancel_ready_watchdog();
     hci_power_control(HCI_POWER_OFF);
 }
 
@@ -558,5 +739,9 @@ void bt_controller_request_remote_name(const bd_addr_t addr) {
     if (!s_is_ready) return;
     printf("[BT_CONTROLLER] Issuing direct remote name request for %s...\n", bd_addr_to_str(addr));
     gap_remote_name_request(addr, 0, 0x8000);
+}
+
+const char *bt_controller_get_cached_name(const bd_addr_t addr) {
+    return name_cache_get(addr);
 }
 

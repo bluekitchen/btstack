@@ -237,6 +237,16 @@ void ipc_emit_connected_device(const char *device_id, const char *name) {
     emit_line(buf);
 }
 
+void ipc_emit_adapter_status(const char *message, bool retrying) {
+    if (!s_ipc_enabled) return;
+    char msg[300]; json_escape(message ? message : "", msg, sizeof(msg));
+    char buf[400];
+    snprintf(buf, sizeof(buf),
+        "{\"type\":\"adapter-status\",\"message\":\"%s\",\"retrying\":%s}",
+        msg, retrying ? "true" : "false");
+    emit_line(buf);
+}
+
 // ---------------------------------------------------------------------------
 // Recorder → IPC event adapters
 //

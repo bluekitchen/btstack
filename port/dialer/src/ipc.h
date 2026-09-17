@@ -45,6 +45,11 @@ void ipc_emit_state(const hfp_hf_status_t *status);
 /** Emit a "devices" event for a single connected device (used on SLC up). */
 void ipc_emit_connected_device(const char *device_id, const char *name);
 
+/** Emit an "adapter-status" event so the host can surface adapter problems
+ *  (e.g. the USB dongle held by the OS on macOS) and whether auto-recovery is
+ *  in progress. `retrying` true = still attempting; false = needs user action. */
+void ipc_emit_adapter_status(const char *message, bool retrying);
+
 // ---------------------------------------------------------------------------
 // Recorder -> IPC event adapters
 //
