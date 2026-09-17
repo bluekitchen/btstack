@@ -515,10 +515,12 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                             acl_handle = hfp_subevent_service_level_connection_established_get_acl_handle(event);
                             hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                             printf("Service level connection established %s.\n\n", bd_addr_to_str(device_addr));
+                            gap_discoverable_control(0);
                             break;
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                             acl_handle = HCI_CON_HANDLE_INVALID;
                             printf("Service level connection released.\n\n");
+                            gap_discoverable_control(1);
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                             status = hfp_subevent_audio_connection_established_get_status(event);
