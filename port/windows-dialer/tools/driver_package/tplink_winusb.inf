@@ -1,0 +1,37 @@
+; tplink_winusb.inf
+; Digitally Signed WinUSB Driver for TP-Link Bluetooth 5.4 USB Adapter
+; Hardware ID: USB\VID_2357&PID_0604
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = USBDevice
+ClassGUID   = {88BAE032-5A81-49f0-BC3D-A4FF138216D6}
+Provider    = %ProviderName%
+CatalogFile = tplink_winusb.cat
+DriverVer   = 01/01/2026,1.0.0.0
+PnpLockdown = 1
+
+[Manufacturer]
+%ManufacturerName% = Standard,NTamd64
+
+[Standard.NTamd64]
+%DeviceName% = USB_Install, USB\VID_2357&PID_0604
+
+[USB_Install]
+Include = winusb.inf
+Needs   = WINUSB.NT
+
+[USB_Install.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+
+[USB_Install.HW]
+AddReg = Dev_AddReg
+
+[Dev_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{A5DCBF10-6530-11D2-901F-00C04FB951ED}"
+
+[Strings]
+ProviderName     = "Dialer Systems"
+ManufacturerName = "TP-Link"
+DeviceName       = "TP-Link Bluetooth 5.4 Adapter (WinUSB)"
