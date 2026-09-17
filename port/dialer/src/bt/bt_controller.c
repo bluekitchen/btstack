@@ -25,6 +25,7 @@ static btstack_tlv_windows_t s_tlv_context;
 #include "btstack_tlv_posix.h"
 #include "btstack_run_loop_posix.h"
 #include "hci_transport_usb.h"
+#include <libusb.h>
 static btstack_tlv_posix_t s_tlv_context;
 // Windows defines MAX_PATH; provide a portable equivalent on POSIX so the
 // shared firmware-path resolution code below compiles on macOS/Linux too.
@@ -39,6 +40,38 @@ static btstack_tlv_posix_t s_tlv_context;
 
 #include "bt_controller.h"
 #include "hfp_hf.h"
+
+// ---------------------------------------------------------------------------
+// Bluetooth chip family classification.
+//
+// The dialer supports two dongle families with different bring-up needs:
+//   - Realtek (RTL8761BU, e.g. TP-Link UB500): requires a firmware blob + config
+//     blob upload and a vendor custom pre-init sequence.
+//   - CSR (CSR8510, e.g. TP-Link UB400): no firmware upload; a warm-reset vendor
+//     init handled by BTstack's CSR chipset driver is enough.
+// Anything else falls back to a standard HCI reset (no chipset driver), which is
+// the correct default for generic/Broadcom/Intel controllers exposed over H2.
+// ---------------------------------------------------------------------------
+typedef enum {
+    BT_CHIP_UNKNOWN = 0,
+    BT_CHIP_REALTEK,
+    BT_CHIP_CSR,
+} bt_chip_family_t;
+
+// Map a USB vendor id to a chip family. Kept in one place so Windows (SetupAPI
+// probe) and POSIX (libusb probe) share identical selection logic.
+static bt_chip_family_t bt_chip_family_from_vid(uint16_t vid) {
+    switch (vid) {
+        case 0x2357: // TP-Link (UB500 / RTL8761BU)
+        case 0x0bda: // Realtek Semiconductor
+            return BT_CHIP_REALTEK;
+        case 0x0a12: // Cambridge Silicon Radio (CSR8510 / TP-Link UB400)
+            return BT_CHIP_CSR;
+        default:
+            return BT_CHIP_UNKNOWN;
+    }
+}
+
 #include "btstack.h"
 #include "btstack_chipset_realtek.h"
 #include "classic/btstack_link_key_db_tlv.h"
@@ -50,7 +83,14 @@ static btstack_tlv_posix_t s_tlv_context;
 extern const hci_transport_t * hci_transport_usb_instance(void);
 
 static bt_controller_ready_callback_t s_ready_callback = NULL;
+// The Bluetooth name advertised to phones is always a fixed, platform-based
+// value ("Mac Dialer" on macOS, "PC Dialer" everywhere else) regardless of any
+// device_name passed to bt_controller_init.
+#ifdef __APPLE__
+static char s_device_name[64] = "Mac Dialer";
+#else
 static char s_device_name[64] = "PC Dialer";
+#endif
 static bd_addr_t s_local_bd_addr;
 static char s_local_bd_addr_str[18] = "00:00:00:00:00:00";
 static char s_tlv_db_path[128] = "dialer_btstack_keys.tlv";
@@ -69,6 +109,11 @@ static bt_controller_status_callback_t s_status_callback = NULL;
 static btstack_timer_source_t s_ready_watchdog;
 static bool s_ready_watchdog_active = false;
 static int s_power_on_attempts = 0;
+// True when the USB probe positively identified a Bluetooth radio on the bus.
+// If it stays false, a power-on failure almost certainly means no dongle is
+// plugged in (rather than one being held by the OS), so the user-facing message
+// can be more accurate.
+static bool s_dongle_detected = false;
 #define BT_READY_TIMEOUT_MS 8000
 #define BT_MAX_POWER_ON_ATTEMPTS 4
 
@@ -439,6 +484,80 @@ static bool probe_usb_bluetooth_dongle(uint16_t *out_vid, uint16_t *out_pid, cha
     SetupDiDestroyDeviceInfoList(hDevInfo);
     return found;
 }
+#else
+// POSIX (macOS / Linux) equivalent of probe_usb_bluetooth_dongle(): enumerate the
+// USB bus with libusb and return the VID/PID of the first device that matches a
+// family we know how to bring up (Realtek or CSR). This mirrors the Windows
+// SetupAPI probe so the chipset-selection logic below is identical on all
+// platforms instead of the previous "assume Realtek" hardcode. Uses a throwaway
+// libusb context so it does not interfere with the transport's own libusb usage.
+// A USB Bluetooth dongle advertises the Wireless Controller class triple:
+//   bDeviceClass    == 0xE0  (Wireless Controller)
+//   bDeviceSubClass == 0x01  (RF Controller)
+//   bDeviceProtocol == 0x01  (Bluetooth programming)
+// This mirrors scan_for_bt_endpoints() in BTstack's libusb transport. Some
+// dongles declare the class per-interface (bDeviceClass == 0) instead of on the
+// device descriptor, so we also scan the interfaces for the same triple.
+static bool usb_device_is_bluetooth(libusb_device *dev, const struct libusb_device_descriptor *desc) {
+    if (desc->bDeviceClass == 0xE0 && desc->bDeviceSubClass == 0x01 && desc->bDeviceProtocol == 0x01) {
+        return true;
+    }
+    // Composite device: check each interface's class triple.
+    if (desc->bDeviceClass != 0x00 && desc->bDeviceClass != 0xEF /* misc/IAD */) {
+        return false;
+    }
+    struct libusb_config_descriptor *config = NULL;
+    if (libusb_get_active_config_descriptor(dev, &config) != 0 || !config) {
+        return false;
+    }
+    bool is_bt = false;
+    for (uint8_t i = 0; i < config->bNumInterfaces && !is_bt; i++) {
+        const struct libusb_interface *iface = &config->interface[i];
+        for (int a = 0; a < iface->num_altsetting; a++) {
+            const struct libusb_interface_descriptor *id = &iface->altsetting[a];
+            if (id->bInterfaceClass == 0xE0 && id->bInterfaceSubClass == 0x01 && id->bInterfaceProtocol == 0x01) {
+                is_bt = true;
+                break;
+            }
+        }
+    }
+    libusb_free_config_descriptor(config);
+    return is_bt;
+}
+
+static bool probe_usb_bluetooth_dongle(uint16_t *out_vid, uint16_t *out_pid) {
+    libusb_context *ctx = NULL;
+    if (libusb_init(&ctx) != 0) {
+        return false;
+    }
+
+    libusb_device **list = NULL;
+    ssize_t count = libusb_get_device_list(ctx, &list);
+    bool found = false;
+
+    for (ssize_t i = 0; i < count && !found; i++) {
+        struct libusb_device_descriptor desc;
+        if (libusb_get_device_descriptor(list[i], &desc) != 0) {
+            continue;
+        }
+        // Only accept actual Bluetooth radios. Matching on vendor id alone is
+        // unsafe: Realtek (0x0bda), for example, also ships USB Ethernet/card
+        // reader chips that would otherwise be mistaken for a BT dongle and sent
+        // Bluetooth firmware. Gate on the Wireless-Controller class triple first.
+        if (!usb_device_is_bluetooth(list[i], &desc)) {
+            continue;
+        }
+        *out_vid = desc.idVendor;
+        *out_pid = desc.idProduct;
+        found = true;
+    }
+
+    if (list) {
+        libusb_free_device_list(list, 1);
+    }
+    libusb_exit(ctx);
+    return found;
+}
 #endif
 
 static char s_resolved_fw_path[MAX_PATH];
@@ -502,16 +621,16 @@ static const char* find_existing_firmware_file(const char* relative_filename, ch
 }
 
 int bt_controller_init(const char *device_name, bt_controller_ready_callback_t on_ready_cb) {
-    if (device_name && strlen(device_name) > 0) {
-        strncpy(s_device_name, device_name, sizeof(s_device_name) - 1);
-        s_device_name[sizeof(s_device_name) - 1] = '\0';
-    }
+    // The advertised Bluetooth name is intentionally fixed per-platform (see
+    // s_device_name) and does not follow the caller-supplied device_name.
+    UNUSED(device_name);
     s_ready_callback = on_ready_cb;
 
     uint16_t detected_vid = 0, detected_pid = 0;
-    char dongle_name[128] = "Standard USB Bluetooth Dongle";
 
 #ifdef _WIN32
+    char dongle_name[128] = "Standard USB Bluetooth Dongle";
+
     // 1. Preload WinUSB DLL to ensure runtime lookup succeeds on Windows
     HMODULE hWinUsb = LoadLibraryA("WinUSB.dll");
     if (!hWinUsb) {
@@ -521,6 +640,7 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
 
     if (probe_usb_bluetooth_dongle(&detected_vid, &detected_pid, dongle_name, sizeof(dongle_name))) {
         printf("[BT_CONTROLLER] Detected USB Adapter: %s\n", dongle_name);
+        s_dongle_detected = true;
     } else {
         printf("[BT_CONTROLLER] Searching for connected USB Bluetooth device...\n");
     }
@@ -533,11 +653,20 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
     hci_transport_usb_add_device(0x2357, 0x0604); // TP-Link UB500 (Realtek RTL8761BU)
     hci_transport_usb_add_device(0x0bda, 0x8771); // Generic Realtek RTL8761BU
     hci_transport_usb_add_device(0x0bda, 0xb720); // Generic Realtek RTL8723BU
-    hci_transport_usb_add_device(0x0a12, 0x0001); // CSR8510
+    hci_transport_usb_add_device(0x0a12, 0x0001); // CSR8510 (TP-Link UB400 & clones)
     hci_transport_usb_add_device(0x0a5c, 0x21e8); // Broadcom BCM20702
     hci_transport_usb_add_device(0x0b05, 0x17cb); // ASUS USB-BT400
 
-    // 2. Initialize BTstack Memory & POSIX Run Loop
+    // 2. Probe the USB bus so the chipset driver can be chosen from the actual
+    //    hardware present (Realtek vs CSR) instead of assuming a single dongle.
+    if (probe_usb_bluetooth_dongle(&detected_vid, &detected_pid)) {
+        printf("[BT_CONTROLLER] Detected USB Adapter: VID 0x%04X, PID 0x%04X\n", detected_vid, detected_pid);
+        s_dongle_detected = true;
+    } else {
+        printf("[BT_CONTROLLER] No USB Bluetooth adapter found on the bus; will default to Realtek bring-up in case one appears.\n");
+    }
+
+    // 3. Initialize BTstack Memory & POSIX Run Loop
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 #endif
@@ -553,40 +682,66 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
 
     // 4. Configure chipset driver dynamically based on detected hardware.
     //
-    // On Windows, probe_usb_bluetooth_dongle() fills detected_vid/pid via SetupAPI.
-    // On macOS/Linux there is no such probe (detected_vid stays 0), so we default
-    // to the Realtek RTL8761BU driver — the TP-Link UB500 is the supported dongle
-    // and the firmware/config blobs must be loaded for BR/EDR discoverability to
-    // work. Without this the chip powers on unpatched (Standard Reset) and the
-    // phone cannot see the adapter. Only fall back to the no-chipset path on
-    // Windows when a clearly non-Realtek adapter was probed.
-    bool use_realtek = (detected_vid == 0x2357 || detected_vid == 0x0bda);
+    // Both Windows (SetupAPI) and POSIX (libusb) now fill detected_vid/pid via
+    // probe_usb_bluetooth_dongle(), so the selection below is shared. If nothing
+    // was matched (detected_vid == 0) we default to Realtek RTL8761BU bring-up:
+    // the TP-Link UB500 is the primary supported dongle and its firmware/config
+    // blobs must be loaded for BR/EDR discoverability. Without that the chip
+    // powers on unpatched and the phone cannot see the adapter.
+    bt_chip_family_t chip = bt_chip_family_from_vid(detected_vid);
 #ifndef _WIN32
-    // No USB probe on POSIX: assume the Realtek UB500 (the supported hardware).
-    use_realtek = true;
+    if (chip == BT_CHIP_UNKNOWN && detected_vid == 0) {
+        // POSIX probe found no known adapter — preserve the previous behaviour and
+        // assume the primary Realtek hardware so a UB500 still comes up even if the
+        // libusb enumeration missed it (e.g. transient permissions).
+        chip = BT_CHIP_REALTEK;
+    }
 #endif
-    if (use_realtek) {
-        printf("[BT_CONTROLLER] Configuring Realtek chipset driver (VID: 0x%04X, PID: 0x%04X)...\n", detected_vid, detected_pid);
-        const char *fw_path = find_existing_firmware_file("rtl8761bu_fw.bin", s_resolved_fw_path, sizeof(s_resolved_fw_path));
-        if (fw_path) {
-            printf("[BT_CONTROLLER] Found Realtek firmware: %s\n", fw_path);
-            btstack_chipset_realtek_set_firmware_file_path(fw_path);
-        } else {
-            printf("[BT_CONTROLLER] WARNING: Realtek firmware blob rtl8761bu_fw.bin not found!\n");
+
+    switch (chip) {
+        case BT_CHIP_REALTEK: {
+            printf("[BT_CONTROLLER] Configuring Realtek chipset driver (VID: 0x%04X, PID: 0x%04X)...\n", detected_vid, detected_pid);
+            const char *fw_path = find_existing_firmware_file("rtl8761bu_fw.bin", s_resolved_fw_path, sizeof(s_resolved_fw_path));
+            if (fw_path) {
+                printf("[BT_CONTROLLER] Found Realtek firmware: %s\n", fw_path);
+                btstack_chipset_realtek_set_firmware_file_path(fw_path);
+            } else {
+                printf("[BT_CONTROLLER] WARNING: Realtek firmware blob rtl8761bu_fw.bin not found!\n");
+            }
+
+            const char *cfg_path = find_existing_firmware_file("rtl8761bu_config.bin", s_resolved_cfg_path, sizeof(s_resolved_cfg_path));
+            if (cfg_path) {
+                printf("[BT_CONTROLLER] Found Realtek config: %s\n", cfg_path);
+                btstack_chipset_realtek_set_config_file_path(cfg_path);
+            }
+
+            btstack_chipset_realtek_set_product_id(detected_pid ? detected_pid : 0x0604);
+            hci_set_chipset(btstack_chipset_realtek_instance());
+            hci_enable_custom_pre_init();
+            break;
         }
 
-        const char *cfg_path = find_existing_firmware_file("rtl8761bu_config.bin", s_resolved_cfg_path, sizeof(s_resolved_cfg_path));
-        if (cfg_path) {
-            printf("[BT_CONTROLLER] Found Realtek config: %s\n", cfg_path);
-            btstack_chipset_realtek_set_config_file_path(cfg_path);
+        case BT_CHIP_CSR: {
+            // CSR8510 (TP-Link UB400 & clones) over USB (H2): use a plain HCI
+            // reset, NOT btstack_chipset_csr. That driver targets UART (H4)
+            // parts — its init script writes UART PSKEYs (baud rate, RTS/CTS for
+            // BCSP) and ends with a vendor WarmReset. On a USB dongle the warm
+            // reset makes the chip drop off and re-enumerate; the macOS libusb
+            // transport does not re-acquire the re-appeared device, so it stalls
+            // ("no connection to an IOService") until the readiness watchdog
+            // gives up. A USB CSR8510 comes up correctly with the standard HCI
+            // Reset alone, so treat it like any generic USB HCI controller.
+            printf("[BT_CONTROLLER] Configuring CSR adapter via standard HCI reset (USB CSR8510, VID: 0x%04X, PID: 0x%04X)...\n", detected_vid, detected_pid);
+            hci_set_chipset(NULL);
+            break;
         }
 
-        btstack_chipset_realtek_set_product_id(detected_pid ? detected_pid : 0x0604);
-        hci_set_chipset(btstack_chipset_realtek_instance());
-        hci_enable_custom_pre_init();
-    } else {
-        printf("[BT_CONTROLLER] Standard Bluetooth HCI mode active (Standard Reset command).\n");
-        hci_set_chipset(NULL);
+        case BT_CHIP_UNKNOWN:
+        default: {
+            printf("[BT_CONTROLLER] Standard Bluetooth HCI mode active (Standard Reset command) for VID 0x%04X, PID 0x%04X.\n", detected_vid, detected_pid);
+            hci_set_chipset(NULL);
+            break;
+        }
     }
 
     // 5. Initialize Core Protocols (L2CAP, RFCOMM, SDP, SM)
@@ -655,6 +810,12 @@ static void ready_watchdog_handler(btstack_timer_source_t *ts) {
         hci_power_control(HCI_POWER_ON);
         s_power_on_attempts++;
         arm_ready_watchdog();
+    } else if (!s_dongle_detected) {
+        // The probe never saw a Bluetooth radio on the USB bus, so this is almost
+        // certainly "nothing plugged in" (or plugged into a hub that isn't
+        // passing it through) rather than the dongle being seized by the OS.
+        notify_status("No USB Bluetooth adapter detected. Please plug the USB Bluetooth "
+                      "dongle directly into the computer (not through a hub) and try again.", false);
     } else {
         notify_status("Bluetooth adapter is not responding. It may be in use by macOS — "
                       "please unplug and re-plug the USB Bluetooth dongle.", false);
