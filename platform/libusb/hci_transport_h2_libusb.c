@@ -480,7 +480,7 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
         return -1;
     }
 
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED || !sco_enabled || !sco_transfer_list) return -1;
 
     struct libusb_transfer *transfer = usb_transfer_list_acquire( sco_transfer_list );
     uint8_t *data = transfer->buffer;
@@ -698,8 +698,13 @@ static int scan_for_bt_endpoints(libusb_device *dev) {
     sco_in_addr = 0;
 
     // get endpoints from interface descriptor
-    struct libusb_config_descriptor *config_descriptor;
+    struct libusb_config_descriptor *config_descriptor = NULL;
     r = libusb_get_active_config_descriptor(dev, &config_descriptor);
+    if (r < 0) {
+        // macOS/IOKit can transiently fail the "active" query right after open;
+        // fall back to the first configuration descriptor.
+        r = libusb_get_config_descriptor(dev, 0, &config_descriptor);
+    }
     if (r < 0) return r;
 
     int num_interfaces = config_descriptor->bNumInterfaces;
@@ -852,15 +857,24 @@ static int prepare_device(libusb_device_handle * aHandle){
 #endif
 
     const int configuration = 1;
-    log_info("setting configuration %d...", configuration);
-    r = libusb_set_configuration(aHandle, configuration);
-    if (r < 0) {
-        log_error("Error libusb_set_configuration: %d", r);
-        if (kernel_driver_detached){
-            libusb_attach_kernel_driver(aHandle, 0);
+    // Setting the configuration when it is already active triggers a full
+    // re-enumeration on macOS/IOKit, which races the SCO isochronous claim and
+    // can panic IOUSBHostFamily. Only set it when it is not already active.
+    int current_config = -1;
+    libusb_get_configuration(aHandle, &current_config);
+    if (current_config != configuration) {
+        log_info("setting configuration %d...", configuration);
+        r = libusb_set_configuration(aHandle, configuration);
+        if (r < 0) {
+            log_error("Error libusb_set_configuration: %d", r);
+            if (kernel_driver_detached){
+                libusb_attach_kernel_driver(aHandle, 0);
+            }
+            libusb_close(aHandle);
+            return r;
         }
-        libusb_close(aHandle);
-        return r;
+    } else {
+        log_info("configuration %d already active, skipping redundant set_configuration", configuration);
     }
 
     // reserve access to device
@@ -877,8 +891,11 @@ static int prepare_device(libusb_device_handle * aHandle){
 
 #ifdef ENABLE_SCO_OVER_HCI
     // get endpoints from interface descriptor
-    struct libusb_config_descriptor *config_descriptor;
+    struct libusb_config_descriptor *config_descriptor = NULL;
     r = libusb_get_active_config_descriptor(device, &config_descriptor);
+    if (r < 0) {
+        r = libusb_get_config_descriptor(device, 0, &config_descriptor);
+    }
     if (r >= 0){
         int num_interfaces = config_descriptor->bNumInterfaces;
         if (num_interfaces > 1) {
@@ -891,6 +908,7 @@ static int prepare_device(libusb_device_handle * aHandle){
         } else {
             log_info("Device has only on interface, disabling SCO over HCI");
         }
+        libusb_free_config_descriptor(config_descriptor);
     }
 #endif
 
@@ -919,8 +937,8 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 
     log_info("libusb open %d, handle %p", r, dev_handle);
 
-    // reset device (Not currently possible under FreeBSD 11.x/12.x due to usb framework)
-#if !defined(__FreeBSD__)
+    // reset device (Disabled on FreeBSD and Darwin/macOS due to kernel IOUSBHostFamily re-enumeration panics/races)
+#if !defined(__FreeBSD__) && !defined(__APPLE__)
     r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
