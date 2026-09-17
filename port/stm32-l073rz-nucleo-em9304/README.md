@@ -2,7 +2,7 @@
 
 This port uses the STM32 Nucleo-L073RZ Board with EM's EM9304 Shield. 
 
-The STM32CubeMX tool was used to provide the HAL, initialize the device, and create a basic Makefile. The Makefile has been exteneded to compile all BTstack LE examples. 
+The STM32CubeMX tool was used to provide the HAL, initialize the device, and create a basic Makefile. The Makefile has been extended to compile all BTstack LE examples. 
 For easy development, Ozone project files are generated as well.
 
 ## Hardware
@@ -35,11 +35,11 @@ Just start Ozone and open the .jdebug file in the build folder. When compiled wi
 
 ## Debug output
 
-All debug output can be either send via SEGGER RTT or via USART2. To get the console from USART2, connect PA2 (USART2 TX) of the Discovery board to an USB-2-UART adapter and open a terminal at 115200.
+All debug output can either be sent via SEGGER RTT or USART2. To get the console from USART2, connect PA2 (USART2 TX) of the Discovery board to an USB-2-UART adapter and open a terminal at 115200.
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in src/port.c by uncommenting the hci_dump_init(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
+The full packet log can be enabled in src/port.c by uncommenting the hci_dump_init(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
 
 ## GATT Database
 In BTstack, the GATT Database is defined via the .gatt file in the example folder. During the build, the .gatt file is converted into a .h file with a binary representation of the GATT Database and useful defines for the application.
