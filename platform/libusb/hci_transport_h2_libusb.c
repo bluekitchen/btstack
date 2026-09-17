@@ -354,6 +354,7 @@ static uint16_t sco_voice_setting;
 static int      sco_num_connections;
 static bool     sco_activated;
 static bool     sco_stopping;
+static bool     sco_can_send_now_pending;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
@@ -1007,6 +1008,7 @@ static void usb_sco_stop(void){
     log_info("usb_sco_stop");
     sco_activated = false;
     sco_stopping = true;
+    sco_can_send_now_pending = false;
 
     usb_transfer_list_cancel( sco_transfer_list );
 
@@ -1376,9 +1378,9 @@ static void signal_acknowledge(void) {
 }
 
 #ifdef ENABLE_SCO_OVER_HCI
-static int sco_can_send_now_count = 0;
 static void signal_sco_can_send_now(void) {
-    ++sco_can_send_now_count;
+    if (sco_can_send_now_pending) return;
+    sco_can_send_now_pending = true;
     btstack_run_loop_poll_data_sources_from_irq();
 }
 #endif
@@ -1392,8 +1394,9 @@ static void usb_transport_response_ds(btstack_data_source_t *ds, btstack_data_so
     }
 
 #ifdef ENABLE_SCO_OVER_HCI
-    for(; sco_can_send_now_count>0; --sco_can_send_now_count) {
+    if (sco_can_send_now_pending) {
         static const uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
+        sco_can_send_now_pending = false;
         packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
     }
 #endif
@@ -1477,11 +1480,9 @@ static int usb_can_send_packet_now(uint8_t packet_type){
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET: {
             if (!sco_enabled || !sco_activated) return 0;
-            int ret = !usb_transfer_list_empty( sco_transfer_list );
-            if( !ret ) {
-                log_error("sco transfers shouldn't be empty!");
-            }
-            return ret;
+            // An empty free list means all SCO transmit transfers are in flight.
+            // This is normal backpressure while streaming SCO data.
+            return !usb_transfer_list_empty( sco_transfer_list );
         }
 #endif
         default:
