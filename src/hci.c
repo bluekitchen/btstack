@@ -1414,8 +1414,8 @@ static void hci_shutdown_connection(hci_connection_t *connection){
         while (btstack_linked_list_iterator_has_next(&it)) {
             hci_connection_t * other_conn = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
             if (other_conn == connection) continue;
-            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
-            int multiplier = hci_sco_get_multiplier_for_voice_setting(connection->sco_voice_setting);
+            if (other_conn->address_type != BD_ADDR_TYPE_SCO) continue;
+            int multiplier = hci_sco_get_multiplier_for_voice_setting(other_conn->sco_voice_setting);
             if (multiplier <= max_multiplier) continue;
 
             max_multiplier = multiplier;
