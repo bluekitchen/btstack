@@ -278,6 +278,19 @@ if(NOT WIN32)
     target_link_libraries(test_claim_alt PRIVATE ${PLATFORM_LIBS})
 endif()
 
+# -------------------------------------------------------------
+# Target 5: Bluetooth Dongle MAC Address Prober (mac_probe)
+# Fast standalone CLI tool to query plugged-in USB dongle MAC & model.
+# -------------------------------------------------------------
+add_executable(mac_probe
+    src/mac_probe.c
+    ${BT_LAYER_SOURCES}
+    ${AUDIO_LAYER_SOURCES}
+    ${BTSTACK_CORE_SOURCES}
+    ${PLATFORM_BTSTACK_SOURCES}
+)
+target_link_libraries(mac_probe PRIVATE ${PLATFORM_LIBS})
+
 # Copy firmware files to output directory on build
 add_custom_command(TARGET dialer-btstack POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -290,3 +303,10 @@ add_custom_command(TARGET dialer-btstack-test POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/firmware
         $<TARGET_FILE_DIR:dialer-btstack-test>/firmware
 )
+
+add_custom_command(TARGET mac_probe POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/firmware
+        $<TARGET_FILE_DIR:mac_probe>/firmware
+)
+

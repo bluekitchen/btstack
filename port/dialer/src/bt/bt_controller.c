@@ -119,6 +119,17 @@ static bool s_dongle_detected = false;
 
 static void cancel_ready_watchdog(void);
 
+// Filter devices by Bluetooth Class of Device (CoD).
+// Only phones (major device class 0x02) or devices indicating Telephony service (0x200000)
+// are relevant. Unreported/0 CoD is allowed (e.g. certain iPhones in partial EIR).
+static bool is_phone_cod(uint32_t cod) {
+    if (cod == 0) return true;
+    uint8_t major_device = (cod >> 8) & 0x1F;
+    if (major_device == 0x02) return true; // Cellular / Smart Phone
+    if (cod & 0x200000) return true;       // Telephony service class
+    return false;                          // Computers (0x01), Audio/Headsets (0x04), Peripherals (0x05), etc.
+}
+
 #define MAX_PENDING_REMOTE_NAMES 32
 typedef struct {
     bd_addr_t addr;
@@ -343,6 +354,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 }
             }
             uint32_t cod = gap_event_inquiry_result_get_class_of_device(packet);
+            if (!is_phone_cod(cod)) {
+                // Ignore non-phone devices (smart TVs, laptops, Bluetooth speakers/mice, etc.)
+                break;
+            }
             int8_t rssi = gap_event_inquiry_result_get_rssi_available(packet) ? gap_event_inquiry_result_get_rssi(packet) : 0;
 
             // Emit result to UI immediately (empty name if still unknown — the UI
@@ -406,17 +421,28 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 if (name && strlen(name) > 0) {
                     printf("[BT_CONTROLLER] Remote Name resolved for %s: '%s'\n", addr_buf, name);
                     name_cache_put(dev_addr, name);   // authoritative name, remembered
-                    bt_hfp_set_device_name(name);
+                    // Only update the HFP connected phone name if this remote-name resolution
+                    // belongs to the currently connected phone! (Previously this erroneously
+                    // called bt_hfp_set_device_name for ANY scanned device).
+                    hfp_hf_status_t cur_status;
+                    bt_hfp_get_status(&cur_status);
+                    if (cur_status.is_slc_connected && bd_addr_cmp(dev_addr, cur_status.peer_addr) == 0) {
+                        bt_hfp_set_device_name(name);
+                    }
                     if (s_inquiry_result_callback) {
                         s_inquiry_result_callback(addr_buf, name, cod, rssi);
                     }
                 }
             }
             trigger_next_name_request();
+            if (s_inquiry_complete_callback && !s_is_discovering && !s_name_request_in_flight && s_pending_name_count == 0) {
+                s_inquiry_complete_callback();
+            }
             break;
         }
 
         case GAP_EVENT_INQUIRY_COMPLETE: {
+            s_is_discovering = false;
             if (s_inquiry_complete_callback && !s_name_request_in_flight && s_pending_name_count == 0) {
                 s_inquiry_complete_callback();
             }
@@ -621,12 +647,16 @@ static const char* find_existing_firmware_file(const char* relative_filename, ch
 }
 
 int bt_controller_init(const char *device_name, bt_controller_ready_callback_t on_ready_cb) {
+    return bt_controller_init_target(device_name, 0, 0, 0, 0, NULL, on_ready_cb);
+}
+
+int bt_controller_init_target(const char *device_name, uint16_t vid, uint16_t pid, uint8_t bus, int path_len, const uint8_t *ports, bt_controller_ready_callback_t on_ready_cb) {
     // The advertised Bluetooth name is intentionally fixed per-platform (see
     // s_device_name) and does not follow the caller-supplied device_name.
     UNUSED(device_name);
     s_ready_callback = on_ready_cb;
 
-    uint16_t detected_vid = 0, detected_pid = 0;
+    uint16_t detected_vid = vid, detected_pid = pid;
 
 #ifdef _WIN32
     char dongle_name[128] = "Standard USB Bluetooth Dongle";
@@ -638,8 +668,11 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
         return -1;
     }
 
-    if (probe_usb_bluetooth_dongle(&detected_vid, &detected_pid, dongle_name, sizeof(dongle_name))) {
+    if (detected_vid == 0 && probe_usb_bluetooth_dongle(&detected_vid, &detected_pid, dongle_name, sizeof(dongle_name))) {
         printf("[BT_CONTROLLER] Detected USB Adapter: %s\n", dongle_name);
+        s_dongle_detected = true;
+    } else if (detected_vid != 0) {
+        printf("[BT_CONTROLLER] Targeted USB Adapter: VID 0x%04X, PID 0x%04X\n", detected_vid, detected_pid);
         s_dongle_detected = true;
     } else {
         printf("[BT_CONTROLLER] Searching for connected USB Bluetooth device...\n");
@@ -657,16 +690,30 @@ int bt_controller_init(const char *device_name, bt_controller_ready_callback_t o
     hci_transport_usb_add_device(0x0a5c, 0x21e8); // Broadcom BCM20702
     hci_transport_usb_add_device(0x0b05, 0x17cb); // ASUS USB-BT400
 
-    // 2. Probe the USB bus so the chipset driver can be chosen from the actual
-    //    hardware present (Realtek vs CSR) instead of assuming a single dongle.
-    if (probe_usb_bluetooth_dongle(&detected_vid, &detected_pid)) {
-        printf("[BT_CONTROLLER] Detected USB Adapter: VID 0x%04X, PID 0x%04X\n", detected_vid, detected_pid);
-        s_dongle_detected = true;
-    } else {
-        printf("[BT_CONTROLLER] No USB Bluetooth adapter found on the bus; will default to Realtek bring-up in case one appears.\n");
+    if (vid != 0 && pid != 0) {
+        hci_transport_usb_add_device(vid, pid);
     }
 
-    // 3. Initialize BTstack Memory & POSIX Run Loop
+    // 2. Configure target USB bus and port path if specified
+    if (path_len > 0 && ports != NULL) {
+        printf("[BT_CONTROLLER] Targeting specific USB device at bus %u, path length %d\n", bus, path_len);
+        hci_transport_usb_set_bus_and_path(bus, path_len, (uint8_t*)ports);
+    }
+
+    // 3. Probe the USB bus if VID/PID was not explicitly passed
+    if (detected_vid == 0) {
+        if (probe_usb_bluetooth_dongle(&detected_vid, &detected_pid)) {
+            printf("[BT_CONTROLLER] Detected USB Adapter: VID 0x%04X, PID 0x%04X\n", detected_vid, detected_pid);
+            s_dongle_detected = true;
+        } else {
+            printf("[BT_CONTROLLER] No USB Bluetooth adapter found on the bus; will default to Realtek bring-up in case one appears.\n");
+        }
+    } else {
+        printf("[BT_CONTROLLER] Using targeted USB Adapter: VID 0x%04X, PID 0x%04X\n", detected_vid, detected_pid);
+        s_dongle_detected = true;
+    }
+
+    // 4. Initialize BTstack Memory & POSIX Run Loop
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 #endif

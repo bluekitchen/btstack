@@ -112,6 +112,17 @@ int audio_capture_start(void) {
     if (!s_audio_queue) return -1;
     if (s_is_running) return 0;
 
+    s_resample_phase = 0.0f;
+    s_mono_accum = 0.0f;
+    s_accum_count = 0;
+
+    // In CoreAudio, an input AudioQueue requires empty buffers to be enqueued
+    // so it has space to fill incoming audio samples. AudioQueueStop clears all
+    // buffers from the queue, so we must re-enqueue our buffer pool on each start.
+    for (int i = 0; i < BUFFER_COUNT; i++) {
+        AudioQueueEnqueueBuffer(s_audio_queue, s_buffers[i], 0, NULL);
+    }
+
     s_is_running = true;
     OSStatus status = AudioQueueStart(s_audio_queue, NULL);
     if (status != noErr) {
@@ -119,7 +130,7 @@ int audio_capture_start(void) {
         s_is_running = false;
         return -1;
     }
-    diag_log("[COREAUDIO_CAPTURE] Microphone capture started");
+    diag_log("[COREAUDIO_CAPTURE] Microphone capture started (buffers enqueued: %d)", BUFFER_COUNT);
     return 0;
 }
 
@@ -127,7 +138,8 @@ void audio_capture_stop(void) {
     if (!s_audio_queue || !s_is_running) return;
 
     s_is_running = false;
-    AudioQueueStop(s_audio_queue, false);
+    AudioQueueStop(s_audio_queue, true);
+    AudioQueueReset(s_audio_queue);
     diag_log("[COREAUDIO_CAPTURE] Microphone capture stopped");
 }
 

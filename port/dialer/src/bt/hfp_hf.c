@@ -49,8 +49,8 @@ static void update_call_state_from_indicators(void) {
     } else {
         // No active call and no call setup in progress
         s_status.call_state = s_status.is_slc_connected ? HFP_STATE_SLC_CONNECTED : HFP_STATE_IDLE;
-        s_status.caller_id[0] = '\0';
-        s_status.caller_name[0] = '\0';
+        // Do not wipe caller_id/name here; that is handled by HFP_SUBEVENT_CALL_TERMINATED
+        // to prevent wiping numbers during brief CIEV indicator packet arrival gaps.
     }
 }
 
@@ -136,6 +136,7 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED: {
             printf("\n[HFP_HF] >>> AUDIO CONNECTION RELEASED <<<\n");
             s_status.is_audio_connected = false;
+            sco_audio_on_audio_released();
             if (s_call_indicator == 0 && s_callsetup_indicator == 0) {
                 s_status.call_state = s_status.is_slc_connected ? HFP_STATE_SLC_CONNECTED : HFP_STATE_IDLE;
                 s_status.caller_id[0] = '\0';
@@ -376,8 +377,19 @@ void bt_hfp_set_device_name(const char *name) {
 }
 
 int bt_hfp_disconnect(void) {
-    if (s_status.acl_handle == HCI_CON_HANDLE_INVALID) return -1;
-    return hfp_hf_release_service_level_connection(s_status.acl_handle);
+    if (s_status.acl_handle != HCI_CON_HANDLE_INVALID) {
+        hfp_hf_release_service_level_connection(s_status.acl_handle);
+        gap_disconnect(s_status.acl_handle);
+    }
+    sco_audio_on_audio_released();
+    s_status.is_slc_connected = false;
+    s_status.is_audio_connected = false;
+    s_status.acl_handle = HCI_CON_HANDLE_INVALID;
+    s_status.call_state = HFP_STATE_IDLE;
+    s_status.caller_id[0] = '\0';
+    s_status.caller_name[0] = '\0';
+    notify_status_change();
+    return 0;
 }
 
 int bt_hfp_dial(const char *number) {

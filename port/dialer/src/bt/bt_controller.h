@@ -30,6 +30,19 @@ typedef void (*bt_controller_status_callback_t)(const char *message, bool retryi
 int bt_controller_init(const char *device_name, bt_controller_ready_callback_t on_ready_cb);
 
 /**
+ * @brief Initialize low-level Bluetooth controller targeting a specific USB device.
+ * @param device_name Local Bluetooth name advertised to phones.
+ * @param vid USB Vendor ID (or 0 for automatic probe).
+ * @param pid USB Product ID (or 0 for automatic probe).
+ * @param bus USB Bus number.
+ * @param path_len USB Port path length (or 0 for automatic probe).
+ * @param ports USB Port numbers array (or NULL).
+ * @param on_ready_cb Callback fired when HCI stack is powered on and ready.
+ * @return 0 on success, negative error code on failure.
+ */
+int bt_controller_init_target(const char *device_name, uint16_t vid, uint16_t pid, uint8_t bus, int path_len, const uint8_t *ports, bt_controller_ready_callback_t on_ready_cb);
+
+/**
  * @brief Register a callback to receive adapter-status notifications (e.g. the
  * dongle being held by the OS and automatic recovery attempts). Optional; may be
  * called before or after bt_controller_init. Pass NULL to clear.

@@ -92,6 +92,11 @@ bool sco_audio_is_connected(void);
  */
 hci_con_handle_t sco_audio_get_handle(void);
 
+/**
+ * @brief Notify SCO subsystem that audio connection was released by HFP.
+ */
+void sco_audio_on_audio_released(void);
+
 #ifdef __cplusplus
 }
 #endif

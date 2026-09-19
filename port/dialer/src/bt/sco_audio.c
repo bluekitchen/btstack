@@ -419,3 +419,12 @@ bool sco_audio_is_connected(void) {
 hci_con_handle_t sco_audio_get_handle(void) {
     return s_stats.sco_handle;
 }
+
+void sco_audio_on_audio_released(void) {
+    if (s_stats.is_connected) {
+        diag_log("[SCO_AUDIO] >>> SCO AUDIO RELEASED <<<");
+        s_stats.is_connected = false;
+        s_stats.sco_handle = HCI_CON_HANDLE_INVALID;
+        call_recorder_stop();
+    }
+}
