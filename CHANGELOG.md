@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
 - ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
 - GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
+- GATT Server: avoid blocking outgoing buffer in att_server_indicate when confirmation pending
 - GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
 - GATT Services: fix Cycling Power and Cycling Speed and Cadence supported-sensor-location responses; prevent Heart Rate notification buffer overruns
 - HID Host/Device: safely handle connection removal during callbacks and reject malformed or empty reports
