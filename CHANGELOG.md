@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP Sink: add `a2dp_sink_delay_report`
 - A2DP Source: add `a2dp_source_stop_stream`
 - OTS: add Object Transfer Service client and server implementations
+- GATT Service Client: add registration with multiple UUID16 and CCCD configurations
 - Zephyr: add support for the Ezurio Vela IF310 DK and generated configurations for Nordic development kits
 - esp32: support standard input via USB/CDC when configured as a secondary console
 - esp32: support micro-ecc from tinycrypt
@@ -44,6 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
 - GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
 - GATT Server: avoid blocking outgoing buffer in att_server_indicate when confirmation pending
+- GATT Service Client: discover CCCD handles consistently and honor requested CCCD disable writes
 - GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
 - GATT Services: fix Cycling Power and Cycling Speed and Cadence supported-sensor-location responses; prevent Heart Rate notification buffer overruns
 - HID Host/Device: safely handle connection removal during callbacks and reject malformed or empty reports
