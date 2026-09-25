@@ -227,17 +227,19 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 case AVDTP_SI_CLOSE:
                 case AVDTP_SI_ABORT:
                 case AVDTP_SI_OPEN:
-                case AVDTP_SI_RECONFIGURE:
                 case AVDTP_SI_DELAYREPORT:
-                case AVDTP_SI_SUSPEND:
-                    connection->error_code = AVDTP_ERROR_CODE_PTS_TEST_REJECT;
                     connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                    break;
+                case AVDTP_SI_RECONFIGURE:
+                case AVDTP_SI_SUSPEND:
+                    connection->reject_service_category = connection->acceptor_local_seid;
+                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                     break;
                 default:
                     connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE;
-                    connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                     break;
             }
+            connection->error_code = AVDTP_ERROR_CODE_PTS_TEST_REJECT;
             avdtp_acceptor_reject_signal_identifier = AVDTP_SI_NONE;
             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
             avdtp_request_can_send_now_acceptor(connection);
