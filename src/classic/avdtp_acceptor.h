@@ -55,6 +55,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection);
 
 #ifdef ENABLE_TESTING_SUPPORT
 void avdtp_acceptor_fail_next_start_stream_request(void);
+void avdtp_acceptor_reject_remote_command(avdtp_signal_identifier_t signal_identifier);
 #endif
 
 #if defined __cplusplus

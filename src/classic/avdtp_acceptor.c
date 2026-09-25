@@ -53,9 +53,13 @@ static bool avdtp_acceptor_have_bytes(uint16_t pos, uint16_t end, uint16_t bytes
 
 #ifdef ENABLE_TESTING_SUPPORT
 static bool avdtp_acceptor_fail_next_start_stream_request_flag;
+static avdtp_signal_identifier_t avdtp_acceptor_reject_signal_identifier = AVDTP_SI_NONE;
 
 void avdtp_acceptor_fail_next_start_stream_request(void){
     avdtp_acceptor_fail_next_start_stream_request_flag = true;
+}
+void avdtp_acceptor_reject_remote_command(avdtp_signal_identifier_t signal_identifier){
+    avdtp_acceptor_reject_signal_identifier = signal_identifier;
 }
 #endif
 
@@ -208,6 +212,39 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
     }
 
     int i;
+
+#ifdef ENABLE_TESTING_SUPPORT
+    if (avdtp_acceptor_reject_signal_identifier != AVDTP_SI_NONE){
+        if (avdtp_acceptor_reject_signal_identifier == connection->acceptor_signaling_packet.signal_identifier){
+
+            switch (connection->acceptor_signaling_packet.signal_identifier){
+                case AVDTP_SI_DISCOVER:
+                case AVDTP_SI_GET_CAPABILITIES:
+                case AVDTP_SI_GET_ALL_CAPABILITIES:
+                case AVDTP_SI_SET_CONFIGURATION:
+                case AVDTP_SI_GET_CONFIGURATION:
+                case AVDTP_SI_START:
+                case AVDTP_SI_CLOSE:
+                case AVDTP_SI_ABORT:
+                case AVDTP_SI_OPEN:
+                case AVDTP_SI_RECONFIGURE:
+                case AVDTP_SI_DELAYREPORT:
+                case AVDTP_SI_SUSPEND:
+                    connection->error_code = AVDTP_ERROR_CODE_PTS_TEST_REJECT;
+                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                    break;
+                default:
+                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE;
+                    connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                    break;
+            }
+            avdtp_acceptor_reject_signal_identifier = AVDTP_SI_NONE;
+            connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+            avdtp_request_can_send_now_acceptor(connection);
+            return;
+        }
+    }
+#endif
 
     // handle error cases
     switch (connection->acceptor_signaling_packet.signal_identifier){
