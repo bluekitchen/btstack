@@ -36,6 +36,8 @@ clean: clean-common
 build-asan/att_server_test.o build-coverage/att_server_test.o: ${BTSTACK_ROOT}/src/ble/att_server.c
 build-asan/att_server_test: build-asan/eatt_mock.o build-asan/btstack_linked_list.o build-asan/le_device_db_memory.o
 build-coverage/att_server_test: build-coverage/eatt_mock.o build-coverage/btstack_linked_list.o build-coverage/le_device_db_memory.o
+build-asan/hids_host_test: build-asan/btstack_linked_list.o
+build-coverage/hids_host_test: build-coverage/btstack_linked_list.o
 build-asan/eatt_mock.o: ../gatt_server/mock.c | build-asan
 	${CC} -c ${CFLAGS_ASAN} -DENABLE_GATT_OVER_EATT -DENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE $< -o $@
 build-coverage/eatt_mock.o: ../gatt_server/mock.c | build-coverage
