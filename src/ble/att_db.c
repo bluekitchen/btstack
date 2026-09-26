@@ -1908,6 +1908,7 @@ uint16_t btp_att_get_attributes_by_uuid128(uint16_t start_handle, uint16_t end_h
 }
 
 uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size){
+    btstack_assert(response_buffer_size >= 3);
     att_iterator_t it;
     bool ok = att_find_handle(&it, attribute_handle);
     if (!ok){
