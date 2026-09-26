@@ -130,7 +130,7 @@ static void lls_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_c
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
-    event[pos++] = 4;
+    event[pos++] = 5;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, cid);
     pos += 2;
@@ -434,4 +434,3 @@ uint8_t link_loss_service_client_disconnect(uint16_t lls_cid){
 void link_loss_service_client_deinit(void){
     gatt_service_client_unregister_client(&lls_client);
 }
-
