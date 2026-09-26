@@ -1702,8 +1702,10 @@ uint8_t hids_host_disable_notifications(uint16_t hids_cid){
 }
 
 void hids_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len){
+    btstack_assert((hid_descriptor_storage_len != 0u) && (hid_descriptor_storage != NULL));
     hids_host_descriptor_storage = hid_descriptor_storage;
     hids_host_descriptor_storage_len = hid_descriptor_storage_len;
+    hids_host_descriptor_storage_owner = NULL;
 
     hci_event_callback_registration.callback = &handle_hci_event;
     hci_add_event_handler(&hci_event_callback_registration);
