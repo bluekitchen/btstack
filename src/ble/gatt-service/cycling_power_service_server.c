@@ -1085,7 +1085,7 @@ void cycling_power_service_server_add_wheel_revolution(int32_t wheel_revolution,
     cycling_power_t * instance = &cycling_power;
     instance->last_wheel_event_time_s = wheel_event_time_s;
     if (wheel_revolution < 0){
-        uint32_t wheel_revolution_to_subtract = (uint32_t) (-wheel_revolution);
+        uint32_t wheel_revolution_to_subtract = 0u - (uint32_t) wheel_revolution;
         if (instance->cumulative_wheel_revolutions > wheel_revolution_to_subtract){
             instance->cumulative_wheel_revolutions -= wheel_revolution_to_subtract;
         } else {
