@@ -851,16 +851,33 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("libusb_detach_kernel_driver");
 #endif
 
-    const int configuration = 1;
-    log_info("setting configuration %d...", configuration);
-    r = libusb_set_configuration(aHandle, configuration);
-    if (r < 0) {
-        log_error("Error libusb_set_configuration: %d", r);
-        if (kernel_driver_detached){
-            libusb_attach_kernel_driver(aHandle, 0);
+    // Only set the configuration when not already active — BT dongles expose exactly one
+    // configuration and hosts auto-configure them. Re-issuing SET_CONFIGURATION on an
+    // active configuration is at best a no-op and on macOS Tahoe rides the same
+    // re-enumeration kernel-bug path as reset_device (libusb issue #1710).
+    // ponytail: literal 1 matches the hard-coded target below; correct for any single-config
+    // dongle (all classic BT dongles are) — read descriptor config value if a multi-config
+    // device ever shows up.
+    int currentConfiguration = 0;
+    if (libusb_get_configuration(aHandle, &currentConfiguration) != LIBUSB_SUCCESS) {
+        // Fail loud, and default to the SAFE side: do NOT re-issue SET_CONFIGURATION blindly.
+        log_error("libusb_get_configuration failed — assuming configuration already active, skipping set_configuration");
+        currentConfiguration = 1;
+    }
+    if (currentConfiguration != 1) {
+        const int configuration = 1;
+        log_info("setting configuration %d...", configuration);
+        r = libusb_set_configuration(aHandle, configuration);
+        if (r < 0) {
+            log_error("Error libusb_set_configuration: %d", r);
+            if (kernel_driver_detached){
+                libusb_attach_kernel_driver(aHandle, 0);
+            }
+            libusb_close(aHandle);
+            return r;
         }
-        libusb_close(aHandle);
-        return r;
+    } else {
+        log_info("configuration 1 already active, skipping set_configuration");
     }
 
     // reserve access to device
@@ -920,7 +937,10 @@ static libusb_device_handle * try_open_device(libusb_device * device){
     log_info("libusb open %d, handle %p", r, dev_handle);
 
     // reset device (Not currently possible under FreeBSD 11.x/12.x due to usb framework)
-#if !defined(__FreeBSD__)
+    // macOS: skipped — no kernel driver owns the dongle there, and macOS 26 (Tahoe)
+    // kernel-panics in the reset/re-enumeration path (Apple bug; libusb issue #1710).
+    // Verified by fsync-logged ladder probe: panic reproduces inside libusb_reset_device, 3/3.
+#if !defined(__FreeBSD__) && !defined(__APPLE__)
     r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
