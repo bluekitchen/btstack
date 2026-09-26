@@ -4728,9 +4728,11 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED                          0x23u
 
 /**
- * @format 12
+ * @format 1H21
  * @param subevent_code
+ * @param con_handle
  * @param lls_cid
+ * @param status
  */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED                       0x24u
 
@@ -4805,7 +4807,7 @@ typedef SSIZE_T ssize_t;
  * @format 1H211
  * @param subevent_code
  * @param con_handle
- * @param txpx_cid
+ * @param txps_cid
  * @param num_included_services
  * @param status
 */
@@ -4823,7 +4825,7 @@ typedef SSIZE_T ssize_t;
 /**
  * @format 121
  * @param subevent_code
- * @param tpxs_cid
+ * @param txps_cid
  * @param value
  */
 #define GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL                    0x2Fu
