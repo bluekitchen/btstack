@@ -146,7 +146,9 @@ void btstack_run_loop_base_dump_timer(void){
  * @return -1 if no timers, time until next timeout otherwise
  */
 int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now){
-    if (btstack_run_loop_base_timers == NULL) return -1;
+    if (btstack_run_loop_base_timers == NULL) {
+        return -1;
+    }
     btstack_timer_source_t * timer = (btstack_timer_source_t *) btstack_run_loop_base_timers;
     uint32_t list_timeout  = timer->timeout;
     int32_t delta = btstack_time_delta(list_timeout, now);
