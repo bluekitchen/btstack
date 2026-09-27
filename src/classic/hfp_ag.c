@@ -349,38 +349,34 @@ static void hfp_ag_store_ag_indicators_cmd_segment(hfp_connection_t * hfp_connec
     *buffer = ',';
 }
 
+// Check worst-case formatted lengths, including the terminating NUL.
 static int hfp_ag_join_hf_indicators(char * buffer, int buffer_size){
-    if (buffer_size < (hfp_ag_hf_indicators_nr * 3)) return 0;
-    int i;
+    if (buffer_size < (hfp_ag_hf_indicators_nr * 6)) return -1; // five digits and comma/NUL
     int offset = 0;
-    for (i = 0; i < (hfp_ag_hf_indicators_nr - 1); i++) {
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", hfp_ag_hf_indicators[i].uuid);
-    }
-    if (i < hfp_ag_hf_indicators_nr){
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", hfp_ag_hf_indicators[i].uuid);
+    for (int i = 0; i < hfp_ag_hf_indicators_nr; i++){
+        offset += btstack_snprintf_assert_complete(buffer + offset, buffer_size - offset, "%s%u", i == 0 ? "" : ",",
+                           (unsigned int) hfp_ag_hf_indicators[i].uuid);
     }
     return offset;
 }
 
 static int hfp_ag_join_hf_indicators_initial_status(char * buffer, int buffer_size){
-    if (buffer_size < (hfp_ag_hf_indicators_nr * 3)) return 0;
-    int i;
+    const int line_len = sizeof("\r\n" HFP_HF_INDICATOR ":65535,255\r\n") - 1u;
+    if (buffer_size < (hfp_ag_hf_indicators_nr * line_len + 1)) return -1;
     int offset = 0;
-    for (i = 0; i < hfp_ag_hf_indicators_nr; i++) {
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "\r\n%s:%d,%d\r\n", HFP_HF_INDICATOR, hfp_ag_hf_indicators[i].uuid, hfp_ag_hf_indicators[i].state);
+    for (int i = 0; i < hfp_ag_hf_indicators_nr; i++){
+        offset += btstack_snprintf_assert_complete(buffer + offset, buffer_size - offset, "\r\n%s:%u,%u\r\n", HFP_HF_INDICATOR,
+                           (unsigned int) hfp_ag_hf_indicators[i].uuid, (unsigned int) hfp_ag_hf_indicators[i].state);
     }
     return offset;
 }
 
 static int hfp_ag_join_ag_indicators_status(char * buffer, int buffer_size){
-    if (buffer_size < (hfp_ag_ag_indicators_nr * 3)) return 0;
-    int i;
+    if (buffer_size < (hfp_ag_ag_indicators_nr * 4)) return -1; // three digits and comma/NUL
     int offset = 0;
-    for (i = 0; i < (hfp_ag_ag_indicators_nr-1); i++) {
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", hfp_ag_ag_indicators[i].status);
-    }
-    if (i<hfp_ag_ag_indicators_nr){
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", hfp_ag_ag_indicators[i].status);
+    for (int i = 0; i < hfp_ag_ag_indicators_nr; i++){
+        offset += btstack_snprintf_assert_complete(buffer + offset, buffer_size - offset, "%s%u", i == 0 ? "" : ",",
+                           (unsigned int) hfp_ag_ag_indicators[i].status);
     }
     return offset;
 }
@@ -438,10 +434,13 @@ static void hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_
 }
 
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
-    char buffer[40];
+    // Each uint8_t status needs at most three digits plus a comma.
+    char buffer[HFP_MAX_NUM_INDICATORS * 4u + sizeof("\r\n" HFP_AG_INDICATOR ":\r\n\r\nOK\r\n")];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:", HFP_AG_INDICATOR);
-    offset += hfp_ag_join_ag_indicators_status(buffer+offset, size-offset-9);
+    int len = hfp_ag_join_ag_indicators_status(buffer+offset, size-offset-9);
+    if (len < 0) return hfp_ag_send_error(cid);
+    offset += len;
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -462,17 +461,21 @@ static int hfp_ag_send_list_supported_hf_indicators_cmd(uint16_t cid){
 }
 
 static int hfp_ag_send_retrieve_supported_hf_indicators_cmd(uint16_t cid){
-    char buffer[40];
+    // Each uint16_t UUID needs at most five digits plus a comma.
+    char buffer[HFP_MAX_NUM_INDICATORS * 6u + sizeof("\r\n" HFP_HF_INDICATOR ":()\r\n\r\nOK\r\n")];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:(", HFP_HF_INDICATOR);
-    offset += hfp_ag_join_hf_indicators(buffer + offset, size - offset - 10);
+    int len = hfp_ag_join_hf_indicators(buffer + offset, size - offset - 10);
+    if (len < 0) return hfp_ag_send_error(cid);
+    offset += len;
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, ")\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_initial_supported_hf_indicators_cmd(uint16_t cid){
-    char buffer[40];
-    int offset = hfp_ag_join_hf_indicators_initial_status(buffer, sizeof(buffer) - 7);
+    char buffer[HFP_MAX_NUM_INDICATORS * (sizeof("\r\n" HFP_HF_INDICATOR ":65535,255\r\n") - 1u) + sizeof("\r\nOK\r\n")];
+    int offset = hfp_ag_join_hf_indicators_initial_status(buffer, sizeof(buffer) - (sizeof("\r\nOK\r\n") - 1u));
+    if (offset < 0) return hfp_ag_send_error(cid);
     btstack_snprintf_assert_complete(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
