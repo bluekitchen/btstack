@@ -1367,16 +1367,29 @@ static void report_gatt_characteristic_end_found(gatt_client_t * gatt_client, ui
 }
 
 
-static void report_gatt_characteristics(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
+static bool report_gatt_characteristics(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
     if (size < 2u){
-        return;
+        return false;
     }
     uint8_t attr_length = packet[1];
     if ((attr_length != 7u) && (attr_length != 21u)){
-        return;
+        return false;
+    }
+    if ((size < (2u + attr_length)) || (((size - 2u) % attr_length) != 0u)) return false;
+
+    // Validate all declarations before reporting a pending characteristic's end.
+    // Track filtered-out declarations too; the query range also covers earlier responses.
+    uint16_t previous_start_handle = gatt_client->characteristic_start_handle;
+    int i;
+    for (i = 2u; (i + attr_length) <= size; i += attr_length){
+        uint16_t start_handle = little_endian_read_16(packet, i);
+        if ((start_handle == 0u) || (start_handle <= previous_start_handle) ||
+            (start_handle < gatt_client->start_group_handle) || (start_handle > gatt_client->end_group_handle)){
+            return false;
+        }
+        previous_start_handle = start_handle;
     }
     uint8_t uuid_length = attr_length - 5u;
-    int i;
     for (i = 2u; (i + attr_length) <= size; i += attr_length){
         uint16_t start_handle = little_endian_read_16(packet, i);
         uint8_t  properties = packet[i+2];
@@ -1385,6 +1398,7 @@ static void report_gatt_characteristics(gatt_client_t * gatt_client, uint8_t * p
         report_gatt_characteristic_start_found(gatt_client, start_handle, properties, value_handle, &packet[i + 5],
                                                uuid_length);
     }
+    return true;
 }
 
 static void report_gatt_included_service_uuid16(gatt_client_t * gatt_client, uint16_t include_handle, uint16_t uuid16){
@@ -2230,13 +2244,12 @@ static void gatt_client_handle_att_read_response(gatt_client_t *gatt_client, uin
 static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_client, uint8_t *packet, uint16_t size) {
     switch (gatt_client->state) {
         case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
-            report_gatt_characteristics(gatt_client, packet, size);
-            trigger_next_characteristic_query(gatt_client,
-                                              get_last_result_handle_from_characteristics_list(packet, size));
-            // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
-            break;
         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
-            report_gatt_characteristics(gatt_client, packet, size);
+            if (!report_gatt_characteristics(gatt_client, packet, size)){
+                gatt_client->characteristic_start_handle = 0;
+                gatt_client_handle_transaction_complete(gatt_client, ATT_ERROR_INVALID_PDU);
+                break;
+            }
             trigger_next_characteristic_query(gatt_client,
                                               get_last_result_handle_from_characteristics_list(packet, size));
             // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
