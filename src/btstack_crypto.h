@@ -231,7 +231,7 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
  * @param key
  * @param message_len
  * @param additional_authenticated_data_len must be smaller than 0xff00
- * @param auth_len
+ * @param auth_len even number of bytes from 4 to 16
  */
 void btstack_crypto_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint16_t additional_authenticated_data_len, uint8_t auth_len);
 
@@ -255,7 +255,7 @@ void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additio
 /**
  * Encrypt block - can be called multiple times. len must be a multiply of 16 for all but the last call
  * @param request
- * @param len (16 bytes for all but the last block)
+ * @param len must not exceed the remaining message length (multiple of 16 except for the last call)
  * @param plaintext  (16 bytes)
  * @param ciphertext (16 bytes)
  * @param callback
@@ -266,7 +266,7 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t l
 /**
  * Decrypt block - can be called multiple times. len must be a multiply of 16 for all but the last call
  * @param request
- * @param len (16 for all but last block)
+ * @param len must not exceed the remaining message length (multiple of 16 except for the last call)
  * @param ciphertext (16 bytes)
  * @param plaintext  (16 bytes)
  * @param callback
