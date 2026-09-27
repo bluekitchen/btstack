@@ -521,6 +521,55 @@ TEST(AvdtpUtil, avdtp_initiator_get_all_capabilities_reassembly_all_categories_s
     validate_events(all_categories_bitmap);
 }
 
+TEST(AvdtpUtil, AacObjectTypeValidation){
+    avdtp_configuration_mpeg_aac_t configuration = {};
+    configuration.sampling_frequency = 44100;
+    configuration.channels = 2;
+    configuration.drc = true;
+    uint8_t config[6];
+    const int invalid_types[] = { -1, 0, 8, 9, 255 };
+    for (unsigned i = 0; i < sizeof(invalid_types) / sizeof(invalid_types[0]); i++){
+        configuration.object_type = (avdtp_aac_object_type_t) invalid_types[i];
+        memset(config, 0xa5, sizeof(config));
+        CHECK_EQUAL(ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE, avdtp_config_mpeg_aac_store(config, &configuration));
+        for (unsigned j = 0; j < sizeof(config); j++){
+            CHECK_EQUAL(0xa5, config[j]);
+        }
+    }
+    const uint8_t expected_object_bits[] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02 };
+    for (unsigned i = 0; i < sizeof(expected_object_bits); i++){
+        configuration.object_type = (avdtp_aac_object_type_t)(AVDTP_AAC_MPEG2_LC + i);
+        CHECK_EQUAL(ERROR_CODE_SUCCESS, avdtp_config_mpeg_aac_store(config, &configuration));
+        CHECK_EQUAL(expected_object_bits[i] | 1u, config[0]);
+    }
+}
+
+TEST(AvdtpUtil, AtracBitRateIndexValidation){
+    avdtp_configuration_atrac_t configuration = {};
+    configuration.version = AVDTP_ATRAC_VERSION_1;
+    configuration.channel_mode = AVDTP_CHANNEL_MODE_MONO;
+    configuration.sampling_frequency = 44100;
+    uint8_t config[7];
+    for (unsigned index = 0; index <= 255; index++){
+        configuration.bit_rate_index = index;
+        memset(config, 0xa5, sizeof(config));
+        uint8_t status = avdtp_config_atrac_store(config, &configuration);
+        if (index <= 24){
+            CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+        } else {
+            CHECK_EQUAL(ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE, status);
+            for (unsigned j = 0; j < sizeof(config); j++){
+                CHECK_EQUAL(0xa5, config[j]);
+            }
+        }
+        if (index == 24){
+            CHECK_EQUAL(0, config[1] & 7u);
+            CHECK_EQUAL(0, config[2]);
+            CHECK_EQUAL(1, config[3]);
+        }
+    }
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

@@ -1987,7 +1987,10 @@ uint8_t avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t 
 }
 
 uint8_t avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration) {
-    config[0] = (1 << (7 -(configuration->object_type - AVDTP_AAC_MPEG2_LC))) | (configuration->drc?1u:0u);
+    if ((configuration->object_type < AVDTP_AAC_MPEG2_LC) || (configuration->object_type > AVDTP_AAC_MPEG4_HE_AAC_ELDv2)){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    config[0] = (1u << (7 -(configuration->object_type - AVDTP_AAC_MPEG2_LC))) | (configuration->drc?1u:0u);
     uint8_t channels_bitmap = 0;
     switch (configuration->channels){
         case 1:
@@ -2023,6 +2026,9 @@ uint8_t avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sam
 }
 
 uint8_t avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration){
+    if (configuration->bit_rate_index > 24u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
     uint8_t channel_mode_bitmap = 0;
     switch (configuration->channel_mode){
         case AVDTP_CHANNEL_MODE_MONO:
@@ -2038,7 +2044,7 @@ uint8_t avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atr
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     config[0] = ((configuration->version - AVDTP_ATRAC_VERSION_1 + 1) << 5) | (channel_mode_bitmap << 2);
-    uint32_t bit_rate_bitmap = 1 << (0x18 - configuration->bit_rate_index);
+    uint32_t bit_rate_bitmap = 1UL << (24u - configuration->bit_rate_index);
     config[1] = ((configuration->vbr & 0x01) << 3) | ((bit_rate_bitmap >> 16) & 0x07);
     config[2] = (bit_rate_bitmap >> 8) & 0xff;
     config[3] = bit_rate_bitmap & 0xff;
