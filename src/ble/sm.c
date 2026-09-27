@@ -2517,6 +2517,7 @@ static void sm_run_send_keypress_notification(sm_connection_t * connection){
                     break;
                 case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
                 case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
+                    btstack_assert(num_actions > 0u);
                     num_actions--;
                     clear_flag = num_actions == 0u;
                     break;
@@ -5514,11 +5515,13 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
             break;
         case SM_KEYPRESS_PASSKEY_CLEARED:
             // clear counter, keypress & erased flags + set passkey cleared
+            num_actions = 0;
             flags = (flags & 0x19u) | (1u << SM_KEYPRESS_PASSKEY_CLEARED);
             break;
         case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
             if ((flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ERASED)) != 0u){
                 // erase actions queued
+                btstack_assert(num_actions > 0u);
                 num_actions--;
                 if (num_actions == 0u){
                     // clear counter, keypress & erased flags
@@ -5526,12 +5529,15 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
                 }
                 break;
             }
-            num_actions++;
+            if (num_actions < 7u){
+                num_actions++;
+            }
             flags |= (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED);
             break;
         case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
             if ((flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED)) != 0u){
                 // enter actions queued
+                btstack_assert(num_actions > 0u);
                 num_actions--;
                 if (num_actions == 0u){
                     // clear counter, keypress & erased flags
@@ -5539,7 +5545,9 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
                 }
                 break;
             }
-            num_actions++;
+            if (num_actions < 7u){
+                num_actions++;
+            }
             flags |= (1u << SM_KEYPRESS_PASSKEY_DIGIT_ERASED);
             break;
         default:
