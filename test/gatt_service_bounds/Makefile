@@ -38,6 +38,9 @@ build-asan/att_server_test: build-asan/eatt_mock.o build-asan/btstack_linked_lis
 build-coverage/att_server_test: build-coverage/eatt_mock.o build-coverage/btstack_linked_list.o build-coverage/le_device_db_memory.o
 build-asan/hids_host_test: build-asan/btstack_linked_list.o
 build-coverage/hids_host_test: build-coverage/btstack_linked_list.o
+build-asan/object_transfer_service_client_test: build-asan/btstack_linked_list.o
+build-coverage/object_transfer_service_client_test: build-coverage/btstack_linked_list.o
+build-asan/object_transfer_service_client_test.o build-coverage/object_transfer_service_client_test.o: ${BTSTACK_ROOT}/src/ble/gatt-service/object_transfer_service_client.h
 build-asan/eatt_mock.o: ../gatt_server/mock.c | build-asan
 	${CC} -c ${CFLAGS_ASAN} -DENABLE_GATT_OVER_EATT -DENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE $< -o $@
 build-coverage/eatt_mock.o: ../gatt_server/mock.c | build-coverage

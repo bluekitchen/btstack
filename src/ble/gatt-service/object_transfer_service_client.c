@@ -104,7 +104,63 @@ static void ots_client_add_connection(ots_client_connection_t * connection){
     btstack_linked_list_add(&ots_connections, (btstack_linked_item_t*) connection);
 }
 
+// ATT write completion and the control-point response are separate events.
+static void ots_client_update_operation_state(ots_client_connection_t * connection){
+    // Do not release an outstanding ATT query, including when the CBM channel closes.
+    switch (connection->state){
+        case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_IDLE:
+        case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY:
+        case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_RESPONSE:
+        case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OBJECT_TRANSFER:
+            break;
+        default:
+            return;
+    }
+    btstack_assert(!connection->current_object_read_transfer_in_progress || !connection->current_object_write_transfer_in_progress);
+    if (connection->pending_control_point_opcode != 0u){
+        connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_RESPONSE;
+    } else if (connection->current_object_read_transfer_in_progress || connection->current_object_write_transfer_in_progress){
+        connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OBJECT_TRANSFER;
+    } else {
+        connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+    }
+}
+
+static void ots_client_reset_transfer(ots_client_connection_t * connection){
+    connection->current_object_read_transfer_in_progress = false;
+    connection->current_object_write_transfer_in_progress = false;
+    connection->cbm_data = NULL;
+    connection->cbm_data_offset = 0;
+    connection->cbm_data_chunk_length = 0;
+    connection->cbm_data_chunk_bytes_transferred = 0;
+}
+
+static void ots_client_complete_transfer(ots_client_connection_t * connection){
+    ots_client_reset_transfer(connection);
+    if (connection->pending_control_point_opcode == 0u){
+        btstack_run_loop_remove_timer(&connection->operation_timer);
+    }
+    ots_client_update_operation_state(connection);
+}
+
+static void ots_client_complete_control_point(ots_client_connection_t * connection, bool success){
+    bool abort_read = (connection->characteristic_index == OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT) &&
+                      (connection->pending_control_point_opcode == OACP_OPCODE_ABORT);
+    connection->pending_control_point_opcode = 0;
+    // A rejected Abort leaves the read running.
+    if ((!success && !abort_read) || (success && abort_read) ||
+        (!connection->current_object_read_transfer_in_progress && !connection->current_object_write_transfer_in_progress)){
+        ots_client_complete_transfer(connection);
+    } else {
+        ots_client_update_operation_state(connection);
+    }
+}
+
 static void ots_client_finalize_connection(ots_client_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->operation_timer);
+    connection->pending_control_point_opcode = 0;
+    ots_client_reset_transfer(connection);
+    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_IDLE;
     btstack_linked_list_remove(&ots_connections, (btstack_linked_item_t*) connection);
 }
 
@@ -129,12 +185,23 @@ static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t *
     if (connection == NULL){
         return;
     }
+    connection->pending_control_point_opcode = 0;
+    ots_client_reset_transfer(connection);
+    // An ATT request already sent must finish before another can be submitted.
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT){
+        connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_IDLE;
+    }
+    connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
+    (void) gatt_client_remove_gatt_query(&connection->gatt_query_can_send_now, connection->basic_connection.con_handle);
+    if (connection->le_cbm_connection.cid != 0u){
+        l2cap_disconnect(connection->le_cbm_connection.cid);
+    }
     ots_client_emit_timeout(connection, gatt_service_client_characteristic_uuid16_for_index(&ots_client,
                                                                                 connection->characteristic_index));
-    l2cap_le_disconnect(connection->basic_connection.cid);
 }
 
 static void ots_client_operations_start_timer(ots_client_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->operation_timer);
     btstack_run_loop_set_timer_handler(&connection->operation_timer, ots_client_operations_timer_timeout_handler);
     btstack_run_loop_set_timer_context(&connection->operation_timer, (void *)(uintptr_t)connection->basic_connection.cid);
 
@@ -326,6 +393,9 @@ static void ots_client_emit_data_chunk(ots_client_connection_t * connection, uin
     pos += 4;
     little_endian_store_32(event, pos, connection->cbm_data_chunk_bytes_transferred);
     pos += 4;
+    if (state == 2u){
+        ots_client_complete_transfer(connection);
+    }
     (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -487,13 +557,17 @@ static void ots_client_emit_notify_event(ots_client_connection_t * connection, u
             break;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT:
+            if (connection->characteristic_index != OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT) break;
+            if (connection->pending_control_point_opcode == 0u) break;
             if (data_size < 3) {
+                ots_client_complete_control_point(connection, false);
                 ots_client_emit_uint8_array(connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                 break;
             }
             if ((oacp_opcode_t)data[0] != OACP_OPCODE_RESPONSE_CODE) {
                 break;
             }
+            if (data[1] != connection->pending_control_point_opcode) break;
 
             // opcode
             emit_bytes[pos++] = data[1];
@@ -501,6 +575,7 @@ static void ots_client_emit_notify_event(ots_client_connection_t * connection, u
             emit_bytes[pos++] = data[2];
 
             if (att_status != ATT_ERROR_SUCCESS){
+                ots_client_complete_control_point(connection, false);
                 ots_client_emit_uint8_array(connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, pos, att_status);
                 break;
             }
@@ -508,7 +583,7 @@ static void ots_client_emit_notify_event(ots_client_connection_t * connection, u
             if ((oacp_result_code_t)emit_bytes[1] == OACP_RESULT_CODE_SUCCESS){
                 switch ((oacp_opcode_t)emit_bytes[0]){
                     case OACP_OPCODE_READ:
-                        connection->current_object_read_transfer_in_progress = true;
+                        connection->current_object_read_transfer_in_progress = connection->cbm_data_chunk_length != 0u;
                         connection->cbm_data_chunk_bytes_transferred = 0;
                         break;
 
@@ -524,7 +599,6 @@ static void ots_client_emit_notify_event(ots_client_connection_t * connection, u
                     case OACP_OPCODE_WRITE:
                         connection->current_object_write_transfer_in_progress = true;
                         connection->cbm_data_chunk_bytes_transferred = 0;
-                        l2cap_request_can_send_now_event(connection->le_cbm_connection.cid);
                         break;
 
                     case OACP_OPCODE_CREATE:
@@ -538,17 +612,26 @@ static void ots_client_emit_notify_event(ots_client_connection_t * connection, u
                 }
             }
 
+            ots_client_complete_control_point(connection, (att_status == ATT_ERROR_SUCCESS) &&
+                                               ((oacp_result_code_t)emit_bytes[1] == OACP_RESULT_CODE_SUCCESS));
+            if (connection->current_object_write_transfer_in_progress){
+                l2cap_request_can_send_now_event(connection->le_cbm_connection.cid);
+            }
             ots_client_emit_uint8_array(connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, pos, att_status);
             break;
         
         case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT:
+            if (connection->characteristic_index != OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT) break;
+            if (connection->pending_control_point_opcode == 0u) break;
             if (data_size < 3) {
+                ots_client_complete_control_point(connection, false);
                 ots_client_emit_uint8_array(connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                 break;
             }
             if ((olcp_opcode_t)data[0] != OLCP_OPCODE_RESPONSE_CODE) {
                 break;
             }
+            if (data[1] != connection->pending_control_point_opcode) break;
 
             // opcode
             emit_bytes[pos++] = data[1];
@@ -563,6 +646,7 @@ static void ots_client_emit_notify_event(ots_client_connection_t * connection, u
                     att_status = ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
                 }
             }
+            ots_client_complete_control_point(connection, att_status == ATT_ERROR_SUCCESS);
             ots_client_emit_uint8_array(connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, pos, att_status);
             break;
 
@@ -617,16 +701,24 @@ static uint8_t ots_client_request_write_characteristic(ots_client_connection_t *
     return ots_client_request_send_gatt_query(connection, characteristic_index);
 }
 
-static uint8_t ots_client_start_oacp_procedure(ots_client_connection_t * connection){
+static uint8_t ots_client_start_control_point(ots_client_connection_t * connection, ots_client_characteristic_index_t index){
+    btstack_assert(connection->pending_control_point_opcode == 0u);
+    connection->pending_control_point_opcode = connection->data.data_bytes[0];
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
     ots_client_operations_start_timer(connection);
-    return ots_client_request_send_gatt_query(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    uint8_t status = ots_client_request_send_gatt_query(connection, index);
+    if (status != ERROR_CODE_SUCCESS){
+        ots_client_complete_control_point(connection, false);
+    }
+    return status;
+}
+
+static uint8_t ots_client_start_oacp_procedure(ots_client_connection_t * connection){
+    return ots_client_start_control_point(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
 }
 
 static uint8_t ots_client_start_olcp_procedure(ots_client_connection_t * connection){
-    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
-    ots_client_operations_start_timer(connection);
-    return ots_client_request_send_gatt_query(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
+    return ots_client_start_control_point(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
 }
 
 static uint8_t ots_client_request_write_long_characteristic(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index){
@@ -777,8 +869,13 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     
             switch (connection->state){
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-                    ots_client_emit_done_event(connection, connection->characteristic_index, status);
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+                    if (status != ATT_ERROR_SUCCESS){
+                        ots_client_complete_control_point(connection, false);
+                    } else {
+                        ots_client_update_operation_state(connection);
+                    }
+                    ots_client_emit_done_event(connection, connection->characteristic_index, status);
                     break;
 
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_OTS_FEATURES_READING_FAILED:
@@ -795,7 +892,6 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
                     break;
                 default:
-                    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
                     break;
             }
             break;
@@ -851,10 +947,17 @@ static void ots_client_run_for_connection(void * context){
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
             value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
-            (void) gatt_client_write_value_of_characteristic_with_context(
-                    &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    ots_client_value_handle_for_index(connection),
-                    value_length, value, ots_client.service_id, connection->basic_connection.cid);
+            {
+                uint8_t status = gatt_client_write_value_of_characteristic_with_context(
+                        &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
+                        ots_client_value_handle_for_index(connection),
+                        value_length, value, ots_client.service_id, connection->basic_connection.cid);
+                if (status != ERROR_CODE_SUCCESS){
+                    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+                    ots_client_complete_control_point(connection, false);
+                    ots_client_emit_done_event(connection, connection->characteristic_index, status);
+                }
+            }
             break;
 
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE:
@@ -890,6 +993,8 @@ uint8_t object_transfer_service_client_connect(
 
     *ots_cid = 0;
 
+    connection->pending_control_point_opcode = 0;
+    ots_client_reset_transfer(connection);
     connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
     connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
     connection->le_cbm_connection.cid = 0;
@@ -920,6 +1025,8 @@ uint8_t object_transfer_service_client_connect_secondary_service(
     btstack_assert(packet_handler != NULL);
     btstack_assert(connection != NULL);
 
+    connection->pending_control_point_opcode = 0;
+    ots_client_reset_transfer(connection);
     connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
     connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
     connection->le_cbm_connection.cid = 0;
@@ -1225,11 +1332,16 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
 
     if (packet_type == L2CAP_DATA_PACKET){
         connection = ots_client_get_connection_for_cbm_local_cid(channel);
-        if (!connection->current_object_read_transfer_in_progress){
+        if ((connection == NULL) || !connection->current_object_read_transfer_in_progress){
             return;
         }
 
-        uint16_t offset = connection->cbm_data_chunk_bytes_transferred ;
+        if ((connection->cbm_data_chunk_bytes_transferred > connection->cbm_data_chunk_length) ||
+            (size > connection->cbm_data_chunk_length - connection->cbm_data_chunk_bytes_transferred)){
+            l2cap_disconnect(channel);
+            return;
+        }
+        uint32_t offset = connection->cbm_data_chunk_bytes_transferred;
         connection->cbm_data_chunk_bytes_transferred += size;
         uint8_t state = 2;
 
@@ -1279,6 +1391,11 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
                 break;
             }
 
+            if (!connection->current_object_write_transfer_in_progress) break;
+            if (connection->cbm_data_chunk_bytes_transferred >= connection->cbm_data_chunk_length){
+                ots_client_complete_transfer(connection);
+                break;
+            }
             bytes_to_read = btstack_min(connection->le_cbm_connection.mtu, connection->cbm_data_chunk_length - connection->cbm_data_chunk_bytes_transferred);
 
             if (bytes_to_read > 0){
@@ -1289,9 +1406,7 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
                 break;
             }
 
-            connection->cbm_data_offset = 0;
-            connection->cbm_data_chunk_length = 0;
-            connection->current_object_write_transfer_in_progress = false;
+            ots_client_complete_transfer(connection);
             break;
 
         case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -1302,7 +1417,17 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
                 connection->le_cbm_connection.cid = 0;
                 connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
                 connection->le_cbm_connection.mtu = 0;
-                btstack_run_loop_remove_timer(&connection->operation_timer);
+                if ((connection->characteristic_index == OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT) &&
+                    ((connection->pending_control_point_opcode == OACP_OPCODE_READ) ||
+                     (connection->pending_control_point_opcode == OACP_OPCODE_WRITE) ||
+                     (connection->pending_control_point_opcode == OACP_OPCODE_ABORT))){
+                    connection->pending_control_point_opcode = 0;
+                    if (connection->state == OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE){
+                        (void) gatt_client_remove_gatt_query(&connection->gatt_query_can_send_now, connection->basic_connection.con_handle);
+                        connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+                    }
+                }
+                ots_client_complete_transfer(connection);
             }
             break;
         default:
@@ -1430,7 +1555,9 @@ uint8_t object_transfer_service_client_delete_object(ots_client_connection_t * c
 
 uint8_t object_transfer_service_client_abort(ots_client_connection_t * connection){
     btstack_assert(connection != NULL);
-    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+    if ((connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY) &&
+        !((connection->state == OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OBJECT_TRANSFER) &&
+          connection->current_object_read_transfer_in_progress)){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
 
