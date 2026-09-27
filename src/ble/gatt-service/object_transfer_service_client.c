@@ -91,7 +91,7 @@ static ots_client_connection_t * ots_client_get_connection_for_cid(uint16_t conn
 // Lookup OTS Client connection by L2CAP CBM CID
 ots_client_connection_t *  ots_client_get_connection_for_cbm_local_cid(uint16_t cbm_local_cid){
     btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ots_client.connections);
+    btstack_linked_list_iterator_init(&it, &ots_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         ots_client_connection_t * connection = (ots_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->le_cbm_connection.cid != cbm_local_cid) continue;
