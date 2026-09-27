@@ -511,7 +511,6 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
     uint8_t signal_identifier;
     uint8_t status;
     uint8_t local_seid;
-    uint8_t remote_seid;
     bool is_initiator;
     bool outgoing_active;
 
@@ -617,7 +616,7 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
 
                     // and pre-select this endpoint
                     local_seid = avdtp_stream_endpoint_seid(stream_endpoint);
-                    remote_seid = avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet);
+                    uint8_t remote_seid = avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet);
                     a2dp_config_process_set_sbc(role, cid, local_seid, remote_seid, &configuration);
                 }
             }
