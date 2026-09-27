@@ -607,6 +607,7 @@ TEST(HFPParser, HFP_CMD_AG_SENT_CALL_WAITING_INFORMATION){
 
 TEST(HFPParser, custom_command_hf){
     hfp_custom_at_command_t custom_hf_command = {
+            .next = NULL,
             .command = "+FOO:",
             .command_id = 1
     };
@@ -620,6 +621,7 @@ TEST(HFPParser, custom_command_hf){
 
 TEST(HFPParser, custom_command_ag_with_colon){
     hfp_custom_at_command_t custom_ag_command = {
+            .next = NULL,
             .command = "AT+FOO:",
             .command_id = 2
     };
@@ -633,6 +635,7 @@ TEST(HFPParser, custom_command_ag_with_colon){
 
 TEST(HFPParser, custom_command_ag_with_question){
     hfp_custom_at_command_t custom_ag_command = {
+            .next = NULL,
             .command = "AT+FOO?",
             .command_id = 3
     };
@@ -646,6 +649,7 @@ TEST(HFPParser, custom_command_ag_with_question){
 
 TEST(HFPParser, custom_command_hf_with_assignment){
     hfp_custom_at_command_t custom_ag_command = {
+            .next = NULL,
             .command = "AT+TEST=",
             .command_id = 3
     };

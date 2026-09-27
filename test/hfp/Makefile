@@ -3,6 +3,7 @@
 POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
 BTSTACK_ROOT ?= ../..
 
+SKIP_EXAMPLE_CLEAN := 1
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 CXXFLAGS := ${CFLAGS}
@@ -96,7 +97,7 @@ build-asan/hfp_hf_vra_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-asan/hfp.
 build-asan/hfp_ag_vra_test: ${MOCK_OBJ_ASAN} build-asan/hfp_gsm_model.o build-asan/hfp_ag.o build-asan/hfp.o
 
 results:
-	mkdir results
+	mkdir -p results
 
 test: build-asan/hfp_at_parser_test \
 	  build-asan/hfp_ag_client_test \

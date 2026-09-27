@@ -458,7 +458,8 @@ TEST(HCI, SetChipset){
 }
 
 TEST(HCI, SetControl){
-    btstack_control_t hardware_control = { .init = &dummy_fn};
+    btstack_control_t hardware_control = {};
+    hardware_control.init = &dummy_fn;
     hci_set_control(&hardware_control);
 }
 
@@ -1149,15 +1150,15 @@ TEST(HCI, handle_command_complete_event) {
         uint8_t status;
         uint8_t variants;
     } variations[] = {
-        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_NAME,  .status = ERROR_CODE_SUCCESS},
-        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_NAME, .status = ERROR_CODE_UNKNOWN_HCI_COMMAND },
-        {.opcode = HCI_OPCODE_HCI_READ_BUFFER_SIZE, .status = ERROR_CODE_SUCCESS},
-        {.opcode = HCI_OPCODE_HCI_READ_RSSI, .status =  ERROR_CODE_SUCCESS},
-        {.opcode = HCI_OPCODE_HCI_READ_RSSI, .status =  ERROR_CODE_UNKNOWN_HCI_COMMAND},
-        {.opcode = HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE },
-        {.opcode = HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2 },
-        {.opcode = HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH },
-        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION, .variants = 3},
+        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_NAME, .status = ERROR_CODE_SUCCESS, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_NAME, .status = ERROR_CODE_UNKNOWN_HCI_COMMAND, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_READ_BUFFER_SIZE, .status = ERROR_CODE_SUCCESS, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_READ_RSSI, .status = ERROR_CODE_SUCCESS, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_READ_RSSI, .status = ERROR_CODE_UNKNOWN_HCI_COMMAND, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE, .status = ERROR_CODE_SUCCESS, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2, .status = ERROR_CODE_SUCCESS, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH, .status = ERROR_CODE_SUCCESS, .variants = 0},
+        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION, .status = ERROR_CODE_SUCCESS, .variants = 3},
     };
     for (uint8_t i = 0; i < sizeof(variations) / sizeof(variations[0]); i++) {
         // extras
