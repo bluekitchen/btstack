@@ -9852,6 +9852,8 @@ uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->adv_data = advertising_data;
     advertising_set->adv_data_len = advertising_data_length;
+    // Restart a pending upload with the replacement data.
+    advertising_set->adv_data_pos = 0;
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
     hci_run();
@@ -9863,6 +9865,8 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->scan_data = scan_response_data;
     advertising_set->scan_data_len = scan_response_data_length;
+    // Restart a pending upload with the replacement data.
+    advertising_set->scan_data_pos = 0;
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
     hci_run();
@@ -9923,6 +9927,8 @@ uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t p
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->periodic_data = periodic_data;
     advertising_set->periodic_data_len = periodic_data_length;
+    // Restart a pending upload with the replacement data.
+    advertising_set->periodic_data_pos = 0;
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
     hci_run();

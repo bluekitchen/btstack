@@ -175,6 +175,65 @@ TEST(HCI, GetSetConnectionRange){
     gap_set_connection_parameter_range(&range);
 }
 
+TEST(HCI, AdvertisingDataReplacementRestartsUpload){
+    typedef uint8_t (*set_data_t)(uint8_t, uint16_t, const uint8_t *);
+    const set_data_t setters[] = {
+        gap_extended_advertising_set_adv_data,
+        gap_extended_advertising_set_scan_response_data,
+        gap_periodic_advertising_set_data,
+    };
+    const uint16_t opcodes[] = {
+        HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_DATA,
+        HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
+        HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_DATA,
+    };
+    const uint16_t replacement_lengths[] = { 0, 10, 251, 300 };
+    uint8_t original[502];
+    uint8_t replacement[300];
+    memset(original, 0x11, sizeof(original));
+    memset(replacement, 0x22, sizeof(replacement));
+    for (unsigned type = 0; type < 3; type++){
+        for (unsigned length_index = 0; length_index < 4; length_index++){
+            le_advertising_set_t advertising_set = {};
+            advertising_set.advertising_handle = 1;
+            btstack_linked_list_add(&hci_stack->le_advertising_sets, (btstack_linked_item_t *)&advertising_set);
+            hci_stack->local_supported_commands = UINT32_MAX;
+            hci_stack->num_cmd_packets = 1;
+            transport_count_packets = 0;
+            CHECK_EQUAL(ERROR_CODE_SUCCESS, setters[type](1, sizeof(original), original));
+            CHECK_EQUAL(1, transport_count_packets);
+            CHECK_EQUAL(opcodes[type], little_endian_read_16(transport_packets[0].buffer, 0));
+            CHECK_EQUAL(1, transport_packets[0].buffer[4]); // First fragment
+            const uint16_t length = replacement_lengths[length_index];
+            CHECK_EQUAL(ERROR_CODE_SUCCESS, setters[type](1, length, replacement));
+            CHECK_EQUAL(1, transport_count_packets); // Old command still pending
+            btstack_run_loop_base_execute_callbacks(); // Release the synchronous transport buffer
+
+            uint8_t complete[] = { HCI_EVENT_COMMAND_COMPLETE, 4, 1, 0, 0, 0 };
+            little_endian_store_16(complete, 3, opcodes[type]);
+            packet_handler(HCI_EVENT_PACKET, complete, sizeof(complete));
+            CHECK_EQUAL(2, transport_count_packets);
+            const uint8_t * command = transport_packets[1].buffer;
+            CHECK_EQUAL(opcodes[type], little_endian_read_16(command, 0));
+            CHECK_EQUAL(length <= 251 ? 3 : 1, command[4]); // Complete or first fragment
+            unsigned length_pos = type == 2 ? 5 : 6;
+            CHECK_EQUAL(length <= 251 ? length : 251, command[length_pos]);
+            CHECK_EQUAL_ARRAY(replacement, command + length_pos + 1, command[length_pos]);
+            btstack_run_loop_base_execute_callbacks();
+            if (length > 251){
+                packet_handler(HCI_EVENT_PACKET, complete, sizeof(complete));
+                CHECK_EQUAL(3, transport_count_packets);
+                command = transport_packets[2].buffer;
+                CHECK_EQUAL(2, command[4]); // Last fragment
+                CHECK_EQUAL(length - 251, command[length_pos]);
+                CHECK_EQUAL_ARRAY(replacement + 251, command + length_pos + 1, command[length_pos]);
+            }
+            btstack_run_loop_base_execute_callbacks();
+            btstack_linked_list_remove(&hci_stack->le_advertising_sets, (btstack_linked_item_t *)&advertising_set);
+        }
+    }
+}
+
 TEST(HCI, ConnectionRangeValid){
     le_connection_parameter_range_t range = {
             .le_conn_interval_min = 1, 
