@@ -26,6 +26,32 @@ TEST(RingBuffer, EmptyBuffer){
     CHECK_EQUAL(storage_size, btstack_ring_buffer_bytes_free(&ring_buffer));
 }
 
+TEST(RingBuffer, LargeCapacityOccupancy){
+    // Exercise index accounting without allocating or accessing a large buffer.
+    const struct {
+        uint32_t size;
+        uint32_t read_index;
+        uint32_t write_index;
+        uint32_t available;
+    } cases[] = {
+        { 0x80000010u, 0,           0x80000001u, 0x80000001u },
+        { 0x80000010u, 0x80000001u, 0,           15u },
+        { 0xffffffffu, 1,           0,           0xfffffffeu },
+        { 0xffffffffu, 0,           0xfffffffeu, 0xfffffffeu },
+        { 0xffffffffu, 0x80000000u, 0x80000000u, 0 },
+    };
+    for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); i++){
+        btstack_ring_buffer_init(&ring_buffer, NULL, cases[i].size);
+        ring_buffer.last_read_index = cases[i].read_index;
+        ring_buffer.last_written_index = cases[i].write_index;
+        CHECK_EQUAL(cases[i].available, btstack_ring_buffer_bytes_available(&ring_buffer));
+        CHECK_EQUAL(cases[i].size - cases[i].available, btstack_ring_buffer_bytes_free(&ring_buffer));
+    }
+    ring_buffer.full = 1;
+    CHECK_EQUAL(0xffffffffu, btstack_ring_buffer_bytes_available(&ring_buffer));
+    CHECK_EQUAL(0, btstack_ring_buffer_bytes_free(&ring_buffer));
+}
+
 TEST(RingBuffer, WriteBuffer){
     uint8_t test_write_data[] = {1,2,3,4, 5};
     uint32_t test_data_size = sizeof(test_write_data);

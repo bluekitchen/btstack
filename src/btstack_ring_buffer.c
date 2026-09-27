@@ -66,11 +66,10 @@ uint32_t btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer
     if (ring_buffer->full){
         return ring_buffer->size;
     }
-    int diff = ring_buffer->last_written_index - ring_buffer->last_read_index;
-    if (diff >= 0){
-        return diff;
+    if (ring_buffer->last_written_index >= ring_buffer->last_read_index){
+        return ring_buffer->last_written_index - ring_buffer->last_read_index;
     }
-    return diff + ring_buffer->size;
+    return ring_buffer->size - ring_buffer->last_read_index + ring_buffer->last_written_index;
 }
 
 // test if ring buffer is empty
