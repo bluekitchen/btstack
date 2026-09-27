@@ -302,7 +302,17 @@ static void btstack_usage_iterator_hid_find_next_usage(btstack_hid_usage_iterato
                     break;
             }
             if (have_usage_min && have_usage_max){
-                main_iterator->available_usages = main_iterator->usage_maximum - main_iterator->usage_minimum + 1u;
+                if (main_iterator->usage_maximum < main_iterator->usage_minimum){
+                    log_debug("Invalid Usage Min - Usage Max range");
+                    return;
+                }
+                // Only count usages needed by this report item. Compare before adding
+                // one so even the full uint32_t range cannot overflow.
+                uint32_t usage_difference = main_iterator->usage_maximum - main_iterator->usage_minimum;
+                main_iterator->available_usages = main_iterator->required_usages;
+                if (usage_difference < main_iterator->required_usages){
+                    main_iterator->available_usages = (uint16_t)(usage_difference + 1u);
+                }
                 main_iterator->usage_range = true;
                 if (main_iterator->available_usages < main_iterator->required_usages){
                     log_debug("Usage Min - Usage Max [%04" PRIx32 "..%04" PRIx32 "] < Report Count %u", main_iterator->usage_minimum & 0xffff, main_iterator->usage_maximum & 0xffff, main_iterator->required_usages);
@@ -422,7 +432,7 @@ void btstack_hid_usage_iterator_get_item(btstack_hid_usage_iterator_t * iterator
     if (is_variable){
         iterator->usage_minimum++;
         iterator->available_usages--;
-        if (iterator->usage_range && (iterator->usage_minimum > iterator->usage_maximum)){
+        if (iterator->usage_range && (iterator->available_usages == 0u)){
             // usage min - max range smaller than report count, ignore remaining bit in report
             log_debug("Ignoring %u items without Usage", iterator->required_usages);
             iterator->report_pos_in_bit += iterator->global_report_size * iterator->required_usages;

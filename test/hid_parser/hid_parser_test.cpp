@@ -15,6 +15,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 
 #include "btstack_hid_parser.h"
+#include "btstack_util.h"
 #include "hci_dump_posix_fs.h"
 #include "hci_dump_posix_stdout.h"
 
@@ -640,6 +641,84 @@ TEST(HID, GetReportSize){
     report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_INPUT, hid_descriptor,
                                                      hid_descriptor_len);
     CHECK_EQUAL(8, report_size);
+}
+
+TEST(HID, UsageIteratorRejectsReversedRanges){
+    for (uint8_t maximum = 1; maximum <= 2; maximum++){
+        for (unsigned maximum_first = 0; maximum_first < 2; maximum_first++){
+            uint8_t descriptor[] = {
+                0x05, 0x09, // Usage Page (Button)
+                0x19, 0x03, // Usage Minimum (3)
+                0x29, maximum,
+                0x75, 0x01, // Report Size (1)
+                0x95, 0x02, // Report Count (2)
+                0x81, 0x02, // Input (Variable)
+            };
+            if (maximum_first){
+                descriptor[2] = 0x29;
+                descriptor[3] = maximum;
+                descriptor[4] = 0x19;
+                descriptor[5] = 3;
+            }
+            btstack_hid_usage_iterator_t iterator;
+            btstack_hid_usage_iterator_init(&iterator, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT);
+            CHECK_FALSE(btstack_hid_usage_iterator_has_more(&iterator));
+            CHECK_FALSE(btstack_hid_usage_iterator_has_more(&iterator));
+        }
+    }
+}
+
+TEST(HID, UsageIteratorWideRangesStopAtReportCount){
+    const uint32_t maxima[] = { 0xffffu, 0xffffffffu };
+    for (unsigned i = 0; i < sizeof(maxima) / sizeof(maxima[0]); i++){
+        uint8_t descriptor[] = {
+            0x1b, 0, 0, 0, 0, // Usage Minimum (32-bit)
+            0x2b, 0, 0, 0, 0, // Usage Maximum (32-bit)
+            0x75, 0x01,       // Report Size (1)
+            0x95, 0x02,       // Report Count (2)
+            0x81, 0x02,       // Input (Variable)
+            0x09, 0x07,       // Usage (7)
+            0x95, 0x01,       // Report Count (1)
+            0x81, 0x02,       // Input (Variable)
+        };
+        little_endian_store_32(descriptor, 6, maxima[i]);
+        btstack_hid_usage_iterator_t iterator;
+        btstack_hid_usage_iterator_init(&iterator, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT);
+        const uint16_t expected_usages[] = { 0, 1, 7 };
+        for (unsigned j = 0; j < 3; j++){
+            CHECK_TRUE(btstack_hid_usage_iterator_has_more(&iterator));
+            btstack_hid_usage_item_t item;
+            btstack_hid_usage_iterator_get_item(&iterator, &item);
+            CHECK_EQUAL(expected_usages[j], item.usage);
+            CHECK_EQUAL(j, item.bit_pos);
+        }
+        CHECK_FALSE(btstack_hid_usage_iterator_has_more(&iterator));
+    }
+}
+
+TEST(HID, UsageIteratorRangeEndingAtUint32Max){
+    const uint8_t descriptor[] = {
+        0x1b, 0xff, 0xff, 0xff, 0xff, // Usage Minimum (UINT32_MAX)
+        0x2b, 0xff, 0xff, 0xff, 0xff, // Usage Maximum (UINT32_MAX)
+        0x75, 0x01,                   // Report Size (1)
+        0x95, 0x02,                   // Report Count (2)
+        0x81, 0x02,                   // Input (Variable)
+        0x09, 0x07,                   // Usage (7)
+        0x95, 0x01,                   // Report Count (1)
+        0x81, 0x02,                   // Input (Variable)
+    };
+    btstack_hid_usage_iterator_t iterator;
+    btstack_hid_usage_iterator_init(&iterator, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT);
+    btstack_hid_usage_item_t item;
+    CHECK_TRUE(btstack_hid_usage_iterator_has_more(&iterator));
+    btstack_hid_usage_iterator_get_item(&iterator, &item);
+    CHECK_EQUAL(0xffff, item.usage_page);
+    CHECK_EQUAL(0xffff, item.usage);
+    CHECK_TRUE(btstack_hid_usage_iterator_has_more(&iterator));
+    btstack_hid_usage_iterator_get_item(&iterator, &item);
+    CHECK_EQUAL(7, item.usage);
+    CHECK_EQUAL(2, item.bit_pos);
+    CHECK_FALSE(btstack_hid_usage_iterator_has_more(&iterator));
 }
 
 TEST(HID, UsageIteratorBootKeyboard){
