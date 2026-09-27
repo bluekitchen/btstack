@@ -269,17 +269,24 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             avrcp_browsing_target_emit_search(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
 
-                        case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
+                        case AVRCP_PDU_ID_GET_FOLDER_ITEMS:{
                             if (parameter_length < 10){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
 
-                            browsing_connection->scope = packet[pos++];
-                            browsing_connection->start_item = big_endian_read_32(packet, pos);
+                            uint8_t scope = packet[pos++];
+                            uint32_t start_item = big_endian_read_32(packet, pos);
                             pos += 4;
-                            browsing_connection->end_item = big_endian_read_32(packet, pos);
+                            uint32_t end_item = big_endian_read_32(packet, pos);
                             pos += 4;
+                            if (end_item < start_item){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_RANGE_OUT_OF_BOUNDS);
+                                return;
+                            }
+                            browsing_connection->scope = scope;
+                            browsing_connection->start_item = start_item;
+                            browsing_connection->end_item = end_item;
                             uint8_t attr_count = packet[pos++];
                             browsing_connection->attr_bitmap = 0;
                             if (!avrcp_browsing_target_have_bytes((uint16_t)pos, payload_end, (uint16_t)(4u * attr_count))){
@@ -298,6 +305,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             }
                             avrcp_browsing_target_emit_get_folder_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
+                        }
 
                         case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
                             // send total num items
