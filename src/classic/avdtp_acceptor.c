@@ -216,24 +216,29 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 #ifdef ENABLE_TESTING_SUPPORT
     if (avdtp_acceptor_reject_signal_identifier != AVDTP_SI_NONE){
         if (avdtp_acceptor_reject_signal_identifier == connection->acceptor_signaling_packet.signal_identifier){
-
             switch (connection->acceptor_signaling_packet.signal_identifier){
                 case AVDTP_SI_DISCOVER:
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                case AVDTP_SI_SET_CONFIGURATION:
                 case AVDTP_SI_GET_CONFIGURATION:
-                case AVDTP_SI_START:
                 case AVDTP_SI_CLOSE:
                 case AVDTP_SI_ABORT:
                 case AVDTP_SI_OPEN:
                 case AVDTP_SI_DELAYREPORT:
                     connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                     break;
+                case AVDTP_SI_SET_CONFIGURATION:
                 case AVDTP_SI_RECONFIGURE:
-                case AVDTP_SI_SUSPEND:
-                    connection->reject_service_category = connection->acceptor_local_seid;
+                    connection->reject_service_category = 0u;
                     connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                    break;
+                case AVDTP_SI_START:
+                case AVDTP_SI_SUSPEND:
+                    connection->acceptor_local_seid = 0u;
+                    if (avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                        connection->acceptor_local_seid = packet[offset] >> 2;
+                    }
+                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
                     break;
                 default:
                     connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE;
@@ -257,48 +262,103 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 			avdtp_request_can_send_now_acceptor(connection);
             return;
 
-        case AVDTP_SI_GET_CAPABILITIES:
-        case AVDTP_SI_GET_ALL_CAPABILITIES:
-        case AVDTP_SI_SET_CONFIGURATION:
-        case AVDTP_SI_GET_CONFIGURATION:
-        case AVDTP_SI_START:
-        case AVDTP_SI_CLOSE:
-        case AVDTP_SI_ABORT:
-        case AVDTP_SI_OPEN:
-        case AVDTP_SI_RECONFIGURE:
-        case AVDTP_SI_DELAYREPORT:
+        case AVDTP_SI_GET_CAPABILITIES:     // SEID(1) / reject: ERROR_CODE
+        case AVDTP_SI_GET_ALL_CAPABILITIES: // SEID(1) / reject: ERROR_CODE
+        case AVDTP_SI_GET_CONFIGURATION:    // SEID(1) / reject: ERROR_CODE
+        case AVDTP_SI_OPEN:                 // SEID(1) / reject: ERROR_CODE
+        case AVDTP_SI_DELAYREPORT:          // SEID(1) / reject: ERROR_CODE
+        case AVDTP_SI_CLOSE:                // SEID(1) / reject: ERROR_CODE
+        case AVDTP_SI_ABORT:                // SEID(1) / reject: ERROR_CODE
             if (!avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
+                connection->reject_signal_identifier  = connection->acceptor_signaling_packet.signal_identifier;
                 connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                avdtp_request_can_send_now_acceptor(connection);
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                return;
+            }
+            connection->acceptor_local_seid  = packet[offset++] >> 2;
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
+            if (!stream_endpoint){
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
                 connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
+                if (connection->acceptor_signaling_packet.signal_identifier == AVDTP_SI_OPEN){
+                    connection->error_code = AVDTP_ERROR_CODE_BAD_STATE;
+                }
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
+            break;
+
+        case AVDTP_SI_SET_CONFIGURATION:    // SEID(1) + service caps / reject: service category (1), then ERROR_CODE
+        case AVDTP_SI_RECONFIGURE:          // SEID(1) + service caps / reject: service category (1), then ERROR_CODE
+            if (!avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                connection->reject_signal_identifier  = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                connection->reject_service_category = 0u;
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
                 avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
             connection->acceptor_local_seid  = packet[offset++] >> 2;
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
-                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
-                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
-                if (connection->acceptor_signaling_packet.signal_identifier == AVDTP_SI_OPEN){
-                    connection->error_code = AVDTP_ERROR_CODE_BAD_STATE;
-                }
-                
-                if (connection->acceptor_signaling_packet.signal_identifier == AVDTP_SI_START){
-                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
-                } else {
-                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
-                }
-                if (connection->acceptor_signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
-                    connection->reject_service_category = connection->acceptor_local_seid;
-                    connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
-                }
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                 connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
-				avdtp_request_can_send_now_acceptor(connection);
+                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
+                connection->reject_service_category = connection->acceptor_local_seid;
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
             break;
-        
-        case AVDTP_SI_SUSPEND:
+
+        case AVDTP_SI_START:                // SEID(1) + Other ACP SEIDs / reject: SEID(1), then ERROR_CODE
+            if (!avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
+                connection->reject_signal_identifier  = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                connection->acceptor_local_seid = 0u;
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
+            connection->acceptor_local_seid  = packet[offset++] >> 2;
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
+            if (!stream_endpoint){
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
+                connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
+            break;
+
+        case AVDTP_SI_SUSPEND:              // SEID(1) + Other ACP SEIDs / reject: SEID(1), then ERROR_CODE
+            if (!avdtp_acceptor_have_bytes((uint16_t)offset, size, 1u)) {
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
+                connection->reject_signal_identifier  = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
+                connection->acceptor_local_seid = 0u;
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
+            connection->acceptor_local_seid  = packet[offset] >> 2;
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
+            if (!stream_endpoint){
+                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
+                connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
+                log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
+                avdtp_request_can_send_now_acceptor(connection);
+                return;
+            }
+
             connection->num_suspended_seids = 0;
             log_info("AVDTP_SI_SUSPEND");
             for (i = offset; (i < size) && (connection->num_suspended_seids < AVDTP_MAX_NUM_SEPS); i++){
@@ -307,31 +367,20 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 log_info("%d, ", connection->suspended_seids[connection->num_suspended_seids]);
                 connection->num_suspended_seids++;
             }
-            // reject if no SEIDs
-            if (connection->num_suspended_seids == 0) {
-                log_info("no suspended SEIDs, BAD_ACP_SEID");
-                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
-                connection->reject_service_category = connection->acceptor_local_seid;
-                connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
-                connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
-				avdtp_request_can_send_now_acceptor(connection);
-                return;
-            }
+
             // deal with first suspended SEID
             connection->acceptor_local_seid = connection->suspended_seids[0];
             stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
-                log_info("stream_endpoint not found, BAD_ACP_SEID");
-                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
-                connection->reject_service_category = connection->acceptor_local_seid;
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE;
                 connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_ACP_SEID;
                 connection->num_suspended_seids = 0;
-				avdtp_request_can_send_now_acceptor(connection);
+                log_info("stream_endpoint not found, BAD_ACP_SEID");
+                avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
             break;
-
         default:
             connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE;
             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
