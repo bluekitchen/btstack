@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: fix BR/EDR->LE CTKD overwrite of BR/EDR link key
 - SM: fix BR/EDR->LE CTKD check for existing LTK
 - A2DP: ignore unexpected responses, keep state for Delay Report response
+- AVDTP Sink: send Delay Report only if configured 
 - AVRCP: improve browsing, cover-art, media-item, and controller response parsing; avoid buffer overruns for user-provided data
 - BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
 - ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
@@ -74,7 +75,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Mesh: dispatch bearer events to every registered callback
 - esp32: use individual drivers for esp-idf 5.3 and later
 - esp32: select large app partition for esp32-s31 binaries
-- Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread
+- Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
 - FreeRTOS UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
 
 ## Release v1.8.2
