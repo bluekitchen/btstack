@@ -275,6 +275,16 @@ static void hci_transport_h4_block_read(void){
             }
             break;
             
+        case H4_W4_CMD_HEADER:
+            bytes_to_read = hci_packet[3];
+            // check CMD length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_CMD_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid Cmd len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_CMD_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                break;
+            }
+            h4_state = H4_W4_PAYLOAD;
+
         case H4_W4_EVENT_HEADER:
             bytes_to_read = hci_packet[2];
             // check Event length
