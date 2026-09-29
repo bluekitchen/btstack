@@ -57,7 +57,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Mesh: store length of individual segments in buffer for robust reassembly
 - Mesh: validate size of encyrpted payload data
 - libusb: support multiple SCO connections
-- libusb: avoid kernel panic on macOS 26 
 - esp32 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - esp32: fix UART DMA reception and ESP-IDF v6 builds
 - MSP432P401LP-CC256x port: ise `HAVE_HAL_UART_BUFFERS` in UART HAL
@@ -74,6 +73,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Zephyr: rework configuration and controller setup; select LE/Classic through Kconfig and detect Broadcom/Cypress/Infineon controllers
 - LE Audio: update sink resampling and support optional Bluetooth-time audio HAL synchronization
 - Mesh: dispatch bearer events to every registered callback
+- libusb: skip device reset and redundant SET_CONFIGURATION
 - esp32: use individual drivers for esp-idf 5.3 and later
 - esp32: select large app partition for esp32-s31 binaries
 - Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
