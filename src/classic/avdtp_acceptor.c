@@ -301,7 +301,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
         case AVDTP_SI_DELAYREPORT:          // SEID(1) / reject: ERROR_CODE
         case AVDTP_SI_CLOSE:                // SEID(1) / reject: ERROR_CODE
         case AVDTP_SI_ABORT:                // SEID(1) / reject: ERROR_CODE
-            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE, packet, size, &offset);
+            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE, packet, size, (uint16_t *)&offset);
             if (stream_endpoint == NULL){
                 return;
             }
@@ -309,14 +309,14 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 
         case AVDTP_SI_SET_CONFIGURATION:    // SEID(1) + service caps / reject: service category (1), then ERROR_CODE
         case AVDTP_SI_RECONFIGURE:          // SEID(1) + service caps / reject: service category (1), then ERROR_CODE
-            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE, packet, size, &offset);
+            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE, packet, size, (uint16_t *)&offset);
             if (stream_endpoint == NULL){
                 return;
             }
             break;
 
         case AVDTP_SI_START:                // SEID(1) + Other ACP SEIDs / reject: SEID(1), then ERROR_CODE
-            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE, packet, size, &offset);
+            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE, packet, size,(uint16_t *) &offset);
             if (stream_endpoint == NULL){
                 return;
             }
@@ -324,7 +324,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 
         case AVDTP_SI_SUSPEND:              // SEID(1) + Other ACP SEIDs / reject: SEID(1), then ERROR_CODE
             connection->num_suspended_seids = 0;
-            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE, packet, size, &offset);
+            stream_endpoint = avdtp_acceptor_get_streamendpoint_from_packet(connection, AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_ACP_SEID_WITH_ERROR_CODE, packet, size, (uint16_t *)&offset);
             if (stream_endpoint == NULL){
                 return;
             }
