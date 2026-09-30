@@ -2073,7 +2073,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
 
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
-    if (num_attributes >= AVRCP_MEDIA_ATTR_NUM) {
+    if (num_attributes > 16) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
