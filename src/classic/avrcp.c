@@ -388,12 +388,11 @@ uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, a
 }
 
 static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_mtu, avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type){
-    uint16_t max_frame_size = btstack_min(l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
     uint16_t payload_offset = avctp_get_num_bytes_for_header(avctp_packet_type) +
                               avrcp_get_num_bytes_for_header(command_opcode, avctp_packet_type);
 
-    btstack_assert(max_frame_size >= payload_offset);
-    return (max_frame_size - payload_offset);
+    btstack_assert(l2cap_mtu >= payload_offset);
+    return (l2cap_mtu - payload_offset);
 }
 
 
@@ -435,16 +434,15 @@ avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection){
     uint16_t payload_offset = avctp_get_num_bytes_for_header(connection->avctp_packet_type) +
                               avrcp_get_num_bytes_for_header(connection->command_opcode, connection->avctp_packet_type);
     uint16_t bytes_to_send = (connection->data_len - connection->data_offset) + payload_offset;
-    uint16_t max_frame_size = btstack_min(connection->l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
 
     if (connection->data_offset == 0){
-        if (bytes_to_send <= max_frame_size){
+        if (bytes_to_send <= connection->l2cap_mtu){
             return AVRCP_SINGLE_PACKET;
         } else {
             return AVRCP_START_PACKET;
         }
     } else {
-        if (bytes_to_send > max_frame_size){
+        if (bytes_to_send > connection->l2cap_mtu){
             return AVRCP_CONTINUE_PACKET;
         } else {
             return AVRCP_END_PACKET;
@@ -911,7 +909,8 @@ static avrcp_connection_t * avrcp_handle_incoming_connection_for_role(avrcp_role
 
 static void avrcp_handle_open_connection(avrcp_connection_t * connection, hci_con_handle_t con_handle, uint16_t local_cid, uint16_t l2cap_mtu){
     connection->l2cap_signaling_cid = local_cid;
-    connection->l2cap_mtu = l2cap_mtu;
+    // limit outgoing packets by AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE
+    connection->l2cap_mtu = btstack_min(l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
     connection->con_handle = con_handle;
     connection->incoming_declined = false;
     connection->target_song_length_ms = 0xFFFFFFFF;
