@@ -1536,7 +1536,12 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
 
     uint32_t bit_rate                  = ((media_codec_information[4] & 0x7f) << 16) | (media_codec_information[5] << 8) | media_codec_information[6];
 
-    if (count_set_bits_uint32(object_type_bitmap) != 1) {
+    // object type bitmap consists of two types
+    // b1 = MPEG-D USAC with MPEG-D DRC
+    // b0 = RFU
+    // A2DP/SNK/AS/BI-01-C requires to ignore the RFU
+    object_type_bitmap &= 2;
+    if (object_type_bitmap == 0){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
     }
     uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
