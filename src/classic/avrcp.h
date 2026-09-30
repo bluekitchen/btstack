@@ -901,6 +901,10 @@ void avrcp_deinit(void);
 
 /* API_END */
 
+#ifdef ENABLE_TESTING_SUPPORT
+void avrcp_limit_mtu(uint16_t avrcp_cid, uint16_t mtu);
+#endif
+
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void avrcp_init_fuzz(void);
 void avrcp_packet_handler_fuzz(uint8_t *packet, uint16_t size);

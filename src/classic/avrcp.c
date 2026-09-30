@@ -1250,6 +1250,18 @@ uint8_t avrcp_disconnect(uint16_t avrcp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
+#ifdef ENABLE_TESTING_SUPPORT
+void avrcp_limit_mtu(uint16_t avrcp_cid, uint16_t mtu){
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if ((connection_controller == NULL) || (connection_target == NULL)){
+        return;
+    }
+    connection_controller->l2cap_mtu = btstack_min(connection_controller->l2cap_mtu, mtu);
+    connection_target->l2cap_mtu = btstack_min(connection_target->l2cap_mtu, mtu);
+}
+#endif
+
 void avrcp_deinit(void){
     avrcp_l2cap_service_registered = false;
 
