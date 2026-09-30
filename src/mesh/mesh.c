@@ -1120,6 +1120,11 @@ static int mesh_node_startup_from_tlv(void){
         // load network keys
         mesh_load_network_keys();
 
+#ifdef ENABLE_MESH_PROXY_SERVER
+        // start advertising with Network ID after restoring subnets
+        mesh_proxy_start_advertising_with_network_id();
+#endif
+
         // load app keys
         mesh_load_app_keys();
 
