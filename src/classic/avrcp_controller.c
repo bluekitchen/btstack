@@ -1517,6 +1517,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
 
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
+            // send data - it will fit into one packet
             avrcp_send_cmd_with_avctp_fragmentation(connection);
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
             return;
@@ -1564,11 +1565,16 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             connection->data_len = pos;
 
             log_info("AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST, len %u", connection->data_len);
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
 
-            // send data - assume it will fit into one packet
+            if (connection->data_offset < connection->data_len){
+                // continue AVCTP fragmentation
+                connection->state = AVCTP_W2_SEND_COMMAND;
+                avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                return;
+            }
             avrcp_controller_response_timer_start(connection);
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            avrcp_send_cmd_with_avctp_fragmentation(connection);
             return;
         default:
             break;
