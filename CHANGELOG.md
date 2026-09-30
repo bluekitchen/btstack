@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Mesh: validate provisioning, transport, and access PDUs, including segmented-message completion before delivery
 - Mesh: store length of individual segments in buffer for robust reassembly
 - Mesh: validate size of encyrpted payload data
+- Mesh: fix MESH_SUBEVENT_PROXY_* events
 - libusb: support multiple SCO connections
 - esp32 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - esp32: fix UART DMA reception and ESP-IDF v6 builds

@@ -94,7 +94,7 @@ static void gatt_bearer_emit_sent(void){
 static void gatt_bearer_emit_connected(void){
     uint8_t event[5];
     event[0] = HCI_EVENT_MESH_META;
-    event[1] = 1;
+    event[1] = 3;
     event[2] = MESH_SUBEVENT_PROXY_CONNECTED;
     little_endian_store_16(event, 3, 0x1234);
     (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
