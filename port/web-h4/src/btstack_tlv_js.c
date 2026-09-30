@@ -72,19 +72,19 @@ EM_JS(const char *, makeTag, (uint32_t tag), {
 static int btstack_tlv_js_get_tag(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
     UNUSED(context);
 	int size = EM_ASM_INT({
-		tag_string = makeTag($0);
-		item_string = localStorage.getItem(tag_string);
-		if (item_string) {
-			item = JSON.parse(item_string);
-			console.log(item);
-			size = item.length;
-			console.log(size);
-			if ($2 >= size) {
-				HEAPU8.set(item, size);
-				return size;
-			}
+		const item_string = localStorage.getItem(makeTag($0));
+		if (!item_string) {
+			return 0;
 		}
-		return 0;
+		const item = JSON.parse(item_string);
+		// return len if buffer = NULL
+		if ($1 == 0) {
+			return item.length;
+		}
+		// otherwise copy data into buffer
+		const bytes_to_copy = Math.min($2, item.length);
+		HEAPU8.set(item.slice(0, bytes_to_copy), $1);
+		return bytes_to_copy;
 	}, tag, buffer, buffer_size);
 	return size;
 }
@@ -98,9 +98,8 @@ static int btstack_tlv_js_get_tag(void * context, uint32_t tag, uint8_t * buffer
 static int btstack_tlv_js_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
     UNUSED(context);
 	EM_ASM({
-		tag_string = makeTag($0);
-		item = new Uint8Array(HEAPU8.buffer, $1, $2);
-		localStorage.setItem(tag_string, JSON.stringify(Array.from(item)));
+		const item = new Uint8Array(HEAPU8.buffer, $1, $2);
+		localStorage.setItem(makeTag($0), JSON.stringify(Array.from(item)));
 		btstack_tlv_js_updated();
 	}, tag, data, data_size);
     return 0;
@@ -113,8 +112,7 @@ static int btstack_tlv_js_store_tag(void * context, uint32_t tag, const uint8_t 
 static void btstack_tlv_js_delete_tag(void * context, uint32_t tag){
     UNUSED(context);
 	EM_ASM({
-		tag_string = makeTag($0);
-		localStorage.removeItem(tag_string);
+		localStorage.removeItem(makeTag($0));
 		btstack_tlv_js_updated();
 	}, tag);
 }

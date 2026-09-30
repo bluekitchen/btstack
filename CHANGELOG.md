@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Renesas EK-RA6M4A-DA14531 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas TB-S1JA-CC256x port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - STM32 L073RZ Nucleo EM9304 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- Web-H4: fix TLV
 
 ### Changed
 - HCI: synchronous transports now defer packet-sent notifications to match asynchronous transport behavior
