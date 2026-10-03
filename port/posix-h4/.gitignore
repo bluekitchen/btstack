@@ -100,3 +100,11 @@ TIInit_12.8.32.c
 ublox_spp_le_counter
 ublox_spp_le_counter.h
 CC256*
+cc256xc_bt_sp_v1.5.zip
+classic_paring_central
+classic_paring_peripheral
+gatt_device_information_query
+gatt_device_information_query.h
+hog_boot_host_demo
+hog_host_demo
+le_mitm
