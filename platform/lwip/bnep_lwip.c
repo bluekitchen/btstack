@@ -155,7 +155,8 @@ static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
     btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *), &bytes_read);
     (void) bytes_read;
 #else
-    xQueueReceive(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
+    // don't block: the queue may have been reset by bnep_lwip_discard_packets() after this was scheduled
+    xQueueReceive(bnep_lwip_outgoing_queue, &p, 0);
 #endif
     return p;
 }
@@ -368,7 +369,15 @@ static void bnep_lwip_outgoing_process(void * arg){
     // previous packet not sent yet
     if (bnep_lwip_outgoing_next_packet) return;
 
+    // get next packet from queue
     bnep_lwip_outgoing_next_packet = bnep_lwip_outgoing_pop_packet();
+
+    // queue emptied or channel closed since this was scheduled
+    if (bnep_lwip_outgoing_next_packet == NULL) return;
+    if (bnep_cid == 0) {
+        bnep_lwip_outgoing_packet_processed();
+        return;
+    }
 
     // request can send now
     bnep_request_can_send_now_event(bnep_cid);
