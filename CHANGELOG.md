@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP Sink: send Delay Report only if configured 
 - AVRCP: improve browsing, cover-art, media-item, and controller response parsing; avoid buffer overruns for user-provided data
 - BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
+- BNEP: avoid hang on disconnect with outgoing packets ready for FreeRTOS with lwip
 - ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
 - GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
 - GATT Server: avoid blocking outgoing buffer in att_server_indicate when confirmation pending
