@@ -284,7 +284,8 @@ static void hci_transport_h4_block_read(void){
                 break;
             }
             h4_state = H4_W4_PAYLOAD;
-
+            break;
+            
         case H4_W4_EVENT_HEADER:
             bytes_to_read = hci_packet[2];
             // check Event length
