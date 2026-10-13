@@ -710,12 +710,20 @@ typedef struct {
     // message data, used for responses and commands that fit into a single AVCTP packet
     uint8_t   message_body[AVRCP_MAX_COMMAND_PARAMETER_LENGTH];
 
-    // pointer to command and response data
+    // command or response parameter data and its total length
     uint8_t * data;
     uint16_t  data_len;
 
-    // used for fragmentation
+    // offset in complete command/response parameter data, advanced by the PDU producer
     uint16_t  data_offset;
+
+    // parameter length of the current AVRCP metadata fragment
+    uint16_t  avrcp_fragment_len;
+
+    // offset transmitted by AVCTP within the current AVRCP metadata fragment
+    uint16_t  avctp_fragment_offset;
+
+    // next media attribute to include while generating a target response
     avrcp_media_attribute_id_t next_attr_id;
 
     // used for parser in controller, and for fragmentation in target
@@ -832,7 +840,7 @@ const char * avrcp_shuffle2str(uint8_t index);
 const char * avrcp_notification2str(avrcp_notification_event_id_t index);
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size);
-avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection);
+void avrcp_prepare_single_packet_fragment(avrcp_connection_t * connection);
 uint16_t avctp_get_num_bytes_for_header(avctp_packet_type_t avctp_packet_type);
 uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type);
 

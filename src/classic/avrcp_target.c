@@ -318,6 +318,23 @@ static uint16_t avrcp_store_avctp_now_playing_info_fragment(avrcp_connection_t *
     return bytes_stored;
 }
 
+static void avrcp_target_prepare_now_playing_info_fragment(avrcp_connection_t * connection){
+    if (connection->avrcp_fragment_len != 0) return;
+
+    connection->avctp_fragment_offset = 0;
+    uint16_t remaining_data_len = connection->data_len - connection->data_offset;
+    uint16_t max_fragment_len = AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE -
+                                avctp_get_num_bytes_for_header(AVCTP_SINGLE_PACKET) -
+                                avrcp_get_num_bytes_for_header(AVRCP_CMD_OPCODE_VENDOR_DEPENDENT, AVCTP_SINGLE_PACKET);
+    connection->avrcp_fragment_len = btstack_min(remaining_data_len, max_fragment_len);
+
+    if (connection->data_offset == 0){
+        connection->avrcp_packet_type = remaining_data_len > max_fragment_len ? AVRCP_START_PACKET : AVRCP_SINGLE_PACKET;
+    } else {
+        connection->avrcp_packet_type = remaining_data_len > max_fragment_len ? AVRCP_CONTINUE_PACKET : AVRCP_END_PACKET;
+    }
+}
+
 static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * connection){
     l2cap_reserve_packet_buffer();
     uint8_t * packet = l2cap_get_outgoing_buffer();
@@ -325,11 +342,16 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     // transport header
     // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
 
+    if (connection->pdu_id == AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES){
+        avrcp_target_prepare_now_playing_info_fragment(connection);
+    } else {
+        avrcp_prepare_single_packet_fragment(connection);
+    }
+
     uint16_t max_payload_size;
     connection->avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
-    connection->avrcp_packet_type = avrcp_get_packet_type(connection);
 
-    uint16_t param_len = connection->data_len;
+    uint16_t param_len = connection->avrcp_fragment_len;
     // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     uint16_t pos = 0;
@@ -351,7 +373,6 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     switch (connection->avctp_packet_type) {
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
-            connection->data_offset = 0;
             // Profile IDentifier (PID)
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -380,6 +401,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                             if (param_len == 1){
                                 // error code
                                 packet[pos++] = connection->data[0];
+                                connection->avctp_fragment_offset = param_len;
                                 l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
                                 return;
                             }
@@ -413,14 +435,20 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                                     // no capability count
                                     break;
                             }
+                            connection->avctp_fragment_offset = param_len;
                             l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
                             return;
 
                         case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
-                            packet[pos++] = count_set_bits_uint32(connection->target_now_playing_info_attr_bitmap);
-                            max_payload_size--;
+                            if (connection->data_offset == 0){
+                                packet[pos++] = count_set_bits_uint32(connection->target_now_playing_info_attr_bitmap);
+                                max_payload_size--;
+                                connection->data_offset++;
+                                connection->avctp_fragment_offset++;
+                            }
 
                             bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
+                            connection->avctp_fragment_offset += bytes_stored;
                             l2cap_send_prepared(connection->l2cap_signaling_cid, pos + bytes_stored);
                             return;
 
@@ -447,6 +475,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
             switch (connection->pdu_id) {
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
                     bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
+                    connection->avctp_fragment_offset += bytes_stored;
                     l2cap_send_prepared(connection->l2cap_signaling_cid, pos + bytes_stored);
                     return;
 
@@ -460,11 +489,11 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     }
 
     // compare number of bytes to store with the remaining buffer size
-    uint16_t bytes_to_copy = btstack_min(connection->data_len - connection->data_offset, max_payload_size - pos);
+    uint16_t bytes_to_copy = btstack_min(connection->avrcp_fragment_len - connection->avctp_fragment_offset, max_payload_size - pos);
 
-    (void)memcpy(packet + pos, &connection->data[connection->data_offset], bytes_to_copy);
+    (void)memcpy(packet + pos, &connection->data[connection->data_offset + connection->avctp_fragment_offset], bytes_to_copy);
     pos += bytes_to_copy;
-    connection->data_offset += bytes_to_copy;
+    connection->avctp_fragment_offset += bytes_to_copy;
 
     l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
 }
@@ -493,6 +522,8 @@ static void avrcp_target_custom_command_data_init(avrcp_connection_t * connectio
     connection->pdu_id = pdu_id;
     connection->data = NULL;
     connection->data_offset = 0;
+    connection->avrcp_fragment_len = 0;
+    connection->avctp_fragment_offset = 0;
     connection->data_len = 0;
 }
 
@@ -506,6 +537,8 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
     connection->pdu_id = pdu_id;
     connection->data = connection->message_body;
     connection->data_offset = 0;
+    connection->avrcp_fragment_len = 0;
+    connection->avctp_fragment_offset = 0;
     connection->data_len = 0;
 }
 
@@ -521,6 +554,8 @@ static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * con
 
     connection->data = connection->message_body;
     connection->data_offset = 0;
+    connection->avrcp_fragment_len = 0;
+    connection->avctp_fragment_offset = 0;
     connection->data_len = 0;
 }
 
@@ -1508,10 +1543,11 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     connection->target_now_playing_info_response = false;
                     if (connection->target_continue_response){
                         connection->target_continue_response = false;
-                        if (connection->data_len == 0){
+                        if (connection->data_offset == connection->data_len){
                             avrcp_target_response_vendor_dependent_reject(connection, connection->pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
                             return;
                         }
+                        connection->avrcp_fragment_len = 0;
                     } else {
                         avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES);
                         connection->data_len = avrcp_now_playing_info_value_len_with_headers(connection);

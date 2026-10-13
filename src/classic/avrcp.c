@@ -397,11 +397,14 @@ static uint16_t avrcp_get_num_free_bytes_for_payload(uint16_t l2cap_mtu, avrcp_c
 
 
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size){
-    if (connection->data_offset == 0){
+    uint16_t data_len = connection->avrcp_fragment_len;
+    uint16_t data_offset = connection->avctp_fragment_offset;
+
+    if (data_offset == 0){
         uint16_t max_payload_size_for_single_packet = avrcp_get_num_free_bytes_for_payload(connection->l2cap_mtu,
                                                                  connection->command_opcode,
                                                                  AVCTP_SINGLE_PACKET);
-        if (max_payload_size_for_single_packet >= connection->data_len){
+        if (max_payload_size_for_single_packet >= data_len){
             *max_payload_size = max_payload_size_for_single_packet;
             return AVCTP_SINGLE_PACKET;
         } else {
@@ -414,7 +417,7 @@ avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint1
         *max_payload_size = avrcp_get_num_free_bytes_for_payload(connection->l2cap_mtu,
                                                                  connection->command_opcode,
                                                                  AVCTP_CONTINUE_PACKET);
-        if ((connection->data_len - connection->data_offset) > *max_payload_size){
+        if ((data_len - data_offset) > *max_payload_size){
             return AVCTP_CONTINUE_PACKET;
         } else {
             return AVCTP_END_PACKET;
@@ -422,32 +425,14 @@ avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint1
     }
 }
 
-avrcp_packet_type_t avrcp_get_packet_type(avrcp_connection_t * connection){
-    switch (connection->avctp_packet_type) {
-        case AVCTP_SINGLE_PACKET:
-        case AVCTP_START_PACKET:
-            break;
-        default:
-            return connection->avrcp_packet_type;
+void avrcp_prepare_single_packet_fragment(avrcp_connection_t * connection){
+    if (connection->avrcp_fragment_len != 0){
+        return;
     }
 
-    uint16_t payload_offset = avctp_get_num_bytes_for_header(connection->avctp_packet_type) +
-                              avrcp_get_num_bytes_for_header(connection->command_opcode, connection->avctp_packet_type);
-    uint16_t bytes_to_send = (connection->data_len - connection->data_offset) + payload_offset;
-
-    if (connection->data_offset == 0){
-        if (bytes_to_send <= connection->l2cap_mtu){
-            return AVRCP_SINGLE_PACKET;
-        } else {
-            return AVRCP_START_PACKET;
-        }
-    } else {
-        if (bytes_to_send > connection->l2cap_mtu){
-            return AVRCP_CONTINUE_PACKET;
-        } else {
-            return AVRCP_END_PACKET;
-        }
-    }
+    connection->avrcp_fragment_len = connection->data_len - connection->data_offset;
+    connection->avctp_fragment_offset = 0;
+    connection->avrcp_packet_type = AVRCP_SINGLE_PACKET;
 }
 
 avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
