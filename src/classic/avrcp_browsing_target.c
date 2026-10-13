@@ -280,10 +280,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             pos += 4;
                             uint32_t end_item = big_endian_read_32(packet, pos);
                             pos += 4;
-                            if (end_item < start_item){
-                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_RANGE_OUT_OF_BOUNDS);
-                                return;
-                            }
                             browsing_connection->scope = scope;
                             browsing_connection->start_item = start_item;
                             browsing_connection->end_item = end_item;
