@@ -1609,7 +1609,7 @@ void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_
 }
 
 static uint8_t avrcp_target_send_status_response(uint16_t avrcp_cid, avrcp_pdu_id_t pdu_id, avrcp_status_code_t status){
-    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(avrcp_cid, AVRCP_TARGET);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (connection == NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
