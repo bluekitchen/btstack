@@ -509,6 +509,14 @@ static void avctp_send_reject_cmd_wrong_pid(avrcp_connection_t * connection){
     l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
 }
 
+static void avrcp_target_response_data_init(avrcp_connection_t * connection, uint8_t * data){
+    connection->data = data;
+    connection->data_offset = 0;
+    connection->avrcp_fragment_len = 0;
+    connection->avctp_fragment_offset = 0;
+    connection->data_len = 0;
+}
+
 static void avrcp_target_custom_command_data_init(avrcp_connection_t * connection, 
     avrcp_command_opcode_t opcode, avrcp_command_type_t command_type, 
     avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
@@ -520,11 +528,7 @@ static void avrcp_target_custom_command_data_init(avrcp_connection_t * connectio
     connection->subunit_id = subunit_id;
     connection->company_id = company_id;
     connection->pdu_id = pdu_id;
-    connection->data = NULL;
-    connection->data_offset = 0;
-    connection->avrcp_fragment_len = 0;
-    connection->avctp_fragment_offset = 0;
-    connection->data_len = 0;
+    avrcp_target_response_data_init(connection, NULL);
 }
 
 static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id){
@@ -535,11 +539,7 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
    
     connection->command_type = command_type;
     connection->pdu_id = pdu_id;
-    connection->data = connection->message_body;
-    connection->data_offset = 0;
-    connection->avrcp_fragment_len = 0;
-    connection->avctp_fragment_offset = 0;
-    connection->data_len = 0;
+    avrcp_target_response_data_init(connection, connection->message_body);
 }
 
 static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_operation_id_t opid){
@@ -551,12 +551,7 @@ static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * con
     connection->company_id = 0;
     connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
     connection->operation_id = opid;
-
-    connection->data = connection->message_body;
-    connection->data_offset = 0;
-    connection->avrcp_fragment_len = 0;
-    connection->avctp_fragment_offset = 0;
-    connection->data_len = 0;
+    avrcp_target_response_data_init(connection, connection->message_body);
 }
 
 
