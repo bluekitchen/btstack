@@ -72,6 +72,15 @@ static bool avrcp_controller_is_transaction_id_valid(avrcp_connection_t * connec
     return delta < 15;
 }
 
+static void avrcp_controller_command_data_init(avrcp_connection_t * connection, uint8_t * data){
+    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
+    connection->data = data;
+    connection->data_offset = 0;
+    connection->avrcp_fragment_len = 0;
+    connection->avctp_fragment_offset = 0;
+    connection->data_len = 0;
+}
+
 static void avrcp_controller_custom_command_data_init(avrcp_connection_t * connection,
                                                       avrcp_command_opcode_t opcode, avrcp_command_type_t command_type,
                                                       avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
@@ -84,12 +93,7 @@ static void avrcp_controller_custom_command_data_init(avrcp_connection_t * conne
     connection->subunit_id = subunit_id;
     connection->company_id = company_id;
     connection->pdu_id = pdu_id;
-    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
-    connection->data = NULL;
-    connection->data_offset = 0;
-    connection->avrcp_fragment_len = 0;
-    connection->avctp_fragment_offset = 0;
-    connection->data_len = 0;
+    avrcp_controller_command_data_init(connection, NULL);
 }
 
 static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id, bool get_next_transaction_label){
@@ -103,11 +107,7 @@ static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection
     connection->subunit_id = AVRCP_SUBUNIT_ID;
     connection->company_id = BT_SIG_COMPANY_ID;
     connection->command_type = command_type;
-    connection->data = connection->message_body;
-    connection->data_offset = 0;
-    connection->avrcp_fragment_len = 0;
-    connection->avctp_fragment_offset = 0;
-    connection->data_len = 0;
+    avrcp_controller_command_data_init(connection, connection->message_body);
 }
 
 static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_operation_id_t opid){
@@ -119,13 +119,8 @@ static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t *
     
     connection->company_id = 0;
     connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
+    avrcp_controller_command_data_init(connection, connection->message_body);
     connection->operation_id = opid;
-
-    connection->data = connection->message_body;
-    connection->data_offset = 0;
-    connection->avrcp_fragment_len = 0;
-    connection->avctp_fragment_offset = 0;
-    connection->data_len = 0;
 }
 
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
