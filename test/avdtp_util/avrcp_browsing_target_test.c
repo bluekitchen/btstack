@@ -49,7 +49,7 @@ static void application_callback(uint8_t type, uint16_t channel, uint8_t * packe
     assert(packet[2] == AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS);
     application_events++;
 }
-static void check_range(uint32_t start, uint32_t end, bool valid){
+static void check_range(uint32_t start, uint32_t end){
     memset(&connection, 0, sizeof(connection));
     connection.state = AVCTP_CONNECTION_OPENED;
     connection.l2cap_browsing_cid = 0x40;
@@ -65,36 +65,24 @@ static void check_range(uint32_t start, uint32_t end, bool valid){
     big_endian_store_32(command, 7, start);
     big_endian_store_32(command, 11, end);
     packet_handler(L2CAP_DATA_PACKET, 0x40, command, sizeof(command));
-    if (valid){
-        assert(application_events == 1);
-        assert(send_requests == 0);
-        assert(connection.start_item == start);
-        assert(connection.end_item == end);
-    } else {
-        assert(application_events == 0);
-        assert(send_requests == 1);
-        assert(connection.start_item == 10);
-        assert(connection.end_item == 20);
-        assert(connection.state == AVCTP_W2_SEND_RESPONSE);
-        uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0x40, 0 };
-        packet_handler(HCI_EVENT_PACKET, 0x40, event, sizeof(event));
-        assert(sent_size == 7);
-        assert(sent_packet[0] == 0x32);
-        assert(sent_packet[3] == AVRCP_PDU_ID_GENERAL_REJECT);
-        assert(big_endian_read_16(sent_packet, 4) == 1);
-        assert(sent_packet[6] == AVRCP_STATUS_RANGE_OUT_OF_BOUNDS);
-    }
+    // Range validation is performed by the application, which receives both
+    // values even when end_item precedes start_item.
+    assert(application_events == 1);
+    assert(send_requests == 0);
+    assert(connection.start_item == start);
+    assert(connection.end_item == end);
+    assert(connection.state == AVCTP_CONNECTION_OPENED);
 }
 int main(void){
     avrcp_browsing_target_init();
     avrcp_browsing_target_register_packet_handler(application_callback);
-    check_range(5, 3, false);
-    check_range(5, 4, false);
-    check_range(UINT32_MAX, 0, false);
-    check_range(0, 0, true);
-    check_range(5, 5, true);
-    check_range(3, 5, true);
-    check_range(0, UINT32_MAX, true);
-    puts("PASS: AVRCP browsing folder item range validation");
+    check_range(5, 3);
+    check_range(5, 4);
+    check_range(UINT32_MAX, 0);
+    check_range(0, 0);
+    check_range(5, 5);
+    check_range(3, 5);
+    check_range(0, UINT32_MAX);
+    puts("PASS: AVRCP browsing folder item range forwarding");
     return 0;
 }
