@@ -249,8 +249,13 @@ static btstack_context_callback_registration_t l2cap_trigger_run_registration;
 static btstack_linked_list_t l2cap_channels;
 #ifdef L2CAP_USES_CHANNELS
 static cid_allocator_t l2cap_classic_cid_allocator = {
-    .min  = 0x0040,
+    .min  = 0x0080,
     .max  = 0xfffe,
+    .next = 0x0080,
+};
+static cid_allocator_t l2cap_le_cid_allocator = {
+    .min  = 0x0040,
+    .max  = 0x007f,
     .next = 0x0040,
 };
 #endif
@@ -1023,6 +1028,7 @@ static uint8_t l2cap_next_sig_id(void){
 void l2cap_init(void){
 #ifdef L2CAP_USES_CHANNELS
     l2cap_classic_cid_allocator.next = l2cap_classic_cid_allocator.min;
+    l2cap_le_cid_allocator.next = l2cap_le_cid_allocator.min;
 #endif
     l2cap_sig_seq_nr  = 0xff;
 
@@ -2625,7 +2631,8 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level){
 
     // allocate channel id
-    uint16_t local_cid = l2cap_next_local_cid(&l2cap_classic_cid_allocator);
+    cid_allocator_t * cid_allocator = address_type == BD_ADDR_TYPE_ACL ? &l2cap_classic_cid_allocator : &l2cap_le_cid_allocator;
+    uint16_t local_cid = l2cap_next_local_cid(cid_allocator);
     if (local_cid == 0u) {
         return NULL;
     }

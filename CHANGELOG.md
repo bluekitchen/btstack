@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI ISO: reliably release CIG, CIS, BIG, and BIS resources after failed setup, cancellation, or stale completion events
 - L2CAP: validate ERTM, CBM, and ECBM configuration and packet sizes; fix ERTM reassembly and out-of-order frame handling
 - L2CAP: reject MTU smaller than 48 bytes for basic channels
+- L2CAP: limit LE channel identifiers to 0x0040-0x007f
 - RFCOMM: only deliver RFCOMM data with size > 0
 - RFCOMM: validate incoming frames and send parameters, and release channels that fail setup
 - SDP: validate client and server data-element parsing, continuation state, and query parameters
