@@ -192,7 +192,13 @@ static bool l2cap_credit_based_handle_credit_indication(hci_con_handle_t handle,
 static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const uint8_t * packet, uint16_t size);
 #endif
 #ifdef L2CAP_USES_CHANNELS
-static uint16_t l2cap_next_local_cid(void);
+typedef struct {
+    uint16_t min;
+    uint16_t max;
+    uint16_t next;
+} cid_allocator_t;
+
+static uint16_t l2cap_next_local_cid(cid_allocator_t * allocator);
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
 static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t event_code);
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
@@ -242,8 +248,11 @@ static btstack_context_callback_registration_t l2cap_trigger_run_registration;
 // single list of channels for connection-oriented channels (basic, ertm, cbm, ecbf) Classic Connectionless, ATT, and SM
 static btstack_linked_list_t l2cap_channels;
 #ifdef L2CAP_USES_CHANNELS
-// next channel id for new connections
-static uint16_t  l2cap_local_source_cid;
+static cid_allocator_t l2cap_classic_cid_allocator = {
+    .min  = 0x0040,
+    .max  = 0xfffe,
+    .next = 0x0040,
+};
 #endif
 // next signaling sequence number
 static uint8_t   l2cap_sig_seq_nr;
@@ -983,15 +992,18 @@ static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel)
 #endif
 
 #ifdef L2CAP_USES_CHANNELS
-static uint16_t l2cap_next_local_cid(void){
+static uint16_t l2cap_next_local_cid(cid_allocator_t * allocator){
     do {
-        if (l2cap_local_source_cid == 0xfffeu) {
-            l2cap_local_source_cid = 0x40;
+        uint16_t local_cid = allocator->next;
+        if (allocator->next == allocator->max) {
+            allocator->next = allocator->min;
         } else {
-            l2cap_local_source_cid++;
+            allocator->next++;
         }
-    } while (l2cap_get_channel_for_local_cid(l2cap_local_source_cid) != NULL);
-    return l2cap_local_source_cid;
+        if (l2cap_get_channel_for_local_cid(local_cid) == NULL) {
+            return local_cid;
+        }
+    } while (true);
 }
 #endif
 
@@ -1008,7 +1020,7 @@ static uint8_t l2cap_next_sig_id(void){
 
 void l2cap_init(void){
 #ifdef L2CAP_USES_CHANNELS
-    l2cap_local_source_cid  = 0x40;
+    l2cap_classic_cid_allocator.next = l2cap_classic_cid_allocator.min;
 #endif
     l2cap_sig_seq_nr  = 0xff;
 
@@ -2626,7 +2638,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->required_security_level = security_level;
 
     // 
-    channel->local_cid = l2cap_next_local_cid();
+    channel->local_cid = l2cap_next_local_cid(&l2cap_classic_cid_allocator);
     channel->con_handle = HCI_CON_HANDLE_INVALID;
 
     // set initial state
