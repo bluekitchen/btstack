@@ -205,6 +205,18 @@ TEST(OBEX_MESSAGE_BUILDER, NameMustFitObexLengthField){
     CHECK_EQUAL(3, obex_message_builder_get_message_length(actual_message));
 }
 
+TEST(OBEX_MESSAGE_BUILDER, EmptyEndOfBody){
+    uint8_t expected_message[] = { OBEX_RESP_SUCCESS, 0, 6, OBEX_HEADER_END_OF_BODY, 0, 3 };
+    expected_message[2] = 3;
+
+    uint8_t actual_status = obex_message_builder_response_create_general(actual_message, actual_message_len, OBEX_RESP_SUCCESS);
+    validate_success(expected_message, 3, actual_status);
+
+    actual_status = obex_message_builder_body_add_static(actual_message, actual_message_len, NULL, 0);
+    expected_message[2] = sizeof(expected_message);
+    validate_success(expected_message, sizeof(expected_message), actual_status);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
