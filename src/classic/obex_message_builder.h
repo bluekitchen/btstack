@@ -212,6 +212,26 @@ uint8_t obex_message_builder_header_add_word(uint8_t * buffer, uint16_t buffer_l
 uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length);
 
 /**
+ * @brief Add Body header
+ * @param buffer
+ * @param buffer_len
+ * @param data may be NULL if length is zero
+ * @param length
+ * @return status
+ */
+uint8_t obex_message_builder_header_add_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length);
+
+/**
+ * @brief Add End-of-Body header
+ * @param buffer
+ * @param buffer_len
+ * @param data may be NULL if length is zero
+ * @param length
+ * @return status
+ */
+uint8_t obex_message_builder_header_add_end_of_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length);
+
+/**
  * @brief Add (partial) header with variable size
  * @param buffer
  * @param buffer_len

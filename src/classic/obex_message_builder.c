@@ -130,6 +130,14 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
     return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);        
 }
 
+uint8_t obex_message_builder_header_add_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length){
+    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_BODY, data, length);
+}
+
+uint8_t obex_message_builder_header_add_end_of_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length){
+    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
+}
+
 uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length, uint32_t * ret_length){
     uint8_t header[3];
     header[0] = header_type;
@@ -266,7 +274,7 @@ uint8_t obex_message_builder_header_add_who(uint8_t * buffer, uint16_t buffer_le
 }
 
 uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length){
-    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
+    return obex_message_builder_header_add_end_of_body(buffer, buffer_len, data, (uint16_t) length);
 }
 
 uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length, uint32_t *ret_length){

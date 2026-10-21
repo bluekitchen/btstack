@@ -217,6 +217,23 @@ TEST(OBEX_MESSAGE_BUILDER, EmptyEndOfBody){
     validate_success(expected_message, sizeof(expected_message), actual_status);
 }
 
+TEST(OBEX_MESSAGE_BUILDER, BodyAndEndOfBodyHeaders){
+    const uint8_t body[] = { 0x12, 0x34 };
+    uint8_t expected_message[] = { OBEX_RESP_SUCCESS, 0, 3, OBEX_HEADER_BODY, 0, 5, 0x12, 0x34,
+                                   OBEX_HEADER_END_OF_BODY, 0, 5, 0x12, 0x34 };
+
+    uint8_t actual_status = obex_message_builder_response_create_general(actual_message, actual_message_len, OBEX_RESP_SUCCESS);
+    validate_success(expected_message, 3, actual_status);
+
+    actual_status = obex_message_builder_header_add_body(actual_message, actual_message_len, body, sizeof(body));
+    expected_message[2] = 8;
+    validate_success(expected_message, 8, actual_status);
+
+    actual_status = obex_message_builder_header_add_end_of_body(actual_message, actual_message_len, body, sizeof(body));
+    expected_message[2] = sizeof(expected_message);
+    validate_success(expected_message, sizeof(expected_message), actual_status);
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
