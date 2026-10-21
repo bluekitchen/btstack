@@ -1762,6 +1762,7 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
             hfp_ag_send_call_waiting_notification(hfp_connection->rfcomm_cid);
             indicator_index = get_ag_indicator_index_for_name("callsetup");
             hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+            hfp_ag_run_for_context(hfp_connection);
             break;
         default:
             break;
