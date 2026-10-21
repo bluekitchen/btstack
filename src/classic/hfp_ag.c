@@ -2630,7 +2630,8 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
             case HFP_CMD_HF_INDICATOR_STATUS:
                 hfp_connection->command = HFP_CMD_NONE;
                 
-                if (hfp_connection->parser_indicator_index < hfp_ag_hf_indicators_nr){
+                if ((hfp_connection->parser_indicator_index >= 0) &&
+                    (hfp_connection->parser_indicator_index < hfp_ag_hf_indicators_nr)){
                     indicator = &hfp_ag_hf_indicators[hfp_connection->parser_indicator_index];
                     switch (indicator->uuid){
                         case HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY: 

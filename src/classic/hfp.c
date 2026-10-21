@@ -1641,6 +1641,11 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             }
             break;
 
+        case HFP_CMD_HF_INDICATOR_STATUS:
+            // +BIEV uses a one-based indicator index; store the zero-based array index.
+            hfp_connection->parser_indicator_index = btstack_atoi((char *)&hfp_connection->line_buffer[0]) - 1;
+            break;
+
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             switch(hfp_connection->parser_item_index){
                 case 0:

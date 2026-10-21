@@ -261,6 +261,14 @@ TEST(HFPParser, HFP_AG_RETRIEVE_HF_INDICATORS_STATE){
     CHECK_EQUAL(HFP_CMD_RETRIEVE_HF_INDICATORS_STATE, context.command);
 }
 
+TEST(HFPParser, HFP_AG_HF_INDICATOR_STATUS){
+    snprintf(packet, sizeof(packet), "\r\nAT+BIEV=1,1\r\n");
+    parse_ag(packet);
+    CHECK_EQUAL(HFP_CMD_HF_INDICATOR_STATUS, context.command);
+    CHECK_EQUAL(0, context.parser_indicator_index);
+    CHECK_EQUAL(1, context.parser_indicator_value);
+}
+
 TEST(HFPParser, HFP_HF_PARSE_HF_INDICATORS_SUPPORTED_BY_AG){
     snprintf(packet, sizeof(packet), "\r\n%s:(1,3)\r\n", HFP_HF_INDICATOR);
     parse_hf(packet);
