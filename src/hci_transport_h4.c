@@ -229,6 +229,75 @@ static void hci_transport_h4_packet_complete(void){
     hci_transport_h4_packet_handler(hci_packet[0], &hci_packet[1], packet_len);
 }
 
+static void hci_transport_h4_handle_packet_header(void){
+    bool header_valid = true;
+    switch (h4_state) {
+        case H4_W4_CMD_HEADER:
+            bytes_to_read = hci_packet[3];
+            // check CMD length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_CMD_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid Cmd len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_CMD_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                header_valid = false;
+                break;
+            }
+            break;
+
+        case H4_W4_EVENT_HEADER:
+            bytes_to_read = hci_packet[2];
+            // check Event length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid Event len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                header_valid = false;
+                break;
+            }
+            break;
+
+        case H4_W4_ACL_HEADER:
+            bytes_to_read = little_endian_read_16(hci_packet, 3);
+            // check ACL length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid ACL payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                header_valid = false;
+                break;
+            }
+            break;
+
+        case H4_W4_SCO_HEADER:
+            bytes_to_read = hci_packet[3];
+            // check SCO length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid SCO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                header_valid = false;
+                break;
+            }
+            break;
+
+        case H4_W4_ISO_HEADER:
+            bytes_to_read = little_endian_read_16(hci_packet, 3) & 0x3fff;
+            // check ISO length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE)){
+                log_error("hci_transport_h4: invalid ISO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ISO_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                header_valid = false;
+                break;
+            }
+            break;
+
+        default:
+            btstack_assert(false);
+            header_valid = false;
+            break;
+    }
+
+    if (header_valid){
+        h4_state = H4_W4_PAYLOAD;
+    }
+}
+
 static void hci_transport_h4_block_read(void){
     hci_transport_h4_read_active = false;
 
@@ -274,60 +343,13 @@ static void hci_transport_h4_block_read(void){
                     break;
             }
             break;
-            
-        case H4_W4_CMD_HEADER:
-            bytes_to_read = hci_packet[3];
-            // check CMD length
-            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_CMD_HEADER_SIZE)){
-                log_error("hci_transport_h4: invalid Cmd len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_CMD_HEADER_SIZE);
-                hci_transport_h4_reset_statemachine();
-                break;
-            }
-            h4_state = H4_W4_PAYLOAD;
-            break;
-            
-        case H4_W4_EVENT_HEADER:
-            bytes_to_read = hci_packet[2];
-            // check Event length
-            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE)){
-                log_error("hci_transport_h4: invalid Event len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE);
-                hci_transport_h4_reset_statemachine();
-                break;
-            }
-            h4_state = H4_W4_PAYLOAD;
-            break;
-            
-        case H4_W4_ACL_HEADER:
-            bytes_to_read = little_endian_read_16( hci_packet, 3);
-            // check ACL length
-            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE)){
-                log_error("hci_transport_h4: invalid ACL payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
-                hci_transport_h4_reset_statemachine();
-                break;
-            }
-            h4_state = H4_W4_PAYLOAD;
-            break;
-            
-        case H4_W4_SCO_HEADER:
-            bytes_to_read = hci_packet[3];
-            // check SCO length
-            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE)){
-                log_error("hci_transport_h4: invalid SCO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE);
-                hci_transport_h4_reset_statemachine();
-                break;
-            }
-            h4_state = H4_W4_PAYLOAD;
-            break;
 
+        case H4_W4_CMD_HEADER:
+        case H4_W4_EVENT_HEADER:
+        case H4_W4_ACL_HEADER:
+        case H4_W4_SCO_HEADER:
         case H4_W4_ISO_HEADER:
-            bytes_to_read = little_endian_read_16( hci_packet, 3) & 0x3fff;
-            // check ISO length
-            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE)){
-                log_error("hci_transport_h4: invalid ISO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ISO_HEADER_SIZE);
-                hci_transport_h4_reset_statemachine();
-                break;
-            }
-            h4_state = H4_W4_PAYLOAD;
+            hci_transport_h4_handle_packet_header();
             break;
 
         case H4_W4_PAYLOAD:
@@ -339,7 +361,7 @@ static void hci_transport_h4_block_read(void){
             break;
         default:
             btstack_assert(false);
-            break; 
+            break;
     }
 
 #ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
