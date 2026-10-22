@@ -1896,8 +1896,8 @@ const char * TC_AG_ECS_BV_03_I[] = {
     "+CIEV:3,1" ,
     "USER:w" ,
     "USER:e" ,
-    "+CIEV:3,0" ,
-    "+CIEV:7,1"
+    "+CIEV:7,1" ,
+    "+CIEV:3,0"
 };
 
 hfp_test_item_t pts_ag_ecs_tests[] = {
