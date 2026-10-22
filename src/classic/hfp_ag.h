@@ -212,6 +212,11 @@ uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle);
 void hfp_ag_answer_incoming_call(void);
 
 /**
+ * @brief Put the active call on hold, if it exists.
+ */
+void hfp_ag_hold_active_call(void);
+
+/**
  * @brief Join held call with active call.
  */
 void hfp_ag_join_held_call(void);

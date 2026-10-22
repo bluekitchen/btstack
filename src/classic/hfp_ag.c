@@ -1441,6 +1441,17 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
+static void hfp_ag_set_waiting_call_active(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+        if (hfp_connection->call_state != HFP_CALL_W4_CHLD) continue;
+        hfp_connection->call_state = HFP_CALL_ACTIVE;
+    }
+}
+
 static void hfp_ag_trigger_ring_and_clip(void) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
@@ -1858,10 +1869,11 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
                             log_info("AG: current call is placed on hold, incoming call gets active");
                             hfp_gsm_handler(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG, 0, 0, NULL);
+                            hfp_ag_set_waiting_call_active();
                             hfp_ag_set_callsetup_indicator();
                             hfp_ag_set_callheld_indicator();
-                            hfp_ag_transfer_callsetup_state();
                             hfp_ag_transfer_callheld_state();
+                            hfp_ag_transfer_callsetup_state();
                             break;
                         default:
                             break;
@@ -1984,6 +1996,14 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             // from terminate by ag
             hfp_ag_set_call_indicator();
             hfp_ag_trigger_terminate_call();
+            break;
+
+        case HFP_AG_ACTIVE_CALL_HELD_BY_AG:
+            if (!hfp_gsm_has_active_call()) break;
+            hfp_gsm_handler(HFP_AG_ACTIVE_CALL_HELD_BY_AG, 0, 0, NULL);
+            hfp_ag_set_callheld_indicator();
+            hfp_ag_transfer_callheld_state();
+            log_info("AG: active call placed on hold");
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_HF:
@@ -3110,6 +3130,10 @@ void hfp_ag_call_dropped(void){
 // call from AG UI
 void hfp_ag_answer_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG, NULL);
+}
+
+void hfp_ag_hold_active_call(void){
+    hfp_ag_call_sm(HFP_AG_ACTIVE_CALL_HELD_BY_AG, NULL);
 }
 
 void hfp_ag_join_held_call(void){

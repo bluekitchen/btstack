@@ -367,6 +367,10 @@ hfp_callsetup_status_t hfp_gsm_callsetup_status(void){
     return hfp_gsm_model_callsetup_status;
 }
 
+bool hfp_gsm_has_active_call(void){
+    return hfp_gsm_model_get_number_active_calls() != 0;
+}
+
 static int hfp_gsm_response_held_active(void){
     return get_response_held_call_index() != -1 ;
 }
@@ -519,6 +523,14 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
             set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                 delete_call(i);
+            }
+            break;
+
+        case HFP_AG_ACTIVE_CALL_HELD_BY_AG:
+            for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
+                if (is_enhanced_call_status_active(i)){
+                    set_enhanced_call_status_held(i);
+                }
             }
             break;
         
