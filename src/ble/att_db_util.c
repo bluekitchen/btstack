@@ -132,14 +132,14 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
  * asserts that the requested amount of bytes can be stored in the att_db
  * @return TRUE if space is available
  */
-static int att_db_util_assert_space(uint32_t size){
+static bool att_db_util_assert_space(uint32_t size){
 	uint32_t required_size = (uint32_t) att_db_size + size + 2u;
 	if (required_size > UINT16_MAX){
 		log_error("att_db: maximum database size exceeded");
-		return 0;
+		return false;
 	}
 	if (required_size <= att_db_max_size){
-		return 1;
+		return true;
 	}
 #ifdef HAVE_MALLOC
     uint32_t new_size = att_db_max_size;
@@ -152,15 +152,15 @@ static int att_db_util_assert_space(uint32_t size){
 	uint8_t * new_db = (uint8_t*) realloc(att_db, (size_t) new_size);
 	if (!new_db) {
 		log_error("att_db: realloc failed");
-		return 0;
+		return false;
 	}
 	att_db = new_db;
 	att_db_max_size = (uint16_t) new_size;
     att_set_db(att_db); // Update att_db with the new db
-	return 1;
+	return true;
 #else
 	log_error("att_db: out of memory");
-	return 0;
+	return false;
 #endif
 }
 
@@ -190,12 +190,16 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 	    att_db_hash_len += 4u + data_len;
 	} else if (att_db_util_hash_include_without_value(uuid16)){
         att_db_hash_len += 4u;
+	} else {
+		// UUID is not included in the database hash.
 	}
 }
 
 static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
 	uint32_t size = 2u + 2u + 2u + 16u + data_len;
-	if (!att_db_util_assert_space(size)) return;
+	if (!att_db_util_assert_space(size)){
+		return;
+	}
 	uint16_t flags_to_store = flags | (uint16_t)ATT_PROPERTY_UUID128;
 	little_endian_store_16(att_db, att_db_size, (uint16_t) size);
 	att_db_size += 2u;
