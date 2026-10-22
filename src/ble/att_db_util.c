@@ -138,7 +138,9 @@ static int att_db_util_assert_space(uint32_t size){
 		log_error("att_db: maximum database size exceeded");
 		return 0;
 	}
-	if (required_size <= att_db_max_size) return 1;
+	if (required_size <= att_db_max_size){
+		return 1;
+	}
 #ifdef HAVE_MALLOC
     uint32_t new_size = att_db_max_size;
 	while (new_size < required_size){
@@ -168,7 +170,9 @@ static int att_db_util_assert_space(uint32_t size){
 
 static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, uint8_t * data, uint16_t data_len){
 	uint32_t size = 2u + 2u + 2u + 2u + data_len;
-	if (!att_db_util_assert_space(size)) return;
+	if (!att_db_util_assert_space(size)){
+		return;
+	}
 	little_endian_store_16(att_db, att_db_size, (uint16_t) size);
 	att_db_size += 2u;
 	little_endian_store_16(att_db, att_db_size, flags);
