@@ -22,7 +22,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - btstack_util: add `btstack_atoi_n` for fixed-length numeric strings
 - A2DP Sink: add `a2dp_sink_delay_report`
 - A2DP Source: add `a2dp_source_stop_stream`
+- GOEP Server: add 'goep_server_header_add_body' and 'goep_server_header_add_body_or_end_of_body'
 - OTS: add Object Transfer Service client and server implementations
+- GATT Service Client: add registration with multiple UUID16 and CCCD configurations
 - Zephyr: add support for the Ezurio Vela IF310 DK and generated configurations for Nordic development kits
 - esp32: support standard input via USB/CDC when configured as a secondary console
 - esp32: support micro-ecc from tinycrypt
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI ISO: reliably release CIG, CIS, BIG, and BIS resources after failed setup, cancellation, or stale completion events
 - L2CAP: validate ERTM, CBM, and ECBM configuration and packet sizes; fix ERTM reassembly and out-of-order frame handling
 - L2CAP: reject MTU smaller than 48 bytes for basic channels
+- L2CAP: limit LE channel identifiers to 0x0040-0x007f
 - RFCOMM: only deliver RFCOMM data with size > 0
 - RFCOMM: validate incoming frames and send parameters, and release channels that fail setup
 - SDP: validate client and server data-element parsing, continuation state, and query parameters
@@ -41,10 +44,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: fix BR/EDR->LE CTKD overwrite of BR/EDR link key
 - SM: fix BR/EDR->LE CTKD check for existing LTK
 - A2DP: ignore unexpected responses, keep state for Delay Report response
+- AVDTP Sink: send Delay Report only if configured 
 - AVRCP: improve browsing, cover-art, media-item, and controller response parsing; avoid buffer overruns for user-provided data
+- AVRCP Target: fix send status response
 - BNEP: validate incoming service frames and safely handle channel removal from callbacks and timeouts
+- BNEP: avoid hang on disconnect with outgoing packets ready for FreeRTOS with lwip
 - ATT Server: bound outgoing EATT messages by the local buffer size and validate EATT buffer configuration
 - GATT Client: validate EATT, MTU, callback, and application-buffer parameters; reject malformed ATT responses
+- GATT Server: avoid blocking outgoing buffer in att_server_indicate when confirmation pending
+- GATT Service Client: discover CCCD handles consistently and honor requested CCCD disable writes
 - GATT Service Client: handle zero or multiple CCCDs for a given Characteristic UUID
 - GATT Services: fix Cycling Power and Cycling Speed and Cadence supported-sensor-location responses; prevent Heart Rate notification buffer overruns
 - HID Host/Device: safely handle connection removal during callbacks and reject malformed or empty reports
@@ -53,13 +61,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - PBAP Client: abort phonebook parsing upon yxml error
 - Mesh: validate provisioning, transport, and access PDUs, including segmented-message completion before delivery
 - Mesh: store length of individual segments in buffer for robust reassembly
-- Mesh: validate size of encyrpted payload data
+- Mesh: validate size of encrypted payload data
+- Mesh: fix MESH_SUBEVENT_PROXY_* events
+- Mesh: start advertising after loading network keys
+- libusb: support multiple SCO connections
 - esp32 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - esp32: fix UART DMA reception and ESP-IDF v6 builds
 - MSP432P401LP-CC256x port: ise `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas EK-RA6M4A-DA14531 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - Renesas TB-S1JA-CC256x port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
 - STM32 L073RZ Nucleo EM9304 port: use `HAVE_HAL_UART_BUFFERS` in UART HAL
+- Web-H4: fix TLV
 
 ### Changed
 - HCI: synchronous transports now defer packet-sent notifications to match asynchronous transport behavior
@@ -70,9 +82,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Zephyr: rework configuration and controller setup; select LE/Classic through Kconfig and detect Broadcom/Cypress/Infineon controllers
 - LE Audio: update sink resampling and support optional Bluetooth-time audio HAL synchronization
 - Mesh: dispatch bearer events to every registered callback
+- libusb: skip device reset and redundant SET_CONFIGURATION
 - esp32: use individual drivers for esp-idf 5.3 and later
 - esp32: select large app partition for esp32-s31 binaries
-- Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread
+- Embedded UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
 - FreeRTOS UART block adapter: support `HAVE_HAL_UART_BUFFERS` completion handling via `btstack_run_loop_execute_on_main_thread`
 
 
@@ -110,6 +123,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP Target: fix response for GetElementAttributes with attribute Song Length
 - Classic profiles: improve packet parser in AVRCP, BNEP, HID Host, HSP, OBEX, RFCOMM, and SDP Server
 - GATT Service Client: reject disconnect/unregister while connection setup or active connections are in progress
+- GATT Service Client: fully initialize connection struct on connect
 - Mesh and LE Audio: improve parsers
 - btstack_crypto: fix DHKey calculation for newer mbedTLS that require f_rnd for ECC multiplications
 - a2dp_sink_demo: avoid buffer overrun for HAVE_BTSTACK_AUDIO_EFFECTIVE_SAMPLERATE

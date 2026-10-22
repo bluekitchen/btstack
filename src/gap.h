@@ -777,6 +777,7 @@ uint8_t gap_extended_advertising_set_random_address(uint8_t advertising_handle, 
 
 /**
  * @brief Set Advertising Data for a advertisement set
+ * @note Replaces pending data and restarts its upload from the beginning.
  * @param advertising_handle
  * @param advertising_data_length
  * @param advertising_data
@@ -786,6 +787,7 @@ uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16
 
 /**
  * @brief Set Scan Response Data for a advertisement set
+ * @note Replaces pending data and restarts its upload from the beginning.
  * @param advertising_handle
  * @param scan_response_data_length
  * @param scan_response_data
@@ -795,6 +797,7 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
 
 /**
  * @brief Set data for periodic advertisement set
+ * @note Replaces pending data and restarts its upload from the beginning.
  * @param advertising_handle
  * @param periodic_data_length
  * @param periodic_data

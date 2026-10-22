@@ -97,6 +97,10 @@ extern "C" {
 #define AVDTP_ERROR_CODE_BAD_MULTIPLEXING_FORMAT    0x28
 #define AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION  0x29
 
+#ifdef ENABLE_TESTING_SUPPORT
+#define AVDTP_ERROR_CODE_PTS_TEST_REJECT            0xFF
+#endif
+
 // ACP to INT, Procedure Error Codes
 #define AVDTP_ERROR_CODE_BAD_STATE                  0x31
 
@@ -139,7 +143,7 @@ typedef enum {
     CODEC_SPECIFIC_ERROR_CODE_INVALID_CODEC_PARAMETER            = 0xE2,
     CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CODEC_PARAMETER      = 0xE3,
     CODEC_SPECIFIC_ERROR_CODE_INVALID_DRC                        = 0xE4,
-    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_DRC                  = 0xE5
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_DRC                  = 0xE5,
 } codec_specific_error_code_t;
 
 // Signal Identifier fields

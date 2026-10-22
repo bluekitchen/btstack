@@ -24,6 +24,7 @@
 #include "mock_btstack_tlv.h"
 
 #include "bluetooth_gatt.h"
+#include "../../src/bluetooth.h"
 
 static uint8_t battery_level = 100;
 static const uint8_t uuid128_with_bluetooth_base[] = { 0x00, 0x00, 0xBB, 0xBB, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
@@ -200,7 +201,7 @@ TEST(ATT_SERVER, att_server_indicate){
 
     // already in progress
     status = att_server_indicate(att_con_handle, value_handle, &value[0], 0);
-    CHECK_EQUAL(ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS, status);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
 }
 
 TEST(ATT_SERVER, att_server_notify){

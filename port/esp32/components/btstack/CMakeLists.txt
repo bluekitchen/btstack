@@ -104,7 +104,12 @@ endif()
 
 set(priv_include_dirs)
 
-if("${IDF_VERSION_MAJOR}" VERSION_GREATER_EQUAL "5" AND CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT)
+# TinyCrypt/uECC was moved to components/bt/common in ESP-IDF 5.4.2.
+# Older ESP-IDF releases use BTstack's bundled micro-ecc implementation.
+if(CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT AND
+   (IDF_VERSION_MAJOR GREATER 5 OR
+    (IDF_VERSION_MAJOR EQUAL 5 AND IDF_VERSION_MINOR GREATER 4) OR
+    (IDF_VERSION_MAJOR EQUAL 5 AND IDF_VERSION_MINOR EQUAL 4 AND IDF_VERSION_PATCH GREATER_EQUAL 2)))
     list(APPEND priv_include_dirs
         ${IDF_PATH}/components/bt/common/tinycrypt/include
     )

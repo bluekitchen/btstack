@@ -73,7 +73,9 @@ typedef enum {
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
-    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_L2CAP_CBM_CHANNEL_OPENED
+    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_L2CAP_CBM_CHANNEL_OPENED,
+    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONTROL_POINT_RESPONSE,
+    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OBJECT_TRANSFER
 } object_transfer_service_client_state_t;
 
 typedef struct {
@@ -90,6 +92,7 @@ typedef struct {
     btstack_packet_handler_t packet_handler;
 
     object_transfer_service_client_state_t state;
+    uint8_t pending_control_point_opcode;
 
     otp_le_cbm_connection_t le_cbm_connection;
     bool le_cbm_channel_opened;

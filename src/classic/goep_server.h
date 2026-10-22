@@ -176,6 +176,15 @@ uint8_t goep_server_response_create_general(uint16_t goep_cid);
 uint8_t goep_server_header_add_who(uint16_t goep_cid, const uint8_t * who);
 
 /**
+ * @brief Add body header to current response
+ * @param goep_cid
+ * @param body
+ * @param length
+ * @return status
+ */
+uint8_t goep_server_header_add_body(uint16_t goep_cid, const uint8_t * body, uint16_t length);
+
+/**
  * @brief Add end_of_body header to current response
  * @param goep_cid
  * @param end_of_body
@@ -183,6 +192,19 @@ uint8_t goep_server_header_add_who(uint16_t goep_cid, const uint8_t * who);
  * @return status
  */
 uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * end_of_body, uint16_t length);
+
+/**
+ * @brief Add Body or End-of-Body header to current response
+ * @details Adds a Body header for an OBEX Continue response and an End-of-Body
+ * header for a final response. A zero-length End-of-Body header terminates an
+ * empty object.
+ * @param goep_cid
+ * @param response_code OBEX response code
+ * @param body may be NULL if length is zero
+ * @param length
+ * @return status
+ */
+uint8_t goep_server_header_add_body_or_end_of_body(uint16_t goep_cid, uint8_t response_code, const uint8_t * body, uint16_t length);
 
 /**
  * @brief Add SRM ENABLE header to current response

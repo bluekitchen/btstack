@@ -2,6 +2,14 @@
 #include "ble/gatt-service/cycling_speed_and_cadence_service_server.c"
 
 int main(void){
+    const uint32_t initial_wheel_revolutions[] = {0, 0x7fffffffu, 0x80000000u, UINT32_MAX};
+    const uint32_t expected_wheel_revolutions[] = {0, 0, 0, 0x7fffffffu};
+    for (unsigned i = 0; i < sizeof(initial_wheel_revolutions) / sizeof(initial_wheel_revolutions[0]); i++){
+        cycling_speed_and_cadence.cumulative_wheel_revolutions = initial_wheel_revolutions[i];
+        cycling_speed_and_cadence_service_calculate_cumulative_wheel_revolutions(INT32_MIN);
+        assert(cycling_speed_and_cadence.cumulative_wheel_revolutions == expected_wheel_revolutions[i]);
+    }
+
     cycling_speed_and_cadence.measurement_client_configuration_descriptor_handle = 1;
     cycling_speed_and_cadence.measurement_client_configuration_descriptor_notify = 4660;
     cycling_speed_and_cadence.control_point_client_configuration_descriptor_handle = 2;

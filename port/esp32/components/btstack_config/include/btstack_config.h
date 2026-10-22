@@ -75,9 +75,9 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
 
-// ESP-IDF 5+ provides TinyCrypt/uECC via the bt component. Use it to avoid
+// ESP-IDF 5.4.2+ provides TinyCrypt/uECC via the bt component. Use it to avoid
 // duplicate uECC symbols and keep the no-heap ECC implementation.
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)) && defined(CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT)
+#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 2)) && defined(CONFIG_BT_SMP_CRYPTO_STACK_TINYCRYPT)
 #define HAVE_ESP_IDF_TINYCRYPT_ECC_P256
 #else
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS

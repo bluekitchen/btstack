@@ -241,9 +241,15 @@ static inline char char_for_low_nibble(int value){
 
 
 int nibble_for_char(char c){
-    if ((c >= '0') && (c <= '9')) return c - '0';
-    if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
-    if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+    if ((c >= '0') && (c <= '9')) {
+        return c - '0';
+    }
+    if ((c >= 'a') && (c <= 'f')) {
+        return c - 'a' + 10;
+    }
+    if ((c >= 'A') && (c <= 'F')) {
+        return c - 'A' + 10;
+    }
     return -1;
 }
 
@@ -407,9 +413,13 @@ void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const 
 
 static int scan_hex_byte(const char * byte_string){
     int upper_nibble = nibble_for_char(byte_string[0]);
-    if (upper_nibble < 0) return -1;
+    if (upper_nibble < 0) {
+        return -1;
+    }
     int lower_nibble = nibble_for_char(byte_string[1]);
-    if (lower_nibble < 0) return -1;
+    if (lower_nibble < 0) {
+        return -1;
+    }
     return (upper_nibble << 4) | lower_nibble;
 }
 
@@ -461,15 +471,33 @@ uint32_t btstack_atoi_n(const char * str, size_t len){
 }
 
 int string_len_for_uint32(uint32_t i){
-    if (i <         10) return 1;
-    if (i <        100) return 2;
-    if (i <       1000) return 3;
-    if (i <      10000) return 4;
-    if (i <     100000) return 5;
-    if (i <    1000000) return 6;      
-    if (i <   10000000) return 7;
-    if (i <  100000000) return 8;
-    if (i < 1000000000) return 9;
+    if (i <         10) {
+        return 1;
+    }
+    if (i <        100) {
+        return 2;
+    }
+    if (i <       1000) {
+        return 3;
+    }
+    if (i <      10000) {
+        return 4;
+    }
+    if (i <     100000) {
+        return 5;
+    }
+    if (i <    1000000) {
+        return 6;
+    }
+    if (i <   10000000) {
+        return 7;
+    }
+    if (i <  100000000) {
+        return 8;
+    }
+    if (i < 1000000000) {
+        return 9;
+    }
     return 10;
 }
 

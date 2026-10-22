@@ -94,7 +94,7 @@ static void gatt_bearer_emit_sent(void){
 static void gatt_bearer_emit_connected(void){
     uint8_t event[5];
     event[0] = HCI_EVENT_MESH_META;
-    event[1] = 1;
+    event[1] = 3;
     event[2] = MESH_SUBEVENT_PROXY_CONNECTED;
     little_endian_store_16(event, 3, 0x1234);
     (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
@@ -1158,6 +1158,41 @@ TEST(MessageTest, ProxyConfigReceive){
     // done
     mesh_network_message_processed_by_higher_layer(received_proxy_pdu);
     received_proxy_pdu = NULL;
+}
+
+TEST(MessageTest, TruncatedControlNetworkPduRejectedBeforeDecryption){
+    mesh_set_iv_index(0x12345678);
+    load_network_key_nid_10();
+    uint8_t packet[19];
+    // Preserve the privacy random so de-obfuscation still reveals CTL = 1.
+    btstack_parse_hex(proxy_config_pdus[0] + 2, sizeof(packet), packet);
+    for (unsigned proxy = 0; proxy < 2; proxy++){
+        for (uint8_t len = 13; len <= 18; len++){
+            received_network_pdu = NULL;
+            received_proxy_pdu = NULL;
+            if (proxy){
+                mesh_network_process_proxy_configuration_message(packet, len);
+            } else {
+                mesh_network_received_message(packet, len, 0);
+            }
+            unsigned crypto_commands = 0;
+            while (mock_process_hci_cmd()){
+                crypto_commands++;
+                CHECK_TRUE(crypto_commands < 16);
+            }
+            if (len < 14){
+                CHECK_EQUAL(0, crypto_commands);
+            } else if (len < 18){
+                // Only the privacy AES operation; no CCM decryption.
+                CHECK_EQUAL(1, crypto_commands);
+            } else {
+                // Complete header + one byte + MIC passes the length gate.
+                CHECK_TRUE(crypto_commands > 1);
+            }
+            CHECK_TRUE(received_network_pdu == NULL);
+            CHECK_TRUE(received_proxy_pdu == NULL);
+        }
+    }
 }
 
 

@@ -83,14 +83,18 @@ static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffe
 
 static uint8_t obex_message_builder_packet_append(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t len){
     uint16_t pos = big_endian_read_16(buffer, 1);
-    
-    log_debug("add type:0x%02x(%s) buffer_len:%u pos+len:%u pos:%u len:%u", data[0], lut_type[data[0]], buffer_len, pos + len, pos, len);
-    
+
     if (buffer_len < pos + len) {
         log_error("ERROR_CODE_MEMORY_CAPACITY_EXCEEDED type:0x%02x(%s) buffer_len:%u size:%u pos:%u len:%u", buffer[0], lut_type[buffer[0]], buffer_len, pos + len, pos, len);
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
-    
+
+    if (len == 0u) {
+        return ERROR_CODE_SUCCESS;
+    }
+
+    log_debug("add type:0x%02x(%s) buffer_len:%u pos+len:%u pos:%u len:%u", data[0], lut_type[data[0]], buffer_len, pos + len, pos, len);
+
     (void)memcpy(&buffer[pos], data, len);
     pos += len;
     big_endian_store_16(buffer, 1, pos);
@@ -124,6 +128,14 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
     if (status != ERROR_CODE_SUCCESS) return status;
 
     return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);        
+}
+
+uint8_t obex_message_builder_header_add_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length){
+    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_BODY, data, length);
+}
+
+uint8_t obex_message_builder_header_add_end_of_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length){
+    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
 }
 
 uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length, uint32_t * ret_length){
@@ -262,7 +274,7 @@ uint8_t obex_message_builder_header_add_who(uint8_t * buffer, uint16_t buffer_le
 }
 
 uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length){
-    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
+    return obex_message_builder_header_add_end_of_body(buffer, buffer_len, data, (uint16_t) length);
 }
 
 uint8_t obex_message_builder_body_fillup_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length, uint32_t *ret_length){

@@ -132,10 +132,20 @@ static void att_iterator_fetch_next(att_iterator_t *it){
     it->uuid   = &it->att_ptr[6];
     // handle 128 bit UUIDs
     if ((it->flags & (uint16_t)ATT_PROPERTY_UUID128) != 0u){
-        it->value_len = it->size - 22u;
+        // tolerate malformed att db record
+        if (it->size >= 22u) {
+            it->value_len = it->size - 22u;
+        } else {
+            it->value_len = 0u;
+        }
         it->value  = &it->att_ptr[22];
     } else {
-        it->value_len = it->size - 8u;
+        // tolerate malformed att db record
+        if (it->size >= 8u) {
+            it->value_len = it->size - 8u;
+        } else {
+            it->value_len = 0u;
+        }
         it->value  = &it->att_ptr[8];
     }
     // advance AFTER setting values
@@ -1908,6 +1918,7 @@ uint16_t btp_att_get_attributes_by_uuid128(uint16_t start_handle, uint16_t end_h
 }
 
 uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size){
+    btstack_assert(response_buffer_size >= 3);
     att_iterator_t it;
     bool ok = att_find_handle(&it, attribute_handle);
     if (!ok){

@@ -431,13 +431,18 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     browsing_connection->pdu_id = packet[pos++];
                     parameter_length = big_endian_read_16(packet, pos);
                     pos += 2;
-                    if ((parameter_length == 0u) || !avrcp_browsing_controller_have_bytes((uint16_t)pos, size, parameter_length)){
+                    // A START packet only contains the first part of the response
+                    // parameters. The remaining bytes arrive in CONTINUE/END packets.
+                    // A SINGLE packet, on the other hand, must contain all parameters.
+                    if ((parameter_length == 0u) || !avrcp_browsing_controller_have_bytes((uint16_t)pos, size, 1u) ||
+                        ((avctp_packet_type == AVRCP_SINGLE_PACKET) &&
+                         !avrcp_browsing_controller_have_bytes((uint16_t)pos, size, parameter_length))){
                         browsing_connection->state = AVCTP_CONNECTION_OPENED;
                         avrcp_browsing_controller_emit_failed(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
                         return;
                     }
                     browsing_connection->browsing_status = packet[pos++];
-                    payload_end = (uint16_t)(pos + parameter_length - 1u);
+                    payload_end = (avctp_packet_type == AVRCP_SINGLE_PACKET) ? (uint16_t)(pos + parameter_length - 1u) : size;
                     if (browsing_connection->browsing_status != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
                         browsing_connection->state = AVCTP_CONNECTION_OPENED;
                         avrcp_browsing_controller_emit_failed(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);

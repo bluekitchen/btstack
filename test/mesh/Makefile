@@ -71,7 +71,7 @@ GATT_SERVER_OBJ_ASAN     = $(addprefix build-asan/,$(GATT_SERVER_OBJ))
 SM_OB_ASAN               = $(addprefix build-asan/,$(SM_OB))
 MESH_OBJ_ASAN            = $(addprefix build-asan/,$(MESH_OBJ))
 
-TESTS_SRCS = mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
+TESTS_SRCS = mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test mesh_configuration_list_test
 EXAMPLES =   mesh_pts provisioner sniffer
 
 all:   $(addprefix build-asan/,$(EXAMPLES))
@@ -90,12 +90,16 @@ build-asan/provisioning_provisioner_test:  $(addprefix build-asan/, uECC.o mesh_
 
 build-asan/mesh_configuration_composition_data_message_test: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${MESH_OBJ_ASAN}
 
+build-asan/mesh_configuration_list_test: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} $(filter-out build-asan/mesh_configuration_client.o,${MESH_OBJ_ASAN})
+build-asan/mesh_configuration_list_test.o: ${BTSTACK_ROOT}/src/mesh/mesh_configuration_client.c
+
 test: $(addprefix build-asan/,$(TESTS_SRCS))
 	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
 	ASAN_OPTIONS=detect_leaks=0 build-asan/mesh_message_test
 	build-asan/provisioning_device_test
 	build-asan/provisioning_provisioner_test
 	build-asan/mesh_configuration_composition_data_message_test
+	build-asan/mesh_configuration_list_test
 
 coverage:
 

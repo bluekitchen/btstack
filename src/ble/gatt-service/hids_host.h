@@ -169,7 +169,7 @@ typedef struct {
     // descriptor storage
     uint16_t hid_descriptor_offset;
     uint16_t hid_descriptor_len;
-    uint16_t hid_descriptor_max_len;
+    uint16_t hid_descriptor_max_len;  // reserved capacity; equals len after the read completes
     uint8_t  hid_descriptor_status;     // ERROR_CODE_SUCCESS if descriptor available, 
                                         // ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if not, and 
                                         // ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if descriptor is larger then the available space

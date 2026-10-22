@@ -1087,9 +1087,37 @@ static void mesh_configuration_client_model_subscription_handler(mesh_model_t *m
     mesh_access_message_processed(pdu);
 }
 
+// Two 12-bit indexes occupy three bytes; an odd final index occupies two.
+static int mesh_configuration_client_key_list_count(mesh_access_parser_state_t * parser){
+    uint16_t len = mesh_access_parser_available(parser);
+    if ((len % 3u) == 1u) return -1;
+    uint16_t count = (len / 3u) * 2u + (len % 3u) / 2u;
+    if (count > UINT8_MAX) return -1;
+    return count;
+}
+
+static uint16_t mesh_configuration_client_key_list_get_index(mesh_access_parser_state_t * parser, uint8_t index, uint32_t * pair){
+    if ((index & 1u) == 0u){
+        // The list length was validated before iteration.
+        uint16_t available = mesh_access_parser_available(parser);
+        btstack_assert(available >= 2u);
+        *pair = available >= 3u ? mesh_access_parser_get_uint24(parser) : mesh_access_parser_get_uint16(parser);
+        return *pair & 0xfffu;
+    }
+    return *pair >> 12;
+}
+
 static void mesh_configuration_client_model_subscription_event(mesh_model_t *mesh_model, mesh_pdu_t * pdu, bool is_sig_model){
     mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    if (!mesh_access_parser_init(&parser, pdu)){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    uint16_t header_size = is_sig_model ? 5u : 7u;
+    if (mesh_access_parser_available(&parser) < header_size){
+        mesh_access_message_processed(pdu);
+        return;
+    }
     uint8_t  status = mesh_access_parser_get_uint8(&parser);
     uint16_t element_address = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier;
@@ -1103,7 +1131,13 @@ static void mesh_configuration_client_model_subscription_event(mesh_model_t *mes
     } else {
         model_identifier = mesh_access_parser_get_vendor_model_identifier(&parser);
     }
-    uint8_t list_size = mesh_access_parser_available(&parser)/2;
+    uint16_t remaining = mesh_access_parser_available(&parser);
+    uint16_t list_size = remaining / 2u;
+
+    if (((remaining & 1u) != 0u) || (list_size > UINT8_MAX)){
+        mesh_access_message_processed(pdu);
+        return;
+    }
 
     uint8_t event[14];
     int pos = 0;
@@ -1119,8 +1153,10 @@ static void mesh_configuration_client_model_subscription_event(mesh_model_t *mes
     pos += 4;
 
     event[pos++] = list_size;
+    const int item_pos = pos;
     uint8_t i;
     for (i = 0; i < list_size; i++){
+        pos = item_pos;
         event[pos++] = i;
         little_endian_store_16(event, pos, mesh_access_parser_get_uint16(&parser));
         (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos + 2);
@@ -1156,9 +1192,18 @@ static void mesh_configuration_client_netkey_handler(mesh_model_t *mesh_model, m
 
 static void mesh_configuration_client_netkey_list_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    if (!mesh_access_parser_init(&parser, pdu)){
+        mesh_access_message_processed(pdu);
+        return;
+    }
     uint8_t status = 0;
-    uint8_t list_size = mesh_access_parser_available(&parser)/2;
+    int list_size = mesh_configuration_client_key_list_count(&parser);
+
+    if (list_size < 0){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    uint32_t pair = 0;
 
     uint8_t event[10];
     int pos = 0;
@@ -1171,10 +1216,12 @@ static void mesh_configuration_client_netkey_list_handler(mesh_model_t *mesh_mod
     event[pos++] = status;
     
     event[pos++] = list_size;
+    const int item_pos = pos;
     uint8_t i;
     for (i = 0; i < list_size; i++){
+        pos = item_pos;
         event[pos++] = i;
-        little_endian_store_16(event, pos, mesh_access_parser_get_uint16(&parser));
+        little_endian_store_16(event, pos, mesh_configuration_client_key_list_get_index(&parser, i, &pair));
         (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos + 2);
     }
     mesh_access_message_processed(pdu);
@@ -1208,9 +1255,24 @@ static void mesh_configuration_client_appkey_handler(mesh_model_t *mesh_model, m
 
 static void mesh_configuration_client_appkey_list_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t status = 0;
-    uint8_t list_size = mesh_access_parser_available(&parser)/2;
+    if (!mesh_access_parser_init(&parser, pdu)){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    uint16_t header_size = 3u;
+    if (mesh_access_parser_available(&parser) < header_size){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    uint8_t status = mesh_access_parser_get_uint8(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser) & 0xfffu;
+    int list_size = mesh_configuration_client_key_list_count(&parser);
+
+    if (list_size < 0){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    uint32_t pair = 0;
 
     uint8_t event[12];
     int pos = 0;
@@ -1223,12 +1285,14 @@ static void mesh_configuration_client_appkey_list_handler(mesh_model_t *mesh_mod
     event[pos++] = status;
     
     event[pos++] = list_size;
+    const int item_pos = pos;
     uint8_t i;
     for (i = 0; i < list_size; i++){
+        pos = item_pos;
         event[pos++] = i;
-        uint32_t netappkey_index = mesh_access_parser_get_uint24(&parser);
-        little_endian_store_16(event, pos, netappkey_index >> 12);
-        little_endian_store_16(event, pos + 2, netappkey_index & 0xFFF);
+        uint16_t appkey_index = mesh_configuration_client_key_list_get_index(&parser, i, &pair);
+        little_endian_store_16(event, pos, netkey_index);
+        little_endian_store_16(event, pos + 2, appkey_index);
         (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos + 4);
     }
     mesh_access_message_processed(pdu);
@@ -1298,8 +1362,16 @@ static void mesh_configuration_client_model_app_handler(mesh_model_t *mesh_model
 
 static void mesh_configuration_client_model_app_list_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu, bool is_sig_model){
     mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    if (!mesh_access_parser_init(&parser, pdu)){
+        mesh_access_message_processed(pdu);
+        return;
+    }
 
+    uint16_t header_size = is_sig_model ? 5u : 7u;
+    if (mesh_access_parser_available(&parser) < header_size){
+        mesh_access_message_processed(pdu);
+        return;
+    }
     uint8_t  status = mesh_access_parser_get_uint8(&parser);
     uint16_t element_address = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier;
@@ -1314,7 +1386,13 @@ static void mesh_configuration_client_model_app_list_handler(mesh_model_t *mesh_
         model_identifier = mesh_access_parser_get_vendor_model_identifier(&parser);
     }
 
-    uint8_t  list_size = mesh_access_parser_available(&parser)/2;
+    int list_size = mesh_configuration_client_key_list_count(&parser);
+
+    if (list_size < 0){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    uint32_t pair = 0;
 
     uint8_t event[14];
     int pos = 0;
@@ -1330,10 +1408,12 @@ static void mesh_configuration_client_model_app_list_handler(mesh_model_t *mesh_
     pos += 4;
 
     event[pos++] = list_size;
+    const int item_pos = pos;
     uint8_t i;
     for (i = 0; i < list_size; i++){
+        pos = item_pos;
         event[pos++] = i;
-        uint16_t appkey_index = mesh_access_parser_get_uint16(&parser);
+        uint16_t appkey_index = mesh_configuration_client_key_list_get_index(&parser, i, &pair);
         little_endian_store_16(event, pos, appkey_index);
         (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos + 2);
     }

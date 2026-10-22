@@ -624,6 +624,17 @@ uint16_t goep_server_response_get_max_message_size(uint16_t goep_cid){
     return goep_server_get_outgoing_buffer_len(connection);
 }
 
+uint8_t goep_server_header_add_body(uint16_t goep_cid, const uint8_t * body, uint16_t length){
+    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
+    uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
+    return obex_message_builder_header_add_body(buffer, buffer_len, body, length);
+}
+
 uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * end_of_body, uint16_t length){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
@@ -632,7 +643,16 @@ uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * en
 
     uint8_t * buffer = goep_server_get_outgoing_buffer(connection);
     uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
-    return obex_message_builder_body_add_static(buffer, buffer_len, end_of_body, length);
+    return obex_message_builder_header_add_end_of_body(buffer, buffer_len, end_of_body, length);
+}
+
+uint8_t goep_server_header_add_body_or_end_of_body(uint16_t goep_cid, uint8_t response_code, const uint8_t * body, uint16_t length){
+    btstack_assert((body != NULL) || (length == 0));
+
+    if (response_code == OBEX_RESP_CONTINUE){
+        return goep_server_header_add_body(goep_cid, body, length);
+    }
+    return goep_server_header_add_end_of_body(goep_cid, body, length);
 }
 
 uint8_t goep_server_header_add_who(uint16_t goep_cid, const uint8_t * target){

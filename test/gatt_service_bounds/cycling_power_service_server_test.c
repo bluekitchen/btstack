@@ -2,6 +2,15 @@
 #include "ble/gatt-service/cycling_power_service_server.c"
 
 int main(void){
+    const uint32_t initial_wheel_revolutions[] = {0, 0x7fffffffu, 0x80000000u, UINT32_MAX};
+    const uint32_t expected_wheel_revolutions[] = {0, 0, 0, 0x7fffffffu};
+    for (unsigned i = 0; i < sizeof(initial_wheel_revolutions) / sizeof(initial_wheel_revolutions[0]); i++){
+        cycling_power.cumulative_wheel_revolutions = initial_wheel_revolutions[i];
+        cycling_power_service_server_add_wheel_revolution(INT32_MIN, 123);
+        assert(cycling_power.cumulative_wheel_revolutions == expected_wheel_revolutions[i]);
+        assert(cycling_power.last_wheel_event_time_s == 123);
+    }
+
     cycling_power.measurement_client_configuration_descriptor_handle = 1;
     cycling_power.measurement_client_configuration_descriptor_notify = 4660;
     cycling_power.measurement_server_configuration_descriptor_handle = 2;

@@ -552,6 +552,7 @@ mesh_node_demo.o: mesh_node_demo.h mesh_node_demo.c
 mesh_node_demo:${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
 	${CC} $^ ${LDFLAGS} -o $@
 
+ifndef SKIP_EXAMPLE_CLEAN
 clean:
 	rm -f ${EXAMPLES} ${EXAMPLES_GATT_H_FILES}
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc 
@@ -561,3 +562,4 @@ clean:
 	rm -rf ${BTSTACK_ROOT}/src/ble/gatt-service/*.o
 	rm -rf ${BTSTACK_ROOT}/src/classic/*.o
 	rm -rf ${BTSTACK_ROOT}/example/*.o
+endif

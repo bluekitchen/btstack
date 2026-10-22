@@ -1414,8 +1414,8 @@ static void hci_shutdown_connection(hci_connection_t *connection){
         while (btstack_linked_list_iterator_has_next(&it)) {
             hci_connection_t * other_conn = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
             if (other_conn == connection) continue;
-            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
-            int multiplier = hci_sco_get_multiplier_for_voice_setting(connection->sco_voice_setting);
+            if (other_conn->address_type != BD_ADDR_TYPE_SCO) continue;
+            int multiplier = hci_sco_get_multiplier_for_voice_setting(other_conn->sco_voice_setting);
             if (multiplier <= max_multiplier) continue;
 
             max_multiplier = multiplier;
@@ -2524,6 +2524,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS;
+                log_info("LE Set Host Feature: Connected Isochronous Stream Host");
                 hci_send_cmd(&hci_le_set_host_feature, 32, 1);
                 break;
             }
@@ -2548,7 +2549,20 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING;
+                log_info("LE Set Host Feature: Connection Subrating Host");
                 hci_send_cmd(&hci_le_set_host_feature, 38, 1);
+                break;
+            }
+#endif
+
+#ifdef ENABLE_LE_CHANNEL_SOUNDING
+            /* fall through */
+
+        case HCI_INIT_LE_SET_HOST_FEATURE_CHANNEL_SOUNDING:
+            if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
+                hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CHANNEL_SOUNDING;
+                log_info("LE Set Host Feature: Channel Sounding Host");
+                hci_send_cmd(&hci_le_set_host_feature, 47, 1);
                 break;
             }
 #endif
@@ -2559,6 +2573,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS:
             if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_SHORTER_CONNECTION_INTERVALS;
+                log_info("LE Set Host Feature: Shorter Connection Intervals Host");
                 hci_send_cmd(&hci_le_set_host_feature, 73, 1);
                 break;
             }
@@ -9837,6 +9852,8 @@ uint8_t gap_extended_advertising_set_adv_data(uint8_t advertising_handle, uint16
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->adv_data = advertising_data;
     advertising_set->adv_data_len = advertising_data_length;
+    // Restart a pending upload with the replacement data.
+    advertising_set->adv_data_pos = 0;
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
     hci_run();
@@ -9848,6 +9865,8 @@ uint8_t gap_extended_advertising_set_scan_response_data(uint8_t advertising_hand
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->scan_data = scan_response_data;
     advertising_set->scan_data_len = scan_response_data_length;
+    // Restart a pending upload with the replacement data.
+    advertising_set->scan_data_pos = 0;
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
     hci_run();
@@ -9908,6 +9927,8 @@ uint8_t gap_periodic_advertising_set_data(uint8_t advertising_handle, uint16_t p
     if (advertising_set == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     advertising_set->periodic_data = periodic_data;
     advertising_set->periodic_data_len = periodic_data_length;
+    // Restart a pending upload with the replacement data.
+    advertising_set->periodic_data_pos = 0;
     // set tasks and start
     advertising_set->tasks |= LE_ADVERTISEMENT_TASKS_SET_PERIODIC_DATA;
     hci_run();

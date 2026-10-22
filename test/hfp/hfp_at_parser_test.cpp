@@ -261,6 +261,14 @@ TEST(HFPParser, HFP_AG_RETRIEVE_HF_INDICATORS_STATE){
     CHECK_EQUAL(HFP_CMD_RETRIEVE_HF_INDICATORS_STATE, context.command);
 }
 
+TEST(HFPParser, HFP_AG_HF_INDICATOR_STATUS){
+    snprintf(packet, sizeof(packet), "\r\nAT+BIEV=1,1\r\n");
+    parse_ag(packet);
+    CHECK_EQUAL(HFP_CMD_HF_INDICATOR_STATUS, context.command);
+    CHECK_EQUAL(0, context.parser_indicator_index);
+    CHECK_EQUAL(1, context.parser_indicator_value);
+}
+
 TEST(HFPParser, HFP_HF_PARSE_HF_INDICATORS_SUPPORTED_BY_AG){
     snprintf(packet, sizeof(packet), "\r\n%s:(1,3)\r\n", HFP_HF_INDICATOR);
     parse_hf(packet);
@@ -607,6 +615,7 @@ TEST(HFPParser, HFP_CMD_AG_SENT_CALL_WAITING_INFORMATION){
 
 TEST(HFPParser, custom_command_hf){
     hfp_custom_at_command_t custom_hf_command = {
+            .next = NULL,
             .command = "+FOO:",
             .command_id = 1
     };
@@ -620,6 +629,7 @@ TEST(HFPParser, custom_command_hf){
 
 TEST(HFPParser, custom_command_ag_with_colon){
     hfp_custom_at_command_t custom_ag_command = {
+            .next = NULL,
             .command = "AT+FOO:",
             .command_id = 2
     };
@@ -633,6 +643,7 @@ TEST(HFPParser, custom_command_ag_with_colon){
 
 TEST(HFPParser, custom_command_ag_with_question){
     hfp_custom_at_command_t custom_ag_command = {
+            .next = NULL,
             .command = "AT+FOO?",
             .command_id = 3
     };
@@ -646,6 +657,7 @@ TEST(HFPParser, custom_command_ag_with_question){
 
 TEST(HFPParser, custom_command_hf_with_assignment){
     hfp_custom_at_command_t custom_ag_command = {
+            .next = NULL,
             .command = "AT+TEST=",
             .command_id = 3
     };

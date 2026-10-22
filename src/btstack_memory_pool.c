@@ -71,7 +71,9 @@ void btstack_memory_pool_create(btstack_memory_pool_t *pool, void * storage, int
 void * btstack_memory_pool_get(btstack_memory_pool_t *pool){
     node_t *free_blocks = (node_t*) pool;
     
-    if (!free_blocks->next) return NULL;
+    if (!free_blocks->next) {
+        return NULL;
+    }
     
     // remove first
     node_t *node      = free_blocks->next;

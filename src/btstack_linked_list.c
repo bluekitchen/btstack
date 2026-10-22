@@ -136,7 +136,9 @@ bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_i
 }
 
 bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
-    if (!item) return false;
+    if (!item) {
+        return false;
+    }
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it != NULL; it = it->next){
         if (it->next == item){
@@ -176,7 +178,9 @@ btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t
 // pop (get + remove) first element
 btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list){
     btstack_linked_item_t * item = *list;
-    if (!item) return NULL;
+    if (!item) {
+        return NULL;
+    }
     *list = item->next;
     return item;
 }

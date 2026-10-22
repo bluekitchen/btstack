@@ -349,38 +349,34 @@ static void hfp_ag_store_ag_indicators_cmd_segment(hfp_connection_t * hfp_connec
     *buffer = ',';
 }
 
+// Check worst-case formatted lengths, including the terminating NUL.
 static int hfp_ag_join_hf_indicators(char * buffer, int buffer_size){
-    if (buffer_size < (hfp_ag_hf_indicators_nr * 3)) return 0;
-    int i;
+    if (buffer_size < (hfp_ag_hf_indicators_nr * 6)) return -1; // five digits and comma/NUL
     int offset = 0;
-    for (i = 0; i < (hfp_ag_hf_indicators_nr - 1); i++) {
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", hfp_ag_hf_indicators[i].uuid);
-    }
-    if (i < hfp_ag_hf_indicators_nr){
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", hfp_ag_hf_indicators[i].uuid);
+    for (int i = 0; i < hfp_ag_hf_indicators_nr; i++){
+        offset += btstack_snprintf_assert_complete(buffer + offset, buffer_size - offset, "%s%u", i == 0 ? "" : ",",
+                           (unsigned int) hfp_ag_hf_indicators[i].uuid);
     }
     return offset;
 }
 
 static int hfp_ag_join_hf_indicators_initial_status(char * buffer, int buffer_size){
-    if (buffer_size < (hfp_ag_hf_indicators_nr * 3)) return 0;
-    int i;
+    const int line_len = sizeof("\r\n" HFP_HF_INDICATOR ":65535,255\r\n") - 1u;
+    if (buffer_size < (hfp_ag_hf_indicators_nr * line_len + 1)) return -1;
     int offset = 0;
-    for (i = 0; i < hfp_ag_hf_indicators_nr; i++) {
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "\r\n%s:%d,%d\r\n", HFP_HF_INDICATOR, hfp_ag_hf_indicators[i].uuid, hfp_ag_hf_indicators[i].state);
+    for (int i = 0; i < hfp_ag_hf_indicators_nr; i++){
+        offset += btstack_snprintf_assert_complete(buffer + offset, buffer_size - offset, "\r\n%s:%u,%u\r\n", HFP_HF_INDICATOR,
+                           (unsigned int) hfp_ag_hf_indicators[i].uuid, (unsigned int) hfp_ag_hf_indicators[i].state);
     }
     return offset;
 }
 
 static int hfp_ag_join_ag_indicators_status(char * buffer, int buffer_size){
-    if (buffer_size < (hfp_ag_ag_indicators_nr * 3)) return 0;
-    int i;
+    if (buffer_size < (hfp_ag_ag_indicators_nr * 4)) return -1; // three digits and comma/NUL
     int offset = 0;
-    for (i = 0; i < (hfp_ag_ag_indicators_nr-1); i++) {
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", hfp_ag_ag_indicators[i].status);
-    }
-    if (i<hfp_ag_ag_indicators_nr){
-        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", hfp_ag_ag_indicators[i].status);
+    for (int i = 0; i < hfp_ag_ag_indicators_nr; i++){
+        offset += btstack_snprintf_assert_complete(buffer + offset, buffer_size - offset, "%s%u", i == 0 ? "" : ",",
+                           (unsigned int) hfp_ag_ag_indicators[i].status);
     }
     return offset;
 }
@@ -438,10 +434,13 @@ static void hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_
 }
 
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
-    char buffer[40];
+    // Each uint8_t status needs at most three digits plus a comma.
+    char buffer[HFP_MAX_NUM_INDICATORS * 4u + sizeof("\r\n" HFP_AG_INDICATOR ":\r\n\r\nOK\r\n")];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:", HFP_AG_INDICATOR);
-    offset += hfp_ag_join_ag_indicators_status(buffer+offset, size-offset-9);
+    int len = hfp_ag_join_ag_indicators_status(buffer+offset, size-offset-9);
+    if (len < 0) return hfp_ag_send_error(cid);
+    offset += len;
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -462,17 +461,21 @@ static int hfp_ag_send_list_supported_hf_indicators_cmd(uint16_t cid){
 }
 
 static int hfp_ag_send_retrieve_supported_hf_indicators_cmd(uint16_t cid){
-    char buffer[40];
+    // Each uint16_t UUID needs at most five digits plus a comma.
+    char buffer[HFP_MAX_NUM_INDICATORS * 6u + sizeof("\r\n" HFP_HF_INDICATOR ":()\r\n\r\nOK\r\n")];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:(", HFP_HF_INDICATOR);
-    offset += hfp_ag_join_hf_indicators(buffer + offset, size - offset - 10);
+    int len = hfp_ag_join_hf_indicators(buffer + offset, size - offset - 10);
+    if (len < 0) return hfp_ag_send_error(cid);
+    offset += len;
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, ")\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_initial_supported_hf_indicators_cmd(uint16_t cid){
-    char buffer[40];
-    int offset = hfp_ag_join_hf_indicators_initial_status(buffer, sizeof(buffer) - 7);
+    char buffer[HFP_MAX_NUM_INDICATORS * (sizeof("\r\n" HFP_HF_INDICATOR ":65535,255\r\n") - 1u) + sizeof("\r\nOK\r\n")];
+    int offset = hfp_ag_join_hf_indicators_initial_status(buffer, sizeof(buffer) - (sizeof("\r\nOK\r\n") - 1u));
+    if (offset < 0) return hfp_ag_send_error(cid);
     btstack_snprintf_assert_complete(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -1438,6 +1441,17 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
+static void hfp_ag_set_waiting_call_active(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+        if (hfp_connection->call_state != HFP_CALL_W4_CHLD) continue;
+        hfp_connection->call_state = HFP_CALL_ACTIVE;
+    }
+}
+
 static void hfp_ag_trigger_ring_and_clip(void) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
@@ -1759,6 +1773,7 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
             hfp_ag_send_call_waiting_notification(hfp_connection->rfcomm_cid);
             indicator_index = get_ag_indicator_index_for_name("callsetup");
             hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+            hfp_ag_run_for_context(hfp_connection);
             break;
         default:
             break;
@@ -1854,10 +1869,11 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
                             log_info("AG: current call is placed on hold, incoming call gets active");
                             hfp_gsm_handler(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG, 0, 0, NULL);
+                            hfp_ag_set_waiting_call_active();
                             hfp_ag_set_callsetup_indicator();
                             hfp_ag_set_callheld_indicator();
-                            hfp_ag_transfer_callsetup_state();
                             hfp_ag_transfer_callheld_state();
+                            hfp_ag_transfer_callsetup_state();
                             break;
                         default:
                             break;
@@ -1980,6 +1996,14 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             // from terminate by ag
             hfp_ag_set_call_indicator();
             hfp_ag_trigger_terminate_call();
+            break;
+
+        case HFP_AG_ACTIVE_CALL_HELD_BY_AG:
+            if (!hfp_gsm_has_active_call()) break;
+            hfp_gsm_handler(HFP_AG_ACTIVE_CALL_HELD_BY_AG, 0, 0, NULL);
+            hfp_ag_set_callheld_indicator();
+            hfp_ag_transfer_callheld_state();
+            log_info("AG: active call placed on hold");
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_HF:
@@ -2626,7 +2650,8 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
             case HFP_CMD_HF_INDICATOR_STATUS:
                 hfp_connection->command = HFP_CMD_NONE;
                 
-                if (hfp_connection->parser_indicator_index < hfp_ag_hf_indicators_nr){
+                if ((hfp_connection->parser_indicator_index >= 0) &&
+                    (hfp_connection->parser_indicator_index < hfp_ag_hf_indicators_nr)){
                     indicator = &hfp_ag_hf_indicators[hfp_connection->parser_indicator_index];
                     switch (indicator->uuid){
                         case HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY: 
@@ -3105,6 +3130,10 @@ void hfp_ag_call_dropped(void){
 // call from AG UI
 void hfp_ag_answer_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG, NULL);
+}
+
+void hfp_ag_hold_active_call(void){
+    hfp_ag_call_sm(HFP_AG_ACTIVE_CALL_HELD_BY_AG, NULL);
 }
 
 void hfp_ag_join_held_call(void){

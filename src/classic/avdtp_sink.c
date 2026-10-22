@@ -194,6 +194,11 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         log_error("Stream endpoint seid %d in wrong state %d", local_seid, stream_endpoint->state);
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
+    if ((stream_endpoint->remote_sep.configured_service_categories & (1 << AVDTP_DELAY_REPORTING)) == 0){
+        log_error("delay_report: delay reporting not configured for seid %d", local_seid);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
     
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT;
@@ -203,4 +208,3 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
 	avdtp_request_can_send_now_initiator(connection);
     return ERROR_CODE_SUCCESS;
 }
-

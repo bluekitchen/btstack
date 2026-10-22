@@ -72,6 +72,15 @@ static bool avrcp_controller_is_transaction_id_valid(avrcp_connection_t * connec
     return delta < 15;
 }
 
+static void avrcp_controller_command_data_init(avrcp_connection_t * connection, uint8_t * data){
+    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
+    connection->data = data;
+    connection->data_offset = 0;
+    connection->avrcp_fragment_len = 0;
+    connection->avctp_fragment_offset = 0;
+    connection->data_len = 0;
+}
+
 static void avrcp_controller_custom_command_data_init(avrcp_connection_t * connection,
                                                       avrcp_command_opcode_t opcode, avrcp_command_type_t command_type,
                                                       avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
@@ -84,10 +93,7 @@ static void avrcp_controller_custom_command_data_init(avrcp_connection_t * conne
     connection->subunit_id = subunit_id;
     connection->company_id = company_id;
     connection->pdu_id = pdu_id;
-    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
-    connection->data = NULL;
-    connection->data_offset = 0;
-    connection->data_len = 0;
+    avrcp_controller_command_data_init(connection, NULL);
 }
 
 static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id, bool get_next_transaction_label){
@@ -101,9 +107,7 @@ static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection
     connection->subunit_id = AVRCP_SUBUNIT_ID;
     connection->company_id = BT_SIG_COMPANY_ID;
     connection->command_type = command_type;
-    connection->data = connection->message_body;
-    connection->data_offset = 0;
-    connection->data_len = 0;
+    avrcp_controller_command_data_init(connection, connection->message_body);
 }
 
 static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_operation_id_t opid){
@@ -115,11 +119,8 @@ static void avrcp_controller_pass_through_command_data_init(avrcp_connection_t *
     
     connection->company_id = 0;
     connection->pdu_id = AVRCP_PDU_ID_UNDEFINED;
+    avrcp_controller_command_data_init(connection, connection->message_body);
     connection->operation_id = opid;
-
-    connection->data = connection->message_body;
-    connection->data_offset = 0;
-    connection->data_len = 0;
 }
 
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
@@ -616,25 +617,25 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
     l2cap_reserve_packet_buffer();
     uint8_t * packet = l2cap_get_outgoing_buffer();
 
+    avrcp_prepare_single_packet_fragment(connection);
+
     uint16_t max_payload_size;
     connection->avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
-    connection->avrcp_packet_type = avrcp_get_packet_type(connection);
 
     // non-fragmented: transport header (1) + PID (2)
     // fragmented:     transport header (1) + num packets (1) + PID (2)
 
-    uint16_t param_len = connection->data_len;
+    uint16_t param_len = connection->avrcp_fragment_len;
     // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     uint16_t pos = 0;
     packet[pos++] = (connection->transaction_id << 4) | (connection->avctp_packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
     if (connection->avctp_packet_type == AVCTP_START_PACKET){
-        uint16_t max_frame_size = btstack_min(connection->l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
         // first packet: max_payload_size
         // rest packets
         uint16_t num_payload_bytes = param_len - max_payload_size;
-        uint16_t frame_size_for_continue_packet = max_frame_size - avctp_get_num_bytes_for_header(AVCTP_CONTINUE_PACKET);
+        uint16_t frame_size_for_continue_packet = connection->l2cap_mtu - avctp_get_num_bytes_for_header(AVCTP_CONTINUE_PACKET);
         uint16_t num_avctp_packets = (num_payload_bytes + frame_size_for_continue_packet - 1)/frame_size_for_continue_packet + 1;
 		btstack_assert(num_avctp_packets <= 255);
         packet[pos++] = (uint8_t) num_avctp_packets;
@@ -643,7 +644,6 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
     switch (connection->avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
-            connection->data_offset = 0;
             // Profile IDentifier (PID)
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -661,12 +661,12 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
                     pos += 3;
                     packet[pos++] = connection->pdu_id;
                     packet[pos++] = connection->avrcp_packet_type;              // reserved(upper 6) | AVRCP packet_type
-                    big_endian_store_16(packet, pos, connection->data_len);     // parameter length
+                    big_endian_store_16(packet, pos, param_len);                 // parameter length
                     pos += 2;
                     break;
                 case AVRCP_CMD_OPCODE_PASS_THROUGH:
                     packet[pos++] = connection->operation_id;
-                    packet[pos++] = (uint8_t)connection->data_len;     // parameter length
+                    packet[pos++] = (uint8_t)param_len;                // parameter length
                     break;
                 case AVRCP_CMD_OPCODE_UNIT_INFO:
                 case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
@@ -684,11 +684,11 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
             return;
     }
     // compare number of bytes to store with the remaining buffer size
-    uint16_t bytes_to_copy = btstack_min(connection->data_len - connection->data_offset, max_payload_size - pos);
+    uint16_t bytes_to_copy = btstack_min(connection->avrcp_fragment_len - connection->avctp_fragment_offset, max_payload_size - pos);
 
-    (void)memcpy(packet + pos, &connection->data[connection->data_offset], bytes_to_copy);
+    (void)memcpy(packet + pos, &connection->data[connection->data_offset + connection->avctp_fragment_offset], bytes_to_copy);
     pos += bytes_to_copy;
-    connection->data_offset += bytes_to_copy;
+    connection->avctp_fragment_offset += bytes_to_copy;
 
     l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
 }
@@ -723,8 +723,8 @@ static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer)
     btstack_run_loop_set_timer(&connection->controller_press_and_hold_cmd_timer, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&connection->controller_press_and_hold_cmd_timer);
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
-    // while data stays the same, the last send has increased the data_offset which we need to reset to send again
-    connection->data_offset = 0;
+    // Repeat the current AVRCP fragment from its first AVCTP packet.
+    connection->avctp_fragment_offset = 0;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
 
@@ -744,8 +744,8 @@ static void avrcp_press_and_hold_timer_stop(avrcp_connection_t * connection){
 
 static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-    // while data stays the same, the last send has increased the data_offset which we need to reset to send again
-    connection->data_offset = 0;
+    // Send the release using the same AVRCP fragment.
+    connection->avctp_fragment_offset = 0;
     if (connection->controller_press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_stop(connection);
     }
@@ -1463,16 +1463,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     // trigger release for simple command:
                     if (!connection->controller_press_and_hold_cmd_active){
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-                        // while data stays the same, the last send has increased the data_offset which we need to reset to send again
-                        connection->data_offset = 0;
+                        connection->avctp_fragment_offset = 0;
                         break;
                     }
                     // for press and hold, send release if it just has been requested, otherwise, wait for next repeat
                     if (connection->controller_press_and_hold_cmd_release){
                         connection->controller_press_and_hold_cmd_release = false;
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-                        // while data stays the same, the last send has increased the data_offset which we need to reset to send again
-                        connection->data_offset = 0;
+                        connection->avctp_fragment_offset = 0;
                     } else {
                         connection->state = AVCTP_W4_STOP;
                     }
@@ -1517,6 +1515,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
 
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
+            // send data - it will fit into one packet
             avrcp_send_cmd_with_avctp_fragmentation(connection);
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
             return;
@@ -1530,7 +1529,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
 
         case AVCTP_W2_SEND_COMMAND:
             avrcp_send_cmd_with_avctp_fragmentation(connection);
-            if (connection->data_offset < connection->data_len){
+            if (connection->avctp_fragment_offset < connection->avrcp_fragment_len){
                 // continue AVCTP fragmentation
                 avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                 return;
@@ -1564,11 +1563,16 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             connection->data_len = pos;
 
             log_info("AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST, len %u", connection->data_len);
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
 
-            // send data - assume it will fit into one packet
+            if (connection->avctp_fragment_offset < connection->avrcp_fragment_len){
+                // continue AVCTP fragmentation
+                connection->state = AVCTP_W2_SEND_COMMAND;
+                avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                return;
+            }
             avrcp_controller_response_timer_start(connection);
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            avrcp_send_cmd_with_avctp_fragmentation(connection);
             return;
         default:
             break;
@@ -2067,7 +2071,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
 
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
-    if (num_attributes >= AVRCP_MEDIA_ATTR_NUM) {
+    if (num_attributes > 16) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 

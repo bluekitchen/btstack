@@ -66,7 +66,9 @@
  * - P: pointer to 16-byte value, e.g. used for PIN
  * - T: pointer to text payload; parsing stops at this field
  * - D: pointer to 8-byte value in big endian
+ * - F: pointer to le_cs_fae_table_t (72-byte little endian LE CS FAE table)
  * - K: pointer to 16-byte value in big endian, e.g. for cryptographic keys
+ * - M: pointer to le_cs_channel_map_t (10-byte little endian LE CS channel map)
  * - Q: pointer to 32-byte value in big endian, e.g. for public key
  * - V: pointer to variable-length data (length from preceding J when present)
  * - X: pointer to gatt_client_service_t
@@ -140,6 +142,18 @@ typedef uint8_t uuid128_t[16];
  * @note time wraps around every 71.6 minutes
  */
 typedef uint32_t btstack_time_us_t;
+
+/**
+ * @brief 10-byte LE Channel Sounding channel map as carried in HCI commands and events
+ * @note Stored in little-endian byte order.
+ */
+typedef uint8_t le_cs_channel_map_t[10];
+
+/**
+ * @brief 72-byte LE Channel Sounding mode-0 Frequency Actuation Error table as carried in HCI commands and events
+ * @note Stored in little-endian byte order.
+ */
+typedef uint8_t le_cs_fae_table_t[72];
 
 // provide ssize_t on windows
 #ifdef _MSC_VER
@@ -1043,13 +1057,11 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_CS_READ_REMOTE_SUPPORTED_CAPABILITIES_COMPLETE 0x2Cu
 
 /**
- * @format 11HQQD
+ * @format 11HF
  * @param subevent_code
  * @param status
  * @param connection_handle
- * @param remote_fae_table_0
- * @param remote_fae_table_1
- * @param remote_fae_table_2
+ * @param remote_fae_table
  */
 #define HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE         0x2Du
 
@@ -1062,7 +1074,7 @@ typedef SSIZE_T ssize_t;
 #define HCI_SUBEVENT_LE_CS_SECURITY_ENABLE_COMPLETE               0x2Eu
 
 /**
- * @format 11H11111111111442111111111
+ * @format 11H11111111111M111111111
  * @param subevent_code
  * @param status
  * @param connection_handle
@@ -1077,9 +1089,7 @@ typedef SSIZE_T ssize_t;
  * @param role
  * @param rtt_type
  * @param cs_sync_phy
- * @param channel_map_0_3
- * @param channel_map_4_7
- * @param channel_map_8_9
+ * @param channel_map
  * @param channel_map_repetition
  * @param channel_selection_type
  * @param ch3c_shape
@@ -4708,18 +4718,21 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                           0x22u
 
 /**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
  * @param lls_cid
+ * @param num_included_services
  * @param status
  */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED                          0x23u
 
 /**
- * @format 12
+ * @format 1H21
  * @param subevent_code
+ * @param con_handle
  * @param lls_cid
+ * @param status
  */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED                       0x24u
 
@@ -4748,12 +4761,23 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_STOP_ALERTING                      0x27u
 
 /**
- * @format 121
+ * @format 1211
  * @param subevent_code
  * @param lls_cid
+ * @param status
  * @param value
  */
 #define GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL                        0x28u
+
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param ias_cid
+ * @param num_included_services
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_IAS_CLIENT_CONNECTED                          0x29u
 
 /**
  * @format 1H21
@@ -4761,13 +4785,6 @@ typedef SSIZE_T ssize_t;
  * @param con_handle
  * @param ias_cid
  * @param status
-*/
-#define GATTSERVICE_SUBEVENT_IAS_CLIENT_CONNECTED                          0x29u
-
-/**
- * @format 12
- * @param subevent_code
- * @param ias_cid
 */
 #define GATTSERVICE_SUBEVENT_IAS_CLIENT_DISCONNECTED                       0x2Au
 
@@ -4787,25 +4804,28 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_IAS_CLIENT_STOP_ALERTING                      0x2Cu
 
 /**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
- * @param tpxs_cid
+ * @param txps_cid
+ * @param num_included_services
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED                         0x2Du
 
 /**
- * @format 12
+ * @format 1H21
  * @param subevent_code
- * @param tpxs_cid
+ * @param con_handle
+ * @param txps_cid
+ * @param status
 */
 #define GATTSERVICE_SUBEVENT_TXPS_CLIENT_DISCONNECTED                      0x2Eu
 
 /**
  * @format 121
  * @param subevent_code
- * @param tpxs_cid
+ * @param txps_cid
  * @param value
  */
 #define GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL                    0x2Fu

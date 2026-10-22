@@ -157,6 +157,12 @@ typedef enum {
     H2_W4_PAYLOAD,
 } H2_SCO_STATE;
 
+typedef enum {
+    USB_SCO_STATE_INACTIVE,
+    USB_SCO_STATE_ACTIVE,
+    USB_SCO_STATE_STOPPING,
+} usb_sco_state_t;
+
 static libusb_state_t libusb_state = LIB_USB_CLOSED;
 
 // single instance
@@ -337,6 +343,7 @@ static void signal_acknowledge(void);
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void signal_sco_can_send_now(void);
+static void usb_sco_start_if_ready(void);
 
 #ifdef _WIN32
 #error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment ENABLE_SCO_OVER_HCI in btstack-config.h for now"
@@ -351,7 +358,8 @@ static uint16_t sco_bytes_to_read;
 // pause/resume
 static uint16_t sco_voice_setting;
 static int      sco_num_connections;
-static bool     sco_activated;
+static usb_sco_state_t sco_transport_state = USB_SCO_STATE_INACTIVE;
+static bool     sco_can_send_now_pending;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
@@ -454,6 +462,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
 #ifdef ENABLE_SCO_OVER_HCI
         if(( transfer->endpoint == sco_in_addr) || (transfer->endpoint == sco_out_addr)) {
             usb_transfer_list_release( sco_transfer_list, transfer );
+            usb_sco_start_if_ready();
         } else
 #endif
         {
@@ -475,7 +484,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer) {
 static int usb_send_sco_packet(uint8_t *packet, int size){
     int r;
 
-    if( !sco_activated ) {
+    if (sco_transport_state != USB_SCO_STATE_ACTIVE) {
         log_error("sco send without beeing active!");
         return -1;
     }
@@ -574,8 +583,9 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->NUM_ISO_PACKETS);
 
         // give the transfer back to the pool, without resubmiting 
-        if( !sco_activated ) {
+        if (sco_transport_state != USB_SCO_STATE_ACTIVE) {
             usb_transfer_list_release( sco_transfer_list, transfer );
+            usb_sco_start_if_ready();
             return;
         }
 
@@ -600,7 +610,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
             }
         }
         usb_transfer_list_release( sco_transfer_list, transfer );
-        if( !sco_activated ) {
+        usb_sco_start_if_ready();
+        if (sco_transport_state != USB_SCO_STATE_ACTIVE) {
             return;
         }
         // log_info("sco out done, {{ %u/%u (%x)}, { %u/%u (%x)}, { %u/%u (%x)}}", 
@@ -851,16 +862,33 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("libusb_detach_kernel_driver");
 #endif
 
-    const int configuration = 1;
-    log_info("setting configuration %d...", configuration);
-    r = libusb_set_configuration(aHandle, configuration);
-    if (r < 0) {
-        log_error("Error libusb_set_configuration: %d", r);
-        if (kernel_driver_detached){
-            libusb_attach_kernel_driver(aHandle, 0);
+    // Only set the configuration when not already active — BT dongles expose exactly one
+    // configuration and hosts auto-configure them. Re-issuing SET_CONFIGURATION on an
+    // active configuration is at best a no-op and on macOS Tahoe rides the same
+    // re-enumeration kernel-bug path as reset_device (libusb issue #1710).
+    // ponytail: literal 1 matches the hard-coded target below; correct for any single-config
+    // dongle (all classic BT dongles are) — read descriptor config value if a multi-config
+    // device ever shows up.
+    int currentConfiguration = 0;
+    if (libusb_get_configuration(aHandle, &currentConfiguration) != LIBUSB_SUCCESS) {
+        // Fail loud, and default to the SAFE side: do NOT re-issue SET_CONFIGURATION blindly.
+        log_error("libusb_get_configuration failed — assuming configuration already active, skipping set_configuration");
+        currentConfiguration = 1;
+    }
+    if (currentConfiguration != 1) {
+        const int configuration = 1;
+        log_info("setting configuration %d...", configuration);
+        r = libusb_set_configuration(aHandle, configuration);
+        if (r < 0) {
+            log_error("Error libusb_set_configuration: %d", r);
+            if (kernel_driver_detached){
+                libusb_attach_kernel_driver(aHandle, 0);
+            }
+            libusb_close(aHandle);
+            return r;
         }
-        libusb_close(aHandle);
-        return r;
+    } else {
+        log_info("configuration 1 already active, skipping set_configuration");
     }
 
     // reserve access to device
@@ -920,7 +948,10 @@ static libusb_device_handle * try_open_device(libusb_device * device){
     log_info("libusb open %d, handle %p", r, dev_handle);
 
     // reset device (Not currently possible under FreeBSD 11.x/12.x due to usb framework)
-#if !defined(__FreeBSD__)
+    // macOS: skipped — no kernel driver owns the dongle there, and macOS 26 (Tahoe)
+    // kernel-panics in the reset/re-enumeration path (Apple bug; libusb issue #1710).
+    // Verified by fsync-logged ladder probe: panic reproduces inside libusb_reset_device, 3/3.
+#if !defined(__FreeBSD__) && !defined(__APPLE__)
     r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
@@ -935,11 +966,10 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 static int usb_sco_start(void){
 
     log_info("usb_sco_start");
-    if( sco_activated ) {
+    if (sco_transport_state != USB_SCO_STATE_INACTIVE) {
         log_error("double sco start!");
         return -1;
     }
-    sco_activated = true;
 
     sco_state_machine_init();
 
@@ -961,11 +991,13 @@ static int usb_sco_start(void){
         return r;
     }
 
+    sco_transport_state = USB_SCO_STATE_ACTIVE;
+
 #ifdef DEBUG
     int in_flight = usb_transfer_list_in_flight( sco_transfer_list );
-    // there need to be at least SCO_IN_BUFFER_COUNT packets available to 
-    // fill them in below
-    btstack_assert( in_flight <= SCO_OUT_BUFFER_COUNT );
+    // All transfers from a previous SCO configuration must have completed
+    // before the new configuration claims the SCO-IN transfer slots below.
+    btstack_assert( in_flight == 0 );
 #endif
 
     // incoming
@@ -990,10 +1022,17 @@ static int usb_sco_start(void){
     return 0;
 }
 
+static void usb_sco_start_if_ready(void){
+    if ((sco_transport_state != USB_SCO_STATE_INACTIVE) || (sco_num_connections == 0)) return;
+    if (usb_transfer_list_in_flight(sco_transfer_list) != 0) return;
+    (void) usb_sco_start();
+}
+
 static void usb_sco_stop(void){
 
     log_info("usb_sco_stop");
-    sco_activated = false;
+    sco_transport_state = USB_SCO_STATE_STOPPING;
+    sco_can_send_now_pending = false;
 
     usb_transfer_list_cancel( sco_transfer_list );
 
@@ -1001,9 +1040,12 @@ static void usb_sco_stop(void){
     int r = libusb_set_interface_alt_setting(handle, 1, 0);
     if (r < 0) {
         log_error("Error setting alternative setting %u for interface 1: %s", 0, libusb_error_name(r));
+        sco_transport_state = USB_SCO_STATE_INACTIVE;
         return;
     }
 
+    sco_transport_state = USB_SCO_STATE_INACTIVE;
+    usb_sco_start_if_ready();
     log_info("usb_sco_stop done");
 }
 #endif
@@ -1360,9 +1402,9 @@ static void signal_acknowledge(void) {
 }
 
 #ifdef ENABLE_SCO_OVER_HCI
-static int sco_can_send_now_count = 0;
 static void signal_sco_can_send_now(void) {
-    ++sco_can_send_now_count;
+    if (sco_can_send_now_pending) return;
+    sco_can_send_now_pending = true;
     btstack_run_loop_poll_data_sources_from_irq();
 }
 #endif
@@ -1376,8 +1418,9 @@ static void usb_transport_response_ds(btstack_data_source_t *ds, btstack_data_so
     }
 
 #ifdef ENABLE_SCO_OVER_HCI
-    for(; sco_can_send_now_count>0; --sco_can_send_now_count) {
+    if (sco_can_send_now_pending) {
         static const uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
+        sco_can_send_now_pending = false;
         packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
     }
 #endif
@@ -1460,12 +1503,10 @@ static int usb_can_send_packet_now(uint8_t packet_type){
 
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET: {
-            if (!sco_enabled || !sco_activated) return 0;
-            int ret = !usb_transfer_list_empty( sco_transfer_list );
-            if( !ret ) {
-                log_error("sco transfers shouldn't be empty!");
-            }
-            return ret;
+            if (!sco_enabled || (sco_transport_state != USB_SCO_STATE_ACTIVE)) return 0;
+            // An empty free list means all SCO transmit transfers are in flight.
+            // This is normal backpressure while streaming SCO data.
+            return !usb_transfer_list_empty( sco_transfer_list );
         }
 #endif
         default:
@@ -1499,15 +1540,20 @@ static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
 
     log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
 
-    if (num_connections != sco_num_connections){
+    if (num_connections > (int)(sizeof(alt_setting_8_bit) / sizeof(alt_setting_8_bit[0]))) {
+        log_error("Cannot configure %u SCO connections, maximum is %u", num_connections,
+                  (unsigned int)(sizeof(alt_setting_8_bit) / sizeof(alt_setting_8_bit[0])));
+        return;
+    }
+
+    if ((num_connections != sco_num_connections) || (voice_setting != sco_voice_setting)){
+        bool sco_was_active = sco_transport_state == USB_SCO_STATE_ACTIVE;
         sco_voice_setting = voice_setting;
-        if (sco_num_connections){
+        sco_num_connections = num_connections;
+        if (sco_was_active){
             usb_sco_stop();
         }
-        sco_num_connections = num_connections;
-        if (num_connections){
-            usb_sco_start();
-        }
+        usb_sco_start_if_ready();
     }
 }
 #endif

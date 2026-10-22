@@ -1400,6 +1400,9 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key){
 #endif
 
 void btstack_crypto_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint16_t additional_authenticated_data_len, uint8_t auth_len){
+    btstack_assert(auth_len >= 4u);
+    btstack_assert(auth_len <= 16u);
+    btstack_assert((auth_len & 1u) == 0u);
     request->key         = key;
     request->nonce       = nonce;
     request->message_len = message_len;
@@ -1426,6 +1429,7 @@ void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request,
 }
 
 void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * plaintext, uint8_t * ciphertext, void (* callback)(void * arg), void * callback_arg){
+    btstack_assert(len <= request->message_len);
 #ifdef DEBUG_CCM
     printf("\nbtstack_crypto_ccm_encrypt_block, len %u\n", len);
 #endif
@@ -1443,6 +1447,7 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t l
 }
 
 void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg){
+    btstack_assert(len <= request->message_len);
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK;

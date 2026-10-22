@@ -484,6 +484,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case GAP_EVENT_INQUIRY_RESULT:
                     gap_event_inquiry_result_get_bd_addr(event, addr);
+                    memcpy(device_addr, addr, sizeof(device_addr));
                     // print info
                     printf("Device found: %s ",  bd_addr_to_str(addr));
                     printf("with COD: 0x%06x, ", (unsigned int) gap_event_inquiry_result_get_class_of_device(event));

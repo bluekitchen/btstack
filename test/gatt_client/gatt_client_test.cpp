@@ -1503,6 +1503,97 @@ TEST(GATTClient, truncated_read_by_type_response_is_rejected){
     CHECK_EQUAL(ATT_ERROR_INVALID_PDU, gatt_query_complete_status);
 }
 
+// Exercise discovery through the ATT handler, including UUID-filtered results.
+static void prepare_characteristic_response(gatt_client_t * client, bool filtered){
+    client->callback = handle_ble_client_event;
+    client->state = filtered ? P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT : P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT;
+    client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+    client->filter_with_uuid = filtered;
+    client->start_group_handle = 8;
+    client->end_group_handle = 20;
+    client->characteristic_start_handle = 5;
+    client->attribute_handle = 6;
+    memset(client->uuid128, 0xff, sizeof(client->uuid128));
+}
+
+TEST(GATTClient, invalid_characteristic_declaration_does_not_end_pending_characteristic){
+    const uint16_t invalid_handles[] = {0, 4, 5, 7, 21};
+    for (unsigned filtered = 0; filtered < 2; filtered++){
+        for (unsigned width = 7; width <= 21; width += 14){
+            for (unsigned n = 0; n < sizeof(invalid_handles) / sizeof(invalid_handles[0]); n++){
+                reset_query_state();
+                gatt_client_t * client = get_gatt_client(gatt_client_handle);
+                prepare_characteristic_response(client, filtered != 0);
+                uint8_t packet[23] = {ATT_READ_BY_TYPE_RESPONSE};
+                packet[1] = width;
+                little_endian_store_16(packet, 2, invalid_handles[n]);
+                packet[4] = ATT_PROPERTY_READ;
+                little_endian_store_16(packet, 5, 9);
+                gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, gatt_client_handle, packet, 2 + width);
+                CHECK_EQUAL(0, result_counter);
+                CHECK_EQUAL(0, client->characteristic_start_handle);
+                CHECK_EQUAL(P_READY, client->state);
+                CHECK_EQUAL(1, gatt_query_complete);
+                CHECK_EQUAL(ATT_ERROR_INVALID_PDU, gatt_query_complete_status);
+            }
+        }
+    }
+}
+
+TEST(GATTClient, characteristic_declarations_must_increase_even_when_filtered_out){
+    const uint16_t invalid_second_handles[] = {0, 9, 10};
+    for (unsigned filtered = 0; filtered < 2; filtered++){
+        for (unsigned width = 7; width <= 21; width += 14){
+            for (unsigned n = 0; n < sizeof(invalid_second_handles) / sizeof(invalid_second_handles[0]); n++){
+                reset_query_state();
+                gatt_client_t * client = get_gatt_client(gatt_client_handle);
+                prepare_characteristic_response(client, filtered != 0);
+                uint8_t packet[44] = {ATT_READ_BY_TYPE_RESPONSE};
+                packet[1] = width;
+                little_endian_store_16(packet, 2, 10);
+                packet[4] = ATT_PROPERTY_READ;
+                little_endian_store_16(packet, 5, 11);
+                little_endian_store_16(packet, 2 + width, invalid_second_handles[n]);
+                packet[4 + width] = ATT_PROPERTY_READ;
+                little_endian_store_16(packet, 5 + width, 12);
+                gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, gatt_client_handle, packet, 2 + 2 * width);
+                CHECK_EQUAL(0, result_counter);
+                CHECK_EQUAL(0, client->characteristic_start_handle);
+                CHECK_EQUAL(P_READY, client->state);
+                CHECK_EQUAL(1, gatt_query_complete);
+                CHECK_EQUAL(ATT_ERROR_INVALID_PDU, gatt_query_complete_status);
+            }
+        }
+    }
+}
+
+TEST(GATTClient, increasing_characteristic_declarations_preserve_end_handles){
+    for (unsigned width = 7; width <= 21; width += 14){
+        reset_query_state();
+        gatt_client_t * client = get_gatt_client(gatt_client_handle);
+        prepare_characteristic_response(client, false);
+        client->end_group_handle = 13;
+        uint8_t packet[44] = {ATT_READ_BY_TYPE_RESPONSE};
+        packet[1] = width;
+        little_endian_store_16(packet, 2, 8);
+        packet[4] = ATT_PROPERTY_READ;
+        little_endian_store_16(packet, 5, 9);
+        little_endian_store_16(packet, 2 + width, 12);
+        packet[4 + width] = ATT_PROPERTY_READ;
+        little_endian_store_16(packet, 5 + width, 13);
+        gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, gatt_client_handle, packet, 2 + 2 * width);
+        CHECK_EQUAL(3, result_counter);
+        CHECK_EQUAL(5, characteristics[0].start_handle);
+        CHECK_EQUAL(7, characteristics[0].end_handle);
+        CHECK_EQUAL(8, characteristics[1].start_handle);
+        CHECK_EQUAL(11, characteristics[1].end_handle);
+        CHECK_EQUAL(12, characteristics[2].start_handle);
+        CHECK_EQUAL(13, characteristics[2].end_handle);
+        CHECK_EQUAL(1, gatt_query_complete);
+        CHECK_EQUAL(ATT_ERROR_SUCCESS, gatt_query_complete_status);
+    }
+}
+
 TEST(GATTClient, gatt_client_get_mtu){
 	reset_query_state();
 	uint16_t mtu;
