@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - btstack_util: add `btstack_atoi_n` for fixed-length numeric strings
 - A2DP Sink: add `a2dp_sink_delay_report`
 - A2DP Source: add `a2dp_source_stop_stream`
+- GOEP Server: add 'goep_server_header_add_body' and 'goep_server_header_add_body_or_end_of_body'
 - OTS: add Object Transfer Service client and server implementations
 - GATT Service Client: add registration with multiple UUID16 and CCCD configurations
 - Zephyr: add support for the Ezurio Vela IF310 DK and generated configurations for Nordic development kits
@@ -58,7 +59,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - PBAP Client: abort phonebook parsing upon yxml error
 - Mesh: validate provisioning, transport, and access PDUs, including segmented-message completion before delivery
 - Mesh: store length of individual segments in buffer for robust reassembly
-- Mesh: validate size of encyrpted payload data
+- Mesh: validate size of encrypted payload data
 - Mesh: fix MESH_SUBEVENT_PROXY_* events
 - Mesh: start advertising after loading network keys
 - libusb: support multiple SCO connections
