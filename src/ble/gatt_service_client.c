@@ -481,6 +481,7 @@ static void gatt_service_client_send_next_query(void * context) {
 #endif
 
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
+            connection->service_instances_num = 0;
             if (connection->service_uuid16 == 0){
                 status = gatt_client_discover_primary_services_by_uuid128_with_context(&gatt_service_client_gatt_packet_handler,
                                                                           connection->con_handle,

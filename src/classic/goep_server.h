@@ -246,6 +246,15 @@ uint8_t goep_server_header_add_type(uint16_t goep_cid, const char *type);
 uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length);
 
 /**
+ * @brief Add an OBEX Authentication Response header to the current response.
+ * @param goep_cid
+ * @param data authentication response TLVs
+ * @param length length of authentication response
+ * @return status
+ */
+uint8_t goep_server_header_add_challenge_response(uint16_t goep_cid, const uint8_t * data, uint16_t length);
+
+/**
  * @brief Send prepared response
  * @param goep_cid
  * @param response_code
