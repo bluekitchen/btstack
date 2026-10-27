@@ -23,7 +23,6 @@ static enum {
 
 static uint16_t mock_gatt_client_att_handle_generator;
 
-static uint8_t mock_gatt_client_att_error;
 static uint8_t  mock_gatt_client_uuid128[16];
 static uint16_t mock_gatt_client_value_handle;
 static uint16_t mock_gatt_client_start_handle;
@@ -666,7 +665,6 @@ void mock_gatt_client_run(void){
     while (mock_gatt_client_state != MOCK_QUERY_IDLE){
         mock_gatt_client_run_once();
     }
-    mock_gatt_client_att_error = ERROR_CODE_SUCCESS;
     mock_gatt_client_state = MOCK_QUERY_IDLE;
 }
 
@@ -686,7 +684,6 @@ static void mock_gatt_client_reset_errors(void){
 }
 
 void mock_gatt_client_reset(void){
-    mock_gatt_client_att_error = 0;
     mock_gatt_client_state = MOCK_QUERY_IDLE;
     mock_gatt_client_att_handle_generator = 0;
     mock_gatt_client_last_service = NULL;
@@ -863,5 +860,5 @@ void mock_gatt_client_set_characteristic_value(mock_gatt_client_characteristic_t
 
 // simulate error
 void mock_gatt_client_simulate_att_error(uint8_t att_error){
-    mock_gatt_client_att_error = att_error;
+    UNUSED(att_error);
 }
