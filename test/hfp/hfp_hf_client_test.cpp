@@ -594,6 +594,11 @@ TEST(HFPClient, IssuesTests){
 }
 
 int main (int argc, const char * argv[]){
+    UNUSED(service_level_connection_established);
+    UNUSED(audio_connection_established);
+    UNUSED(start_ringing);
+    UNUSED(stop_ringing);
+    UNUSED(call_termiated);
     hfp_hf_register_packet_handler(packet_handler);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

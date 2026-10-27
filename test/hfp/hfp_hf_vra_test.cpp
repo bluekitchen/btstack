@@ -642,5 +642,10 @@ TEST(HFP_HF_VRA, SCO_ESTABLISHED__HF_ACTIVATE__AG_DEACTIVATE__HF_ACTIVATE){
 }
 
 int main (int argc, const char * argv[]){
+    UNUSED(service_level_connection_established);
+    UNUSED(audio_connection_established);
+    UNUSED(start_ringing);
+    UNUSED(stop_ringing);
+    UNUSED(call_termiated);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
