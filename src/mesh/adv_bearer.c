@@ -102,13 +102,11 @@ static uint32_t   gap_adv_next_ms;
 static uint8_t   adv_bearer_buffer[31];
 static uint8_t   adv_bearer_buffer_length;
 static uint8_t   adv_bearer_count;
-static uint16_t  adv_bearer_interval;
 
 // gap advertising
 static int       gap_advertising_enabled;
 static uint16_t  gap_adv_int_min    = 0x30;
 static uint16_t  gap_adv_int_ms;
-static uint16_t  gap_adv_int_max    = 0x30;
 static uint8_t   gap_adv_type       = 0;
 static uint8_t   gap_direct_address_typ;
 static bd_addr_t gap_direct_address;
@@ -308,7 +306,7 @@ static void adv_bearer_prepare_message(const uint8_t * data, uint16_t data_len, 
 
     // setup trasmission schedule
     adv_bearer_count    = count;
-    adv_bearer_interval = interval;
+    UNUSED(interval);
 }
 
 //////
@@ -394,7 +392,7 @@ void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int
     // assert adv_int_min/max >= 2 * ADVERTISING_INTERVAL_MIN
 
     gap_adv_int_min        = btstack_max(adv_int_min, 2 * ADVERTISING_INTERVAL_CONNECTABLE_MIN);
-    gap_adv_int_max        = btstack_max(adv_int_max, 2 * ADVERTISING_INTERVAL_CONNECTABLE_MIN);
+    UNUSED(adv_int_max);
     gap_adv_int_ms         = gap_adv_int_min * 625 / 1000;
     gap_adv_type           = adv_type;
     gap_direct_address_typ = direct_address_typ; 
