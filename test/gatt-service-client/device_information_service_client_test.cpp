@@ -43,7 +43,6 @@ static bool system_id = false;
 static bool ieee_regulatory_certification = false;
 static bool pnp_id = false;
 
-static bool mock_wrong_hci_event_packet_type = false;
 
 extern "C" void device_information_service_client_set_invalid_state(void);
 
@@ -177,7 +176,6 @@ TEST_GROUP(DEVICE_INFORMATION_SERVICE_CLIENT){
     mock_gatt_client_characteristic_t * characteristic;
 
     void setup(void){
-        mock_wrong_hci_event_packet_type = false;
         manufacturer_name = false;
         model_number = false;
         serial_number = false;
