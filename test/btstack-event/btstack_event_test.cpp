@@ -57,17 +57,16 @@ TEST(btstack_event, le_cs_read_remote_supported_capabilities_complete_getters){
 }
 
 TEST(btstack_event, le_cs_read_remote_fae_table_complete_getters){
-    const uint8_t expected_remote_fae_table_0[] = {
-        0x1f, 0x1e, 0x1d, 0x1c, 0x1b, 0x1a, 0x19, 0x18,
-        0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10,
-        0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08,
-        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
-    };
-    const uint8_t expected_remote_fae_table_1[] = {
-        0x3f, 0x3e, 0x3d, 0x3c, 0x3b, 0x3a, 0x39, 0x38,
-        0x37, 0x36, 0x35, 0x34, 0x33, 0x32, 0x31, 0x30,
-        0x2f, 0x2e, 0x2d, 0x2c, 0x2b, 0x2a, 0x29, 0x28,
-        0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21, 0x20
+    const le_cs_fae_table_t expected_remote_fae_table = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+        0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+        0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+        0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
+        0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47
     };
     const uint8_t event[] = {
         HCI_EVENT_LE_META, 0x4c, HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE,
@@ -83,17 +82,13 @@ TEST(btstack_event, le_cs_read_remote_fae_table_complete_getters){
         0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
         0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47
     };
-    uint8_t remote_fae_table_0[sizeof(expected_remote_fae_table_0)];
-    uint8_t remote_fae_table_1[sizeof(expected_remote_fae_table_1)];
+    le_cs_fae_table_t remote_fae_table;
 
     CHECK_EQUAL(HCI_SUBEVENT_LE_CS_READ_REMOTE_FAE_TABLE_COMPLETE, hci_event_le_meta_get_subevent_code(event));
     CHECK_EQUAL(0x7e, hci_subevent_le_cs_read_remote_fae_table_complete_get_status(event));
     CHECK_EQUAL(0x1122, hci_subevent_le_cs_read_remote_fae_table_complete_get_connection_handle(event));
-    hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_0(event, remote_fae_table_0);
-    MEMCMP_EQUAL(expected_remote_fae_table_0, remote_fae_table_0, sizeof(remote_fae_table_0));
-    hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_1(event, remote_fae_table_1);
-    MEMCMP_EQUAL(expected_remote_fae_table_1, remote_fae_table_1, sizeof(remote_fae_table_1));
-    MEMCMP_EQUAL(&event[70], hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table_2(event), 8);
+    hci_subevent_le_cs_read_remote_fae_table_complete_get_remote_fae_table(event, remote_fae_table);
+    MEMCMP_EQUAL(expected_remote_fae_table, remote_fae_table, sizeof(remote_fae_table));
 }
 
 TEST(btstack_event, le_cs_security_enable_complete_getters){
@@ -109,6 +104,11 @@ TEST(btstack_event, le_cs_security_enable_complete_getters){
 }
 
 TEST(btstack_event, le_cs_config_complete_getters){
+    const le_cs_channel_map_t expected_channel_map = {
+        0x11, 0x22, 0x33, 0x44,
+        0x55, 0x66, 0x77, 0x88,
+        0x99, 0xaa
+    };
     const uint8_t event[] = {
         HCI_EVENT_LE_META, 0x22, HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE,
         0x24,
@@ -120,6 +120,7 @@ TEST(btstack_event, le_cs_config_complete_getters){
         0xbb, 0xcc, 0xdd, 0xee, 0xff,
         0x12, 0x13, 0x14, 0x15
     };
+    le_cs_channel_map_t channel_map;
     CHECK_EQUAL(HCI_SUBEVENT_LE_CS_CONFIG_COMPLETE, hci_event_le_meta_get_subevent_code(event));
     CHECK_EQUAL(0x24, hci_subevent_le_cs_config_complete_get_status(event));
     CHECK_EQUAL(0x1234, hci_subevent_le_cs_config_complete_get_connection_handle(event));
@@ -134,9 +135,8 @@ TEST(btstack_event, le_cs_config_complete_getters){
     CHECK_EQUAL(0x09, hci_subevent_le_cs_config_complete_get_role(event));
     CHECK_EQUAL(0x0a, hci_subevent_le_cs_config_complete_get_rtt_type(event));
     CHECK_EQUAL(0x0b, hci_subevent_le_cs_config_complete_get_cs_sync_phy(event));
-    CHECK_EQUAL(0x44332211, hci_subevent_le_cs_config_complete_get_channel_map_0_3(event));
-    CHECK_EQUAL(0x88776655, hci_subevent_le_cs_config_complete_get_channel_map_4_7(event));
-    CHECK_EQUAL(0xaa99, hci_subevent_le_cs_config_complete_get_channel_map_8_9(event));
+    hci_subevent_le_cs_config_complete_get_channel_map(event, channel_map);
+    MEMCMP_EQUAL(expected_channel_map, channel_map, sizeof(channel_map));
     CHECK_EQUAL(0xbb, hci_subevent_le_cs_config_complete_get_channel_map_repetition(event));
     CHECK_EQUAL(0xcc, hci_subevent_le_cs_config_complete_get_channel_selection_type(event));
     CHECK_EQUAL(0xdd, hci_subevent_le_cs_config_complete_get_ch3c_shape(event));
