@@ -74,6 +74,23 @@ TEST(SDPClientResponse, RejectsTruncatedContinuationState){
     CHECK_EQUAL(2, mock_l2cap_get_send_prepared_count());
 }
 
+TEST(SDPClientResponse, RejectsAttributeValueLongerThanUint16){
+    start_query();
+
+    uint16_t transaction_id = mock_l2cap_get_last_transaction_id();
+    uint8_t response[] = {
+        SDP_ServiceSearchAttributeResponse, 0, 0, 0, 15,
+        0, 12,
+        0x35, 0x0a, 0x35, 0x08, 0x09, 0x00, 0x04, 0x37, 0xff, 0xff, 0xff, 0xff,
+        0
+    };
+    big_endian_store_16(response, 1, transaction_id);
+    mock_l2cap_emit_data(0x40, response, sizeof(response));
+
+    CHECK_EQUAL(1, mock_l2cap_get_disconnect_count());
+    CHECK_EQUAL(1, mock_l2cap_get_send_prepared_count());
+}
+
 int main(int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
