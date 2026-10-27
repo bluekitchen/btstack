@@ -9,7 +9,6 @@
 static btstack_timer_source_t timer_1;
 static btstack_timer_source_t timer_2;
 static btstack_data_source_t  data_source;
-static bool data_source_called;
 static bool timer_called;
 
 static void heartbeat_timeout_handler(btstack_timer_source_t * ts){
@@ -19,14 +18,12 @@ static void heartbeat_timeout_handler(btstack_timer_source_t * ts){
 static void data_source_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
     UNUSED(ds);
     UNUSED(callback_type);
-    data_source_called = true;
 }
 
 TEST_GROUP(RunLoopBase){
         void setup(void){
             btstack_memory_init();
             btstack_run_loop_base_init();
-            data_source_called = false;
             timer_called = false;
         }
         void teardown(void){
