@@ -609,6 +609,7 @@ handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection
 static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * connection, uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
+    uint16_t attribute_length;
 
     // Handle new SDP record
     if (sdp_event_query_attribute_byte_get_record_id(packet) != avdtp_record_id) {
@@ -620,12 +621,18 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
         avdtp_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
         if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+            attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+            // Validate the peer-provided data element before traversing it.
+            if (de_get_len_safe(avdtp_attribute_value, attribute_length) != attribute_length){
+                log_info("AVDTP: malformed SDP data element for attribute %x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                return;
+            }
 
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
 
                 case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
-                    if (de_get_element_type(avdtp_attribute_value) != DE_DES) break;
-                    for (des_iterator_init(&des_list_it, avdtp_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, avdtp_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t * element = des_iterator_get_element(&des_list_it);
                         if (de_get_element_type(element) != DE_UUID) continue;
                         uint32_t uuid = de_get_uuid32(element);
@@ -646,7 +653,8 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
 
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: 
                     // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-                    for (des_iterator_init(&des_list_it, avdtp_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, avdtp_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -654,7 +662,8 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
                         des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
+                        if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&des_list_it))) continue;
+                        if (!des_iterator_has_more(&prot_it)) continue;
                         element = des_iterator_get_element(&prot_it);
 
                         if (de_get_element_type(element) != DE_UUID) continue;
