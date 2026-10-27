@@ -6,7 +6,6 @@
 
 static btstack_linked_list_t  event_packet_handlers;
 static uint8_t packet_buffer[256];
-static uint16_t packet_buffer_len;
 
 static uint8_t aes128_cyphertext[16];
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
@@ -46,7 +45,6 @@ uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_end(argptr);
 	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
 	// dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);
-	packet_buffer_len = len;
 	if (cmd->opcode ==  hci_le_encrypt.opcode){
 	    uint8_t * key_flipped = &packet_buffer[3];
 	    uint8_t key[16];
