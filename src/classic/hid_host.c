@@ -541,6 +541,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     btstack_assert(connection->state == HID_HOST_W4_SDP_QUERY_RESULT);
 
     uint16_t  attribute_id;
+    uint16_t  attribute_length;
     uint16_t  attribute_offset;
     uint8_t   attribute_data;
     switch (hci_event_packet_get_type(packet)){
@@ -578,13 +579,21 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                 hid_host_sdp_attribute_value[attribute_offset] = attribute_data;
 
                 if ((uint16_t)(attribute_offset + 1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+                    attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+                    // Validate the peer-provided data element before traversing it.
+                    if (de_get_len_safe(hid_host_sdp_attribute_value, attribute_length) != attribute_length){
+                        log_info("HID Host: malformed SDP data element for attribute %x", attribute_id);
+                        break;
+                    }
                     switch(attribute_id) {
                         
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
+                            if (!des_iterator_init_with_len(&attribute_list_it, hid_host_sdp_attribute_value, attribute_length)) break;
+                            for (; des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
                                 if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
                                 des_element = des_iterator_get_element(&attribute_list_it);
-                                des_iterator_init(&prot_it, des_element);
+                                if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&attribute_list_it))) continue;
+                                if (!des_iterator_has_more(&prot_it)) continue;
                                 element = des_iterator_get_element(&prot_it);
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uuid = de_get_uuid32(element);
@@ -601,13 +610,16 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                             }
                             break;
                         case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS:
-                            for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
+                            if (!des_iterator_init_with_len(&attribute_list_it, hid_host_sdp_attribute_value, attribute_length)) break;
+                            for (; des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
                                 if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
                                 des_element = des_iterator_get_element(&attribute_list_it);
-                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
+                                if (!des_iterator_init_with_len(&additional_des_it, des_element, des_iterator_get_element_len(&attribute_list_it))) continue;
+                                for (; des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {
                                     if (des_iterator_get_type(&additional_des_it) != DE_DES) continue;
                                     des_element = des_iterator_get_element(&additional_des_it);
-                                    des_iterator_init(&prot_it, des_element);
+                                    if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&additional_des_it))) continue;
+                                    if (!des_iterator_has_more(&prot_it)) continue;
                                     element = des_iterator_get_element(&prot_it);
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     uuid = de_get_uuid32(element);
