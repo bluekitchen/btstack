@@ -323,7 +323,7 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
         }
         // optional seperator
         char separator = *string;
-        if (separator == ':' && separator == '-' && separator == ' ') {
+        if (separator == ':' || separator == '-' || separator == ' ') {
             string++;
         }
     }

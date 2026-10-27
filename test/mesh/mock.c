@@ -14,7 +14,6 @@
 static btstack_linked_list_t event_packet_handlers;
 
 static uint8_t  packet_buffer[256];
-static uint16_t packet_buffer_len = 0;
 
 static uint8_t aes128_cyphertext[16];
 
@@ -37,7 +36,6 @@ uint8_t * mock_packet_buffer(void){
 }
 
 void mock_clear_packet_buffer(void){
-	packet_buffer_len = 0;
 	memset(packet_buffer, 0, sizeof(packet_buffer));
 }
 
@@ -128,7 +126,6 @@ uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_end(argptr);
 	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
 	dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);
-	packet_buffer_len = len;
 
 	// track le encrypt and le rand
 	if (cmd->opcode ==  hci_le_encrypt.opcode){

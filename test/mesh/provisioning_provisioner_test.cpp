@@ -68,7 +68,6 @@ static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 static btstack_packet_handler_t pb_adv_packet_handler;
 
 static uint8_t * pdu_data;
-static uint16_t  pdu_size;
 
 static void pb_adv_emit_link_open(uint8_t status, uint16_t pb_adv_cid){
     uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN, status};
@@ -101,7 +100,6 @@ void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler){
 void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t size){
     UNUSED(pb_transport_cid);
     pdu_data = (uint8_t*) pdu;
-    pdu_size = size;
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
@@ -153,7 +151,7 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
         }
         // optional seperator
         char separator = *string;
-        if (separator == ':' && separator == '-' && separator == ' ') {
+        if (separator == ':' || separator == '-' || separator == ' ') {
             string++;
         }
     }
