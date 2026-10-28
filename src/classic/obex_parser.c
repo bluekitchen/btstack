@@ -195,6 +195,7 @@ obex_parser_object_state_t obex_parser_process_data(obex_parser_t *obex_parser, 
                 obex_parser->state = OBEX_PARSER_STATE_OVERRUN;
                 break;
             case OBEX_PARSER_STATE_INVALID:
+            case OBEX_PARSER_STATE_OVERRUN:
                 break;
             default:
                 btstack_unreachable();

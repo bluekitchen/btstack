@@ -76,6 +76,18 @@ TEST(OBEX_PARSER, RequestOverrun){
     CHECK_EQUAL(OBEX_PARSER_OBJECT_STATE_OVERRUN, parser_state);
 }
 
+TEST(OBEX_PARSER, ResponseOverrunIsSticky){
+    const uint8_t response[] = { 0xa0, 0x00, 0x03, 0x00, 0x00 };
+
+    obex_parser_init_for_response(&parser, OBEX_OPCODE_GET, &parser_callback, NULL);
+    for (uint16_t i = 0; i < 2; i++){
+        CHECK_EQUAL(OBEX_PARSER_OBJECT_STATE_INCOMPLETE, obex_parser_process_data(&parser, &response[i], 1));
+    }
+    CHECK_EQUAL(OBEX_PARSER_OBJECT_STATE_COMPLETE, obex_parser_process_data(&parser, &response[2], 1));
+    CHECK_EQUAL(OBEX_PARSER_OBJECT_STATE_OVERRUN, obex_parser_process_data(&parser, &response[3], 1));
+    CHECK_EQUAL(OBEX_PARSER_OBJECT_STATE_OVERRUN, obex_parser_process_data(&parser, &response[4], 1));
+}
+
 TEST(OBEX_PARSER, RequestInvalid){
     (void) obex_message_builder_request_create_connect(message, sizeof(message), obex_version_number, flags, maximum_obex_packet_length);
     // decrease packet len
