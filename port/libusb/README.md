@@ -68,15 +68,32 @@ macOS uses the plugged-in Bluetooth Controller. Please configure NVRAM as explai
 
 #### macOS 26 Tahoe
 
-From macOS 26.0 until now (currently macOS 26.4) access to a Bluetooth Controller via libusb causes a kernel panic.
+BTstack works with libusb 1.0.27 on macOS 26 when libusb is built without
+`pipe2`. macOS 26 does not provide `pipe2` at runtime, but the macOS 27 SDK
+declares it. As a result, libusb's Autoconf check can enable `pipe2` while
+building on macOS 26; the resulting application then crashes in
+`libusb_init()`. The version alone is therefore not sufficient: rebuilding
+1.0.27 with a macOS 27 SDK needs the workaround below as well.
 
-The libusb project has a closed issue about it here: https://github.com/libusb/libusb/issues/1762
-They closed it as the crash happens in the kernel and they or we cannot fix this.
-Please send bug/crash reports via the Feedback Assistant to Apple.
+The current Homebrew `libusb` formula installs a newer release. To build
+libusb 1.0.27 directly, use the official release tarball and disable the
+incorrect Autoconf result:
 
-To use BTstack on macOS 26, you're best option is to run a Linux distribution like Debian or Ubuntu in a virtual machine
-and acess the USB Bluetooth Dongle from there. We can confirm that BTstack works as expected in a Ubuntu 2024 VM with
-UTM and the CSR8510 USB dongle.
+	curl -LO https://github.com/libusb/libusb/releases/download/v1.0.27/libusb-1.0.27.tar.bz2
+	tar xjf libusb-1.0.27.tar.bz2
+	cd libusb-1.0.27
+	ac_cv_func_pipe2=no ./configure
+	make
+	sudo make install
+
+Configure CMake in a new build directory, or run `make`. Both build systems
+use `pkg-config` to select libusb.
+
+There is also a separate macOS 26 kernel bug in the USB host stack that can
+panic the system for particular devices and operations. BTstack avoids device
+reset and redundant configuration requests on macOS. Please report kernel
+panics to Apple using Feedback Assistant; see the related libusb issue:
+https://github.com/libusb/libusb/issues/1762
 
 
 ### Broadcom/Cypress/Infineon Controllers
