@@ -267,7 +267,7 @@ static void btstack_hid_usage_iterator_handle_global_item(btstack_hid_usage_iter
             break;
 
         default:
-            btstack_assert(false);
+            // ignore reserved global item tags (12..15)
             break;
     }
 }

@@ -511,6 +511,22 @@ TEST(HID, ThirtyTwoBitField){
     CHECK_EQUAL(0x89abcdef, (uint32_t) value);
 }
 
+TEST(HID, ReservedGlobalTagIsIgnored){
+    const uint8_t descriptor[] = {
+        0xc4,       // Reserved Global item
+        0x05, 0x01, // Usage Page
+        0x09, 0x30, // Usage
+        0x75, 0x08, // Report Size (8)
+        0x95, 0x01, // Report Count (1)
+        0x81, 0x02  // Input (Data, Variable, Absolute)
+    };
+    const uint8_t report[] = { 0x7f };
+    btstack_hid_parser_t hid_parser;
+
+    btstack_hid_parser_init(&hid_parser, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT, report, sizeof(report));
+    expect_field(&hid_parser, 1, 0x30, 0x7f);
+    CHECK_FALSE(btstack_hid_parser_has_more(&hid_parser));
+}
 TEST(HID, UnalignedThirtyTwoBitFieldIsRejected){
     const uint8_t descriptor[] = {
         0x75, 0x01, // Report Size (1)
