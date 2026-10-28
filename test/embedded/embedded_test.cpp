@@ -24,17 +24,13 @@ uint32_t hal_time_ms(void){
 
 static btstack_timer_source_t timer_1;
 static btstack_data_source_t  data_source;
-static bool data_source_called;
-static bool timer_called;
 
 static void heartbeat_timeout_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
-    timer_called = true;
 }
 static void data_source_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
     UNUSED(ds);
     UNUSED(callback_type);
-    data_source_called = true;
 }
 
 static void data_source_handler_trigger_exit(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){

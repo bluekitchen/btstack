@@ -24,7 +24,6 @@ const hci_transport_t * mock_hci_transport_mock_get_instance(void);
 #include <stddef.h>
 static uint8_t  mock_hci_transport_outgoing_packet_buffer[HCI_ACL_PAYLOAD_SIZE];
 static uint16_t mock_hci_transport_outgoing_packet_size;
-static uint8_t  mock_hci_transport_outgoing_packet_type;
 static uint8_t  mock_hci_transport_outgoing_packet_history[2][HCI_ACL_PAYLOAD_SIZE];
 static uint16_t mock_hci_transport_outgoing_packet_history_size[2];
 static uint8_t  mock_hci_transport_outgoing_packet_history_count;
@@ -34,7 +33,6 @@ static void mock_hci_transport_register_packet_handler(void (*packet_handler)(ui
     mock_hci_transport_packet_handler = packet_handler;
 }
 static int mock_hci_transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    mock_hci_transport_outgoing_packet_type = packet_type;
     mock_hci_transport_outgoing_packet_size = size;
     memcpy(mock_hci_transport_outgoing_packet_buffer, packet, size);
     if (mock_hci_transport_outgoing_packet_history_count < 2){

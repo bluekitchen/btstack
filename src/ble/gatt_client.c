@@ -3888,9 +3888,15 @@ static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * 
     if ((attribute_length <= sizeof(gatt_client_classic_sdp_buffer)) && (data_offset < attribute_length)) {
         gatt_client_classic_sdp_buffer[data_offset] = sdp_event_query_attribute_byte_get_data(packet);
         if ((uint16_t)(data_offset + 1u) == attribute_length) {
+            // Validate the peer-provided data element before traversing it.
+            if (de_get_len_safe(gatt_client_classic_sdp_buffer, attribute_length) != attribute_length){
+                log_info("GATT client: malformed SDP data element for attribute %x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                return;
+            }
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, gatt_client_classic_sdp_buffer); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, gatt_client_classic_sdp_buffer, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -3900,7 +3906,8 @@ static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * 
                         }
 
                         des_element = des_iterator_get_element(&des_list_it);
-                        des_iterator_init(&prot_it, des_element);
+                        if (!des_iterator_init_with_len(&prot_it, des_element, des_iterator_get_element_len(&des_list_it))) continue;
+                        if (!des_iterator_has_more(&prot_it)) continue;
                         element = des_iterator_get_element(&prot_it);
 
                         if (de_get_element_type(element) != DE_UUID){

@@ -63,6 +63,18 @@ TEST(SDPServer, ServiceAttributeRejectsTruncatedAttributeIdListChild){
     check_error_response(SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
 }
 
+TEST(SDPServer, ServiceAttributeRejectsNilAttributeIdListElement){
+    uint8_t packet[] = {
+        SDP_ServiceAttributeRequest, 0, 1, 0, 9,
+        0, 1, 0, 1,
+        0, 0x40,
+        0x35, 0x01, 0x02
+    };
+
+    CHECK_EQUAL(7, sdp_handle_service_attribute_request(packet, 48));
+    check_error_response(SDP_ERROR_CODE_INVALID_REQUEST_SYNTAX);
+}
+
 TEST(SDPServer, ServiceSearchAttributeRejectsTruncatedAttributeIdList){
     uint8_t packet[] = {
         SDP_ServiceSearchAttributeRequest, 0, 0, 0, 10,

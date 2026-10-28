@@ -23,7 +23,6 @@ static uint16_t gatt_client_handle = 0x40;
 static hci_connection_t hci_connection;
 
 static uint8_t packet_buffer[256];
-static uint16_t packet_buffer_len;
 
 uint16_t get_gatt_client_handle(void){
 	return gatt_client_handle;
@@ -132,7 +131,6 @@ uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_end(argptr);
 	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
 	// dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);
-	packet_buffer_len = len;
 	return ERROR_CODE_SUCCESS;
 }
 

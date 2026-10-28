@@ -15,7 +15,6 @@ static btstack_packet_handler_t packet_handler;
 static unsigned application_events;
 static unsigned send_requests;
 static uint8_t sent_packet[32];
-static uint16_t sent_size;
 
 avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t cid){
     (void)role;
@@ -39,7 +38,6 @@ uint8_t l2cap_send(uint16_t cid, const uint8_t * data, uint16_t len){
     assert(cid == connection.l2cap_browsing_cid);
     assert(len <= sizeof(sent_packet));
     memcpy(sent_packet, data, len);
-    sent_size = len;
     return ERROR_CODE_SUCCESS;
 }
 static void application_callback(uint8_t type, uint16_t channel, uint8_t * packet, uint16_t size){
@@ -57,7 +55,6 @@ static void check_range(uint32_t start, uint32_t end){
     connection.end_item = 20;
     application_events = 0;
     send_requests = 0;
-    sent_size = 0;
     uint8_t command[] = {
         0x30, 0x11, 0x0e, AVRCP_PDU_ID_GET_FOLDER_ITEMS, 0, 10,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0

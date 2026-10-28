@@ -71,7 +71,6 @@ const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B,
 static btstack_packet_handler_t pb_adv_packet_handler;
 
 static uint8_t * pdu_data;
-static uint16_t  pdu_size;
 
 /**
  * Initialize Provisioning Bearer using Advertisement Bearer
@@ -111,7 +110,6 @@ void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler){
 void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t size){
     UNUSED(pb_transport_cid);
     pdu_data = (uint8_t*) pdu;
-    pdu_size = size;
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
@@ -168,7 +166,7 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
         }
         // optional seperator
         char separator = *string;
-        if (separator == ':' && separator == '-' && separator == ' ') {
+        if (separator == ':' || separator == '-' || separator == ' ') {
             string++;
         }
     }

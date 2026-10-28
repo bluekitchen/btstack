@@ -23,14 +23,12 @@ static int mock_hci_transport_can_send_packet_now(uint8_t packet_type);
 #include <stddef.h>
 static uint8_t  mock_hci_transport_outgoing_packet_buffer[HCI_ACL_PAYLOAD_SIZE];
 static uint16_t mock_hci_transport_outgoing_packet_size;
-static uint8_t  mock_hci_transport_outgoing_packet_type;
 
 static void (*mock_hci_transport_packet_handler)(uint8_t packet_type, uint8_t * packet, uint16_t size);
 static void mock_hci_transport_register_packet_handler(void (*packet_handler)(uint8_t packet_type, uint8_t * packet, uint16_t size)){
     mock_hci_transport_packet_handler = packet_handler;
 }
 static int mock_hci_transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    mock_hci_transport_outgoing_packet_type = packet_type;
     mock_hci_transport_outgoing_packet_size = size;
     memcpy(mock_hci_transport_outgoing_packet_buffer, packet, size);
     return 0;

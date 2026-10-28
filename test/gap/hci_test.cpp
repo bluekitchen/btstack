@@ -1231,6 +1231,8 @@ TEST(HCI, handle_command_status_event) {
 }
 
 int main (int argc, const char * argv[]){
+    UNUSED(can_send_now);
+    UNUSED(received_gap_inquiry_results);
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

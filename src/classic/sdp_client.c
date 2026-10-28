@@ -72,7 +72,7 @@ static uint8_t sdp_client_des_attribute_id_list[] = {0x35, 0x05, 0x0A, 0x00, 0x0
 
 // Prototypes SDP Parser
 void sdp_parser_init(btstack_packet_handler_t callback);
-void sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
+bool sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
 void sdp_parser_handle_done(uint8_t status);
 void sdp_parser_init_service_attribute_search(void);
 void sdp_parser_init_service_search(void);
@@ -191,7 +191,7 @@ static void sdp_parser_emit_value_byte(uint8_t event_byte){
     (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
 }
 
-static void sdp_parser_process_byte(uint8_t eventByte){
+static bool sdp_parser_process_byte(uint8_t eventByte){
     // count all bytes
     sdp_parser_list_offset++;
     sdp_parser_record_offset++;
@@ -241,11 +241,16 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             sdp_parser_attribute_bytes_received++;
             sdp_parser_emit_value_byte(eventByte);
             sdp_parser_attribute_bytes_delivered++;
-            if (!de_state_size(eventByte, &des_parser_de_header_state)) break;
-
-            sdp_parser_attribute_value_size = des_parser_de_header_state.de_size + sdp_parser_attribute_bytes_received;
-
-            sdp_parser_state = GET_ATTRIBUTE_VALUE;
+            if (de_state_size(eventByte, &des_parser_de_header_state)) {
+                uint32_t value_size = des_parser_de_header_state.de_size + sdp_parser_attribute_bytes_received;
+                // reject attributes values larger than UINT16
+                if ((value_size < des_parser_de_header_state.de_size) || (value_size > UINT16_MAX)){
+                    log_info("SDP Client: Attribute value exceeds maximum supported length.");
+                    return false;
+                }
+                sdp_parser_attribute_value_size = (uint16_t) value_size;
+                sdp_parser_state = GET_ATTRIBUTE_VALUE;
+            }
             break;
         
         case GET_ATTRIBUTE_VALUE: 
@@ -279,6 +284,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
         default:
             break;
     }
+    return true;
 }
 
 void sdp_parser_init(btstack_packet_handler_t callback){
@@ -326,11 +332,12 @@ void sdp_client_reset(void){
     sdp_client_deinit();
 }
 
-void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
+bool sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
     int i;
     for (i=0;i<size;i++){
-        sdp_parser_process_byte(data[i]);
+        if (!sdp_parser_process_byte(data[i])) return false;
     }
+    return true;
 }
 
 #ifdef ENABLE_SDP_EXTRA_QUERIES
@@ -393,8 +400,8 @@ void sdp_parser_handle_done(uint8_t status){
 
 // TODO: inline if not needed (des(des))
 
-static void sdp_client_parse_attribute_lists(uint8_t* packet, uint16_t length){
-    sdp_parser_handle_chunk(packet, length);
+static bool sdp_client_parse_attribute_lists(uint8_t* packet, uint16_t length){
+    return sdp_parser_handle_chunk(packet, length);
 }
 
 
@@ -463,7 +470,7 @@ static bool sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
     // continuation state
     if ((offset + continuation_state_len) != response_end) return false;
 
-    sdp_client_parse_attribute_lists(attribute_lists, attributeListByteCount);
+    if (!sdp_client_parse_attribute_lists(attribute_lists, attributeListByteCount)) return false;
     sdp_client_continuation_state_len = continuation_state_len;
     (void)memcpy(sdp_client_continuation_state, packet + offset, continuation_state_len);
     return true;
@@ -763,7 +770,7 @@ static bool sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_
     }
     if (offset + continuation_state_len != response_end) return false;
 
-    sdp_client_parse_attribute_lists(attribute_lists, attributeListByteCount);
+    if (!sdp_client_parse_attribute_lists(attribute_lists, attributeListByteCount)) return false;
     sdp_client_continuation_state_len = continuation_state_len;
     (void)memcpy(sdp_client_continuation_state, packet + offset, continuation_state_len);
     return true;

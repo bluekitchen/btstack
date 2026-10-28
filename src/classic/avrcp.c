@@ -601,6 +601,7 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     des_iterator_t protocol_descriptor_list_it;
     des_iterator_t protocol_it;
     uint8_t protocol_descriptor_id;
+    uint16_t attribute_length;
 
     // Handle new SDP record
     if (sdp_event_query_attribute_byte_get_record_id(packet) != avrcp_sdp_query_context.record_id) {
@@ -613,10 +614,16 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
         avrcp_sdp_query_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
         if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+            attribute_length = sdp_event_query_attribute_byte_get_attribute_length(packet);
+            // Validate the peer-provided data element before traversing it.
+            if (de_get_len_safe(avrcp_sdp_query_attribute_value, attribute_length) != attribute_length){
+                log_info("AVRCP: malformed SDP data element for attribute %x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                return;
+            }
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
-                    if (de_get_element_type(avrcp_sdp_query_attribute_value) != DE_DES) break;
-                    for (des_iterator_init(&des_list_it, avrcp_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (!des_iterator_init_with_len(&des_list_it, avrcp_sdp_query_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t * element = des_iterator_get_element(&des_list_it);
                         if (de_get_element_type(element) != DE_UUID) continue;
                         uint32_t uuid = de_get_uuid32(element);
@@ -635,12 +642,14 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     if (!avrcp_sdp_query_context.parse_sdp_record) break;
 
-                    for (des_iterator_init(&protocol_descriptor_list_it, avrcp_sdp_query_attribute_value); des_iterator_has_more(&protocol_descriptor_list_it); des_iterator_next(&protocol_descriptor_list_it)) {
+                    if (!des_iterator_init_with_len(&protocol_descriptor_list_it, avrcp_sdp_query_attribute_value, attribute_length)) break;
+                    for (; des_iterator_has_more(&protocol_descriptor_list_it); des_iterator_next(&protocol_descriptor_list_it)) {
 
                         if (des_iterator_get_type(&protocol_descriptor_list_it) != DE_DES) continue;
                         uint8_t * protocol_descriptor_list_element = des_iterator_get_element(&protocol_descriptor_list_it);
 
-                        des_iterator_init(&protocol_it, protocol_descriptor_list_element);
+                        if (!des_iterator_init_with_len(&protocol_it, protocol_descriptor_list_element, des_iterator_get_element_len(&protocol_descriptor_list_it))) continue;
+                        if (!des_iterator_has_more(&protocol_it)) continue;
                         uint8_t * protocol_element = des_iterator_get_element(&protocol_it);
 
                         if (de_get_element_type(protocol_element) != DE_UUID) continue;
@@ -667,14 +676,16 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
 
                     protocol_descriptor_id = 0;
 
-                    for ( des_iterator_init(&additional_protocol_descriptor_list_it, avrcp_sdp_query_attribute_value);
+                    if (!des_iterator_init_with_len(&additional_protocol_descriptor_list_it, avrcp_sdp_query_attribute_value, attribute_length)) break;
+                    for ( ;
                           des_iterator_has_more(&additional_protocol_descriptor_list_it);
                           des_iterator_next(&additional_protocol_descriptor_list_it)) {
 
                         if (des_iterator_get_type(&additional_protocol_descriptor_list_it) != DE_DES) continue;
                         uint8_t *additional_protocol_descriptor_element = des_iterator_get_element(&additional_protocol_descriptor_list_it);
 
-                        for ( des_iterator_init(&protocol_descriptor_list_it,additional_protocol_descriptor_element);
+                        if (!des_iterator_init_with_len(&protocol_descriptor_list_it, additional_protocol_descriptor_element, des_iterator_get_element_len(&additional_protocol_descriptor_list_it))) continue;
+                        for ( ;
                               des_iterator_has_more(&protocol_descriptor_list_it);
                               des_iterator_next(&protocol_descriptor_list_it)) {
 
@@ -682,7 +693,8 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
 
                             uint8_t * protocol_descriptor_list_element = des_iterator_get_element(&protocol_descriptor_list_it);
 
-                            des_iterator_init(&protocol_it, protocol_descriptor_list_element);
+                            if (!des_iterator_init_with_len(&protocol_it, protocol_descriptor_list_element, des_iterator_get_element_len(&protocol_descriptor_list_it))) continue;
+                            if (!des_iterator_has_more(&protocol_it)) continue;
                             uint8_t * protocol_element = des_iterator_get_element(&protocol_it);
 
                             if (de_get_element_type(protocol_element) != DE_UUID) continue;

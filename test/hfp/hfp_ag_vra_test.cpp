@@ -546,5 +546,10 @@ TEST(HFP_AG_VRA, test_send_error_HFP_VRA_ENHANCED_ACTIVE) {
 }
 
 int main (int argc, const char * argv[]){
+    UNUSED(service_level_connection_established);
+    UNUSED(audio_connection_established);
+    UNUSED(start_ringing);
+    UNUSED(stop_ringing);
+    UNUSED(call_termiated);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

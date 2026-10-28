@@ -142,20 +142,28 @@ static bool btstack_hid_descriptor_parse_item(hid_descriptor_item_t * item, cons
     // read item value
     if (hid_descriptor_len < item->item_size) return false;
     if (item->data_size > 4u) return false;
-    int i;
-    int sgnd = (item->item_type == Global) && (item->item_tag > 0u) && (item->item_tag < 5u);
-    int32_t value = 0;
-    uint8_t latest_byte = 0;
-    for (i=0;i<item->data_size;i++){
-        latest_byte = hid_descriptor[pos++];
-        value = (latest_byte << (8*i)) | value;
-    }
-    if (sgnd && (item->data_size > 0u)){
-        if (latest_byte & 0x80u) {
-            value -= 1u << (item->data_size*8u);
+    bool sgnd = (item->item_type == Global) && (item->item_tag > 0u) && (item->item_tag < 5u);
+    bool negative = false;
+    uint32_t value = 0;
+    for (uint8_t i = 0; i < item->data_size; i++){
+        uint8_t byte = hid_descriptor[pos++];
+        // keep negative flag separate
+        if (sgnd && (i == (item->data_size - 1u)) && ((byte & 0x80u) != 0)){
+            negative = true;
+            byte &= 0x7fu;
         }
+        value |= (uint32_t)byte << (8u * i);
     }
-    item->item_value = value;
+    if (negative){
+        if (item->data_size == 4u){
+            // avoid implementation-defined behaviour for converting an unsigned value into a signed type that cannot represent it
+            item->item_value = INT32_MIN + (int32_t)value;
+        } else {
+            item->item_value = - (int32_t)(1u << ((item->data_size * 8u) - 1u)) + (int32_t)value;
+        }
+    } else {
+        item->item_value = (int32_t)value;
+    }
     return true;
 }
 
@@ -267,7 +275,7 @@ static void btstack_hid_usage_iterator_handle_global_item(btstack_hid_usage_iter
             break;
 
         default:
-            btstack_assert(false);
+            // ignore reserved global item tags (12..15)
             break;
     }
 }

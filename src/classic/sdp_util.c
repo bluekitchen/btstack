@@ -427,32 +427,36 @@ bool sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attribute
     return attributeID_search.result;
 }
 
-static int sdp_traversal_attribute_list_valie(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
-    bool ok = true;
-    if (type != DE_UINT) {
-        ok = false;
-    }
-    if ((size != DE_SIZE_16) && (size != DE_SIZE_32)) {
-        ok = false;
-    }
-    if (size == DE_SIZE_32){
-        uint16_t lower  = big_endian_read_16(element, 1);
-        uint16_t higher = big_endian_read_16(element, 3);
-        if (lower > higher){
-            ok = false;
+// A valid attribute list consists of DE_UINT elements which can be either DE_SIZE_16 or DE_SIZE_32.
+// If DE_SIZE_32, the second value must be equal or larger than the first one
+static int sdp_traversal_attribute_list_valid(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
+    if (type == DE_UINT){
+        uint16_t start;
+        uint16_t end;
+        switch (size){
+            case DE_SIZE_16:
+                // single attribute
+                return 0;
+            case DE_SIZE_32:
+                start = big_endian_read_16(element, 1);
+                end   = big_endian_read_16(element, 3);
+                if (start <= end){
+                    // valid attribute range
+                    return 0;
+                }
+                break;
+            default:
+                break;
         }
     }
-    if (ok){
-        return 0;
-    } else {
-        *(bool *)my_context = false;
-        return 0;
-    }
+    // abort and report invalid
+    *(bool *)my_context = false;
+    return 0;
 }
 
 bool sdp_attribute_list_valid(uint8_t *attributeIDList){
     bool attribute_list_valid = true;
-    bool complete = de_traverse_sequence(attributeIDList, sdp_traversal_attribute_list_valie, &attribute_list_valid);
+    bool complete = de_traverse_sequence(attributeIDList, sdp_traversal_attribute_list_valid, &attribute_list_valid);
     return complete && attribute_list_valid;
 }
 

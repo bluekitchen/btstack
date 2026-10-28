@@ -511,6 +511,54 @@ TEST(HID, ThirtyTwoBitField){
     CHECK_EQUAL(0x89abcdef, (uint32_t) value);
 }
 
+TEST(HID, ReservedGlobalTagIsIgnored){
+    const uint8_t descriptor[] = {
+        0xc4,       // Reserved Global item
+        0x05, 0x01, // Usage Page
+        0x09, 0x30, // Usage
+        0x75, 0x08, // Report Size (8)
+        0x95, 0x01, // Report Count (1)
+        0x81, 0x02  // Input (Data, Variable, Absolute)
+    };
+    const uint8_t report[] = { 0x7f };
+    btstack_hid_parser_t hid_parser;
+
+    btstack_hid_parser_init(&hid_parser, descriptor, sizeof(descriptor), HID_REPORT_TYPE_INPUT, report, sizeof(report));
+    expect_field(&hid_parser, 1, 0x30, 0x7f);
+    CHECK_FALSE(btstack_hid_parser_has_more(&hid_parser));
+}
+
+TEST(HID, FourByteLogicalMinimum){
+    const uint8_t descriptor[] = { 0x17, 0x00, 0x00, 0x00, 0x80 };
+    btstack_hid_descriptor_iterator_t iterator;
+
+    btstack_hid_descriptor_iterator_init(&iterator, descriptor, sizeof(descriptor));
+    CHECK_TRUE(btstack_hid_descriptor_iterator_has_more(&iterator));
+    const hid_descriptor_item_t * item = btstack_hid_descriptor_iterator_get_item(&iterator);
+    CHECK_EQUAL(LogicalMinimum, item->item_tag);
+    CHECK_EQUAL(INT32_MIN, item->item_value);
+    CHECK_TRUE(btstack_hid_descriptor_iterator_valid(&iterator));
+}
+
+TEST(HID, OneAndTwoByteLogicalMinimum){
+    const uint8_t descriptors[][3] = {
+        { 0x15, 0x80, 0x00 },       // Logical Minimum (-128)
+        { 0x16, 0x00, 0x80 },       // Logical Minimum (-32768)
+    };
+    const uint16_t descriptor_lengths[] = { 2, 3 };
+    const int32_t expected_values[] = { -128, -32768 };
+
+    for (unsigned i = 0; i < sizeof(descriptors) / sizeof(descriptors[0]); i++){
+        btstack_hid_descriptor_iterator_t iterator;
+        btstack_hid_descriptor_iterator_init(&iterator, descriptors[i], descriptor_lengths[i]);
+        CHECK_TRUE(btstack_hid_descriptor_iterator_has_more(&iterator));
+        const hid_descriptor_item_t * item = btstack_hid_descriptor_iterator_get_item(&iterator);
+        CHECK_EQUAL(LogicalMinimum, item->item_tag);
+        CHECK_EQUAL(expected_values[i], item->item_value);
+        CHECK_TRUE(btstack_hid_descriptor_iterator_valid(&iterator));
+    }
+}
+
 TEST(HID, UnalignedThirtyTwoBitFieldIsRejected){
     const uint8_t descriptor[] = {
         0x75, 0x01, // Report Size (1)
