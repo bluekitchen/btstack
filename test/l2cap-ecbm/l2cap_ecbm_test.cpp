@@ -106,6 +106,8 @@ static uint16_t l2cap_cids[10];
 static uint8_t l2cap_open_status[10];
 static uint16_t num_l2cap_channel_opened;
 static uint16_t num_l2cap_channel_closed;
+static uint16_t classic_l2cap_cid;
+static uint8_t classic_l2cap_open_status;
 static uint16_t l2cap_incoming_cid;
 static uint8_t * receive_buffers_2[] = { data_channel_buffer_1, data_channel_buffer_2 };
 static uint8_t * reconfigure_buffers_2[] = {data_channel_buffer_1, data_channel_buffer_2 };
@@ -269,6 +271,10 @@ static void l2cap_channel_packet_handler(uint8_t packet_type, uint16_t channel, 
                     printf("L2CAP_EVENT_DATA_CHANNEL_OPENED - cid 0x%04x\n", l2cap_cids[num_l2cap_channel_opened] );
                     num_l2cap_channel_opened++;
                     break;
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    classic_l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    classic_l2cap_open_status = l2cap_event_channel_opened_get_status(packet);
+                    break;
                 case L2CAP_EVENT_ECBM_RECONFIGURATION_COMPLETE:
                     reconfigure_result = l2cap_event_ecbm_reconfiguration_complete_get_reconfigure_result(packet);
                     break;
@@ -303,6 +309,8 @@ TEST_GROUP(L2CAP_CHANNELS){
         hci_dump_init(hci_dump_posix_stdout_get_instance());
         num_l2cap_channel_opened = 0;
         num_l2cap_channel_closed = 0;
+        classic_l2cap_cid = 0;
+        classic_l2cap_open_status = 0xff;
         l2cap_incoming_cid = 0;
         mock_hci_transport_outgoing_packet_history_count = 0;
         memset(l2cap_open_status, 0xff, sizeof(l2cap_open_status));
@@ -332,6 +340,20 @@ TEST(L2CAP_CHANNELS, no_connection){
     uint8_t status = l2cap_ecbm_create_channels(&l2cap_channel_packet_handler, HCI_CON_HANDLE_TEST_LE, LEVEL_0, TEST_PSM,
                                                     2, initial_credits, TEST_PACKET_SIZE, receive_buffers_2, cids);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
+
+TEST(L2CAP_CHANNELS, outgoing_classic_disconnect_while_waiting_for_acl_connection){
+    bd_addr_t address = { 0, 1, 2, 3, 4, 5 };
+    uint16_t local_cid;
+
+    uint8_t status = l2cap_create_channel(&l2cap_channel_packet_handler, address, TEST_PSM, TEST_PACKET_SIZE, &local_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = l2cap_disconnect(local_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    CHECK_EQUAL(local_cid, classic_l2cap_cid);
+    CHECK_EQUAL(ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST, classic_l2cap_open_status);
+    CHECK_EQUAL(L2CAP_LOCAL_CID_DOES_NOT_EXIST, l2cap_disconnect(local_cid));
 }
 
 TEST(L2CAP_CHANNELS, setup_api_errors){

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 ### Fixed
+- L2CAP: correctly cancel an outgoing Classic channel before its ACL connection completes
 ### Changed
 
 ## Release v1.8.3

@@ -2938,6 +2938,21 @@ uint8_t l2cap_disconnect(uint16_t local_cid){
     if (!channel) {
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
+
+#ifdef ENABLE_CLASSIC
+    // A classic channel waiting for its ACL connection has no valid connection
+    // handle yet, so it cannot send an L2CAP Disconnection Request. Cancel the
+    // pending open instead.
+    if ((channel->channel_type == L2CAP_CHANNEL_TYPE_CLASSIC) &&
+        ((channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) ||
+         (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE))){
+        l2cap_handle_channel_open_failed(channel, ERROR_CODE_CONNECTION_TERMINATED_BY_LOCAL_HOST);
+        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+        l2cap_free_channel_entry(channel);
+        return ERROR_CODE_SUCCESS;
+    }
+#endif
+
     channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
     l2cap_run();
     return ERROR_CODE_SUCCESS;
