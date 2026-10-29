@@ -639,7 +639,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
-                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_config, sizeof(link_control_config))){
+                    if (hci_transport_h5_payload_has_prefix(slip_payload, link_payload_len, link_control_config, link_control_config_prefix_len )){
                         if (link_payload_len == link_control_config_prefix_len){
                             log_debug("link received config, no config field");
                             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
