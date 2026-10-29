@@ -192,6 +192,117 @@ typedef struct {
 
 } l2cap_ertm_config_t;
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+typedef struct l2cap_ertm_state {
+    // retransmission timer
+    btstack_timer_source_t retransmission_timer;
+    // monitor timer
+    btstack_timer_source_t monitor_timer;
+
+    // local/remote config options
+    uint16_t local_retransmission_timeout_ms;
+    uint16_t local_monitor_timeout_ms;
+    uint16_t remote_retransmission_timeout_ms;
+    uint16_t remote_monitor_timeout_ms;
+    uint8_t remote_tx_window_size;
+
+    uint8_t local_max_transmit;
+    uint8_t remote_max_transmit;
+
+    // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
+    uint8_t ertm_mandatory;
+
+    // Frame Check Sequence local (from ertm config)
+    uint8_t fcs_option;
+
+    // Frame Check Sequence was requested by either side
+    bool    fcs_active;
+
+    // sender: max num of stored outgoing frames
+    uint8_t num_tx_buffers;
+
+    // sender: num stored outgoing frames
+    uint8_t num_stored_tx_frames;
+
+    // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
+    uint8_t unacked_frames;
+
+    // sender: buffer index of oldest packet
+    uint8_t tx_read_index;
+
+    // sender: buffer index to store next tx packet
+    uint8_t tx_write_index;
+
+    // sender: buffer index of packet to send next
+    uint8_t tx_send_index;
+
+    // sender: next seq nr used for sending
+    uint8_t next_tx_seq;
+
+    // sender: selective retransmission requested
+    uint8_t srej_active;
+
+    // sender: WAIT_F
+    // - Local busy has been cleared or
+    // - the Retransmission timer has expired and an S-frame with P=1 has been sent
+    bool tx_wait_for_final;
+
+    // receiver: max num out-of-order packets // tx_window
+    uint8_t num_rx_buffers;
+
+    // receiver: buffer index of to store packet with delta = 1
+    uint8_t rx_store_index;
+
+    // receiver: value of tx_seq in next expected i-frame
+    uint8_t expected_tx_seq;
+
+    // receiver: request transmission with tx_seq = req_seq and ack up to and including req_seq
+    uint8_t req_seq;
+
+    // receiver: local busy condition
+    uint8_t local_busy;
+
+    // receiver: send RR frame with optional final flag set - flag
+    uint8_t send_supervisor_frame_receiver_ready;
+
+    // receiver: send RR frame with poll bit set
+    uint8_t send_supervisor_frame_receiver_ready_poll;
+
+    // receiver: send RNR frame - flag
+    uint8_t send_supervisor_frame_receiver_not_ready;
+
+    // receiver: send REJ frame - flag
+    uint8_t send_supervisor_frame_reject;
+
+    // receiver: send SREJ frame - flag
+    uint8_t send_supervisor_frame_selective_reject;
+
+    // set final bit after poll packet with poll bit was received
+    uint8_t set_final_bit_after_packet_with_poll_bit_set;
+
+    // receiver: meta data for out-of-order frames
+    l2cap_ertm_rx_packet_state_t * rx_packets_state;
+
+    // sender: retransmission state
+    l2cap_ertm_tx_packet_state_t * tx_packets_state;
+
+    // receiver: reassemly pos
+    uint16_t reassembly_pos;
+
+    // receiver: reassemly sdu length
+    uint16_t reassembly_sdu_length;
+
+    // receiver: eassembly buffer
+    uint8_t * reassembly_buffer;
+
+    // receiver: num_rx_buffers of size local_mps + two-byte SDU Length field for START and UNSEGMENTED I-frames
+    uint8_t * rx_packets_data;
+
+    // sender: num_tx_buffers of size local_mps
+    uint8_t * tx_packets_data;
+} l2cap_ertm_state_t;
+#endif
+
 // info regarding an actual channel
 // note: l2cap_fixed_channel and l2cap_channel_t share commmon fields
 
@@ -307,117 +418,11 @@ typedef struct {
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
 
-    // retransmission timer
-    btstack_timer_source_t retransmission_timer;
+    // Enhanced Retransmission Mode state, allocated in the caller-provided ERTM buffer
+    l2cap_ertm_state_t * ertm;
 
-    // monitor timer
-    btstack_timer_source_t monitor_timer;
+#endif
 
-    // local/remote config options
-    uint16_t local_retransmission_timeout_ms;
-    uint16_t local_monitor_timeout_ms;
-
-    uint16_t remote_retransmission_timeout_ms;
-    uint16_t remote_monitor_timeout_ms;
-
-    uint8_t remote_tx_window_size;
-
-    uint8_t local_max_transmit;
-    uint8_t remote_max_transmit;
-    
-    // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
-    uint8_t ertm_mandatory;
-
-    // Frame Check Sequence local (from ertm config)
-    uint8_t fcs_option;
-
-    // Frame Check Sequence was requested by either side
-    bool    fcs_active;
-
-    // sender: max num of stored outgoing frames
-    uint8_t num_tx_buffers;
-
-    // sender: num stored outgoing frames
-    uint8_t num_stored_tx_frames;
-
-    // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
-    uint8_t unacked_frames;
-
-    // sender: buffer index of oldest packet
-    uint8_t tx_read_index;
-
-    // sender: buffer index to store next tx packet
-    uint8_t tx_write_index;
-
-    // sender: buffer index of packet to send next
-    uint8_t tx_send_index;
-
-    // sender: next seq nr used for sending
-    uint8_t next_tx_seq;
-
-    // sender: selective retransmission requested
-    uint8_t srej_active;
-
-    // sender: WAIT_F
-    // - Local busy has been cleared or
-    // - the Retransmission timer has expired and an S-frame with P=1 has been sent
-    bool tx_wait_for_final;
-
-    // receiver: max num out-of-order packets // tx_window
-    uint8_t num_rx_buffers;
-
-    // receiver: buffer index of to store packet with delta = 1
-    uint8_t rx_store_index;
-
-    // receiver: value of tx_seq in next expected i-frame
-    uint8_t expected_tx_seq;
-
-    // receiver: request transmission with tx_seq = req_seq and ack up to and including req_seq
-    uint8_t req_seq;
-
-    // receiver: local busy condition
-    uint8_t local_busy;
-
-    // receiver: send RR frame with optional final flag set - flag
-    uint8_t send_supervisor_frame_receiver_ready;
-
-    // receiver: send RR frame with poll bit set
-    uint8_t send_supervisor_frame_receiver_ready_poll;
-
-    // receiver: send RNR frame - flag
-    uint8_t send_supervisor_frame_receiver_not_ready;
-
-    // receiver: send REJ frame - flag
-    uint8_t send_supervisor_frame_reject;
-
-    // receiver: send SREJ frame - flag
-    uint8_t send_supervisor_frame_selective_reject;
-
-    // set final bit after poll packet with poll bit was received
-    uint8_t set_final_bit_after_packet_with_poll_bit_set;
-
-    // receiver: meta data for out-of-order frames
-    l2cap_ertm_rx_packet_state_t * rx_packets_state;
-
-    // sender: retransmission state
-    l2cap_ertm_tx_packet_state_t * tx_packets_state;
-
-    // receiver: reassemly pos
-    uint16_t reassembly_pos;
-
-    // receiver: reassemly sdu length
-    uint16_t reassembly_sdu_length;
-
-    // receiver: eassembly buffer
-    uint8_t * reassembly_buffer;
-
-    // receiver: num_rx_buffers of size local_mps + two-byte SDU Length field for START and UNSEGMENTED I-frames
-    uint8_t * rx_packets_data;
-
-    // sender: num_tx_buffers of size local_mps
-    uint8_t * tx_packets_data;
-
-#endif    
 } l2cap_channel_t;
 
 // info regarding potential connections
@@ -605,7 +610,7 @@ void l2cap_release_packet_buffer(void);
  * @param address
  * @param psm
  * @param ertm_config
- * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param buffer to store ERTM state, reassembled rx packet, out-of-order packets and unacknowledged outgoing packets
  * @param size of buffer
  * @param local_cid
  * @return status
@@ -617,7 +622,7 @@ uint8_t l2cap_ertm_create_channel(btstack_packet_handler_t packet_handler, bd_ad
  * @brief Accepts incoming L2CAP connection for Enhanced Retransmission Mode
  * @param local_cid
  * @param ertm_config
- * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param buffer to store ERTM state, reassembled rx packet, out-of-order packets and unacknowledged outgoing packets
  * @param size of buffer
  * @return status
  */

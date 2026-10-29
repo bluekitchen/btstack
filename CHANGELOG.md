@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GATT Compiler: allow to use service range and attribute handles in C++ namespaces
+- L2CAP: reduce size of l2cap_channel_t by moving ERTM state into user-provided ERTM buffer.
+         Applications should provide additional buffer storage
 
 
 ## Release v1.8.3
