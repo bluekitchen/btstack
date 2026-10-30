@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: correctly cancel an outgoing Classic channel before its ACL connection completes
 - AVDTP Util: limit Content Protection data
 - AVRCP Browsing Target: fix AVRCP_SUBEVENT_BROWSING_SEARCH
+- HFP HF: support codec negotiation with active audio connection
 - gatt_client, avdtp, avrcp, hid_host: validate nested SDP descriptors
 - sdp_util: avoid OOB read in SDP Attribute List
 - btstack_hid_parser: ignore reserved global items

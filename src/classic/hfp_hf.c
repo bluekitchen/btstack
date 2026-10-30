@@ -985,12 +985,14 @@ static bool hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if ((hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) ||
         (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return false;
 
-    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return false;
-
-    // run codecs exchange
+    // Codec Connection Setup may renegotiate the codec while audio is active.
+    // Confirm it immediately; the new codec is used for the next SCO link.
     bool done = codecs_exchange_state_machine(hfp_connection);
     if (done) return true;
-    
+
+    // Do not establish another SCO link while one is active.
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return false;
+
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return false;
     if (hfp_sco_setup_active()) return false;
     if (hfp_connection->establish_audio_connection){
@@ -1424,6 +1426,9 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
 static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
 	if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_hf_codecs_nr, hfp_hf_codecs)){
 		// Codec supported, confirm
+		// If audio is active, this selection is used only for the next audio
+		// connection. The current connection's codec was provided with its
+		// HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED event.
 		hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
 		hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
 		log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");

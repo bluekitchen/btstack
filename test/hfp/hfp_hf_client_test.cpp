@@ -75,6 +75,7 @@ static uint16_t indicators[1] = {0x01};
 
 static uint8_t service_level_connection_established = 0;
 static uint8_t audio_connection_established = 0;
+static uint8_t audio_connection_codec = 0;
 static uint8_t start_ringing = 0;
 static uint8_t stop_ringing = 0;
 static uint8_t call_termiated = 0;
@@ -436,6 +437,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
             printf("\n** AC established **\n\n");
             audio_connection_established = 1;
+            if (hfp_subevent_audio_connection_established_get_status(event) == ERROR_CODE_SUCCESS){
+                audio_connection_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
+            }
             break;
         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
             printf("\n** AC released **\n\n");
@@ -516,6 +520,7 @@ TEST_GROUP(HFPClient){
     void setup(void){
         service_level_connection_established = 0;
         audio_connection_established = 0;
+        audio_connection_codec = 0;
         start_ringing = 0;
         stop_ringing = 0;
         call_termiated = 0;
@@ -591,6 +596,35 @@ TEST(HFPClient, IssuesTests){
         simulate_test_sequence(&hfp_pts_hf_issues_tests()[i]);
         teardown();
     }
+}
+
+TEST(HFPClient, CodecNegotiatedDuringAudioIsUsedForNextConnection){
+    // TC_HF_SLC_BV_05_I advertises Codec Negotiation support.
+    simulate_test_sequence(&hfp_pts_hf_slc_tests()[4]);
+    CHECK_EQUAL(1, service_level_connection_established);
+
+    // Complete Codec Connection Setup for CVSD, then accept the AG's SCO
+    // request. The event codec is what the application uses for decoding.
+    inject_hfp_command_to_hf((uint8_t *)"+BCS:1", 6);
+    STRCMP_EQUAL("AT+BCS=1", get_next_hfp_hf_command());
+    inject_hfp_command_to_hf((uint8_t *)"OK", 2);
+    mock_hci_emit_sco_connection_request();
+    CHECK_EQUAL(1, audio_connection_established);
+    CHECK_EQUAL(HFP_CODEC_CVSD, audio_connection_codec);
+
+    // Codec Connection Setup during audio is immediately acknowledged. It must
+    // not affect the established connection or its decoder codec.
+    inject_hfp_command_to_hf((uint8_t *)"+BCS:2", 6);
+    STRCMP_EQUAL("AT+BCS=2", get_next_hfp_hf_command());
+    inject_hfp_command_to_hf((uint8_t *)"OK", 2);
+    CHECK_EQUAL(HFP_CODEC_CVSD, audio_connection_codec);
+
+    // The next SCO connection uses the codec confirmed during the current one.
+    gap_disconnect(10);
+    CHECK_FALSE(has_more_hfp_hf_commands());
+    mock_hci_emit_sco_connection_request();
+    CHECK_EQUAL(1, audio_connection_established);
+    CHECK_EQUAL(HFP_CODEC_MSBC, audio_connection_codec);
 }
 
 int main (int argc, const char * argv[]){

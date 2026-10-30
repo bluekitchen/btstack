@@ -618,7 +618,9 @@ typedef struct hfp_connection {
 
     hfp_network_opearator_t network_operator;
     
-    // Retrieved during service level connection establishment, not used yet
+    // Codec selected by Codec Connection Setup. While audio is active, this
+    // may already hold the codec for the next audio connection. Applications
+    // get the codec for the current audio connection from the established event.
     uint8_t  negotiated_codec;
 
     // HF -> AG configuration
