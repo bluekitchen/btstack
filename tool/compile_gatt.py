@@ -171,8 +171,8 @@ presentation_formats = dict()
 current_service_uuid_string = ""
 current_service_start_handle = 0
 current_characteristic_uuid_string = ""
-defines_for_characteristics = []
-defines_for_services = []
+enum_values_for_characteristics = []
+enum_values_for_services = []
 include_paths = []
 database_hash_message = bytearray()
 service_counter = {}
@@ -426,12 +426,12 @@ def serviceDefinitionComplete(fout):
         service_counter[current_service_uuid_string] = count
         # add old defines without service counter for first instance for backward compatibility
         if count == 1:
-            defines_for_services.append('#define ATT_SERVICE_%s_START_HANDLE 0x%04x' % (current_service_uuid_string, current_service_start_handle))
-            defines_for_services.append('#define ATT_SERVICE_%s_END_HANDLE 0x%04x' % (current_service_uuid_string, handle-1))
+            enum_values_for_services.append('ATT_SERVICE_%s_START_HANDLE = 0x%04x' % (current_service_uuid_string, current_service_start_handle))
+            enum_values_for_services.append('ATT_SERVICE_%s_END_HANDLE = 0x%04x' % (current_service_uuid_string, handle-1))
 
         # unified defines indicating instance
-        defines_for_services.append('#define ATT_SERVICE_%s_%02x_START_HANDLE 0x%04x' % (current_service_uuid_string, count, current_service_start_handle))
-        defines_for_services.append('#define ATT_SERVICE_%s_%02x_END_HANDLE 0x%04x' % (current_service_uuid_string, count, handle-1))
+        enum_values_for_services.append('ATT_SERVICE_%s_%02x_START_HANDLE = 0x%04x' % (current_service_uuid_string, count, current_service_start_handle))
+        enum_values_for_services.append('ATT_SERVICE_%s_%02x_END_HANDLE = 0x%04x' % (current_service_uuid_string, count, handle-1))
         services[current_service_uuid_string+"_" + str(count)] = [current_service_start_handle, handle - 1, count]
 
 def dump_flags(fout, flags):
@@ -657,7 +657,7 @@ def parseCharacteristic(fout, parts):
             write_sequence(fout,value)
 
     fout.write("\n")
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    enum_values_for_characteristics.append('ATT_CHARACTERISTIC_%s_VALUE_HANDLE = 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
     if add_client_characteristic_configuration(properties):
@@ -685,7 +685,7 @@ def parseCharacteristic(fout, parts):
         database_hash_append_uint16(handle)
         database_hash_append_uint16(0x2902)
 
-        defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_CLIENT_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+        enum_values_for_characteristics.append('ATT_CHARACTERISTIC_%s_CLIENT_CONFIGURATION_HANDLE = 0x%04x' % (current_characteristic_uuid_string, handle))
         handle = handle + 1
 
 
@@ -736,7 +736,7 @@ def parseGenericDynamicDescriptor(fout, parts, uuid, name):
     database_hash_append_uint16(handle)
     database_hash_append_uint16(uuid)
 
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_%s_HANDLE 0x%04x' % (current_characteristic_uuid_string, name, handle))
+    enum_values_for_characteristics.append('ATT_CHARACTERISTIC_%s_%s_HANDLE = 0x%04x' % (current_characteristic_uuid_string, name, handle))
     handle = handle + 1
 
 def parseGenericDynamicReadOnlyDescriptor(fout, parts, uuid, name):
@@ -767,7 +767,7 @@ def parseGenericDynamicReadOnlyDescriptor(fout, parts, uuid, name):
     database_hash_append_uint16(handle)
     database_hash_append_uint16(uuid)
 
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_%s_HANDLE 0x%04x' % (current_characteristic_uuid_string, name, handle))
+    enum_values_for_characteristics.append('ATT_CHARACTERISTIC_%s_%s_HANDLE = 0x%04x' % (current_characteristic_uuid_string, name, handle))
     handle = handle + 1
 
 def parseServerCharacteristicConfiguration(fout, parts):
@@ -1067,19 +1067,19 @@ def parse(fname_in, fin, fname_out, tool_path, fout):
 
 def listHandles(fout):
     fout.write('\n\n')
-    fout.write('//\n')
-    fout.write('// list service handle ranges\n')
-    fout.write('//\n')
-    for define in defines_for_services:
-        fout.write(define)
-        fout.write('\n')
+    fout.write('enum {\n')
+    fout.write('    //\n')
+    fout.write('    // list service handle ranges\n')
+    fout.write('    //\n')
+    for value in enum_values_for_services:
+        fout.write('    %s,\n' % value)
     fout.write('\n')
-    fout.write('//\n')
-    fout.write('// list mapping between characteristics and handles\n')
-    fout.write('//\n')
-    for define in defines_for_characteristics:
-        fout.write(define)
-        fout.write('\n')
+    fout.write('    //\n')
+    fout.write('    // list mapping between characteristics and handles\n')
+    fout.write('    //\n')
+    for value in enum_values_for_characteristics:
+        fout.write('    %s,\n' % value)
+    fout.write('};\n')
 
 def getFile( fileName ):
     for d in include_paths:
