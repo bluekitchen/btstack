@@ -15,6 +15,8 @@ static btstack_packet_handler_t packet_handler;
 static unsigned application_events;
 static unsigned send_requests;
 static uint8_t sent_packet[32];
+static uint8_t application_event[64];
+static uint16_t application_event_size;
 
 avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t cid){
     (void)role;
@@ -42,9 +44,10 @@ uint8_t l2cap_send(uint16_t cid, const uint8_t * data, uint16_t len){
 }
 static void application_callback(uint8_t type, uint16_t channel, uint8_t * packet, uint16_t size){
     (void)channel;
-    (void)size;
     assert(type == HCI_EVENT_PACKET);
-    assert(packet[2] == AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS);
+    assert(size <= sizeof(application_event));
+    memcpy(application_event, packet, size);
+    application_event_size = size;
     application_events++;
 }
 static void check_range(uint32_t start, uint32_t end){
@@ -54,6 +57,7 @@ static void check_range(uint32_t start, uint32_t end){
     connection.start_item = 10;
     connection.end_item = 20;
     application_events = 0;
+    application_event_size = 0;
     send_requests = 0;
     uint8_t command[] = {
         0x30, 0x11, 0x0e, AVRCP_PDU_ID_GET_FOLDER_ITEMS, 0, 10,
@@ -65,11 +69,48 @@ static void check_range(uint32_t start, uint32_t end){
     // Range validation is performed by the application, which receives both
     // values even when end_item precedes start_item.
     assert(application_events == 1);
+    assert(application_event[2] == AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS);
     assert(send_requests == 0);
     assert(connection.start_item == start);
     assert(connection.end_item == end);
     assert(connection.state == AVCTP_CONNECTION_OPENED);
 }
+
+static void check_search_event(void){
+    uint8_t command[10 + AVRCP_SEARCH_STRING_MAX_LENGTH + 5];
+    const uint16_t search_len = sizeof(command) - 10;
+
+    memset(&connection, 0, sizeof(connection));
+    connection.state = AVCTP_CONNECTION_OPENED;
+    connection.l2cap_browsing_cid = 0x40;
+    application_events = 0;
+    application_event_size = 0;
+    send_requests = 0;
+
+    command[0] = 0x30;
+    command[1] = 0x11;
+    command[2] = 0x0e;
+    command[3] = AVRCP_PDU_ID_SEARCH;
+    big_endian_store_16(command, 4, 4 + search_len);
+    big_endian_store_16(command, 6, RFC2978_CHARSET_MIB_UTF8);
+    big_endian_store_16(command, 8, search_len);
+    for (uint16_t i = 0; i < search_len; i++){
+        command[10 + i] = (uint8_t)('a' + i);
+    }
+
+    packet_handler(L2CAP_DATA_PACKET, 0x40, command, sizeof(command));
+
+    assert(application_events == 1);
+    assert(send_requests == 0);
+    assert(application_event[2] == AVRCP_SUBEVENT_BROWSING_SEARCH);
+    assert(application_event_size == 8 + AVRCP_SEARCH_STRING_MAX_LENGTH + 1);
+    assert(avrcp_subevent_browsing_search_get_browsing_cid(application_event) == 0x40);
+    assert(avrcp_subevent_browsing_search_get_characterset(application_event) == RFC2978_CHARSET_MIB_UTF8);
+    assert(avrcp_subevent_browsing_search_get_value_length(application_event) == AVRCP_SEARCH_STRING_MAX_LENGTH);
+    assert(memcmp(avrcp_subevent_browsing_search_get_value(application_event), &command[10], AVRCP_SEARCH_STRING_MAX_LENGTH) == 0);
+    assert(application_event[application_event_size - 1] == 0);
+}
+
 int main(void){
     avrcp_browsing_target_init();
     avrcp_browsing_target_register_packet_handler(application_callback);
@@ -80,6 +121,7 @@ int main(void){
     check_range(5, 5);
     check_range(3, 5);
     check_range(0, UINT32_MAX);
+    check_search_event();
     puts("PASS: AVRCP browsing folder item range forwarding");
     return 0;
 }
