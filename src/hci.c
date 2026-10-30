@@ -301,6 +301,8 @@ static void hci_connection_init(hci_connection_t * conn){
     conn->request_role = HCI_ROLE_INVALID;
     conn->sniff_subrating_max_latency = 0xFFFFu;
     conn->qos_service_type = HCI_SERVICE_TYPE_INVALID;
+    conn->automatic_flush_timeout = 0;
+    conn->link_watchdog_enabled = false;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
@@ -4667,10 +4669,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_FLUSH_OCCURRED:
             if (size < 4u) break;
-            // flush occurs only if automatic flush has been enabled by gap_enable_link_watchdog()
             handle = hci_event_flush_occurred_get_handle(packet);
             conn = hci_connection_for_handle(handle);
-            if (conn) {
+            if (conn && conn->link_watchdog_enabled) {
                 log_info("Flush occurred, disconnect 0x%04x", handle);
                 conn->state = SEND_DISCONNECT;
             }
@@ -4778,6 +4779,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
                     // trigger write automatic flush timeout
                     if (hci_stack->automatic_flush_timeout != 0){
+                        conn->automatic_flush_timeout = hci_stack->automatic_flush_timeout;
+                        conn->link_watchdog_enabled = true;
                         conn->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
                     }
 
@@ -5979,8 +5982,27 @@ void gap_enable_link_watchdog(uint16_t timeout_ms){
     hci_stack->automatic_flush_timeout = btstack_min(timeout_ms, 1280) * 8 / 5; // divide by 0.625
 }
 
+void gap_enable_link_watchdog_for_connection(hci_con_handle_t con_handle, uint16_t timeout_ms){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if ((connection == NULL) || (connection->address_type != BD_ADDR_TYPE_ACL) || (connection->state != OPEN)){
+        log_error("gap_enable_link_watchdog_for_connection: invalid handle 0x%04x", con_handle);
+        return;
+    }
+
+    connection->automatic_flush_timeout = btstack_min(timeout_ms, 1280) * 8 / 5; // divide by 0.625
+    connection->link_watchdog_enabled = connection->automatic_flush_timeout != 0;
+    connection->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
+    hci_run();
+}
+
 uint16_t hci_automatic_flush_timeout(void){
     return hci_stack->automatic_flush_timeout;
+}
+
+uint16_t hci_automatic_flush_timeout_for_connection(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (connection == NULL) return 0;
+    return connection->automatic_flush_timeout;
 }
 
 void hci_disable_l2cap_timeout_check(void){
@@ -8364,7 +8386,7 @@ static bool hci_run_general_pending_commands(void){
 #ifdef ENABLE_CLASSIC
             if ((connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT) != 0){
                 connection->gap_connection_tasks_pending &= ~GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
-                hci_send_cmd(&hci_write_automatic_flush_timeout, connection->con_handle, hci_stack->automatic_flush_timeout);
+                hci_send_cmd(&hci_write_automatic_flush_timeout, connection->con_handle, connection->automatic_flush_timeout);
                 return true;
             }
             if (connection->gap_connection_tasks_pending & GAP_CONNECTION_TASK_WRITE_SUPERVISION_TIMEOUT){

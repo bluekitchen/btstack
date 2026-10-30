@@ -458,6 +458,14 @@ void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);
 void gap_enable_link_watchdog(uint16_t timeout_ms);
 
 /**
+ * @brief Enable link watchdog for an open Classic ACL connection. If no ACL packet is sent within timeout_ms, the link will get disconnected.
+ * @note Uses the automatic flush timeout controller feature with a max timeout of 1.28 s.
+ * @param con_handle connection handle
+ * @param timeout_ms watchdog timeout in milliseconds
+ */
+void gap_enable_link_watchdog_for_connection(hci_con_handle_t con_handle, uint16_t timeout_ms);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */

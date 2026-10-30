@@ -1565,8 +1565,8 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     l2cap_free_channel_entry(channel);
 }
 
-static uint8_t l2cap_classic_packet_boundary_flag(void){
-    return (hci_non_flushable_packet_boundary_flag_supported() && (hci_automatic_flush_timeout() == 0)) ? 0x00 : 0x02;
+static uint8_t l2cap_classic_packet_boundary_flag(hci_con_handle_t con_handle){
+    return (hci_non_flushable_packet_boundary_flag_supported() && (hci_automatic_flush_timeout_for_connection(con_handle) == 0)) ? 0x00 : 0x02;
 }
 #endif
 
@@ -1598,7 +1598,7 @@ static int l2cap_send_general_signaling_packet(hci_con_handle_t handle, uint16_t
     uint8_t pb_flags = 0x00;
 #ifdef ENABLE_CLASSIC
     if (signaling_cid == L2CAP_CID_SIGNALING){
-        pb_flags = l2cap_classic_packet_boundary_flag();
+        pb_flags = l2cap_classic_packet_boundary_flag(handle);
     }
 #endif
 uint8_t result = l2cap_send_signaling_packet(handle, pb_flags, signaling_cid, cmd, identifier, argptr);
@@ -1636,7 +1636,7 @@ static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
 static int l2cap_send_classic_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
     va_list argptr;
     va_start(argptr, identifier);
-    uint8_t pb_flag = l2cap_classic_packet_boundary_flag();
+    uint8_t pb_flag = l2cap_classic_packet_boundary_flag(handle);
     uint8_t result = l2cap_send_signaling_packet(handle, pb_flag, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
     va_end(argptr);
     return result;
@@ -1678,7 +1678,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
 
     // set non-flushable packet boundary flag if supported on Controller
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint8_t packet_boundary_flag = l2cap_classic_packet_boundary_flag();
+    uint8_t packet_boundary_flag = l2cap_classic_packet_boundary_flag(channel->con_handle);
     l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE

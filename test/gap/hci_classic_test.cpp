@@ -6,6 +6,7 @@
 
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "gap.h"
 #include "hci.h"
 
 static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
@@ -86,6 +87,18 @@ TEST(HCI_CLASSIC, sco_implicit_flow_control_accumulates_received_payload_bytes){
     packet_handler(HCI_SCO_DATA_PACKET, packet, sizeof(packet));
     CHECK_EQUAL(72, conn->sco_tx_ready);
     CHECK_TRUE(hci_can_send_sco_packet_now_for_con_handle(conn->con_handle));
+}
+
+TEST(HCI_CLASSIC, link_watchdog_can_be_enabled_for_one_acl_connection){
+    hci_connection_t * conn = hci_connection_for_handle(0x0003);
+    CHECK(conn != NULL);
+
+    gap_enable_link_watchdog_for_connection(conn->con_handle, 100);
+
+    CHECK_EQUAL(160, conn->automatic_flush_timeout);
+    CHECK_TRUE(conn->link_watchdog_enabled);
+    CHECK_EQUAL(160, hci_automatic_flush_timeout_for_connection(conn->con_handle));
+    CHECK_EQUAL(0, hci_automatic_flush_timeout());
 }
 
 int main(int argc, const char *argv[]){

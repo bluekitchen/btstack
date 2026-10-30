@@ -638,6 +638,10 @@ typedef struct {
     uint16_t sniff_subrating_min_remote_timeout;
     uint16_t sniff_subrating_min_local_timeout;
 
+    // automatic flush timeout and policy for this ACL connection
+    uint16_t automatic_flush_timeout;
+    bool     link_watchdog_enabled;
+
     // QoS
     hci_service_type_t qos_service_type;
     uint32_t qos_token_rate;
@@ -1845,9 +1849,14 @@ uint16_t hci_usable_sco_packet_types(void);
 bool hci_non_flushable_packet_boundary_flag_supported(void);
 
 /**
- * Return current automatic flush timeout setting
+ * Return default automatic flush timeout setting for new Classic ACL connections
  */
 uint16_t hci_automatic_flush_timeout(void);
+
+/**
+ * Return automatic flush timeout setting for a connection
+ */
+uint16_t hci_automatic_flush_timeout_for_connection(hci_con_handle_t con_handle);
 
 /**
  * Check if remote supported features query has completed

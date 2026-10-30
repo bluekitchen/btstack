@@ -79,6 +79,11 @@ uint16_t hci_automatic_flush_timeout(void){
     return 0;
 }
 
+uint16_t hci_automatic_flush_timeout_for_connection(hci_con_handle_t con_handle){
+    UNUSED(con_handle);
+    return 0;
+}
+
 bool hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
     return true;
 }
