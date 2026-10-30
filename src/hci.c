@@ -1973,6 +1973,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                     hci_stack->hci_transport->reset_link();
                 }
                 hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
+                hci_stack->num_cmd_packets = 1;
                 hci_run();
             }
             break;

@@ -464,12 +464,10 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
             case AVDTP_CONTENT_PROTECTION:
                 caps->content_protection.cp_type = big_endian_read_16(data, pos);
                 pos += 2;
-                caps->content_protection.cp_type_value_len = cap_len - 2;
+                caps->content_protection.cp_type_value_len = btstack_min(cap_len - 2, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
                 memset(caps->content_protection.cp_type_value, 0, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
-                if (caps->content_protection.cp_type_value_len <= AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN){
-                    memcpy(caps->content_protection.cp_type_value, data + pos, caps->content_protection.cp_type_value_len);
-                }
-                pos += caps->content_protection.cp_type_value_len;
+                memcpy(caps->content_protection.cp_type_value, data + pos, caps->content_protection.cp_type_value_len);
+                pos += cap_len - 2;
 
                 // connection->reject_service_category = category;
                 // connection->error_code = UNSUPPORTED_CONFIGURATION;
@@ -932,10 +930,9 @@ static void avdtp_signaling_emit_recovery_capability(uint16_t avdtp_cid, uint8_t
     avdtp_emit_sink_and_source(event, pos);
 }
 
-#define MAX_CONTENT_PROTECTION_VALUE_LEN 32
 static void
 avdtp_signaling_emit_content_protection_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_content_protection_t *content_protection) {
-    uint8_t event[10 + MAX_CONTENT_PROTECTION_VALUE_LEN];
+    uint8_t event[10 + AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     pos++; // set later
@@ -948,7 +945,7 @@ avdtp_signaling_emit_content_protection_capability(uint16_t avdtp_cid, uint8_t r
     pos += 2;
 
     // drop cp protection value if longer than expected
-    if (content_protection->cp_type_value_len <= MAX_CONTENT_PROTECTION_VALUE_LEN){
+    if (content_protection->cp_type_value_len <= AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN){
         little_endian_store_16(event, pos, content_protection->cp_type_value_len);
         pos += 2;
         (void)memcpy(event + pos, content_protection->cp_type_value, content_protection->cp_type_value_len);

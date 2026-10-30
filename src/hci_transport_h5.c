@@ -121,7 +121,9 @@ static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 // incoming pre-bufffer + 4 bytes H5 header + max(acl header + acl payload, event header + event data) + 2 bytes opt CRC
 static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_INCOMING_PACKET_BUFFER_SIZE];
 
-// outgoing slip encoded buffer. +4 to assert that DIC fits in buffer. +1 to assert that last SOF fits in buffer.
+// Shared link-control/ACK frame. H5 serializes sends with slip_write_active.
+// Space: 4-byte H5 header + largest control payload + 2-byte DIC.
+static uint8_t   hci_transport_h5_link_frame[4 + LINK_CONTROL_MAX_LEN + 2];
 static int       slip_write_active;
 
 // H5 Link State
@@ -143,7 +145,7 @@ static uint8_t   hci_packet_type;
 static uint16_t  hci_packet_size;
 static uint8_t * hci_packet;
 
-// restore 2 bytes temp overwritten by DIC
+// Restore two bytes temporarily overwritten by the DIC.
 static uint8_t * hci_packet_restore_dic_address;
 static uint16_t  hci_packet_restore_dic_data;
 
@@ -253,7 +255,8 @@ static void hci_transport_link_calc_header(uint8_t * header,
 static void hci_transport_slip_send_frame_with_dic(uint8_t * frame, uint16_t frame_size){
     int slip_outgoing_dic_present = frame[0] & 0x40;
     if (slip_outgoing_dic_present){
-        // preserved data at DIC location
+        // Preserve the two bytes after the frame. For an HCI packet these belong
+        // to the caller's post-buffer; link frames use their static DIC space.
         hci_packet_restore_dic_address = &frame[frame_size];
         hci_packet_restore_dic_data = little_endian_read_16(hci_packet_restore_dic_address, 0);
         // calc and set DIC
@@ -268,13 +271,13 @@ static void hci_transport_slip_send_frame_with_dic(uint8_t * frame, uint16_t fra
 }
 
 static void hci_transport_link_send_queued_packet(void){
-    uint8_t * buffer =      hci_packet      - 4;
+    uint8_t * buffer = hci_packet - 4;
     uint16_t  buffer_size = hci_packet_size + 4;
 
-    // setup header
+    // The frame occupies 4 + hci_packet_size bytes, plus two bytes when DIC is set.
+    // The HCI packet buffer provides its H5 header pre-buffer and DIC post-buffer.
     int reliable = hci_packet_type == HCI_SCO_DATA_PACKET ? 0 : 1;
     hci_transport_link_calc_header(buffer, link_seq_nr, link_ack_nr, link_peer_supports_data_integrity_check, reliable, hci_packet_type, hci_packet_size);
-
     // send frame with dic
     log_debug("send queued packet: seq %u, ack %u, size %u, append dic %u", link_seq_nr, link_ack_nr, hci_packet_size, link_peer_supports_data_integrity_check);
     log_debug_hexdump(hci_packet, hci_packet_size);
@@ -285,10 +288,12 @@ static void hci_transport_link_send_queued_packet(void){
 }
 
 static void hci_transport_link_send_control(const uint8_t * message, int message_len){
-    uint8_t  buffer[4 + LINK_CONTROL_MAX_LEN + 2];
+    uint8_t * buffer = hci_transport_h5_link_frame;
     uint16_t buffer_size = 4 + message_len;
 
-    // setup header
+    // Control payload is at most LINK_CONTROL_MAX_LEN bytes, so its frame is at
+    // most 4 + LINK_CONTROL_MAX_LEN + 2 DIC bytes. Use the shared transmit
+    // buffer because send_frame is asynchronous.
     hci_transport_link_calc_header(buffer, 0, 0, link_peer_supports_data_integrity_check, 0, LINK_CONTROL_PACKET_TYPE, message_len);
 
     // setup payload
@@ -301,11 +306,11 @@ static void hci_transport_link_send_control(const uint8_t * message, int message
 }
 
 static void hci_transport_link_send_ack_packet(void){
-    // Pure ACK package is without DIC as there is no payload either
+    // Pure ACK frame is four bytes and has no DIC because it has no payload.
     log_debug("send ack %u", link_ack_nr);
-    uint8_t header[4];
-    hci_transport_link_calc_header(header, 0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, 0);
-    hci_transport_slip_send_frame_with_dic(header, sizeof(header));
+    uint8_t * buffer = hci_transport_h5_link_frame;
+    hci_transport_link_calc_header(buffer, 0, link_ack_nr, 0, 0, LINK_ACKNOWLEDGEMENT_TYPE, 0);
+    hci_transport_slip_send_frame_with_dic(buffer, 4);
 }
 
 static void hci_transport_link_send_sync(void){
@@ -639,7 +644,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 
             switch (link_packet_type){
                 case LINK_CONTROL_PACKET_TYPE:
-                    if (hci_transport_h5_payload_matches(slip_payload, link_payload_len, link_control_config, sizeof(link_control_config))){
+                    if (hci_transport_h5_payload_has_prefix(slip_payload, link_payload_len, link_control_config, link_control_config_prefix_len )){
                         if (link_payload_len == link_control_config_prefix_len){
                             log_debug("link received config, no config field");
                             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_CONFIG_RESPONSE_EMPTY;
@@ -725,8 +730,7 @@ static void hci_transport_h5_frame_received(uint16_t frame_size){
 }
 
 static void hci_transport_h5_frame_sent(void){
-
-    // restore DIC and clear flag
+    // Restore the bytes temporarily used for DIC storage.
     if (hci_packet_restore_dic_address){
         little_endian_store_16(hci_packet_restore_dic_address, 0, hci_packet_restore_dic_data);
         hci_packet_restore_dic_address = NULL;

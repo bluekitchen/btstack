@@ -56,6 +56,8 @@ typedef enum {
 } btstack_sbc_mode_t;
 
 typedef enum {
+    // Keep an explicit negative value so this enum has a signed representation for range validation.
+    SBC_CHANNEL_MODE_INVALID = -1,
     SBC_CHANNEL_MODE_MONO = 0,
     SBC_CHANNEL_MODE_DUAL_CHANNEL,
     SBC_CHANNEL_MODE_STEREO,

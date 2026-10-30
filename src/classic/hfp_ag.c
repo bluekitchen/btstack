@@ -82,6 +82,7 @@ static void hfp_ag_emit_string_event_with_len(hfp_connection_t * hfp_connection,
 
 // const
 static const char hfp_ag_default_service_name[] = "Voice gateway";
+// cppcheck-suppress unknownMacro ; HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES is defined in classic/hfp.h
 static const char hfp_ag_call_hold_response_prefix[] = "\r\n" HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES ":";
 static const char hfp_ag_call_hold_response_footer[] = "\r\n\r\nOK\r\n";
 #define HFP_AG_CALL_HOLD_SERVICES_MAX_JOINED_LEN (HFP_AG_CALL_HOLD_RESPONSE_BUFFER_SIZE - sizeof(hfp_ag_call_hold_response_prefix) - sizeof(hfp_ag_call_hold_response_footer) + 1u)

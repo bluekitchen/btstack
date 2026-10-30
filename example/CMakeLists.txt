@@ -97,6 +97,7 @@ set(EXAMPLES_GATT_FILES
 	hog_keyboard_demo.gatt     
 	hog_mouse_demo.gatt
 	le_credit_based_flow_control_mode_server.gatt
+	mesh_node_demo.gatt
 	nordic_spp_le_counter.gatt 
 	nordic_spp_le_streamer.gatt
 	sm_pairing_central.gatt    

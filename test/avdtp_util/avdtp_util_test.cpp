@@ -449,6 +449,29 @@ TEST(AvdtpUtil, avdtp_unpack_service_capabilities_test){
     MEMCMP_EQUAL(sbc_codec_capabilities, capabilities.media_codec.media_codec_information, 4);
 }
 
+TEST(AvdtpUtil, avdtp_unpack_service_capabilities_clamps_content_protection_value){
+    avdtp_capabilities_t capabilities;
+    static uint8_t packed_capabilities[] = {
+            AVDTP_CONTENT_PROTECTION, 0x0d, 0x11, 0x11,
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a
+    };
+    uint8_t packed_result[32];
+
+    memset(&connection, 0, sizeof(connection));
+    CHECK_EQUAL(1 << AVDTP_CONTENT_PROTECTION,
+                avdtp_unpack_service_capabilities(&connection, AVDTP_SI_GET_CONFIGURATION,
+                                                  &capabilities, packed_capabilities,
+                                                  sizeof(packed_capabilities)));
+    CHECK_EQUAL(AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN,
+                capabilities.content_protection.cp_type_value_len);
+    MEMCMP_EQUAL(&packed_capabilities[4], capabilities.content_protection.cp_type_value,
+                 AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
+
+    CHECK_EQUAL(AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN + 4,
+                avdtp_pack_service_capabilities(packed_result, sizeof(packed_result), capabilities,
+                                                AVDTP_CONTENT_PROTECTION));
+}
+
 TEST(AvdtpUtil, avdtp_unpack_service_capabilities_rejects_truncated_fixed_fields){
     avdtp_capabilities_t capabilities;
 
