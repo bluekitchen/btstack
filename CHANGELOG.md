@@ -8,8 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 ### Fixed
 - L2CAP: correctly cancel an outgoing Classic channel before its ACL connection completes
+- AVDTP Util: limit Content Protection data
+
 ### Changed
 
 ## Release v1.8.3
