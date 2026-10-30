@@ -10,8 +10,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 ### Fixed
+- hci_transport_h5: use static buffers for link control and ack frames
+- hci_transport_h5: fix handling of empty link control config packets on active link
 - L2CAP: correctly cancel an outgoing Classic channel before its ACL connection completes
 - AVDTP Util: limit Content Protection data
+- gatt_client, avdtp, avrcp, hid_host: validate nested SDP descriptors
+- sdp_util: avoid OOB read in SDP Attribute List
+- btstack_hid_parser: ignore reserved global items
+- obex_parser: ignore additional bytes
 
 ### Changed
 
