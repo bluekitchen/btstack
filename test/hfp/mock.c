@@ -212,9 +212,21 @@ static void hci_event_sco_complete(void){
     (*registered_hci_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void mock_hci_emit_sco_connection_request(void){
+    uint8_t event[12];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_CONNECTION_REQUEST;
+    event[pos++] = sizeof(event) - 2;
+    reverse_bd_addr(dev_addr, &event[pos]);    pos += 6;
+    memset(&event[pos], 0, 3);                 pos += 3;
+    event[pos++] = 0; // SCO link type
+    (*registered_hci_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
 	//printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
-    if (cmd->opcode == 0x428){
+    if ((cmd->opcode == HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION) ||
+        (cmd->opcode == HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION)){
         hci_event_sco_complete();
     }
 	return ERROR_CODE_SUCCESS;
