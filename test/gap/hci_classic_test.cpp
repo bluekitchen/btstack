@@ -101,6 +101,18 @@ TEST(HCI_CLASSIC, link_watchdog_can_be_enabled_for_one_acl_connection){
     CHECK_EQUAL(0, hci_automatic_flush_timeout());
 }
 
+TEST(HCI_CLASSIC, automatic_flush_timeout_can_be_set_without_link_watchdog){
+    hci_connection_t * conn = hci_connection_for_handle(0x0003);
+    CHECK(conn != NULL);
+    hci_stack->local_supported_features[6] |= 1u << 6u;
+
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, gap_set_automatic_flush_timeout_for_connection(conn->con_handle, 100));
+
+    CHECK_EQUAL(160, conn->automatic_flush_timeout);
+    CHECK_FALSE(conn->link_watchdog_enabled);
+    CHECK_EQUAL(160, hci_automatic_flush_timeout_for_connection(conn->con_handle));
+}
+
 int main(int argc, const char *argv[]){
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
     return CommandLineTestRunner::RunAllTests(argc, argv);

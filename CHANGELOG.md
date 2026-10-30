@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- GAP: add `gap_set_automatic_flush_timeout_for_connection` and `gap_enable_link_watchdog_for_connection`
 
 ### Fixed
 - hci_transport_h5: use static buffers for link control and ack frames

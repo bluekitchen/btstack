@@ -5982,6 +5982,28 @@ void gap_enable_link_watchdog(uint16_t timeout_ms){
     hci_stack->automatic_flush_timeout = btstack_min(timeout_ms, 1280) * 8 / 5; // divide by 0.625
 }
 
+uint8_t gap_set_automatic_flush_timeout_for_connection(hci_con_handle_t con_handle, uint16_t timeout_ms){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (connection == NULL){
+        log_error("gap_set_automatic_flush_timeout_for_connection: invalid handle 0x%04x", con_handle);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if ((connection->address_type != BD_ADDR_TYPE_ACL) || (connection->state != OPEN)){
+        log_error("gap_set_automatic_flush_timeout_for_connection: connection 0x%04x is not an open Classic ACL connection", con_handle);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if ((timeout_ms != 0) && !hci_non_flushable_packet_boundary_flag_supported()){
+        log_error("gap_set_automatic_flush_timeout_for_connection: controller does not support non-flushable packets");
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    connection->automatic_flush_timeout = btstack_min(timeout_ms, 1280) * 8 / 5; // divide by 0.625
+    connection->link_watchdog_enabled = false;
+    connection->gap_connection_tasks_pending |= GAP_CONNECTION_TASK_WRITE_AUTOMATIC_FLUSH_TIMEOUT;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
 void gap_enable_link_watchdog_for_connection(hci_con_handle_t con_handle, uint16_t timeout_ms){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if ((connection == NULL) || (connection->address_type != BD_ADDR_TYPE_ACL) || (connection->state != OPEN)){
