@@ -1535,6 +1535,23 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 #endif
 
 #ifdef ENABLE_CLASSIC
+uint8_t l2cap_set_automatically_flushable(uint16_t local_cid, bool enabled){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (channel == NULL) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    if ((channel->channel_type != L2CAP_CHANNEL_TYPE_CLASSIC) || (channel->state != L2CAP_STATE_OPEN)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode != L2CAP_CHANNEL_MODE_BASIC){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+#endif
+    channel->automatically_flushable = enabled;
+    return ERROR_CODE_SUCCESS;
+}
+#endif
+
+#ifdef ENABLE_CLASSIC
 // RTX Timer only exist for dynamic channels
 static l2cap_channel_t * l2cap_channel_for_rtx_timer(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_t it;    
@@ -1565,8 +1582,9 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     l2cap_free_channel_entry(channel);
 }
 
-static uint8_t l2cap_classic_packet_boundary_flag(hci_con_handle_t con_handle){
-    return (hci_non_flushable_packet_boundary_flag_supported() && (hci_automatic_flush_timeout_for_connection(con_handle) == 0)) ? 0x00 : 0x02;
+static uint8_t l2cap_classic_packet_boundary_flag(bool automatically_flushable){
+    if (automatically_flushable) return 0x02;
+    return hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 }
 #endif
 
@@ -1598,7 +1616,7 @@ static int l2cap_send_general_signaling_packet(hci_con_handle_t handle, uint16_t
     uint8_t pb_flags = 0x00;
 #ifdef ENABLE_CLASSIC
     if (signaling_cid == L2CAP_CID_SIGNALING){
-        pb_flags = l2cap_classic_packet_boundary_flag(handle);
+        pb_flags = l2cap_classic_packet_boundary_flag(false);
     }
 #endif
 uint8_t result = l2cap_send_signaling_packet(handle, pb_flags, signaling_cid, cmd, identifier, argptr);
@@ -1636,7 +1654,7 @@ static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
 static int l2cap_send_classic_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
     va_list argptr;
     va_start(argptr, identifier);
-    uint8_t pb_flag = l2cap_classic_packet_boundary_flag(handle);
+    uint8_t pb_flag = l2cap_classic_packet_boundary_flag(false);
     uint8_t result = l2cap_send_signaling_packet(handle, pb_flag, L2CAP_CID_SIGNALING, cmd, identifier, argptr);
     va_end(argptr);
     return result;
@@ -1676,9 +1694,9 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
-    // set non-flushable packet boundary flag if supported on Controller
+    // set packet boundary flag
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint8_t packet_boundary_flag = l2cap_classic_packet_boundary_flag(channel->con_handle);
+    uint8_t packet_boundary_flag = l2cap_classic_packet_boundary_flag(channel->automatically_flushable);
     l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -2700,6 +2718,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
     channel->con_handle = HCI_CON_HANDLE_INVALID;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
+    channel->automatically_flushable = false;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     channel->mode = L2CAP_CHANNEL_MODE_BASIC;

@@ -365,6 +365,7 @@ typedef struct {
     uint16_t  remote_mtu;
 
     uint16_t  flush_timeout;    // default 0xffff
+    bool      automatically_flushable;
 
     uint16_t  psm;
     
@@ -522,6 +523,14 @@ uint8_t l2cap_disconnect(uint16_t local_cid);
  * @brief Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier. 
  */
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
+
+/**
+ * @brief Configure whether packets sent on a Classic Basic Mode channel are automatically flushable.
+ * @param local_cid
+ * @param enabled
+ * @return status
+ */
+uint8_t l2cap_set_automatically_flushable(uint16_t local_cid, bool enabled);
 
 /** 
  * @brief Sends L2CAP data packet to the channel with given identifier.
