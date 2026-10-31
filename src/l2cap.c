@@ -390,6 +390,7 @@ static void l2cap_ertm_stop_retransmission_timer(l2cap_channel_t * l2cap_channel
 }    
 
 static void l2cap_ertm_release_buffer(l2cap_channel_t * channel){
+    channel->mode = L2CAP_CHANNEL_MODE_BASIC;
     if (channel->ertm == NULL) return;
 
     l2cap_ertm_stop_retransmission_timer(channel);
@@ -401,6 +402,7 @@ static void l2cap_ertm_release_buffer(l2cap_channel_t * channel){
 static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
     log_info("Monitor timeout");
     l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+    btstack_assert(l2cap_channel->ertm != NULL);
 
     // TODO: we assume that it's the oldest packet
     l2cap_ertm_tx_packet_state_t * tx_state;
@@ -429,6 +431,7 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
     log_info("Retransmission timeout");
     l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+    btstack_assert(l2cap_channel->ertm != NULL);
     
     // TODO: we assume that it's the oldest packet
     l2cap_ertm_tx_packet_state_t * tx_state;
@@ -2680,6 +2683,11 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
     channel->con_handle = HCI_CON_HANDLE_INVALID;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+    channel->ertm = NULL;
+#endif
 
     log_info("create channel %p, local_cid 0x%04x", (void*)channel, channel->local_cid);
 
