@@ -598,6 +598,9 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             media_tracker.a2dp_cid = cid;
             media_tracker.volume = 32;
 
+            hci_con_handle_t con_handle = a2dp_subevent_signaling_connection_established_get_con_handle(packet);
+            gap_set_automatic_flush_timeout_for_connection(con_handle, 150);
+
             printf("A2DP Source: Connected to address %s, a2dp cid 0x%02x, local seid 0x%02x.\n", bd_addr_to_str(address), media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
