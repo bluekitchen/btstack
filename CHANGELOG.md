@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GAP: add `gap_set_automatic_flush_timeout_for_connection` and `gap_enable_link_watchdog_for_connection`
+- L2CAP: add `l2cap_set_automatically_flushable`
 
 ### Fixed
 - hci_transport_h5: use static buffers for link control and ack frames
@@ -26,6 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Compiler: allow to use service range and attribute handles in C++ namespaces
 - L2CAP: reduce size of l2cap_channel_t by moving ERTM state into user-provided ERTM buffer.
          Applications should provide additional buffer storage
+- AVDTP: enable send of automatically flushable packets for media transport
+- example/a2dp_source_demo: set automatic flush timeout to 150 ms
 
 
 ## Release v1.8.3
