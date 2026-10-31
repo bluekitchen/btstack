@@ -1047,6 +1047,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                                     stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);
                                     stream_endpoint->media_con_handle = l2cap_event_channel_opened_get_handle(packet);
+                                    if (l2cap_set_automatically_flushable(stream_endpoint->l2cap_media_cid, true) != ERROR_CODE_SUCCESS){
+                                        log_error("AVDTP_STREAM_ENDPOINT_OPENED: cannot set media cid 0x%02x automatically flushable", stream_endpoint->l2cap_media_cid);
+                                    }
 
                                     log_info("AVDTP_STREAM_ENDPOINT_OPENED, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
                                     avdtp_streaming_emit_connection_established(stream_endpoint, ERROR_CODE_SUCCESS);
