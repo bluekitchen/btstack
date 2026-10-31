@@ -579,32 +579,49 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
 }
 
 static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
-    int pos = 0;
+    uint16_t pos = 0;
+
+    // L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
     config_options[pos++] = 9;      // length
     config_options[pos++] = (uint8_t) channel->mode;
-    // less or equal to remote tx window size
-    config_options[pos++] = btstack_min(channel->ertm->num_tx_buffers, channel->ertm->remote_tx_window_size);
-    // max transmit in response shall be ignored -> use sender values
-    config_options[pos++] = channel->ertm->remote_max_transmit;
-    // A value for the Retransmission time-out shall be sent in a positive Configuration Response
-    // and indicates the value that will be used by the sender of the Configuration Response -> use our value
-    little_endian_store_16( config_options, pos, channel->ertm->local_retransmission_timeout_ms);
-    pos += 2;
-    // A value for the Monitor time-out shall be sent in a positive Configuration Response
-    // and indicates the value that will be used by the sender of the Configuration Response -> use our value
-    little_endian_store_16( config_options, pos, channel->ertm->local_monitor_timeout_ms);
-    pos += 2;
-    // less or equal to remote mps
-    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
-    little_endian_store_16( config_options, pos, effective_mps);
-    pos += 2;
-    //
+    switch (channel->mode) {
+        case L2CAP_CHANNEL_MODE_BASIC:
+            // All remaining Retransmission and Flow Control Option parameters are ignored in Basic mode.
+            (void)memset(&config_options[pos], 0, 8);
+            pos += 8;
+            break;
+        case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+            btstack_assert(channel->ertm != NULL);
+            // less or equal to remote tx window size
+            config_options[pos++] = btstack_min(channel->ertm->num_tx_buffers, channel->ertm->remote_tx_window_size);
+            // max transmit in response shall be ignored -> use sender values
+            config_options[pos++] = channel->ertm->remote_max_transmit;
+            // A value for the Retransmission time-out shall be sent in a positive Configuration Response
+            // and indicates the value that will be used by the sender of the Configuration Response -> use our value
+            little_endian_store_16( config_options, pos, channel->ertm->local_retransmission_timeout_ms);
+            pos += 2;
+            // A value for the Monitor time-out shall be sent in a positive Configuration Response
+            // and indicates the value that will be used by the sender of the Configuration Response -> use our value
+            little_endian_store_16( config_options, pos, channel->ertm->local_monitor_timeout_ms);
+            pos += 2;
+            // less or equal to remote mps
+            uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+            little_endian_store_16( config_options, pos, effective_mps);
+            pos += 2;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+
+    // L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
     config_options[pos++] = 2;     // length
     little_endian_store_16(config_options, pos, channel->remote_mtu);
     pos += 2;
-    //
+
+    // L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->ertm->fcs_option;
