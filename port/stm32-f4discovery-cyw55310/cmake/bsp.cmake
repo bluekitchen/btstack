@@ -16,6 +16,9 @@ if(DEFINED BSP)
     # Create bsp library
     add_library(bsp ${BSP_SOURCES} ${BSP_COMPONENT_SOURCES})
 
+    # Ignore unused parameters in the STM32CubeF4 BSP sources.
+    target_compile_options(bsp PRIVATE -Wno-unused-parameter)
+
     target_link_libraries(bsp stm32cubemx)
 
     # Add library to the build
