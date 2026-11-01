@@ -69,6 +69,19 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
+# Sources that implement this board's platform are identical for every
+# example. Build them once instead of adding them to each executable below.
+add_library(stm32f4_discovery_cc256x_port STATIC
+    port/hal_audio_f4discovery.c
+    port/hal_flash_bank_stm32.c
+    port/port.c
+)
+target_link_libraries(stm32f4_discovery_cc256x_port PRIVATE
+    stm32cubemx
+    bsp
+    btstack
+)
+
 # Create targets
 foreach(EXAMPLE ${EXAMPLES})
     # get c file
@@ -127,18 +140,10 @@ foreach(EXAMPLE ${EXAMPLES})
         # Add user-defined library search paths
     )
     target_link_libraries(${EXAMPLE}
+        stm32f4_discovery_cc256x_port
         stm32cubemx
         bsp
         btstack
-    )
-
-    # Add sources to the example
-    target_sources(${EXAMPLE} PRIVATE
-        # Add user sources here
-        port/hal_audio_f4discovery.c
-        port/hal_flash_bank_stm32.c
-        port/port.c
-        ${SOURCES_EXAMPLE}
     )
 
 endforeach()

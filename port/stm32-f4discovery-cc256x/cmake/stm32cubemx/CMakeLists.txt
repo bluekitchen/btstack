@@ -1,22 +1,25 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(stm32cubemx)
-add_library(stm32cubemx INTERFACE)
+# Keep the generated CubeMX sources in one archive.  As an INTERFACE library,
+# its sources are added to every example executable and compiled repeatedly.
+add_library(stm32cubemx STATIC)
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
-target_compile_definitions(stm32cubemx INTERFACE 
+target_compile_definitions(stm32cubemx PUBLIC
 	USE_HAL_DRIVER 
 	STM32F407xx
     $<$<CONFIG:Debug>:DEBUG>
 )
 
 # Ignore warnings in STM32CubeMX code
-target_compile_options(stm32cubemx INTERFACE -Wno-unused-parameter)
+target_compile_options(stm32cubemx PRIVATE -Wno-unused-parameter)
 
-target_include_directories(stm32cubemx INTERFACE
+target_include_directories(stm32cubemx PUBLIC
     ../../Inc
+    ${CMAKE_SOURCE_DIR}/port
     ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Inc
     ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
     ${STM32F4CUBE_PATH}/Middlewares/ST/STM32_Audio/Addons/PDM/Inc
@@ -24,7 +27,7 @@ target_include_directories(stm32cubemx INTERFACE
     ${STM32F4CUBE_PATH}/Drivers/CMSIS/Include
 )
 
-target_sources(stm32cubemx INTERFACE
+target_sources(stm32cubemx PRIVATE
     ../../Src/main.c
     ../../Src/gpio.c
     ../../Src/crc.c
@@ -68,12 +71,12 @@ target_sources(stm32cubemx INTERFACE
     ${STM32F4CUBE_PATH}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
 )
 
-target_link_directories(stm32cubemx INTERFACE
+target_link_directories(stm32cubemx PUBLIC
     ${STM32F4CUBE_PATH}/Middlewares/ST/STM32_Audio/Addons/PDM/Lib
     ${STM32F4CUBE_PATH}/Middlewares/ST/STM32_Audio/Addons/PDM/Lib
 )
 
-target_link_libraries(stm32cubemx INTERFACE 
+target_link_libraries(stm32cubemx PUBLIC
 	:libPDMFilter_CM4_GCC_wc32.a 
 	:libPDMFilter_CM4_IAR_wc32.a
 )
