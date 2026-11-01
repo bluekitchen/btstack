@@ -186,7 +186,12 @@ int main(int argc, const char * argv[]){
 
     // setup USB Transport
     transport = hci_transport_usb_instance();
-    btstack_chipset_intel_download_firmware(hci_transport_usb_instance(), &intel_firmware_done);
+    // Intel AX211 Bluetooth controller used by this PC. The generic WinUSB
+    // transport does not include modern Intel IDs in its built-in allowlist.
+    hci_transport_usb_add_device(0x8087, 0x0033);
+    btstack_chipset_intel_set_firmware_path("firmware");
+    printf("Intel firmware directory: firmware\n");
+    btstack_chipset_intel_download_firmware(transport, &intel_firmware_done);
 
     // go
     btstack_run_loop_execute();
