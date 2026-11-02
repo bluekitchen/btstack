@@ -51,6 +51,36 @@ function(btstack_collect_sources output_variable)
     set(${output_variable} "${sources}" PARENT_SCOPE)
 endfunction()
 
+# Generate a GATT database header and make a target depend on it.
+#
+# Usage:
+#   btstack_target_gatt(my_example "${BTSTACK_ROOT}/example/gatt_counter.gatt"
+#       DEPENDS ${service_gatt_files})
+#
+# DEPENDS is optional and is intended for imported .gatt service definitions.
+# Python3_EXECUTABLE and BTSTACK_ROOT must be set by the calling project.
+function(btstack_target_gatt target gatt_file)
+    cmake_parse_arguments(ARG "" "" "DEPENDS" ${ARGN})
+
+    if(NOT TARGET ${target})
+        message(FATAL_ERROR "btstack_target_gatt requires existing target '${target}'")
+    endif()
+
+    get_filename_component(gatt_file_name "${gatt_file}" NAME_WLE)
+    set(output_header "${CMAKE_CURRENT_BINARY_DIR}/${gatt_file_name}.h")
+
+    add_custom_command(
+        OUTPUT "${output_header}"
+        DEPENDS "${gatt_file}" ${ARG_DEPENDS}
+        COMMAND "${Python3_EXECUTABLE}"
+        ARGS "${BTSTACK_ROOT}/tool/compile_gatt.py" "${gatt_file}" "${output_header}"
+    )
+
+    add_custom_target("MAKE_${gatt_file_name}" ALL DEPENDS "${output_header}")
+    add_dependencies(${target} "MAKE_${gatt_file_name}")
+    target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+endfunction()
+
 # Register the declarative requirements for one BTstack example.
 #
 # The declaration does not configure features or create a target. Port build
