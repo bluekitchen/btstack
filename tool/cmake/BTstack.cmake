@@ -4,51 +4,6 @@
 # keeps those responsibilities in its own CMakeLists.txt.
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/BTstackPlatformSources.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/BTstackLwipSources.cmake")
-
-# Collect root-relative sources from a catalog of named groups.
-function(btstack_collect_group_sources output_variable)
-    cmake_parse_arguments(ARG "" "ROOT;GROUP_VARIABLE_PREFIX;KNOWN_GROUPS_VARIABLE" "GROUPS" ${ARGN})
-
-    if(NOT ARG_ROOT)
-        message(FATAL_ERROR "btstack_collect_group_sources requires ROOT")
-    endif()
-
-    if(NOT ARG_GROUPS)
-        message(FATAL_ERROR "btstack_collect_group_sources requires at least one GROUP")
-    endif()
-
-    if(NOT ARG_GROUP_VARIABLE_PREFIX OR NOT ARG_KNOWN_GROUPS_VARIABLE)
-        message(FATAL_ERROR
-            "btstack_collect_group_sources requires GROUP_VARIABLE_PREFIX and KNOWN_GROUPS_VARIABLE")
-    endif()
-
-    set(known_groups "${${ARG_KNOWN_GROUPS_VARIABLE}}")
-    set(sources)
-    foreach(group IN LISTS ARG_GROUPS)
-        list(FIND known_groups "${group}" group_index)
-        if(group_index EQUAL -1)
-            string(REPLACE ";" ", " known_groups_text "${known_groups}")
-            message(FATAL_ERROR
-                "Unknown BTstack source group '${group}'. Known groups: ${known_groups_text}")
-        endif()
-
-        string(REPLACE "-" "_" group_suffix "${group}")
-        set(group_variable "${ARG_GROUP_VARIABLE_PREFIX}_${group_suffix}")
-        if(NOT DEFINED ${group_variable})
-            message(FATAL_ERROR
-                "BTstack source group '${group}' has no ${group_variable} definition")
-        endif()
-
-        foreach(source IN LISTS ${group_variable})
-            list(APPEND sources "${ARG_ROOT}/${source}")
-        endforeach()
-    endforeach()
-
-    list(REMOVE_DUPLICATES sources)
-    set(${output_variable} "${sources}" PARENT_SCOPE)
-endfunction()
 
 # Collect root-relative source groups into absolute source paths.
 #
@@ -61,39 +16,39 @@ endfunction()
 # The requested group IDs must be listed in btstack_source_groups. Group IDs
 # use lower-case hyphenated names; their backing variables use underscores.
 function(btstack_collect_sources output_variable)
-    btstack_collect_group_sources(${output_variable}
-        GROUP_VARIABLE_PREFIX btstack_sources
-        KNOWN_GROUPS_VARIABLE btstack_source_groups
-        ${ARGN})
-    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
-endfunction()
+    cmake_parse_arguments(ARG "" "ROOT" "GROUPS" ${ARGN})
 
-# Collect root-relative shared platform source groups into absolute paths.
-#
-# Usage:
-#   btstack_collect_platform_sources(PLATFORM_SOURCES
-#       ROOT "${BTSTACK_ROOT}"
-#       GROUPS platform-posix platform-libusb-h2)
-function(btstack_collect_platform_sources output_variable)
-    btstack_collect_group_sources(${output_variable}
-        GROUP_VARIABLE_PREFIX btstack_platform_sources
-        KNOWN_GROUPS_VARIABLE btstack_platform_source_groups
-        ${ARGN})
-    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
-endfunction()
+    if(NOT ARG_ROOT)
+        message(FATAL_ERROR "btstack_collect_sources requires ROOT")
+    endif()
 
-# Collect root-relative lwIP source groups into absolute paths.
-#
-# Usage:
-#   btstack_collect_lwip_sources(LWIP_SOURCES
-#       ROOT "${BTSTACK_ROOT}"
-#       GROUPS lwip)
-function(btstack_collect_lwip_sources output_variable)
-    btstack_collect_group_sources(${output_variable}
-        GROUP_VARIABLE_PREFIX btstack_lwip_sources
-        KNOWN_GROUPS_VARIABLE btstack_lwip_source_groups
-        ${ARGN})
-    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
+    if(NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_collect_sources requires at least one GROUP")
+    endif()
+
+    set(sources)
+    foreach(group IN LISTS ARG_GROUPS)
+        list(FIND btstack_source_groups "${group}" group_index)
+        if(group_index EQUAL -1)
+            string(REPLACE ";" ", " known_groups "${btstack_source_groups}")
+            message(FATAL_ERROR
+                "Unknown BTstack source group '${group}'. Known groups: ${known_groups}")
+        endif()
+
+        string(REPLACE "-" "_" group_suffix "${group}")
+        set(group_variable "btstack_sources_${group_suffix}")
+        if(NOT DEFINED ${group_variable})
+            message(FATAL_ERROR
+                "BTstack source group '${group}' has no ${group_variable} definition")
+        endif()
+
+        foreach(source IN LISTS ${group_variable})
+            list(APPEND sources "${ARG_ROOT}/${source}")
+        endforeach()
+    endforeach()
+
+    list(REMOVE_DUPLICATES sources)
+    set(${output_variable} "${sources}" PARENT_SCOPE)
 endfunction()
 
 # Generate a GATT database header and make a target depend on it.

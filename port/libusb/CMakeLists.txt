@@ -50,7 +50,7 @@ btstack_collect_sources(SOURCES_BTSTACK
     mesh
     tlv-none
 )
-btstack_collect_platform_sources(SOURCES_PLATFORM
+btstack_collect_sources(SOURCES_PLATFORM
         ROOT "${BTSTACK_ROOT}"
         GROUPS
         platform-posix
@@ -80,7 +80,7 @@ file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 # lwIP is linked only by the examples that use it below.
-btstack_collect_lwip_sources(SOURCES_LWIP
+btstack_collect_sources(SOURCES_LWIP
  ROOT "${BTSTACK_ROOT}"
  GROUPS lwip
 )

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the CMake source catalog for the BTstack src/ tree.
+"""Generate the CMake source catalog for BTstack CMake consumers.
 
-The catalog intentionally covers only src/ in this first iteration.  Platform
-and third-party source selection varies more between ports and will be added
-only after their grouping rules have been reviewed.
+The catalog covers src/, the reviewed shared platform implementations, and
+the explicitly selected lwIP source subset. Third-party source trees are not
+scanned broadly: each supported component is an explicit, reviewed list.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 
-# Ordered: the first matching rule wins.  Group names are the public CMake API:
+# Ordered: the first matching rule wins. Group names are the public CMake API:
 # lower-case, with hyphens where that reads better.  Generated variable names
 # use the corresponding underscore spelling.
 #
@@ -26,6 +26,12 @@ from pathlib import Path
 # BNEP and link-key database providers remain separate because their selection
 # semantics differ from normal Classic protocol/profile sources.
 RULES = [
+    # Shared platform sources. le_device_db_fs.c is explicitly excluded below
+    # because it is deprecated in favor of src/ble/le_device_db_tlv.c.
+    ("platform/libusb/hci_transport_h2_libusb.c", "platform-libusb-h2"),
+    ("platform/windows/hci_transport_h2_winusb.c", "platform-winusb-h2"),
+    ("platform/windows/*.c", "platform-windows"),
+    ("platform/posix/*.c", "platform-posix"),
     ("src/hci_transport_h4.c", "transport-h4"),
     ("src/hci_transport_h5.c", "transport-h5"),
     ("src/hci_transport_em9304_spi.c", "transport-em9304-spi"),
@@ -48,6 +54,72 @@ RULES = [
     ("src/mesh/*.c", "mesh"),
     ("src/mesh/gatt-service/*.c", "mesh"),
     ("src/*.c", "core"),
+]
+
+# Only these roots are scanned. Other platform and third-party trees can have
+# their own SDK-specific ownership and are deliberately outside this catalog.
+SCANNED_SOURCE_DIRECTORIES = (
+    "src",
+    "platform/posix",
+    "platform/windows",
+    "platform/libusb",
+)
+
+EXCLUDED_SOURCES = {
+    "platform/posix/le_device_db_fs.c",
+}
+
+# Explicit third-party selections. Avoid broad scans here: vendored trees also
+# contain tests, tools, examples, and alternative implementations.
+EXPLICIT_GROUP_SOURCES = {
+    "lwip-core": [
+        "3rd-party/lwip/core/src/core/def.c",
+        "3rd-party/lwip/core/src/core/inet_chksum.c",
+        "3rd-party/lwip/core/src/core/init.c",
+        "3rd-party/lwip/core/src/core/ip.c",
+        "3rd-party/lwip/core/src/core/mem.c",
+        "3rd-party/lwip/core/src/core/memp.c",
+        "3rd-party/lwip/core/src/core/netif.c",
+        "3rd-party/lwip/core/src/core/pbuf.c",
+        "3rd-party/lwip/core/src/core/tcp.c",
+        "3rd-party/lwip/core/src/core/tcp_in.c",
+        "3rd-party/lwip/core/src/core/tcp_out.c",
+        "3rd-party/lwip/core/src/core/timeouts.c",
+        "3rd-party/lwip/core/src/core/udp.c",
+    ],
+    "lwip-ipv4": [
+        "3rd-party/lwip/core/src/core/ipv4/acd.c",
+        "3rd-party/lwip/core/src/core/ipv4/dhcp.c",
+        "3rd-party/lwip/core/src/core/ipv4/etharp.c",
+        "3rd-party/lwip/core/src/core/ipv4/icmp.c",
+        "3rd-party/lwip/core/src/core/ipv4/ip4.c",
+        "3rd-party/lwip/core/src/core/ipv4/ip4_addr.c",
+        "3rd-party/lwip/core/src/core/ipv4/ip4_frag.c",
+    ],
+    "lwip-netif": [
+        "3rd-party/lwip/core/src/netif/ethernet.c",
+    ],
+    "lwip-httpd": [
+        "3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c",
+        "3rd-party/lwip/core/src/apps/http/fs.c",
+        "3rd-party/lwip/core/src/apps/http/httpd.c",
+    ],
+    "lwip-dhcp-server": [
+        "3rd-party/lwip/dhcp-server/dhserver.c",
+    ],
+    "lwip-platform": [
+        "platform/lwip/port/sys_arch.c",
+        "platform/lwip/bnep_lwip.c",
+    ],
+}
+
+LWIP_GROUPS = [
+    "lwip-core",
+    "lwip-ipv4",
+    "lwip-netif",
+    "lwip-httpd",
+    "lwip-dhcp-server",
+    "lwip-platform",
 ]
 
 # Most GATT service roles are clear from their filenames. These two are named
@@ -83,8 +155,14 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
     groups: dict[str, list[str]] = {}
     unclassified: list[str] = []
 
-    for source in sorted((root / "src").rglob("*.c")):
+    scanned_sources = []
+    for directory in SCANNED_SOURCE_DIRECTORIES:
+        scanned_sources.extend((root / directory).rglob("*.c"))
+
+    for source in sorted(scanned_sources):
         relative = source.relative_to(root).as_posix()
+        if relative in EXCLUDED_SOURCES:
+            continue
         group = next((name for pattern, name in RULES if matches(relative, pattern)), None)
         if group is not None:
             pass
@@ -98,6 +176,12 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
             unclassified.append(relative)
         else:
             groups.setdefault(group, []).append(relative)
+
+    for group, sources in EXPLICIT_GROUP_SOURCES.items():
+        for relative in sources:
+            if not (root / relative).is_file():
+                raise RuntimeError(f"Explicit source group '{group}' references missing file: {relative}")
+        groups[group] = sources
 
     gatt_service_groups = sorted(group for group in groups if group.startswith("gatt-service-"))
     gatt_client_groups = []
@@ -134,6 +218,8 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
             )
         groups[aggregate] = sources_for(leaf_groups)
 
+    groups["lwip"] = sources_for(LWIP_GROUPS)
+
     return groups, unclassified
 
 
@@ -143,8 +229,9 @@ def render(groups: dict[str, list[str]], unclassified: list[str]) -> str:
         "#",
         "# GENERATED by tool/create_cmake_sources.py -- do not edit.",
         "#",
-        "# This initial catalog covers src/ only. Paths are relative to",
-        "# BTSTACK_ROOT. Group IDs are lower-case and hyphenated; variable names",
+        "# This catalog covers src/, reviewed shared platform sources, and selected",
+        "# third-party source lists. Paths are relative to BTSTACK_ROOT. Group IDs are",
+        "# lower-case and hyphenated; variable names",
         "# use underscores, e.g. group le-audio -> btstack_sources_le_audio.",
         "",
         "set(btstack_source_groups",
