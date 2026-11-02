@@ -79,47 +79,11 @@ file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
 # LC3
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
-set(LWIP_CORE_SRC
- ../../3rd-party/lwip/core/src/core/def.c
- ../../3rd-party/lwip/core/src/core/inet_chksum.c
- ../../3rd-party/lwip/core/src/core/init.c
- ../../3rd-party/lwip/core/src/core/ip.c
- ../../3rd-party/lwip/core/src/core/mem.c
- ../../3rd-party/lwip/core/src/core/memp.c
- ../../3rd-party/lwip/core/src/core/netif.c
- ../../3rd-party/lwip/core/src/core/pbuf.c
- ../../3rd-party/lwip/core/src/core/tcp.c
- ../../3rd-party/lwip/core/src/core/tcp_in.c
- ../../3rd-party/lwip/core/src/core/tcp_out.c
- ../../3rd-party/lwip/core/src/core/timeouts.c
- ../../3rd-party/lwip/core/src/core/udp.c
+# lwIP is linked only by the examples that use it below.
+btstack_collect_lwip_sources(SOURCES_LWIP
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS lwip
 )
-set (LWIP_IPV4_SRC
- ../../3rd-party/lwip/core/src/core/ipv4/acd.c
- ../../3rd-party/lwip/core/src/core/ipv4/dhcp.c
- ../../3rd-party/lwip/core/src/core/ipv4/etharp.c
- ../../3rd-party/lwip/core/src/core/ipv4/icmp.c
- ../../3rd-party/lwip/core/src/core/ipv4/ip4.c
- ../../3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
- ../../3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
-)
-set (LWIP_NETIF_SRC
- ../../3rd-party/lwip/core/src/netif/ethernet.c
-)
-set (LWIP_HTTPD
- ../../3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
- ../../3rd-party/lwip/core/src/apps/http/fs.c
- ../../3rd-party/lwip/core/src/apps/http/httpd.c
-)
-set (LWIP_DHCPD
- ../../3rd-party/lwip/dhcp-server/dhserver.c
-)
-set (LWIP_PORT
- ../../platform/lwip/port/sys_arch.c
- ../../platform/lwip/bnep_lwip.c
-)
-
-set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
 set(SOURCES
  ${SOURCES_MD5}
