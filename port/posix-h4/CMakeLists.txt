@@ -71,7 +71,7 @@ file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_QRCODEGEN "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
-btstack_collect_platform_sources(SOURCES_PLATFORM
+btstack_collect_sources(SOURCES_PLATFORM
  ROOT "${BTSTACK_ROOT}"
  GROUPS platform-posix
 )
@@ -86,7 +86,7 @@ file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
 # lwIP is linked only by the examples that use it below.
-btstack_collect_lwip_sources(SOURCES_LWIP
+btstack_collect_sources(SOURCES_LWIP
  ROOT "${BTSTACK_ROOT}"
  GROUPS lwip
 )
