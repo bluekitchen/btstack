@@ -72,9 +72,12 @@ file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 # Port specific
 file(GLOB SOURCES_PORT      "../../port/libusb/*.c")
 
-# Chipsets
-file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
-file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
+btstack_collect_sources(SOURCES_CHIPSETS
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS
+    chipset-realtek
+    chipset-zephyr
+)
 
 # LC3
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
@@ -98,8 +101,7 @@ set(SOURCES
  ${SOURCES_UECC}
  ${SOURCES_HXCMOD}
  ${SOURCES_QRCODEGEN}
- ${SOURCES_REALTEK}
- ${SOURCES_ZEPHYR}
+ ${SOURCES_CHIPSETS}
 )
 list(SORT SOURCES)
 

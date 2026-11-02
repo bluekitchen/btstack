@@ -63,6 +63,7 @@ SCANNED_SOURCE_DIRECTORIES = (
     "platform/posix",
     "platform/windows",
     "platform/libusb",
+    "chipset",
 )
 
 EXCLUDED_SOURCES = {
@@ -166,6 +167,9 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
         group = next((name for pattern, name in RULES if matches(relative, pattern)), None)
         if group is not None:
             pass
+        elif relative.startswith("chipset/"):
+            chipset = relative.split("/", 2)[1]
+            group = "chipset-" + chipset
         elif relative.startswith("src/ble/gatt-service/"):
             group = "gatt-service-" + source.stem.replace("_", "-")
         elif relative.startswith("src/classic/"):

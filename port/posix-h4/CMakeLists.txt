@@ -75,13 +75,17 @@ btstack_collect_sources(SOURCES_PLATFORM
  ROOT "${BTSTACK_ROOT}"
  GROUPS platform-posix
 )
-file(GLOB SOURCES_BCM       "${BTSTACK_ROOT}/chipset/bcm/*.c")
-file(GLOB SOURCES_CSR       "${BTSTACK_ROOT}/chipset/csr/*.c")
-file(GLOB SOURCES_EM9301    "${BTSTACK_ROOT}/chipset/em9301/*.c")
-file(GLOB SOURCES_STLC2500D "${BTSTACK_ROOT}/chipset/stlc2500d/*.c")
-file(GLOB SOURCES_TC2566X   "${BTSTACK_ROOT}/chipset/tc3566x/*.c")
-file(GLOB SOURCES_REALTEK   "${BTSTACK_ROOT}/chipset/realtek/*.c")
-file(GLOB SOURCES_ZEPHYR    "${BTSTACK_ROOT}/chipset/zephyr/*.c")
+btstack_collect_sources(SOURCES_CHIPSETS
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS
+    chipset-bcm
+    chipset-csr
+    chipset-em9301
+    chipset-realtek
+    chipset-stlc2500d
+    chipset-tc3566x
+    chipset-zephyr
+)
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
@@ -92,24 +96,18 @@ btstack_collect_sources(SOURCES_LWIP
 )
 
 set(SOURCES
-  ${SOURCES_BCM}
   ${SOURCES_BLUEDROID}
-  ${SOURCES_CSR}
-  ${SOURCES_EM9301}
   ${SOURCES_HXCMOD}
   ${SOURCES_LC3_GOOGLE}
   ${SOURCES_MD5}
   ${SOURCES_PORT}
-  ${SOURCES_REALTEK}
   ${SOURCES_RIJNDAEL}
-  ${SOURCES_STLC2500D}
-  ${SOURCES_TC2566X}
   ${SOURCES_UECC}
   ${SOURCES_PLATFORM}
   ${SOURCES_BTSTACK}
   ${SOURCES_EXAMPLE_UTIL}
   ${SOURCES_YXML}
-  ${SOURCES_ZEPHYR}
+  ${SOURCES_CHIPSETS}
   ${SOURCES_QRCODEGEN}
 )
 list(SORT SOURCES)
