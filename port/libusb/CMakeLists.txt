@@ -31,7 +31,7 @@ include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
 
-# BTstack sources from src/. Platform, third-party, and port-local sources
+# BTstack sources from src/ and platform. Third-party, and port-local sources
 # remain below because they are still selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_collect_sources(SOURCES_BTSTACK
@@ -52,7 +52,17 @@ btstack_collect_sources(SOURCES_BTSTACK
     mesh
     tlv-none
 )
+btstack_collect_platform_sources(SOURCES_PLATFORM
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS
+        platform-posix
+        platform-libusb-h2
+)
+
+# Example Util
 file(GLOB SOURCES_EXAMPLE_UTIL "../../example/*_demo_util*.c")
+
+# 3rd-Party
 file(GLOB SOURCES_BLUEDROID "../../3rd-party/bluedroid/encoder/srce/*.c" "../../3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
@@ -60,10 +70,15 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_QRCODEGEN "../../3rd-party/qr-code-generator/qrcodegen.c")
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
-file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
+
+# Port specific
+file(GLOB SOURCES_PORT      "../../port/libusb/*.c")
+
+# Chipsets
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
+
+# LC3
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 set(LWIP_CORE_SRC
@@ -108,16 +123,13 @@ set (LWIP_PORT
 
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
-file(GLOB SOURCES_POSIX_OFF "../../platform/posix/le_device_db_fs.c")
-list(REMOVE_ITEM SOURCES_POSIX ${SOURCES_POSIX_OFF})
-
 set(SOURCES
  ${SOURCES_MD5}
  ${SOURCES_YXML}
  ${SOURCES_BLUEDROID}
- ${SOURCES_POSIX}
+ ${SOURCES_PLATFORM}
  ${SOURCES_RIJNDAEL}
- ${SOURCES_LIBUSB}
+ ${SOURCES_PORT}
  ${SOURCES_LC3_GOOGLE}
  ${SOURCES_BTSTACK}
  ${SOURCES_EXAMPLE_UTIL}
