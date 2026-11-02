@@ -1,18 +1,9 @@
 
-function(target_gatt TARGETOBJ GATT_FILE)
-    get_filename_component(GATT_FILE_NAME ${GATT_FILE} NAME_WLE)
-    string(CONCAT OUTPUT_HEADER ${GATT_FILE_NAME} ".h")
-    set(OUTPUT_HEADER "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_HEADER}")
+# Compatibility wrapper. New CMake ports should include BTstack.cmake and use
+# btstack_target_gatt directly.
+include("${CMAKE_CURRENT_LIST_DIR}/BTstack.cmake")
 
-    add_custom_command(
-        OUTPUT ${OUTPUT_HEADER}
-        DEPENDS ${GATT_FILE}
-        COMMAND ${Python3_EXECUTABLE}
-        ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${GATT_FILE} ${OUTPUT_HEADER}
-    )
-
-    add_custom_target(MAKE_${GATT_FILE_NAME} ALL DEPENDS ${OUTPUT_HEADER})
-    add_dependencies(${TARGETOBJ} MAKE_${GATT_FILE_NAME})
-    target_include_directories(${TARGETOBJ} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+function(target_gatt target gatt_file)
+    btstack_target_gatt(${target} "${gatt_file}" ${ARGN})
 endfunction()
 
