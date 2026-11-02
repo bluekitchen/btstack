@@ -12,6 +12,32 @@ set(btstack_source_groups
     bnep
     classic
     core
+    gatt-clients
+    gatt-servers
+    gatt-service-ancs-client
+    gatt-service-battery-service-client
+    gatt-service-battery-service-server
+    gatt-service-battery-service-v1-server
+    gatt-service-bond-management-service-server
+    gatt-service-cycling-power-service-server
+    gatt-service-cycling-speed-and-cadence-service-server
+    gatt-service-device-information-service-client
+    gatt-service-device-information-service-server
+    gatt-service-heart-rate-service-server
+    gatt-service-hids-device
+    gatt-service-hids-host
+    gatt-service-immediate-alert-service-client
+    gatt-service-immediate-alert-service-server
+    gatt-service-link-loss-service-client
+    gatt-service-link-loss-service-server
+    gatt-service-nordic-spp-service-server
+    gatt-service-object-transfer-service-client
+    gatt-service-object-transfer-service-server
+    gatt-service-scan-parameters-service-client
+    gatt-service-scan-parameters-service-server
+    gatt-service-tx-power-service-client
+    gatt-service-tx-power-service-server
+    gatt-service-ublox-spp-service-server
     gatt-services
     lc3
     le-audio
@@ -133,6 +159,132 @@ set(btstack_sources_core
     src/hci_event_builder.c
     src/l2cap.c
     src/l2cap_signaling.c
+)
+
+set(btstack_sources_gatt_clients
+    src/ble/gatt-service/ancs_client.c
+    src/ble/gatt-service/battery_service_client.c
+    src/ble/gatt-service/device_information_service_client.c
+    src/ble/gatt-service/hids_host.c
+    src/ble/gatt-service/immediate_alert_service_client.c
+    src/ble/gatt-service/link_loss_service_client.c
+    src/ble/gatt-service/object_transfer_service_client.c
+    src/ble/gatt-service/scan_parameters_service_client.c
+    src/ble/gatt-service/tx_power_service_client.c
+)
+
+set(btstack_sources_gatt_servers
+    src/ble/gatt-service/battery_service_server.c
+    src/ble/gatt-service/battery_service_v1_server.c
+    src/ble/gatt-service/bond_management_service_server.c
+    src/ble/gatt-service/cycling_power_service_server.c
+    src/ble/gatt-service/cycling_speed_and_cadence_service_server.c
+    src/ble/gatt-service/device_information_service_server.c
+    src/ble/gatt-service/heart_rate_service_server.c
+    src/ble/gatt-service/hids_device.c
+    src/ble/gatt-service/immediate_alert_service_server.c
+    src/ble/gatt-service/link_loss_service_server.c
+    src/ble/gatt-service/nordic_spp_service_server.c
+    src/ble/gatt-service/object_transfer_service_server.c
+    src/ble/gatt-service/scan_parameters_service_server.c
+    src/ble/gatt-service/tx_power_service_server.c
+    src/ble/gatt-service/ublox_spp_service_server.c
+)
+
+set(btstack_sources_gatt_service_ancs_client
+    src/ble/gatt-service/ancs_client.c
+)
+
+set(btstack_sources_gatt_service_battery_service_client
+    src/ble/gatt-service/battery_service_client.c
+)
+
+set(btstack_sources_gatt_service_battery_service_server
+    src/ble/gatt-service/battery_service_server.c
+)
+
+set(btstack_sources_gatt_service_battery_service_v1_server
+    src/ble/gatt-service/battery_service_v1_server.c
+)
+
+set(btstack_sources_gatt_service_bond_management_service_server
+    src/ble/gatt-service/bond_management_service_server.c
+)
+
+set(btstack_sources_gatt_service_cycling_power_service_server
+    src/ble/gatt-service/cycling_power_service_server.c
+)
+
+set(btstack_sources_gatt_service_cycling_speed_and_cadence_service_server
+    src/ble/gatt-service/cycling_speed_and_cadence_service_server.c
+)
+
+set(btstack_sources_gatt_service_device_information_service_client
+    src/ble/gatt-service/device_information_service_client.c
+)
+
+set(btstack_sources_gatt_service_device_information_service_server
+    src/ble/gatt-service/device_information_service_server.c
+)
+
+set(btstack_sources_gatt_service_heart_rate_service_server
+    src/ble/gatt-service/heart_rate_service_server.c
+)
+
+set(btstack_sources_gatt_service_hids_device
+    src/ble/gatt-service/hids_device.c
+)
+
+set(btstack_sources_gatt_service_hids_host
+    src/ble/gatt-service/hids_host.c
+)
+
+set(btstack_sources_gatt_service_immediate_alert_service_client
+    src/ble/gatt-service/immediate_alert_service_client.c
+)
+
+set(btstack_sources_gatt_service_immediate_alert_service_server
+    src/ble/gatt-service/immediate_alert_service_server.c
+)
+
+set(btstack_sources_gatt_service_link_loss_service_client
+    src/ble/gatt-service/link_loss_service_client.c
+)
+
+set(btstack_sources_gatt_service_link_loss_service_server
+    src/ble/gatt-service/link_loss_service_server.c
+)
+
+set(btstack_sources_gatt_service_nordic_spp_service_server
+    src/ble/gatt-service/nordic_spp_service_server.c
+)
+
+set(btstack_sources_gatt_service_object_transfer_service_client
+    src/ble/gatt-service/object_transfer_service_client.c
+)
+
+set(btstack_sources_gatt_service_object_transfer_service_server
+    src/ble/gatt-service/object_transfer_service_server.c
+)
+
+set(btstack_sources_gatt_service_scan_parameters_service_client
+    src/ble/gatt-service/scan_parameters_service_client.c
+)
+
+set(btstack_sources_gatt_service_scan_parameters_service_server
+    src/ble/gatt-service/scan_parameters_service_server.c
+)
+
+set(btstack_sources_gatt_service_tx_power_service_client
+    src/ble/gatt-service/tx_power_service_client.c
+)
+
+set(btstack_sources_gatt_service_tx_power_service_server
+    src/ble/gatt-service/tx_power_service_server.c
+)
+
+set(btstack_sources_gatt_service_ublox_spp_service_server
+    src/ble/gatt-service/ublox_spp_service_server.c
 )
 
 set(btstack_sources_gatt_services
