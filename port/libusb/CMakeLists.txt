@@ -164,7 +164,6 @@ target_link_libraries(btstack m)
 # future resolver; for now this port builds every declared example.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
-list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client")
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
