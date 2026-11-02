@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
+import argparse
+import difflib
 import glob
+import io
 import re
 import sys
 import os
@@ -428,112 +431,140 @@ def create_getter(event_name, field_name, field_type, offset, offset_is_number, 
 def is_le_event(event_group):
     return event_group in ['GATT', 'ANCS', 'SM']
 
-def create_events(events):
-    global gen_path
+def create_events(events, fout):
     global copyright
     global hfile_header_begin
     global hfile_header_end
     global meta_event_template
 
-    with open(gen_path, 'wt') as fout:
-        fout.write(copyright)
-        fout.write(hfile_header_begin)
+    fout.write(copyright)
+    fout.write(hfile_header_begin)
 
-        for meta_event in meta_events:
-            fout.write(meta_event_template.format(meta_event=meta_event.lower()))
+    for meta_event in meta_events:
+        fout.write(meta_event_template.format(meta_event=meta_event.lower()))
 
-        for event_type, event_name, format, args in events:
-            parts = event_name.split("_")
-            event_group = parts[0]
-            if not event_group in supported_event_groups:
-                print("// %s " % event_name)
-                continue
-            # print(event_name)
-            base_name = format_function_name(event_name)
-            length_name = ''
-            offset = 2
-            offset_is_number = 1
-            offset_unknown = 0
-            supported = all_fields_supported(format)
-            last_variable_length_field_pos = ""
-            last_length_field_offset = 0
-            # Closing bracket tokens do not need dedicated @param entries.
-            format_num_closing = format.count(closing_bracket)
-            expected_args_without_closing = len(format) - format_num_closing
-            if len(args) == len(format):
-                consume_closing_param = True
-            elif len(args) == expected_args_without_closing:
-                consume_closing_param = False
+    for event_type, event_name, format, args in events:
+        parts = event_name.split("_")
+        event_group = parts[0]
+        if not event_group in supported_event_groups:
+            print("// %s " % event_name)
+            continue
+        # print(event_name)
+        base_name = format_function_name(event_name)
+        length_name = ''
+        offset = 2
+        offset_is_number = 1
+        offset_unknown = 0
+        supported = all_fields_supported(format)
+        last_variable_length_field_pos = ""
+        last_length_field_offset = 0
+        # Closing bracket tokens do not need dedicated @param entries.
+        format_num_closing = format.count(closing_bracket)
+        expected_args_without_closing = len(format) - format_num_closing
+        if len(args) == len(format):
+            consume_closing_param = True
+        elif len(args) == expected_args_without_closing:
+            consume_closing_param = False
+        else:
+            print(event_name.upper())
+            print ("Format %s does not match @param/@array/@field entries %s " % (format, args))
+            print
+            continue
+
+        if is_le_event(event_group):
+            fout.write("#ifdef ENABLE_BLE\n")
+
+        arg_index = 0
+        for field_type in format:
+            if field_type == closing_bracket and not consume_closing_param:
+                field_name = ''
             else:
-                print(event_name.upper())
-                print ("Format %s does not match @param/@array/@field entries %s " % (format, args))
-                print
+                if arg_index >= len(args):
+                    print(event_name.upper())
+                    print ("Missing @param/@array/@field for format token '%s' in format %s" % (field_type, format))
+                    print
+                    break
+                field_name = args[arg_index]
+                arg_index += 1
+
+            if field_type != closing_bracket and field_name.lower() == 'subevent_code':
+                offset += 1
                 continue
-
-            if is_le_event(event_group):
-                fout.write("#ifdef ENABLE_BLE\n")
-
-            arg_index = 0
-            for field_type in format:
-                if field_type == closing_bracket and not consume_closing_param:
-                    field_name = ''
+            if offset_unknown:
+                print("Param after variable length field without preceding 'J' length field")
+                break
+            if field_type in open_bracket + closing_bracket:
+                text = create_iterator( base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported )
+            else:
+                text = create_getter(base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported)
+            fout.write(text)
+            if field_type in 'RT':
+                break
+            if field_type in 'J':
+                if offset_is_number:
+                    last_length_field_offset = offset
+                    last_variable_length_field_pos = '%u' % offset
                 else:
-                    if arg_index >= len(args):
-                        print(event_name.upper())
-                        print ("Missing @param/@array/@field for format token '%s' in format %s" % (field_type, format))
-                        print
-                        break
-                    field_name = args[arg_index]
-                    arg_index += 1
-
-                if field_type != closing_bracket and field_name.lower() == 'subevent_code':
-                    offset += 1
-                    continue
-                if offset_unknown:
-                    print("Param after variable length field without preceding 'J' length field")
-                    break
-                if field_type in open_bracket + closing_bracket:
-                    text = create_iterator( base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported )
-                else:
-                    text = create_getter(base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported)
-                fout.write(text)
-                if field_type in 'RT':
-                    break
-                if field_type in 'J':
+                    last_variable_length_field_pos = offset
+            if field_type in 'V':
+                if last_variable_length_field_pos != '':
                     if offset_is_number:
-                        last_length_field_offset = offset
-                        last_variable_length_field_pos = '%u' % offset
-                    else:
-                        last_variable_length_field_pos = offset
-                if field_type in 'V':
-                    if last_variable_length_field_pos != '':
-                        if offset_is_number:
-                            # convert to string
-                            offset = '%uu' % offset
-                            offset_is_number = 0
-                        offset = offset + ' + event[%s]' % last_variable_length_field_pos
-                    else:
-                        offset_unknown = 1
+                        # convert to string
+                        offset = '%uu' % offset
+                        offset_is_number = 0
+                    offset = offset + ' + event[%s]' % last_variable_length_field_pos
                 else:
-                    if offset_is_number:
-                        offset += size_for_type(field_type)
-                    else:
-                        offset = offset + ' + %uu' % size_for_type(field_type)
-            if is_le_event(event_group):
-                fout.write("#endif\n")
-            fout.write("\n")
+                    offset_unknown = 1
+            else:
+                if offset_is_number:
+                    offset += size_for_type(field_type)
+                else:
+                    offset = offset + ' + %uu' % size_for_type(field_type)
+        if is_le_event(event_group):
+            fout.write("#endif\n")
+        fout.write("\n")
 
-        fout.write(hfile_header_end)
+    fout.write(hfile_header_end)
 
-btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
-gen_path = btstack_root + '/src/btstack_event.h'
+def main():
+    argument_parser = argparse.ArgumentParser(description=program_info)
+    argument_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="fail if src/btstack_event.h is stale; do not write it",
+    )
+    args = argument_parser.parse_args()
 
-print(program_info)
+    btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
+    gen_path = btstack_root + '/src/btstack_event.h'
 
-# parse events
-(events, le_events, event_types) = parser.parse_events()
-# create event field accesors
-create_events(events + le_events)
+    print(program_info)
 
-# done
-print('Done!')
+    # parse events and create event field accessors in memory
+    (events, le_events, event_types) = parser.parse_events()
+    output = io.StringIO()
+    create_events(events + le_events, output)
+    generated = output.getvalue()
+
+    if args.check:
+        with open(gen_path, 'rt') as fin:
+            existing = fin.read()
+        if existing != generated:
+            print(f'{gen_path} is stale; run tool/btstack_event_generator.py', file=sys.stderr)
+            sys.stderr.writelines(difflib.unified_diff(
+                existing.splitlines(keepends=True),
+                generated.splitlines(keepends=True),
+                fromfile=gen_path,
+                tofile='generated',
+            ))
+            return 1
+        print('src/btstack_event.h is up to date.')
+    else:
+        with open(gen_path, 'wt') as fout:
+            fout.write(generated)
+        print('Done!')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
