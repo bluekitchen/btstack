@@ -61,6 +61,7 @@ btstack_collect_sources(SOURCES_BTSTACK
     core
     gatt-services
     lc3
+    le-audio
     le-device-db-tlv
     link-key-db-memory
     link-key-db-static
@@ -175,10 +176,10 @@ target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(btstack m)
 
 
-# get list of examples
-include(${BTSTACK_ROOT}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
+# Get the declared examples. Feature-based filtering will be provided by the
+# future resolver; for now this port builds every declared example.
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
 list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client")
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
@@ -190,8 +191,11 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+    # Get the example sources from its declaration.
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
 
     # add lwip sources for lwip examples
     if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
@@ -199,13 +203,14 @@ foreach(EXAMPLE ${EXAMPLES})
     endif()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
+    if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
+   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${GATT_FILES}
    COMMAND ${Python3_EXECUTABLE}
-   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
   )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
     else()
