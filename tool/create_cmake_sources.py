@@ -19,10 +19,9 @@ from pathlib import Path
 # lower-case, with hyphens where that reads better.  Generated variable names
 # use the corresponding underscore spelling.
 #
-# TODO: Decide the GATT service policy before a port consumes this group. The
-# resolver must either expose client/server-role lists (and make ports select
-# them explicitly), or provide an all-services list and rely on linker dead
-# stripping for unused services. Do not silently make that choice here.
+# Each GATT service is a leaf group. gatt-clients, gatt-servers, and
+# gatt-services are convenience aggregates; they intentionally overlap leaf
+# groups. The resolver decides which of these groups a port should use.
 # TODO: Review whether classic should gain opt-in codec/profile subgroups when
 # the resolver is introduced.  For the catalog-only pilot it remains whole.
 RULES = [
@@ -43,7 +42,6 @@ RULES = [
     ("src/btstack_audio_song.c", "audio-demo"),
     # LC3 is also used by HFP; the future resolver supplies it to both users.
     ("src/btstack_lc3*.c", "lc3"),
-    ("src/ble/gatt-service/*.c", "gatt-services"),
     ("src/ble/*.c", "ble"),
     ("src/classic/*.c", "classic"),
     ("src/le-audio/*.c", "le-audio"),
@@ -51,6 +49,13 @@ RULES = [
     ("src/mesh/gatt-service/*.c", "mesh"),
     ("src/*.c", "core"),
 ]
+
+# Most GATT service roles are clear from their filenames. These two are named
+# after the local HID role instead, so record their role explicitly.
+GATT_SERVICE_ROLE_OVERRIDES = {
+    "gatt-service-hids-device": "server",
+    "gatt-service-hids-host": "client",
+}
 
 
 def matches(path: str, pattern: str) -> bool:
@@ -71,11 +76,38 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
 
     for source in sorted((root / "src").rglob("*.c")):
         relative = source.relative_to(root).as_posix()
-        group = next((name for pattern, name in RULES if matches(relative, pattern)), None)
+        if relative.startswith("src/ble/gatt-service/"):
+            group = "gatt-service-" + source.stem.replace("_", "-")
+        else:
+            group = next((name for pattern, name in RULES if matches(relative, pattern)), None)
         if group is None:
             unclassified.append(relative)
         else:
             groups.setdefault(group, []).append(relative)
+
+    gatt_service_groups = sorted(group for group in groups if group.startswith("gatt-service-"))
+    gatt_client_groups = []
+    gatt_server_groups = []
+    for group in gatt_service_groups:
+        role = GATT_SERVICE_ROLE_OVERRIDES.get(group)
+        if role is None:
+            if group.endswith("-client"):
+                role = "client"
+            elif group.endswith("-server"):
+                role = "server"
+            else:
+                raise RuntimeError(f"GATT service group '{group}' has no client/server role")
+        if role == "client":
+            gatt_client_groups.append(group)
+        else:
+            gatt_server_groups.append(group)
+
+    def sources_for(source_groups: list[str]) -> list[str]:
+        return [source for group in source_groups for source in groups[group]]
+
+    groups["gatt-clients"] = sources_for(gatt_client_groups)
+    groups["gatt-servers"] = sources_for(gatt_server_groups)
+    groups["gatt-services"] = sources_for(gatt_service_groups)
 
     return groups, unclassified
 
