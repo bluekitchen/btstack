@@ -41,7 +41,7 @@ RULES = [
     ("src/btstack_audio_generator.c", "audio-demo"),
     ("src/btstack_audio_player.c", "audio-demo"),
     ("src/btstack_audio_song.c", "audio-demo"),
-    # LC3 is also used by HFP; the future resolver supplies it to both users.
+    # LC3 is also used by HFP; the future resolver supplies it to both users
     ("src/btstack_lc3*.c", "lc3"),
     ("src/ble/*.c", "ble"),
     ("src/le-audio/*.c", "le-audio"),
