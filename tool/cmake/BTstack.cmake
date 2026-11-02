@@ -58,13 +58,15 @@ endfunction()
 #       DEPENDS ${service_gatt_files})
 #
 # DEPENDS is optional and is intended for imported .gatt service definitions.
-# Python3_EXECUTABLE and BTSTACK_ROOT must be set by the calling project.
+# BTSTACK_ROOT must be set by the calling project.
 function(btstack_target_gatt target gatt_file)
     cmake_parse_arguments(ARG "" "" "DEPENDS" ${ARGN})
 
     if(NOT TARGET ${target})
         message(FATAL_ERROR "btstack_target_gatt requires existing target '${target}'")
     endif()
+
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
     get_filename_component(gatt_file_name "${gatt_file}" NAME_WLE)
     set(output_header "${CMAKE_CURRENT_BINARY_DIR}/${gatt_file_name}.h")
