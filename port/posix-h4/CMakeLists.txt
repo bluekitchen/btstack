@@ -85,46 +85,11 @@ file(GLOB SOURCES_ZEPHYR    "${BTSTACK_ROOT}/chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
-set(LWIP_CORE_SRC
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c
-  )
-set (LWIP_IPV4_SRC
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
-  )
-set (LWIP_NETIF_SRC
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c
-  )
-set (LWIP_HTTPD
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
-  ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
-  )
-set (LWIP_DHCPD
-  ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
-  )
-set (LWIP_PORT
-  ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
-  ${BTSTACK_ROOT}//platform/lwip/bnep_lwip.c
-  )
-set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
+# lwIP is linked only by the examples that use it below.
+btstack_collect_lwip_sources(SOURCES_LWIP
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS lwip
+)
 
 set(SOURCES
   ${SOURCES_BCM}
