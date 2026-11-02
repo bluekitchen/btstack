@@ -11,6 +11,20 @@ set(btstack_source_groups
     audio-demo
     ble
     bnep
+    chipset-atwilc3000
+    chipset-bcm
+    chipset-cc256x
+    chipset-cinnamon
+    chipset-csr
+    chipset-da145xx
+    chipset-em9301
+    chipset-intel
+    chipset-nxp
+    chipset-realtek
+    chipset-stlc2500d
+    chipset-sx128x
+    chipset-tc3566x
+    chipset-zephyr
     classic
     classic-a2dp
     classic-a2dp-sink
@@ -133,6 +147,72 @@ set(btstack_sources_ble
 
 set(btstack_sources_bnep
     src/classic/bnep.c
+)
+
+set(btstack_sources_chipset_atwilc3000
+    chipset/atwilc3000/btstack_chipset_atwilc3000.c
+)
+
+set(btstack_sources_chipset_bcm
+    chipset/bcm/btstack_chipset_bcm.c
+    chipset/bcm/btstack_chipset_bcm_download_firmware.c
+)
+
+set(btstack_sources_chipset_cc256x
+    chipset/cc256x/ant_cmd.c
+    chipset/cc256x/btstack_chipset_cc256x.c
+)
+
+set(btstack_sources_chipset_cinnamon
+    chipset/cinnamon/controller.c
+    chipset/cinnamon/hopping.c
+)
+
+set(btstack_sources_chipset_csr
+    chipset/csr/btstack_chipset_csr.c
+    chipset/csr/csr_set_bd_addr.c
+)
+
+set(btstack_sources_chipset_da145xx
+    chipset/da145xx/btstack_chipset_da145xx.c
+    chipset/da145xx/hci_531_active_uart_460800.c
+    chipset/da145xx/hci_581_active_uart.c
+    chipset/da145xx/hci_585.c
+)
+
+set(btstack_sources_chipset_em9301
+    chipset/em9301/0000000_META_hci_patches_v7.c
+    chipset/em9301/btstack_chipset_em9301.c
+)
+
+set(btstack_sources_chipset_intel
+    chipset/intel/btstack_chipset_intel_firmware.c
+)
+
+set(btstack_sources_chipset_nxp
+    chipset/nxp/btstack_chipset_nxp.c
+)
+
+set(btstack_sources_chipset_realtek
+    chipset/realtek/btstack_chipset_realtek.c
+)
+
+set(btstack_sources_chipset_stlc2500d
+    chipset/stlc2500d/btstack_chipset_stlc2500d.c
+)
+
+set(btstack_sources_chipset_sx128x
+    chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280-hal.c
+    chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280.c
+    chipset/sx128x/ll_sx1280.c
+)
+
+set(btstack_sources_chipset_tc3566x
+    chipset/tc3566x/btstack_chipset_tc3566x.c
+)
+
+set(btstack_sources_chipset_zephyr
+    chipset/zephyr/btstack_chipset_zephyr.c
 )
 
 set(btstack_sources_classic
