@@ -22,8 +22,9 @@ from pathlib import Path
 # Each GATT service is a leaf group. gatt-clients, gatt-servers, and
 # gatt-services are convenience aggregates; they intentionally overlap leaf
 # groups. The resolver decides which of these groups a port should use.
-# TODO: Review whether classic should gain opt-in codec/profile subgroups when
-# the resolver is introduced.  For the catalog-only pilot it remains whole.
+# Classic sources are leaf groups too; classic is their convenience aggregate.
+# BNEP and link-key database providers remain separate because their selection
+# semantics differ from normal Classic protocol/profile sources.
 RULES = [
     ("src/hci_transport_h4.c", "transport-h4"),
     ("src/hci_transport_h5.c", "transport-h5"),
@@ -43,7 +44,6 @@ RULES = [
     # LC3 is also used by HFP; the future resolver supplies it to both users.
     ("src/btstack_lc3*.c", "lc3"),
     ("src/ble/*.c", "ble"),
-    ("src/classic/*.c", "classic"),
     ("src/le-audio/*.c", "le-audio"),
     ("src/mesh/*.c", "mesh"),
     ("src/mesh/gatt-service/*.c", "mesh"),
@@ -55,6 +55,15 @@ RULES = [
 GATT_SERVICE_ROLE_OVERRIDES = {
     "gatt-service-hids-device": "server",
     "gatt-service-hids-host": "client",
+}
+
+CLASSIC_CONVENIENCE_GROUPS = {
+    "classic-btstack-sbc": [
+        "classic-btstack-sbc-bluedroid",
+        "classic-btstack-sbc-decoder-bluedroid",
+        "classic-btstack-sbc-encoder-bluedroid",
+        "classic-btstack-sbc-plc",
+    ],
 }
 
 
@@ -76,10 +85,15 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
 
     for source in sorted((root / "src").rglob("*.c")):
         relative = source.relative_to(root).as_posix()
-        if relative.startswith("src/ble/gatt-service/"):
+        group = next((name for pattern, name in RULES if matches(relative, pattern)), None)
+        if group is not None:
+            pass
+        elif relative.startswith("src/ble/gatt-service/"):
             group = "gatt-service-" + source.stem.replace("_", "-")
+        elif relative.startswith("src/classic/"):
+            group = "classic-" + source.stem.replace("_", "-")
         else:
-            group = next((name for pattern, name in RULES if matches(relative, pattern)), None)
+            group = None
         if group is None:
             unclassified.append(relative)
         else:
@@ -108,6 +122,17 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
     groups["gatt-clients"] = sources_for(gatt_client_groups)
     groups["gatt-servers"] = sources_for(gatt_server_groups)
     groups["gatt-services"] = sources_for(gatt_service_groups)
+
+    classic_leaf_groups = sorted(group for group in groups if group.startswith("classic-"))
+    groups["classic"] = sources_for(classic_leaf_groups)
+    for aggregate, leaf_groups in CLASSIC_CONVENIENCE_GROUPS.items():
+        missing_groups = [group for group in leaf_groups if group not in groups]
+        if missing_groups:
+            raise RuntimeError(
+                f"Classic convenience group '{aggregate}' references missing groups: "
+                + ", ".join(missing_groups)
+            )
+        groups[aggregate] = sources_for(leaf_groups)
 
     return groups, unclassified
 

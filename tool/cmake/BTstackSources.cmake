@@ -11,6 +11,56 @@ set(btstack_source_groups
     ble
     bnep
     classic
+    classic-a2dp
+    classic-a2dp-sink
+    classic-a2dp-source
+    classic-avdtp
+    classic-avdtp-acceptor
+    classic-avdtp-initiator
+    classic-avdtp-sink
+    classic-avdtp-source
+    classic-avdtp-util
+    classic-avrcp
+    classic-avrcp-browsing
+    classic-avrcp-browsing-controller
+    classic-avrcp-browsing-target
+    classic-avrcp-controller
+    classic-avrcp-cover-art-client
+    classic-avrcp-media-item-iterator
+    classic-avrcp-target
+    classic-btstack-cvsd-plc
+    classic-btstack-sbc
+    classic-btstack-sbc-bluedroid
+    classic-btstack-sbc-decoder-bluedroid
+    classic-btstack-sbc-encoder-bluedroid
+    classic-btstack-sbc-plc
+    classic-device-id-server
+    classic-gatt-sdp
+    classic-goep-client
+    classic-goep-server
+    classic-hfp
+    classic-hfp-ag
+    classic-hfp-codec
+    classic-hfp-gsm-model
+    classic-hfp-hf
+    classic-hfp-msbc
+    classic-hid-device
+    classic-hid-host
+    classic-hsp-ag
+    classic-hsp-hs
+    classic-obex-iterator
+    classic-obex-message-builder
+    classic-obex-parser
+    classic-obex-srm-client
+    classic-obex-srm-server
+    classic-pan
+    classic-pbap-client
+    classic-rfcomm
+    classic-sdp-client
+    classic-sdp-client-rfcomm
+    classic-sdp-server
+    classic-sdp-util
+    classic-spp-server
     core
     gatt-clients
     gatt-servers
@@ -122,6 +172,209 @@ set(btstack_sources_classic
     src/classic/sdp_client_rfcomm.c
     src/classic/sdp_server.c
     src/classic/sdp_util.c
+    src/classic/spp_server.c
+)
+
+set(btstack_sources_classic_a2dp
+    src/classic/a2dp.c
+)
+
+set(btstack_sources_classic_a2dp_sink
+    src/classic/a2dp_sink.c
+)
+
+set(btstack_sources_classic_a2dp_source
+    src/classic/a2dp_source.c
+)
+
+set(btstack_sources_classic_avdtp
+    src/classic/avdtp.c
+)
+
+set(btstack_sources_classic_avdtp_acceptor
+    src/classic/avdtp_acceptor.c
+)
+
+set(btstack_sources_classic_avdtp_initiator
+    src/classic/avdtp_initiator.c
+)
+
+set(btstack_sources_classic_avdtp_sink
+    src/classic/avdtp_sink.c
+)
+
+set(btstack_sources_classic_avdtp_source
+    src/classic/avdtp_source.c
+)
+
+set(btstack_sources_classic_avdtp_util
+    src/classic/avdtp_util.c
+)
+
+set(btstack_sources_classic_avrcp
+    src/classic/avrcp.c
+)
+
+set(btstack_sources_classic_avrcp_browsing
+    src/classic/avrcp_browsing.c
+)
+
+set(btstack_sources_classic_avrcp_browsing_controller
+    src/classic/avrcp_browsing_controller.c
+)
+
+set(btstack_sources_classic_avrcp_browsing_target
+    src/classic/avrcp_browsing_target.c
+)
+
+set(btstack_sources_classic_avrcp_controller
+    src/classic/avrcp_controller.c
+)
+
+set(btstack_sources_classic_avrcp_cover_art_client
+    src/classic/avrcp_cover_art_client.c
+)
+
+set(btstack_sources_classic_avrcp_media_item_iterator
+    src/classic/avrcp_media_item_iterator.c
+)
+
+set(btstack_sources_classic_avrcp_target
+    src/classic/avrcp_target.c
+)
+
+set(btstack_sources_classic_btstack_cvsd_plc
+    src/classic/btstack_cvsd_plc.c
+)
+
+set(btstack_sources_classic_btstack_sbc
+    src/classic/btstack_sbc_bluedroid.c
+    src/classic/btstack_sbc_decoder_bluedroid.c
+    src/classic/btstack_sbc_encoder_bluedroid.c
+    src/classic/btstack_sbc_plc.c
+)
+
+set(btstack_sources_classic_btstack_sbc_bluedroid
+    src/classic/btstack_sbc_bluedroid.c
+)
+
+set(btstack_sources_classic_btstack_sbc_decoder_bluedroid
+    src/classic/btstack_sbc_decoder_bluedroid.c
+)
+
+set(btstack_sources_classic_btstack_sbc_encoder_bluedroid
+    src/classic/btstack_sbc_encoder_bluedroid.c
+)
+
+set(btstack_sources_classic_btstack_sbc_plc
+    src/classic/btstack_sbc_plc.c
+)
+
+set(btstack_sources_classic_device_id_server
+    src/classic/device_id_server.c
+)
+
+set(btstack_sources_classic_gatt_sdp
+    src/classic/gatt_sdp.c
+)
+
+set(btstack_sources_classic_goep_client
+    src/classic/goep_client.c
+)
+
+set(btstack_sources_classic_goep_server
+    src/classic/goep_server.c
+)
+
+set(btstack_sources_classic_hfp
+    src/classic/hfp.c
+)
+
+set(btstack_sources_classic_hfp_ag
+    src/classic/hfp_ag.c
+)
+
+set(btstack_sources_classic_hfp_codec
+    src/classic/hfp_codec.c
+)
+
+set(btstack_sources_classic_hfp_gsm_model
+    src/classic/hfp_gsm_model.c
+)
+
+set(btstack_sources_classic_hfp_hf
+    src/classic/hfp_hf.c
+)
+
+set(btstack_sources_classic_hfp_msbc
+    src/classic/hfp_msbc.c
+)
+
+set(btstack_sources_classic_hid_device
+    src/classic/hid_device.c
+)
+
+set(btstack_sources_classic_hid_host
+    src/classic/hid_host.c
+)
+
+set(btstack_sources_classic_hsp_ag
+    src/classic/hsp_ag.c
+)
+
+set(btstack_sources_classic_hsp_hs
+    src/classic/hsp_hs.c
+)
+
+set(btstack_sources_classic_obex_iterator
+    src/classic/obex_iterator.c
+)
+
+set(btstack_sources_classic_obex_message_builder
+    src/classic/obex_message_builder.c
+)
+
+set(btstack_sources_classic_obex_parser
+    src/classic/obex_parser.c
+)
+
+set(btstack_sources_classic_obex_srm_client
+    src/classic/obex_srm_client.c
+)
+
+set(btstack_sources_classic_obex_srm_server
+    src/classic/obex_srm_server.c
+)
+
+set(btstack_sources_classic_pan
+    src/classic/pan.c
+)
+
+set(btstack_sources_classic_pbap_client
+    src/classic/pbap_client.c
+)
+
+set(btstack_sources_classic_rfcomm
+    src/classic/rfcomm.c
+)
+
+set(btstack_sources_classic_sdp_client
+    src/classic/sdp_client.c
+)
+
+set(btstack_sources_classic_sdp_client_rfcomm
+    src/classic/sdp_client_rfcomm.c
+)
+
+set(btstack_sources_classic_sdp_server
+    src/classic/sdp_server.c
+)
+
+set(btstack_sources_classic_sdp_util
+    src/classic/sdp_util.c
+)
+
+set(btstack_sources_classic_spp_server
     src/classic/spp_server.c
 )
 
