@@ -202,20 +202,16 @@ foreach(EXAMPLE ${EXAMPLES})
         list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
     endif()
 
-    # add GATT DB creation
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
+
+    # Compile GATT DB and add as dependency if needed
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
     if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${GATT_FILES}
-   COMMAND ${Python3_EXECUTABLE}
-   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-  )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}"
+            DEPENDS ${GATT_FILES})
     else()
         message("example ${EXAMPLE}")
     endif()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
     target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)
