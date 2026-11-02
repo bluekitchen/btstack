@@ -81,6 +81,47 @@ function(btstack_target_gatt target gatt_file)
     target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 endfunction()
 
+# Apply BTstack's baseline warning policy to a target.
+#
+# Usage:
+#   btstack_target_warnings(btstack)
+#   btstack_target_warnings(btstack STRICT)
+#
+# STRICT promotes enabled warnings to errors. The helper is opt-in and uses
+# PRIVATE options, so it never changes an embedding project's warning policy.
+function(btstack_target_warnings target)
+    cmake_parse_arguments(ARG "STRICT" "" "" ${ARGN})
+
+    if(NOT TARGET ${target})
+        message(FATAL_ERROR "btstack_target_warnings requires existing target '${target}'")
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+        set(warnings
+            -Wunused-variable
+            -Wswitch-default
+            -Wall
+            -Wextra)
+        if(ARG_STRICT)
+            list(APPEND warnings -Werror -Werror=uninitialized)
+        endif()
+    elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        set(warnings
+            -Wunused-but-set-variable
+            -Wunused-variable
+            -Wswitch-default
+            -Wall
+            -Wextra)
+        if(ARG_STRICT)
+            list(APPEND warnings -Werror)
+        endif()
+    else()
+        return()
+    endif()
+
+    target_compile_options(${target} PRIVATE ${warnings})
+endfunction()
+
 # Register the declarative requirements for one BTstack example.
 #
 # The declaration does not configure features or create a target. Port build
