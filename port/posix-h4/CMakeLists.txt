@@ -4,19 +4,6 @@ project(BTstack-posix-h4)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
-# extra compiler warnings
-if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
-    # using Clang
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Wall -Wextra -Werror")
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    # using GCC
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Wall -Wextra -Werror")
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
-    # using Intel C++
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
-    # using Visual Studio C++
-endif()
-
 # Enable undefined and address sanitizers
 #  add_compile_options(
 #      -fsanitize=undefined -fsanitize=address
@@ -24,10 +11,6 @@ endif()
 #  add_link_options(
 #      -fsanitize=undefined -fsanitize=address
 #  )
-
-# to generate .h from .gatt files
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
 include_directories(.)
@@ -60,20 +43,40 @@ include_directories(${BTSTACK_ROOT}/platform/lwip)
 include_directories(${BTSTACK_ROOT}/platform/lwip/port)
 include_directories(${BTSTACK_ROOT}/platform/posix)
 
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/*_demo_util*.c")
-file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
+# BTstack sources from src/. Platform, third-party, chipset, and port-local
+# sources remain below because they are selected by this port.
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_collect_sources(SOURCES_BTSTACK
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS
+    audio-demo
+    ble
+    bnep
+    classic
+    core
+    gatt-services
+    lc3
+    le-audio
+    le-device-db-tlv
+    link-key-db-memory
+    link-key-db-static
+    link-key-db-tlv
+    mesh
+    tlv-none
+    transport-h4
+)
+file(GLOB SOURCES_EXAMPLE_UTIL "${BTSTACK_ROOT}/example/*_demo_util*.c")
 file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
-file(GLOB SOURCES_MESH      "${BTSTACK_ROOT}/src/mesh/*.c")
-file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
 file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_QRCODEGEN "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
-file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
+btstack_collect_platform_sources(SOURCES_PLATFORM
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS platform-posix
+)
 file(GLOB SOURCES_BCM       "${BTSTACK_ROOT}/chipset/bcm/*.c")
 file(GLOB SOURCES_CSR       "${BTSTACK_ROOT}/chipset/csr/*.c")
 file(GLOB SOURCES_EM9301    "${BTSTACK_ROOT}/chipset/em9301/*.c")
@@ -125,44 +128,32 @@ set (LWIP_PORT
   )
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
-file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/le_device_db_memory.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
-file(GLOB SOURCES_POSIX_OFF "${BTSTACK_ROOT}/platform/posix/le_device_db_fs.c")
-list(REMOVE_ITEM SOURCES_POSIX   ${SOURCES_POSIX_OFF})
-
 set(SOURCES
-  ${SOURCES_BLE}
   ${SOURCES_BCM}
   ${SOURCES_BLUEDROID}
-  ${SOURCES_CLASSIC}
   ${SOURCES_CSR}
   ${SOURCES_EM9301}
-  ${SOURCES_GATT}
-  ${SOURCES_HXCMOD}
   ${SOURCES_HXCMOD}
   ${SOURCES_LC3_GOOGLE}
-  ${SOURCES_LE_AUDIO}
-  ${SOURCES_LIBUSB}
   ${SOURCES_MD5}
-  ${SOURCES_MESH}
   ${SOURCES_PORT}
   ${SOURCES_REALTEK}
   ${SOURCES_RIJNDAEL}
-  ${SOURCES_SRC}
-  ${SOURCES_CSR}
   ${SOURCES_STLC2500D}
   ${SOURCES_TC2566X}
   ${SOURCES_UECC}
-  ${SOURCES_POSIX}
+  ${SOURCES_PLATFORM}
+  ${SOURCES_BTSTACK}
+  ${SOURCES_EXAMPLE_UTIL}
   ${SOURCES_YXML}
   ${SOURCES_ZEPHYR}
-        ${SOURCES_QRCODEGEN}
+  ${SOURCES_QRCODEGEN}
 )
 list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+btstack_target_warnings(btstack STRICT)
 
 # pkgconfig
 find_package(PkgConfig)
@@ -212,30 +203,33 @@ btstack_add_firmware_download(
 )
 add_dependencies(btstack bcm43430a1_patchram cyw55310_patchram)
 
-# get list of examples, skipping mesh_node_demo
-include(../../example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_LE_AUDIO} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
+# Get the declared examples. Feature-based filtering will be provided by the
+# future resolver; for now this port builds every declared example.
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
+
+file(GLOB GATT_FILES "${BTSTACK_ROOT}/src/*/gatt-service/*.gatt")
 
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+    # Get the example sources from its declaration.
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
 
-    # add GATT DB creation
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+
+    # Compile the declared GATT DB, if any.
+    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
+    if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-   COMMAND ${Python3_EXECUTABLE}
-   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-  )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}"
+            DEPENDS ${GATT_FILES})
     else()
         message("example ${EXAMPLE}")
     endif()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack pthread)
 endforeach(EXAMPLE)
