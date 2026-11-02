@@ -7,10 +7,6 @@ project(BTstack-libusb)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
-# to generate .h from .gatt files
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 # local dir for btstack_config.h after build dir to avoid using .h from Makefile
 include_directories(.)
 
