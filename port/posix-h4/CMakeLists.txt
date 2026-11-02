@@ -58,8 +58,6 @@ btstack_collect_sources(SOURCES_BTSTACK
     lc3
     le-audio
     le-device-db-tlv
-    link-key-db-memory
-    link-key-db-static
     link-key-db-tlv
     mesh
     tlv-none
