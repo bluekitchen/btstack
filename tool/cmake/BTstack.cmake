@@ -5,6 +5,7 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackPlatformSources.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/BTstackLwipSources.cmake")
 
 # Collect root-relative sources from a catalog of named groups.
 function(btstack_collect_group_sources output_variable)
@@ -77,6 +78,20 @@ function(btstack_collect_platform_sources output_variable)
     btstack_collect_group_sources(${output_variable}
         GROUP_VARIABLE_PREFIX btstack_platform_sources
         KNOWN_GROUPS_VARIABLE btstack_platform_source_groups
+        ${ARGN})
+    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
+endfunction()
+
+# Collect root-relative lwIP source groups into absolute paths.
+#
+# Usage:
+#   btstack_collect_lwip_sources(LWIP_SOURCES
+#       ROOT "${BTSTACK_ROOT}"
+#       GROUPS lwip)
+function(btstack_collect_lwip_sources output_variable)
+    btstack_collect_group_sources(${output_variable}
+        GROUP_VARIABLE_PREFIX btstack_lwip_sources
+        KNOWN_GROUPS_VARIABLE btstack_lwip_source_groups
         ${ARGN})
     set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
 endfunction()
