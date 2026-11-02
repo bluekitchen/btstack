@@ -7,19 +7,6 @@ project(BTstack-libusb)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
-# extra compiler warnings
-if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
-    # using Clang
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Wall -Wextra -Werror -Werror=uninitialized")
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    # using GCC
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Wall -Wextra -Werror")
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
-    # using Intel C++
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
-    # using Visual Studio C++
-endif()
-
 # to generate .h from .gatt files
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -148,6 +135,7 @@ list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+btstack_target_warnings(btstack STRICT)
 
 # pkgconfig required to link libusb
 find_package(PkgConfig REQUIRED)
@@ -213,5 +201,6 @@ foreach(EXAMPLE ${EXAMPLES})
     else()
         message("example ${EXAMPLE}")
     endif()
+    btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)
