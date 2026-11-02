@@ -48,11 +48,27 @@ include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
 
-file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/*_demo_util*.c")
-file(GLOB SOURCES_BLE       "../../src/ble/*.c")
-file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
-file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
-file(GLOB SOURCES_MESH      "../../src/mesh/*.c" "../../src/mesh/gatt-service/*.c")
+# BTstack sources from src/. Platform, third-party, and port-local sources
+# remain below because they are still selected by this port.
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_collect_sources(SOURCES_BTSTACK
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS
+    audio-demo
+    ble
+    bnep
+    classic
+    core
+    gatt-services
+    lc3
+    le-device-db-tlv
+    link-key-db-memory
+    link-key-db-static
+    link-key-db-tlv
+    mesh
+    tlv-none
+)
+file(GLOB SOURCES_EXAMPLE_UTIL "../../example/*_demo_util*.c")
 file(GLOB SOURCES_BLUEDROID "../../3rd-party/bluedroid/encoder/srce/*.c" "../../3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
@@ -108,12 +124,6 @@ set (LWIP_PORT
 
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
-file(GLOB SOURCES_SRC_OFF "../../src/hci_transport_*.c")
-list(REMOVE_ITEM SOURCES_SRC   ${SOURCES_SRC_OFF})
-
-file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
 file(GLOB SOURCES_POSIX_OFF "../../platform/posix/le_device_db_fs.c")
 list(REMOVE_ITEM SOURCES_POSIX ${SOURCES_POSIX_OFF})
 
@@ -125,11 +135,8 @@ set(SOURCES
  ${SOURCES_RIJNDAEL}
  ${SOURCES_LIBUSB}
  ${SOURCES_LC3_GOOGLE}
- ${SOURCES_SRC}
- ${SOURCES_BLE}
- ${SOURCES_GATT}
- ${SOURCES_MESH}
- ${SOURCES_CLASSIC}
+ ${SOURCES_BTSTACK}
+ ${SOURCES_EXAMPLE_UTIL}
  ${SOURCES_UECC}
  ${SOURCES_HXCMOD}
  ${SOURCES_QRCODEGEN}
