@@ -12,43 +12,10 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 #      -fsanitize=undefined -fsanitize=address
 #  )
 
-# local dir for btstack_config.h after build dir to avoid using .h from Makefile
-include_directories(.)
-
-
-include_directories(${BTSTACK_ROOT}/3rd-party/micro-ecc)
-include_directories(${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lc3-google/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/md5)
-include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player)
-include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player/mod)
-include_directories(${BTSTACK_ROOT}/3rd-party/lwip/core/src/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server)
-include_directories(${BTSTACK_ROOT}/3rd-party/rijndael)
-include_directories(${BTSTACK_ROOT}/3rd-party/yxml)
-include_directories(${BTSTACK_ROOT}/3rd-party/tinydir)
-include_directories(${BTSTACK_ROOT}/3rd-party/qr-code-generator)
-include_directories(${BTSTACK_ROOT}/src)
-include_directories(${BTSTACK_ROOT}/chipset/bcm)
-include_directories(${BTSTACK_ROOT}/chipset/csr)
-include_directories(${BTSTACK_ROOT}/chipset/cc256x)
-include_directories(${BTSTACK_ROOT}/chipset/em9301)
-include_directories(${BTSTACK_ROOT}/chipset/realtek)
-include_directories(${BTSTACK_ROOT}/chipset/tc3566x)
-include_directories(${BTSTACK_ROOT}/chipset/stlc2500d)
-include_directories(${BTSTACK_ROOT}/chipset/zephyr)
-include_directories(${BTSTACK_ROOT}/platform/embedded)
-include_directories(${BTSTACK_ROOT}/platform/lwip)
-include_directories(${BTSTACK_ROOT}/platform/lwip/port)
-include_directories(${BTSTACK_ROOT}/platform/posix)
-
-# BTstack sources from src/. Platform, third-party, chipset, and port-local
-# sources remain below because they are selected by this port.
+# BTstack library source groups. Port-local and example utility sources remain
+# below because they are selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
-btstack_collect_sources(SOURCES_BTSTACK
- ROOT "${BTSTACK_ROOT}"
- GROUPS
+set(BTSTACK_LIBRARY_GROUPS
     audio-demo
     ble
     bnep
@@ -62,11 +29,14 @@ btstack_collect_sources(SOURCES_BTSTACK
     mesh
     tlv-none
     transport-h4
-)
-file(GLOB SOURCES_EXAMPLE_UTIL "${BTSTACK_ROOT}/example/*_demo_util*.c")
-btstack_collect_sources(SOURCES_THIRD_PARTY
- ROOT "${BTSTACK_ROOT}"
- GROUPS
+    platform-posix
+    chipset-bcm
+    chipset-csr
+    chipset-em9301
+    chipset-realtek
+    chipset-stlc2500d
+    chipset-tc3566x
+    chipset-zephyr
     third-party-bluedroid-sbc
     third-party-hxcmod
     third-party-lc3-google
@@ -76,42 +46,36 @@ btstack_collect_sources(SOURCES_THIRD_PARTY
     third-party-rijndael
     third-party-yxml
 )
-btstack_collect_sources(SOURCES_PLATFORM
+btstack_collect_sources(SOURCES_BTSTACK
  ROOT "${BTSTACK_ROOT}"
- GROUPS platform-posix
+ GROUPS ${BTSTACK_LIBRARY_GROUPS}
 )
-btstack_collect_sources(SOURCES_CHIPSETS
+btstack_collect_include_directories(BTSTACK_INCLUDE_DIRECTORIES
  ROOT "${BTSTACK_ROOT}"
- GROUPS
-    chipset-bcm
-    chipset-csr
-    chipset-em9301
-    chipset-realtek
-    chipset-stlc2500d
-    chipset-tc3566x
-    chipset-zephyr
+ GROUPS ${BTSTACK_LIBRARY_GROUPS}
 )
+file(GLOB SOURCES_EXAMPLE_UTIL "${BTSTACK_ROOT}/example/*_demo_util*.c")
 file(GLOB SOURCES_PORT      "*.c")
-
-# lwIP is linked only by the examples that use it below.
-btstack_collect_sources(SOURCES_LWIP
- ROOT "${BTSTACK_ROOT}"
- GROUPS lwip
-)
 
 set(SOURCES
   ${SOURCES_PORT}
-  ${SOURCES_PLATFORM}
   ${SOURCES_BTSTACK}
   ${SOURCES_EXAMPLE_UTIL}
-  ${SOURCES_THIRD_PARTY}
-  ${SOURCES_CHIPSETS}
 )
 list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 btstack_target_warnings(btstack STRICT)
+target_include_directories(btstack
+  PUBLIC
+    "${BTSTACK_ROOT}/src"
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${BTSTACK_ROOT}/platform/embedded"
+    "${BTSTACK_ROOT}/chipset/cc256x"
+    ${BTSTACK_INCLUDE_DIRECTORIES}
+)
 
 # pkgconfig
 find_package(PkgConfig)
@@ -178,6 +142,13 @@ foreach(EXAMPLE ${EXAMPLES})
     endforeach()
 
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    target_include_directories(${EXAMPLE}
+      PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${BTSTACK_ROOT}/platform/embedded"
+        "${BTSTACK_ROOT}/chipset/cc256x"
+        ${BTSTACK_INCLUDE_DIRECTORIES}
+    )
 
     # Compile the declared GATT DB, if any.
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})

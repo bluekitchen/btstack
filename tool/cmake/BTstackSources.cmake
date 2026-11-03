@@ -145,6 +145,10 @@ set(btstack_sources_audio_demo
     src/btstack_audio_song.c
 )
 
+set(btstack_include_directories_audio_demo
+    src
+)
+
 set(btstack_sources_ble
     src/ble/att_db.c
     src/ble/att_db_util.c
@@ -155,12 +159,25 @@ set(btstack_sources_ble
     src/ble/sm.c
 )
 
+set(btstack_include_directories_ble
+    src
+)
+
 set(btstack_sources_bnep
     src/classic/bnep.c
 )
 
+set(btstack_include_directories_bnep
+    src
+)
+
 set(btstack_sources_chipset_atwilc3000
     chipset/atwilc3000/btstack_chipset_atwilc3000.c
+)
+
+set(btstack_include_directories_chipset_atwilc3000
+    src
+    chipset/atwilc3000
 )
 
 set(btstack_sources_chipset_bcm
@@ -168,9 +185,19 @@ set(btstack_sources_chipset_bcm
     chipset/bcm/btstack_chipset_bcm_download_firmware.c
 )
 
+set(btstack_include_directories_chipset_bcm
+    src
+    chipset/bcm
+)
+
 set(btstack_sources_chipset_cc256x
     chipset/cc256x/ant_cmd.c
     chipset/cc256x/btstack_chipset_cc256x.c
+)
+
+set(btstack_include_directories_chipset_cc256x
+    src
+    chipset/cc256x
 )
 
 set(btstack_sources_chipset_cinnamon
@@ -178,9 +205,19 @@ set(btstack_sources_chipset_cinnamon
     chipset/cinnamon/hopping.c
 )
 
+set(btstack_include_directories_chipset_cinnamon
+    src
+    chipset/cinnamon
+)
+
 set(btstack_sources_chipset_csr
     chipset/csr/btstack_chipset_csr.c
     chipset/csr/csr_set_bd_addr.c
+)
+
+set(btstack_include_directories_chipset_csr
+    src
+    chipset/csr
 )
 
 set(btstack_sources_chipset_da145xx
@@ -190,25 +227,55 @@ set(btstack_sources_chipset_da145xx
     chipset/da145xx/hci_585.c
 )
 
+set(btstack_include_directories_chipset_da145xx
+    src
+    chipset/da145xx
+)
+
 set(btstack_sources_chipset_em9301
     chipset/em9301/0000000_META_hci_patches_v7.c
     chipset/em9301/btstack_chipset_em9301.c
+)
+
+set(btstack_include_directories_chipset_em9301
+    src
+    chipset/em9301
 )
 
 set(btstack_sources_chipset_intel
     chipset/intel/btstack_chipset_intel_firmware.c
 )
 
+set(btstack_include_directories_chipset_intel
+    src
+    chipset/intel
+)
+
 set(btstack_sources_chipset_nxp
     chipset/nxp/btstack_chipset_nxp.c
+)
+
+set(btstack_include_directories_chipset_nxp
+    src
+    chipset/nxp
 )
 
 set(btstack_sources_chipset_realtek
     chipset/realtek/btstack_chipset_realtek.c
 )
 
+set(btstack_include_directories_chipset_realtek
+    src
+    chipset/realtek
+)
+
 set(btstack_sources_chipset_stlc2500d
     chipset/stlc2500d/btstack_chipset_stlc2500d.c
+)
+
+set(btstack_include_directories_chipset_stlc2500d
+    src
+    chipset/stlc2500d
 )
 
 set(btstack_sources_chipset_sx128x
@@ -217,12 +284,27 @@ set(btstack_sources_chipset_sx128x
     chipset/sx128x/ll_sx1280.c
 )
 
+set(btstack_include_directories_chipset_sx128x
+    src
+    chipset/sx128x
+)
+
 set(btstack_sources_chipset_tc3566x
     chipset/tc3566x/btstack_chipset_tc3566x.c
 )
 
+set(btstack_include_directories_chipset_tc3566x
+    src
+    chipset/tc3566x
+)
+
 set(btstack_sources_chipset_zephyr
     chipset/zephyr/btstack_chipset_zephyr.c
+)
+
+set(btstack_include_directories_chipset_zephyr
+    src
+    chipset/zephyr
 )
 
 set(btstack_sources_classic
@@ -277,76 +359,152 @@ set(btstack_sources_classic
     src/classic/spp_server.c
 )
 
+set(btstack_include_directories_classic
+    src
+)
+
 set(btstack_sources_classic_a2dp
     src/classic/a2dp.c
+)
+
+set(btstack_include_directories_classic_a2dp
+    src
 )
 
 set(btstack_sources_classic_a2dp_sink
     src/classic/a2dp_sink.c
 )
 
+set(btstack_include_directories_classic_a2dp_sink
+    src
+)
+
 set(btstack_sources_classic_a2dp_source
     src/classic/a2dp_source.c
+)
+
+set(btstack_include_directories_classic_a2dp_source
+    src
 )
 
 set(btstack_sources_classic_avdtp
     src/classic/avdtp.c
 )
 
+set(btstack_include_directories_classic_avdtp
+    src
+)
+
 set(btstack_sources_classic_avdtp_acceptor
     src/classic/avdtp_acceptor.c
+)
+
+set(btstack_include_directories_classic_avdtp_acceptor
+    src
 )
 
 set(btstack_sources_classic_avdtp_initiator
     src/classic/avdtp_initiator.c
 )
 
+set(btstack_include_directories_classic_avdtp_initiator
+    src
+)
+
 set(btstack_sources_classic_avdtp_sink
     src/classic/avdtp_sink.c
+)
+
+set(btstack_include_directories_classic_avdtp_sink
+    src
 )
 
 set(btstack_sources_classic_avdtp_source
     src/classic/avdtp_source.c
 )
 
+set(btstack_include_directories_classic_avdtp_source
+    src
+)
+
 set(btstack_sources_classic_avdtp_util
     src/classic/avdtp_util.c
+)
+
+set(btstack_include_directories_classic_avdtp_util
+    src
 )
 
 set(btstack_sources_classic_avrcp
     src/classic/avrcp.c
 )
 
+set(btstack_include_directories_classic_avrcp
+    src
+)
+
 set(btstack_sources_classic_avrcp_browsing
     src/classic/avrcp_browsing.c
+)
+
+set(btstack_include_directories_classic_avrcp_browsing
+    src
 )
 
 set(btstack_sources_classic_avrcp_browsing_controller
     src/classic/avrcp_browsing_controller.c
 )
 
+set(btstack_include_directories_classic_avrcp_browsing_controller
+    src
+)
+
 set(btstack_sources_classic_avrcp_browsing_target
     src/classic/avrcp_browsing_target.c
+)
+
+set(btstack_include_directories_classic_avrcp_browsing_target
+    src
 )
 
 set(btstack_sources_classic_avrcp_controller
     src/classic/avrcp_controller.c
 )
 
+set(btstack_include_directories_classic_avrcp_controller
+    src
+)
+
 set(btstack_sources_classic_avrcp_cover_art_client
     src/classic/avrcp_cover_art_client.c
+)
+
+set(btstack_include_directories_classic_avrcp_cover_art_client
+    src
 )
 
 set(btstack_sources_classic_avrcp_media_item_iterator
     src/classic/avrcp_media_item_iterator.c
 )
 
+set(btstack_include_directories_classic_avrcp_media_item_iterator
+    src
+)
+
 set(btstack_sources_classic_avrcp_target
     src/classic/avrcp_target.c
 )
 
+set(btstack_include_directories_classic_avrcp_target
+    src
+)
+
 set(btstack_sources_classic_btstack_cvsd_plc
     src/classic/btstack_cvsd_plc.c
+)
+
+set(btstack_include_directories_classic_btstack_cvsd_plc
+    src
 )
 
 set(btstack_sources_classic_btstack_sbc
@@ -356,128 +514,256 @@ set(btstack_sources_classic_btstack_sbc
     src/classic/btstack_sbc_plc.c
 )
 
+set(btstack_include_directories_classic_btstack_sbc
+    src
+)
+
 set(btstack_sources_classic_btstack_sbc_bluedroid
     src/classic/btstack_sbc_bluedroid.c
+)
+
+set(btstack_include_directories_classic_btstack_sbc_bluedroid
+    src
 )
 
 set(btstack_sources_classic_btstack_sbc_decoder_bluedroid
     src/classic/btstack_sbc_decoder_bluedroid.c
 )
 
+set(btstack_include_directories_classic_btstack_sbc_decoder_bluedroid
+    src
+)
+
 set(btstack_sources_classic_btstack_sbc_encoder_bluedroid
     src/classic/btstack_sbc_encoder_bluedroid.c
+)
+
+set(btstack_include_directories_classic_btstack_sbc_encoder_bluedroid
+    src
 )
 
 set(btstack_sources_classic_btstack_sbc_plc
     src/classic/btstack_sbc_plc.c
 )
 
+set(btstack_include_directories_classic_btstack_sbc_plc
+    src
+)
+
 set(btstack_sources_classic_device_id_server
     src/classic/device_id_server.c
+)
+
+set(btstack_include_directories_classic_device_id_server
+    src
 )
 
 set(btstack_sources_classic_gatt_sdp
     src/classic/gatt_sdp.c
 )
 
+set(btstack_include_directories_classic_gatt_sdp
+    src
+)
+
 set(btstack_sources_classic_goep_client
     src/classic/goep_client.c
+)
+
+set(btstack_include_directories_classic_goep_client
+    src
 )
 
 set(btstack_sources_classic_goep_server
     src/classic/goep_server.c
 )
 
+set(btstack_include_directories_classic_goep_server
+    src
+)
+
 set(btstack_sources_classic_hfp
     src/classic/hfp.c
+)
+
+set(btstack_include_directories_classic_hfp
+    src
 )
 
 set(btstack_sources_classic_hfp_ag
     src/classic/hfp_ag.c
 )
 
+set(btstack_include_directories_classic_hfp_ag
+    src
+)
+
 set(btstack_sources_classic_hfp_codec
     src/classic/hfp_codec.c
+)
+
+set(btstack_include_directories_classic_hfp_codec
+    src
 )
 
 set(btstack_sources_classic_hfp_gsm_model
     src/classic/hfp_gsm_model.c
 )
 
+set(btstack_include_directories_classic_hfp_gsm_model
+    src
+)
+
 set(btstack_sources_classic_hfp_hf
     src/classic/hfp_hf.c
+)
+
+set(btstack_include_directories_classic_hfp_hf
+    src
 )
 
 set(btstack_sources_classic_hfp_msbc
     src/classic/hfp_msbc.c
 )
 
+set(btstack_include_directories_classic_hfp_msbc
+    src
+)
+
 set(btstack_sources_classic_hid_device
     src/classic/hid_device.c
+)
+
+set(btstack_include_directories_classic_hid_device
+    src
 )
 
 set(btstack_sources_classic_hid_host
     src/classic/hid_host.c
 )
 
+set(btstack_include_directories_classic_hid_host
+    src
+)
+
 set(btstack_sources_classic_hsp_ag
     src/classic/hsp_ag.c
+)
+
+set(btstack_include_directories_classic_hsp_ag
+    src
 )
 
 set(btstack_sources_classic_hsp_hs
     src/classic/hsp_hs.c
 )
 
+set(btstack_include_directories_classic_hsp_hs
+    src
+)
+
 set(btstack_sources_classic_obex_iterator
     src/classic/obex_iterator.c
+)
+
+set(btstack_include_directories_classic_obex_iterator
+    src
 )
 
 set(btstack_sources_classic_obex_message_builder
     src/classic/obex_message_builder.c
 )
 
+set(btstack_include_directories_classic_obex_message_builder
+    src
+)
+
 set(btstack_sources_classic_obex_parser
     src/classic/obex_parser.c
+)
+
+set(btstack_include_directories_classic_obex_parser
+    src
 )
 
 set(btstack_sources_classic_obex_srm_client
     src/classic/obex_srm_client.c
 )
 
+set(btstack_include_directories_classic_obex_srm_client
+    src
+)
+
 set(btstack_sources_classic_obex_srm_server
     src/classic/obex_srm_server.c
+)
+
+set(btstack_include_directories_classic_obex_srm_server
+    src
 )
 
 set(btstack_sources_classic_pan
     src/classic/pan.c
 )
 
+set(btstack_include_directories_classic_pan
+    src
+)
+
 set(btstack_sources_classic_pbap_client
     src/classic/pbap_client.c
+)
+
+set(btstack_include_directories_classic_pbap_client
+    src
 )
 
 set(btstack_sources_classic_rfcomm
     src/classic/rfcomm.c
 )
 
+set(btstack_include_directories_classic_rfcomm
+    src
+)
+
 set(btstack_sources_classic_sdp_client
     src/classic/sdp_client.c
+)
+
+set(btstack_include_directories_classic_sdp_client
+    src
 )
 
 set(btstack_sources_classic_sdp_client_rfcomm
     src/classic/sdp_client_rfcomm.c
 )
 
+set(btstack_include_directories_classic_sdp_client_rfcomm
+    src
+)
+
 set(btstack_sources_classic_sdp_server
     src/classic/sdp_server.c
+)
+
+set(btstack_include_directories_classic_sdp_server
+    src
 )
 
 set(btstack_sources_classic_sdp_util
     src/classic/sdp_util.c
 )
 
+set(btstack_include_directories_classic_sdp_util
+    src
+)
+
 set(btstack_sources_classic_spp_server
     src/classic/spp_server.c
+)
+
+set(btstack_include_directories_classic_spp_server
+    src
 )
 
 set(btstack_sources_core
@@ -516,6 +802,10 @@ set(btstack_sources_core
     src/l2cap_signaling.c
 )
 
+set(btstack_include_directories_core
+    src
+)
+
 set(btstack_sources_gatt_clients
     src/ble/gatt-service/ancs_client.c
     src/ble/gatt-service/battery_service_client.c
@@ -526,6 +816,10 @@ set(btstack_sources_gatt_clients
     src/ble/gatt-service/object_transfer_service_client.c
     src/ble/gatt-service/scan_parameters_service_client.c
     src/ble/gatt-service/tx_power_service_client.c
+)
+
+set(btstack_include_directories_gatt_clients
+    src
 )
 
 set(btstack_sources_gatt_servers
@@ -546,100 +840,200 @@ set(btstack_sources_gatt_servers
     src/ble/gatt-service/ublox_spp_service_server.c
 )
 
+set(btstack_include_directories_gatt_servers
+    src
+)
+
 set(btstack_sources_gatt_service_ancs_client
     src/ble/gatt-service/ancs_client.c
+)
+
+set(btstack_include_directories_gatt_service_ancs_client
+    src
 )
 
 set(btstack_sources_gatt_service_battery_service_client
     src/ble/gatt-service/battery_service_client.c
 )
 
+set(btstack_include_directories_gatt_service_battery_service_client
+    src
+)
+
 set(btstack_sources_gatt_service_battery_service_server
     src/ble/gatt-service/battery_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_battery_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_battery_service_v1_server
     src/ble/gatt-service/battery_service_v1_server.c
 )
 
+set(btstack_include_directories_gatt_service_battery_service_v1_server
+    src
+)
+
 set(btstack_sources_gatt_service_bond_management_service_server
     src/ble/gatt-service/bond_management_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_bond_management_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_cycling_power_service_server
     src/ble/gatt-service/cycling_power_service_server.c
 )
 
+set(btstack_include_directories_gatt_service_cycling_power_service_server
+    src
+)
+
 set(btstack_sources_gatt_service_cycling_speed_and_cadence_service_server
     src/ble/gatt-service/cycling_speed_and_cadence_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_cycling_speed_and_cadence_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_device_information_service_client
     src/ble/gatt-service/device_information_service_client.c
 )
 
+set(btstack_include_directories_gatt_service_device_information_service_client
+    src
+)
+
 set(btstack_sources_gatt_service_device_information_service_server
     src/ble/gatt-service/device_information_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_device_information_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_heart_rate_service_server
     src/ble/gatt-service/heart_rate_service_server.c
 )
 
+set(btstack_include_directories_gatt_service_heart_rate_service_server
+    src
+)
+
 set(btstack_sources_gatt_service_hids_device
     src/ble/gatt-service/hids_device.c
+)
+
+set(btstack_include_directories_gatt_service_hids_device
+    src
 )
 
 set(btstack_sources_gatt_service_hids_host
     src/ble/gatt-service/hids_host.c
 )
 
+set(btstack_include_directories_gatt_service_hids_host
+    src
+)
+
 set(btstack_sources_gatt_service_immediate_alert_service_client
     src/ble/gatt-service/immediate_alert_service_client.c
+)
+
+set(btstack_include_directories_gatt_service_immediate_alert_service_client
+    src
 )
 
 set(btstack_sources_gatt_service_immediate_alert_service_server
     src/ble/gatt-service/immediate_alert_service_server.c
 )
 
+set(btstack_include_directories_gatt_service_immediate_alert_service_server
+    src
+)
+
 set(btstack_sources_gatt_service_link_loss_service_client
     src/ble/gatt-service/link_loss_service_client.c
+)
+
+set(btstack_include_directories_gatt_service_link_loss_service_client
+    src
 )
 
 set(btstack_sources_gatt_service_link_loss_service_server
     src/ble/gatt-service/link_loss_service_server.c
 )
 
+set(btstack_include_directories_gatt_service_link_loss_service_server
+    src
+)
+
 set(btstack_sources_gatt_service_nordic_spp_service_server
     src/ble/gatt-service/nordic_spp_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_nordic_spp_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_object_transfer_service_client
     src/ble/gatt-service/object_transfer_service_client.c
 )
 
+set(btstack_include_directories_gatt_service_object_transfer_service_client
+    src
+)
+
 set(btstack_sources_gatt_service_object_transfer_service_server
     src/ble/gatt-service/object_transfer_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_object_transfer_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_scan_parameters_service_client
     src/ble/gatt-service/scan_parameters_service_client.c
 )
 
+set(btstack_include_directories_gatt_service_scan_parameters_service_client
+    src
+)
+
 set(btstack_sources_gatt_service_scan_parameters_service_server
     src/ble/gatt-service/scan_parameters_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_scan_parameters_service_server
+    src
 )
 
 set(btstack_sources_gatt_service_tx_power_service_client
     src/ble/gatt-service/tx_power_service_client.c
 )
 
+set(btstack_include_directories_gatt_service_tx_power_service_client
+    src
+)
+
 set(btstack_sources_gatt_service_tx_power_service_server
     src/ble/gatt-service/tx_power_service_server.c
 )
 
+set(btstack_include_directories_gatt_service_tx_power_service_server
+    src
+)
+
 set(btstack_sources_gatt_service_ublox_spp_service_server
     src/ble/gatt-service/ublox_spp_service_server.c
+)
+
+set(btstack_include_directories_gatt_service_ublox_spp_service_server
+    src
 )
 
 set(btstack_sources_gatt_services
@@ -669,10 +1063,18 @@ set(btstack_sources_gatt_services
     src/ble/gatt-service/ublox_spp_service_server.c
 )
 
+set(btstack_include_directories_gatt_services
+    src
+)
+
 set(btstack_sources_lc3
     src/btstack_lc3.c
     src/btstack_lc3_google.c
     src/btstack_lc3plus_fraunhofer.c
+)
+
+set(btstack_include_directories_lc3
+    src
 )
 
 set(btstack_sources_le_audio
@@ -682,24 +1084,48 @@ set(btstack_sources_le_audio
     src/le-audio/le_audio_util.c
 )
 
+set(btstack_include_directories_le_audio
+    src
+)
+
 set(btstack_sources_le_device_db_memory
     src/ble/le_device_db_memory.c
+)
+
+set(btstack_include_directories_le_device_db_memory
+    src
 )
 
 set(btstack_sources_le_device_db_tlv
     src/ble/le_device_db_tlv.c
 )
 
+set(btstack_include_directories_le_device_db_tlv
+    src
+)
+
 set(btstack_sources_link_key_db_memory
     src/classic/btstack_link_key_db_memory.c
+)
+
+set(btstack_include_directories_link_key_db_memory
+    src
 )
 
 set(btstack_sources_link_key_db_static
     src/classic/btstack_link_key_db_static.c
 )
 
+set(btstack_include_directories_link_key_db_static
+    src
+)
+
 set(btstack_sources_link_key_db_tlv
     src/classic/btstack_link_key_db_tlv.c
+)
+
+set(btstack_include_directories_link_key_db_tlv
+    src
 )
 
 set(btstack_sources_lwip
@@ -732,6 +1158,14 @@ set(btstack_sources_lwip
     platform/lwip/bnep_lwip.c
 )
 
+set(btstack_include_directories_lwip
+    src
+    3rd-party/lwip/core/src/include
+    3rd-party/lwip/dhcp-server
+    platform/lwip
+    platform/lwip/port
+)
+
 set(btstack_sources_lwip_core
     3rd-party/lwip/core/src/core/def.c
     3rd-party/lwip/core/src/core/inet_chksum.c
@@ -748,14 +1182,27 @@ set(btstack_sources_lwip_core
     3rd-party/lwip/core/src/core/udp.c
 )
 
+set(btstack_include_directories_lwip_core
+    3rd-party/lwip/core/src/include
+)
+
 set(btstack_sources_lwip_dhcp_server
     3rd-party/lwip/dhcp-server/dhserver.c
+)
+
+set(btstack_include_directories_lwip_dhcp_server
+    3rd-party/lwip/core/src/include
+    3rd-party/lwip/dhcp-server
 )
 
 set(btstack_sources_lwip_httpd
     3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
     3rd-party/lwip/core/src/apps/http/fs.c
     3rd-party/lwip/core/src/apps/http/httpd.c
+)
+
+set(btstack_include_directories_lwip_httpd
+    3rd-party/lwip/core/src/include
 )
 
 set(btstack_sources_lwip_ipv4
@@ -768,13 +1215,28 @@ set(btstack_sources_lwip_ipv4
     3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
 )
 
+set(btstack_include_directories_lwip_ipv4
+    3rd-party/lwip/core/src/include
+)
+
 set(btstack_sources_lwip_netif
     3rd-party/lwip/core/src/netif/ethernet.c
+)
+
+set(btstack_include_directories_lwip_netif
+    3rd-party/lwip/core/src/include
 )
 
 set(btstack_sources_lwip_platform
     platform/lwip/port/sys_arch.c
     platform/lwip/bnep_lwip.c
+)
+
+set(btstack_include_directories_lwip_platform
+    src
+    3rd-party/lwip/core/src/include
+    platform/lwip
+    platform/lwip/port
 )
 
 set(btstack_sources_mesh
@@ -812,8 +1274,17 @@ set(btstack_sources_mesh
     src/mesh/provisioning_provisioner.c
 )
 
+set(btstack_include_directories_mesh
+    src
+)
+
 set(btstack_sources_platform_libusb_h2
     platform/libusb/hci_transport_h2_libusb.c
+)
+
+set(btstack_include_directories_platform_libusb_h2
+    src
+    platform/libusb
 )
 
 set(btstack_sources_platform_posix
@@ -833,6 +1304,12 @@ set(btstack_sources_platform_posix
     platform/posix/wav_util.c
 )
 
+set(btstack_include_directories_platform_posix
+    3rd-party/tinydir
+    src
+    platform/posix
+)
+
 set(btstack_sources_platform_windows
     platform/windows/btstack_run_loop_windows.c
     platform/windows/btstack_stdin_windows.c
@@ -842,8 +1319,18 @@ set(btstack_sources_platform_windows
     platform/windows/hci_dump_windows_stdout.c
 )
 
+set(btstack_include_directories_platform_windows
+    src
+    platform/windows
+)
+
 set(btstack_sources_platform_winusb_h2
     platform/windows/hci_transport_h2_winusb.c
+)
+
+set(btstack_include_directories_platform_winusb_h2
+    src
+    platform/windows
 )
 
 set(btstack_sources_third_party_bluedroid_sbc
@@ -871,6 +1358,11 @@ set(btstack_sources_third_party_bluedroid_sbc
     3rd-party/bluedroid/encoder/srce/sbc_packing.c
 )
 
+set(btstack_include_directories_third_party_bluedroid_sbc
+    3rd-party/bluedroid/decoder/include
+    3rd-party/bluedroid/encoder/include
+)
+
 set(btstack_sources_third_party_bluedroid_sbc_decoder
     3rd-party/bluedroid/decoder/srce/alloc.c
     3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c
@@ -888,6 +1380,10 @@ set(btstack_sources_third_party_bluedroid_sbc_decoder
     3rd-party/bluedroid/decoder/srce/synthesis-sbc.c
 )
 
+set(btstack_include_directories_third_party_bluedroid_sbc_decoder
+    3rd-party/bluedroid/decoder/include
+)
+
 set(btstack_sources_third_party_bluedroid_sbc_encoder
     3rd-party/bluedroid/encoder/srce/sbc_analysis.c
     3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c
@@ -899,9 +1395,18 @@ set(btstack_sources_third_party_bluedroid_sbc_encoder
     3rd-party/bluedroid/encoder/srce/sbc_packing.c
 )
 
+set(btstack_include_directories_third_party_bluedroid_sbc_encoder
+    3rd-party/bluedroid/encoder/include
+)
+
 set(btstack_sources_third_party_hxcmod
     3rd-party/hxcmod-player/hxcmod.c
     3rd-party/hxcmod-player/mods/mod.c
+)
+
+set(btstack_include_directories_third_party_hxcmod
+    3rd-party/hxcmod-player
+    3rd-party/hxcmod-player/mod
 )
 
 set(btstack_sources_third_party_lc3_google
@@ -919,39 +1424,79 @@ set(btstack_sources_third_party_lc3_google
     3rd-party/lc3-google/src/tns.c
 )
 
+set(btstack_include_directories_third_party_lc3_google
+    3rd-party/lc3-google/include
+)
+
 set(btstack_sources_third_party_md5
     3rd-party/md5/md5.c
+)
+
+set(btstack_include_directories_third_party_md5
+    3rd-party/md5
 )
 
 set(btstack_sources_third_party_micro_ecc
     3rd-party/micro-ecc/uECC.c
 )
 
+set(btstack_include_directories_third_party_micro_ecc
+    3rd-party/micro-ecc
+)
+
 set(btstack_sources_third_party_qr_code_generator
     3rd-party/qr-code-generator/qrcodegen.c
+)
+
+set(btstack_include_directories_third_party_qr_code_generator
+    3rd-party/qr-code-generator
 )
 
 set(btstack_sources_third_party_rijndael
     3rd-party/rijndael/rijndael.c
 )
 
+set(btstack_include_directories_third_party_rijndael
+    3rd-party/rijndael
+)
+
 set(btstack_sources_third_party_yxml
     3rd-party/yxml/yxml.c
+)
+
+set(btstack_include_directories_third_party_yxml
+    3rd-party/yxml
 )
 
 set(btstack_sources_tlv_none
     src/btstack_tlv_none.c
 )
 
+set(btstack_include_directories_tlv_none
+    src
+)
+
 set(btstack_sources_transport_em9304_spi
     src/hci_transport_em9304_spi.c
+)
+
+set(btstack_include_directories_transport_em9304_spi
+    src
 )
 
 set(btstack_sources_transport_h4
     src/hci_transport_h4.c
 )
 
+set(btstack_include_directories_transport_h4
+    src
+)
+
 set(btstack_sources_transport_h5
     src/btstack_uart_slip_wrapper.c
     src/hci_transport_h5.c
+)
+
+set(btstack_include_directories_transport_h5
+    src
 )
