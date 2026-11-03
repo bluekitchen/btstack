@@ -44,9 +44,6 @@ btstack_collect_include_directories(BTSTACK_INCLUDE_DIRECTORIES
  GROUPS ${BTSTACK_LIBRARY_GROUPS}
 )
 
-# Example Util
-file(GLOB SOURCES_EXAMPLE_UTIL "../../example/*_demo_util*.c")
-
 # Port specific
 set(SOURCES_PORT
     main.c
@@ -65,7 +62,6 @@ btstack_collect_include_directories(LWIP_INCLUDE_DIRECTORIES
 set(SOURCES
  ${SOURCES_PORT}
  ${SOURCES_BTSTACK}
- ${SOURCES_EXAMPLE_UTIL}
 )
 list(SORT SOURCES)
 

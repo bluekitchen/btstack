@@ -6,10 +6,25 @@
 # targets. The current CMakeLists.txt remains a compatibility list until ports
 # are migrated to consume these declarations.
 
+# Shared application-support sources. These stay with the example declarations
+# rather than the generated BTstack source catalog because they are not BTstack
+# implementation code and only a subset of examples uses each one.
+set(audio_demo_util_sources
+    audio_player_demo_util.c
+)
+set(le_audio_demo_util_sink_sources
+    le_audio_demo_util_sink.c
+)
+set(le_audio_demo_util_source_sources
+    le_audio_demo_util_source.c
+)
+set(sco_demo_util_sources
+    sco_demo_util.c
+)
+
 # General examples without Bluetooth.
 foreach(example IN ITEMS
     audio_duplex
-    audio_player
     led_counter
     mod_player
     sine_player
@@ -18,6 +33,10 @@ foreach(example IN ITEMS
         SOURCES ${example}.c
     )
 endforeach()
+
+btstack_declare_example(audio_player
+    SOURCES audio_player.c ${audio_demo_util_sources}
+)
 
 # Classic-only examples. ublox_spp_le_counter is declared with the LE GATT
 # examples below because its default configuration is LE.
@@ -29,13 +48,9 @@ foreach(example IN ITEMS
     gap_dedicated_bonding
     gap_inquiry
     gap_link_keys
-    hfp_ag_demo
-    hfp_hf_demo
     hid_host_demo
     hid_keyboard_demo
     hid_mouse_demo
-    hsp_ag_demo
-    hsp_hs_demo
     pbap_client_demo
     sdp_bnep_query
     sdp_general_query
@@ -46,6 +61,18 @@ foreach(example IN ITEMS
 )
     btstack_declare_example(${example}
         SOURCES ${example}.c
+        NEEDS classic
+    )
+endforeach()
+
+foreach(example IN ITEMS
+    hfp_ag_demo
+    hfp_hf_demo
+    hsp_ag_demo
+    hsp_hs_demo
+)
+    btstack_declare_example(${example}
+        SOURCES ${example}.c ${sco_demo_util_sources}
         NEEDS classic
     )
 endforeach()
@@ -100,17 +127,29 @@ foreach(example IN ITEMS
 endforeach()
 
 # LE Audio examples, enabled by selected ports.
-foreach(example IN ITEMS
-    le_audio_broadcast_sink_lite
-    le_audio_broadcast_source_lite
-    le_audio_unicast_gateway_lite
-    le_audio_unicast_headset_lite
+btstack_declare_example(le_audio_broadcast_sink_lite
+    SOURCES le_audio_broadcast_sink_lite.c ${le_audio_demo_util_sink_sources}
+    NEEDS le-audio
 )
-    btstack_declare_example(${example}
-        SOURCES ${example}.c
-        NEEDS le-audio
-    )
-endforeach()
+btstack_declare_example(le_audio_broadcast_source_lite
+    SOURCES le_audio_broadcast_source_lite.c
+            ${audio_demo_util_sources}
+            ${le_audio_demo_util_source_sources}
+    NEEDS le-audio
+)
+btstack_declare_example(le_audio_unicast_gateway_lite
+    SOURCES le_audio_unicast_gateway_lite.c
+            ${audio_demo_util_sources}
+            ${le_audio_demo_util_sink_sources}
+            ${le_audio_demo_util_source_sources}
+    NEEDS le-audio
+)
+btstack_declare_example(le_audio_unicast_headset_lite
+    SOURCES le_audio_unicast_headset_lite.c
+            ${le_audio_demo_util_sink_sources}
+            ${le_audio_demo_util_source_sources}
+    NEEDS le-audio
+)
 
 # Dual-mode examples not already declared above.
 foreach(example IN ITEMS
