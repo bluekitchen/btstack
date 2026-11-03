@@ -10,6 +10,9 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # BTstack library source groups. Port-local and example utility sources remain
 # below because they are selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+ ROOT "${BTSTACK_ROOT}"
+)
 set(BTSTACK_LIBRARY_GROUPS
     audio-demo
     ble
@@ -62,7 +65,7 @@ add_library(btstack STATIC ${SOURCES})
 btstack_target_warnings(btstack STRICT)
 target_include_directories(btstack
  PUBLIC
-    "${BTSTACK_ROOT}/src"
+    ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
  PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${BTSTACK_ROOT}/platform/embedded"
@@ -120,14 +123,6 @@ set(BTSTACK_GATT_COUNTER_PORT_GROUPS
     third-party-micro-ecc
     third-party-rijndael
 )
-# btstack.h currently exposes these optional profile headers. They provide
-# include directories for this target, but gatt_counter does not link their
-# implementations.
-set(BTSTACK_GATT_COUNTER_HEADER_GROUPS
-    third-party-bluedroid-sbc
-    third-party-hxcmod
-    third-party-yxml
-)
 set(BTSTACK_GATT_COUNTER_LIBRARY_GROUPS
     ${BTSTACK_GATT_COUNTER_GROUPS}
     ${BTSTACK_GATT_COUNTER_PORT_GROUPS}
@@ -138,7 +133,7 @@ btstack_collect_sources(SOURCES_BTSTACK_GATT_COUNTER
 )
 btstack_collect_include_directories(BTSTACK_GATT_COUNTER_INCLUDE_DIRECTORIES
  ROOT "${BTSTACK_ROOT}"
- GROUPS ${BTSTACK_GATT_COUNTER_LIBRARY_GROUPS} ${BTSTACK_GATT_COUNTER_HEADER_GROUPS}
+ GROUPS ${BTSTACK_GATT_COUNTER_LIBRARY_GROUPS}
 )
 
 add_library(btstack_gatt_counter STATIC
@@ -148,7 +143,7 @@ add_library(btstack_gatt_counter STATIC
 btstack_target_warnings(btstack_gatt_counter STRICT)
 target_include_directories(btstack_gatt_counter
  PUBLIC
-    "${BTSTACK_ROOT}/src"
+    ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
     ${LIBUSB_INCLUDE_DIRS}
  PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"

@@ -160,6 +160,24 @@ function(btstack_collect_include_directories output_variable)
     set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
 endfunction()
 
+# Collect root-relative include directories required by BTstack's public
+# headers. Apply these with PUBLIC visibility so applications can include
+# btstack.h without also selecting optional third-party implementation sources.
+function(btstack_collect_public_include_directories output_variable)
+    cmake_parse_arguments(ARG "" "ROOT" "" ${ARGN})
+
+    if(NOT ARG_ROOT)
+        message(FATAL_ERROR "btstack_collect_public_include_directories requires ROOT")
+    endif()
+
+    set(include_directories)
+    foreach(directory IN LISTS btstack_public_include_directories)
+        list(APPEND include_directories "${ARG_ROOT}/${directory}")
+    endforeach()
+    list(REMOVE_DUPLICATES include_directories)
+    set(${output_variable} "${include_directories}" PARENT_SCOPE)
+endfunction()
+
 # Generate a GATT database header and make a target depend on it.
 #
 # Usage:

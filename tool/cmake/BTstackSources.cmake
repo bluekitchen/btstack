@@ -7,6 +7,17 @@
 # lower-case and hyphenated; variable names
 # use underscores, e.g. group le-audio -> btstack_sources_le_audio.
 
+# Include paths required by public BTstack headers. Apply these to consumers
+# independently of the source groups selected for a target.
+set(btstack_public_include_directories
+    src
+    3rd-party/bluedroid/decoder/include
+    3rd-party/bluedroid/encoder/include
+    3rd-party/hxcmod-player
+    3rd-party/lc3-google/include
+    3rd-party/yxml
+)
+
 set(btstack_source_groups
     audio-demo
     ble
