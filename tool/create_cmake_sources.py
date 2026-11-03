@@ -236,6 +236,20 @@ GROUP_INCLUDE_DIRECTORIES = {
     "third-party-qr-code-generator": ["3rd-party/qr-code-generator"],
 }
 
+# Include paths required by BTstack's public headers. These are intentionally
+# independent of selected source groups: an application can include btstack.h
+# (or another public BTstack header) without compiling the corresponding
+# optional third-party implementation. Keep this list explicit and limited to
+# in-tree dependencies exposed by public headers.
+PUBLIC_INCLUDE_DIRECTORIES = [
+    "src",
+    "3rd-party/bluedroid/decoder/include",
+    "3rd-party/bluedroid/encoder/include",
+    "3rd-party/hxcmod-player",
+    "3rd-party/lc3-google/include",
+    "3rd-party/yxml",
+]
+
 # Most GATT service roles are clear from their filenames. These two are named
 # after the local HID role instead, so record their role explicitly.
 GATT_SERVICE_ROLE_OVERRIDES = {
@@ -393,8 +407,16 @@ def render(groups: dict[str, list[str]], unclassified: list[str]) -> str:
         "# lower-case and hyphenated; variable names",
         "# use underscores, e.g. group le-audio -> btstack_sources_le_audio.",
         "",
-        "set(btstack_source_groups",
+        "# Include paths required by public BTstack headers. Apply these to consumers",
+        "# independently of the source groups selected for a target.",
+        "set(btstack_public_include_directories",
     ]
+    lines.extend(f"    {directory}" for directory in PUBLIC_INCLUDE_DIRECTORIES)
+    lines.extend([
+        ")",
+        "",
+        "set(btstack_source_groups",
+    ])
     lines.extend(f"    {group}" for group in sorted(groups))
     lines.extend([")", ""])
 

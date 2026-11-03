@@ -15,6 +15,9 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # BTstack library source groups. Port-local and example utility sources remain
 # below because they are selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+  ROOT "${BTSTACK_ROOT}"
+)
 set(BTSTACK_LIBRARY_GROUPS
     audio-demo
     ble
@@ -75,7 +78,7 @@ add_library(btstack STATIC ${SOURCES})
 btstack_target_warnings(btstack STRICT)
 target_include_directories(btstack
   PUBLIC
-    "${BTSTACK_ROOT}/src"
+    ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
   PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${BTSTACK_ROOT}/platform/embedded"

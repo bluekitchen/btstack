@@ -44,6 +44,21 @@ if(DEFINED TEST_MODE)
         message(FATAL_ERROR "Unknown resolver test mode: ${TEST_MODE}")
     endif()
 else()
+    btstack_collect_public_include_directories(public_include_directories
+        ROOT "${BTSTACK_ROOT}")
+    set(expected_public_include_directories
+        "${BTSTACK_ROOT}/src"
+        "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include"
+        "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include"
+        "${BTSTACK_ROOT}/3rd-party/hxcmod-player"
+        "${BTSTACK_ROOT}/3rd-party/lc3-google/include"
+        "${BTSTACK_ROOT}/3rd-party/yxml"
+    )
+    if(NOT "${public_include_directories}" STREQUAL "${expected_public_include_directories}")
+        message(FATAL_ERROR
+            "Unexpected public include directories: ${public_include_directories}")
+    endif()
+
     btstack_resolve_groups(resolved GROUPS classic-rfcomm)
     if(NOT "${resolved}" STREQUAL "core;l2cap;classic-rfcomm")
         message(FATAL_ERROR "Unexpected resolver closure: ${resolved}")
