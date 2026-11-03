@@ -31,6 +31,19 @@ RULES = [
     ("platform/libusb/hci_transport_h2_libusb.c", "platform-libusb-h2"),
     ("platform/windows/hci_transport_h2_winusb.c", "platform-winusb-h2"),
     ("platform/windows/*.c", "platform-windows"),
+    ("platform/posix/btstack_audio_portaudio.c", "platform-posix-audio-portaudio"),
+    ("platform/posix/btstack_audio_sdl2.c", "platform-posix-audio-sdl2"),
+    ("platform/posix/btstack_link_key_db_fs.c", "platform-posix-link-key-db-fs"),
+    ("platform/posix/btstack_main_config.c", "platform-posix-main-config"),
+    ("platform/posix/btstack_network_posix.c", "platform-posix-network"),
+    ("platform/posix/btstack_run_loop_posix.c", "platform-posix-run-loop"),
+    ("platform/posix/btstack_sco_transport_posix_i2s_test_bridge.c", "platform-posix-sco-bridge"),
+    ("platform/posix/btstack_signal.c", "platform-posix-signal"),
+    ("platform/posix/btstack_stdin_posix.c", "platform-posix-stdin"),
+    ("platform/posix/btstack_tlv_posix.c", "platform-posix-tlv"),
+    ("platform/posix/btstack_uart_posix.c", "platform-posix-uart"),
+    ("platform/posix/hci_dump_posix_*.c", "platform-posix-hci-dump"),
+    ("platform/posix/wav_util.c", "platform-posix-wav"),
     ("platform/posix/*.c", "platform-posix"),
     ("src/hci_transport_h4.c", "transport-h4"),
     ("src/hci_transport_h5.c", "transport-h5"),
@@ -185,6 +198,28 @@ LWIP_GROUPS = [
 BLUEDROID_SBC_GROUPS = [
     "third-party-bluedroid-sbc-decoder",
     "third-party-bluedroid-sbc-encoder",
+]
+
+PLATFORM_POSIX_GROUPS = [
+    "platform-posix-audio-portaudio",
+    "platform-posix-audio-sdl2",
+    "platform-posix-link-key-db-fs",
+    "platform-posix-main-config",
+    "platform-posix-network",
+    "platform-posix-run-loop",
+    "platform-posix-sco-bridge",
+    "platform-posix-signal",
+    "platform-posix-stdin",
+    "platform-posix-tlv",
+    "platform-posix-uart",
+    "platform-posix-hci-dump",
+    "platform-posix-wav",
+]
+
+PLATFORM_POSIX_AUDIO_GROUPS = [
+    "platform-posix-audio-portaudio",
+    "platform-posix-audio-sdl2",
+    "platform-posix-wav",
 ]
 
 # Include directories are curated metadata, not inferred from #include lines.
@@ -367,6 +402,8 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
 
     groups["lwip"] = sources_for(LWIP_GROUPS)
     groups["third-party-bluedroid-sbc"] = sources_for(BLUEDROID_SBC_GROUPS)
+    groups["platform-posix-audio"] = sources_for(PLATFORM_POSIX_AUDIO_GROUPS)
+    groups["platform-posix"] = sources_for(PLATFORM_POSIX_GROUPS)
 
     return groups, unclassified
 

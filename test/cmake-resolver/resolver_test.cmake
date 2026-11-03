@@ -44,6 +44,14 @@ if(DEFINED TEST_MODE)
         message(FATAL_ERROR "Unknown resolver test mode: ${TEST_MODE}")
     endif()
 else()
+    macro(declare_test_audio_port)
+        btstack_declare_port(test-audio)
+        btstack_declare_port_provider(test-audio
+            CAPABILITY audio
+            GROUPS platform-posix-audio-portaudio)
+    endmacro()
+    declare_test_audio_port()
+
     btstack_collect_public_include_directories(public_include_directories
         ROOT "${BTSTACK_ROOT}")
     set(expected_public_include_directories
@@ -77,6 +85,16 @@ else()
     if(NOT "${gatt_counter_configurations}" STREQUAL "ENABLE_LE_PERIPHERAL")
         message(FATAL_ERROR
             "Unexpected gatt_counter configuration requirements: ${gatt_counter_configurations}")
+    endif()
+
+    btstack_resolve_example_for_port(test-audio a2dp_source_demo
+        a2dp_source_groups a2dp_source_configurations)
+    if(NOT "${a2dp_source_groups}" STREQUAL "classic;platform-posix-audio-portaudio")
+        message(FATAL_ERROR "Unexpected a2dp_source_demo source groups: ${a2dp_source_groups}")
+    endif()
+    if(a2dp_source_configurations)
+        message(FATAL_ERROR
+            "Unexpected a2dp_source_demo configuration requirements: ${a2dp_source_configurations}")
     endif()
 
     expect_failure(unknown "Unknown BTstack source group 'missing-group'")

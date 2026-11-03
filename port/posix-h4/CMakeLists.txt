@@ -15,6 +15,7 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # BTstack library source groups. Port-local and example utility sources remain
 # below because they are selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_declare_port(posix-h4)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
   ROOT "${BTSTACK_ROOT}"
 )
@@ -99,6 +100,10 @@ if (PkgConfig_FOUND)
         target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
         target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
         add_compile_definitions(HAVE_PORTAUDIO)
+        btstack_declare_port_provider(posix-h4
+            CAPABILITY audio
+            GROUPS platform-posix-audio-portaudio
+        )
     endif()
 endif()
 
