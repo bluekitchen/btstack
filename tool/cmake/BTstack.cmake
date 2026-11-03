@@ -5,6 +5,91 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 
+# Explicit internal source-group dependencies. This is resolver metadata, not
+# source-catalog metadata: the generator classifies files but never infers
+# dependencies. Add entries incrementally as their dependency closures are
+# reviewed.
+set(btstack_group_dependencies_l2cap
+    core
+)
+set(btstack_group_dependencies_classic_rfcomm
+    l2cap
+)
+
+# Resolve a source-group dependency closure in dependency-first order.
+#
+# Usage:
+#   btstack_resolve_groups(BTSTACK_GROUPS
+#       GROUPS classic-rfcomm)
+#
+# The initial result is: core; l2cap; classic-rfcomm. The resolver only adds
+# explicit internal dependencies; provider selection and port capabilities are
+# intentionally handled by later resolver stages.
+function(btstack_resolve_groups output_variable)
+    cmake_parse_arguments(ARG "" "" "GROUPS" ${ARGN})
+
+    if(NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_resolve_groups requires at least one GROUP")
+    endif()
+
+    # First calculate the complete closure and validate every group name.
+    set(closure)
+    set(pending ${ARG_GROUPS})
+    while(pending)
+        list(GET pending 0 group)
+        list(REMOVE_AT pending 0)
+
+        list(FIND btstack_source_groups "${group}" group_index)
+        if(group_index EQUAL -1)
+            string(REPLACE ";" ", " known_groups "${btstack_source_groups}")
+            message(FATAL_ERROR
+                "Unknown BTstack source group '${group}'. Known groups: ${known_groups}")
+        endif()
+
+        list(FIND closure "${group}" closure_index)
+        if(closure_index EQUAL -1)
+            list(APPEND closure "${group}")
+            string(REPLACE "-" "_" group_suffix "${group}")
+            set(dependency_variable "btstack_group_dependencies_${group_suffix}")
+            if(DEFINED ${dependency_variable})
+                list(APPEND pending ${${dependency_variable}})
+            endif()
+        endif()
+    endwhile()
+
+    # Emit dependencies before dependents and reject accidental cycles.
+    set(resolved)
+    set(remaining ${closure})
+    while(remaining)
+        set(progress FALSE)
+        foreach(group IN LISTS remaining)
+            string(REPLACE "-" "_" group_suffix "${group}")
+            set(dependency_variable "btstack_group_dependencies_${group_suffix}")
+            set(dependencies ${${dependency_variable}})
+            set(blocked FALSE)
+            foreach(dependency IN LISTS dependencies)
+                list(FIND remaining "${dependency}" dependency_index)
+                if(NOT dependency_index EQUAL -1)
+                    set(blocked TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(NOT blocked)
+                list(APPEND resolved "${group}")
+                list(REMOVE_ITEM remaining "${group}")
+                set(progress TRUE)
+            endif()
+        endforeach()
+        if(NOT progress)
+            string(REPLACE ";" ", " unresolved_groups "${remaining}")
+            message(FATAL_ERROR
+                "Cyclic BTstack source-group dependencies: ${unresolved_groups}")
+        endif()
+    endwhile()
+
+    set(${output_variable} "${resolved}" PARENT_SCOPE)
+endfunction()
+
 function(btstack_collect_group_paths output_variable)
     cmake_parse_arguments(ARG "" "ROOT;VARIABLE_PREFIX" "GROUPS" ${ARGN})
 

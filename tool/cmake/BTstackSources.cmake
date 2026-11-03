@@ -104,6 +104,7 @@ set(btstack_source_groups
     gatt-service-tx-power-service-server
     gatt-service-ublox-spp-service-server
     gatt-services
+    l2cap
     lc3
     le-audio
     le-device-db-memory
@@ -1064,6 +1065,15 @@ set(btstack_sources_gatt_services
 )
 
 set(btstack_include_directories_gatt_services
+    src
+)
+
+set(btstack_sources_l2cap
+    src/l2cap.c
+    src/l2cap_signaling.c
+)
+
+set(btstack_include_directories_l2cap
     src
 )
 
