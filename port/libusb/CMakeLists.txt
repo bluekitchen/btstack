@@ -20,6 +20,7 @@ set(BTSTACK_LIBRARY_GROUPS
     bnep
     classic
     core
+    gatt
     gatt-services
     lc3
     le-audio

@@ -19,6 +19,9 @@ set(btstack_public_include_directories
 )
 
 set(btstack_source_groups
+    att-db
+    att-db-util
+    att-dispatch
     audio-demo
     ble
     bnep
@@ -88,13 +91,17 @@ set(btstack_source_groups
     classic-sdp-util
     classic-spp-server
     core
+    gatt
+    gatt-client
     gatt-clients
+    gatt-server
     gatt-servers
     gatt-service-ancs-client
     gatt-service-battery-service-client
     gatt-service-battery-service-server
     gatt-service-battery-service-v1-server
     gatt-service-bond-management-service-server
+    gatt-service-client
     gatt-service-cycling-power-service-server
     gatt-service-cycling-speed-and-cadence-service-server
     gatt-service-device-information-service-client
@@ -165,6 +172,30 @@ set(btstack_source_groups
     transport-h5
 )
 
+set(btstack_sources_att_db
+    src/ble/att_db.c
+)
+
+set(btstack_include_directories_att_db
+    src
+)
+
+set(btstack_sources_att_db_util
+    src/ble/att_db_util.c
+)
+
+set(btstack_include_directories_att_db_util
+    src
+)
+
+set(btstack_sources_att_dispatch
+    src/ble/att_dispatch.c
+)
+
+set(btstack_include_directories_att_dispatch
+    src
+)
+
 set(btstack_sources_audio_demo
     src/btstack_audio_generator.c
     src/btstack_audio_player.c
@@ -176,12 +207,6 @@ set(btstack_include_directories_audio_demo
 )
 
 set(btstack_sources_ble
-    src/ble/att_db.c
-    src/ble/att_db_util.c
-    src/ble/att_dispatch.c
-    src/ble/att_server.c
-    src/ble/gatt_client.c
-    src/ble/gatt_service_client.c
     src/ble/sm.c
 )
 
@@ -832,9 +857,31 @@ set(btstack_include_directories_core
     src
 )
 
+set(btstack_sources_gatt
+    src/ble/att_db.c
+    src/ble/att_db_util.c
+    src/ble/att_dispatch.c
+    src/ble/att_server.c
+    src/ble/gatt_client.c
+    src/ble/gatt_service_client.c
+)
+
+set(btstack_include_directories_gatt
+    src
+)
+
+set(btstack_sources_gatt_client
+    src/ble/gatt_client.c
+)
+
+set(btstack_include_directories_gatt_client
+    src
+)
+
 set(btstack_sources_gatt_clients
     src/ble/gatt-service/ancs_client.c
     src/ble/gatt-service/battery_service_client.c
+    src/ble/gatt_service_client.c
     src/ble/gatt-service/device_information_service_client.c
     src/ble/gatt-service/hids_host.c
     src/ble/gatt-service/immediate_alert_service_client.c
@@ -845,6 +892,14 @@ set(btstack_sources_gatt_clients
 )
 
 set(btstack_include_directories_gatt_clients
+    src
+)
+
+set(btstack_sources_gatt_server
+    src/ble/att_server.c
+)
+
+set(btstack_include_directories_gatt_server
     src
 )
 
@@ -907,6 +962,14 @@ set(btstack_sources_gatt_service_bond_management_service_server
 )
 
 set(btstack_include_directories_gatt_service_bond_management_service_server
+    src
+)
+
+set(btstack_sources_gatt_service_client
+    src/ble/gatt_service_client.c
+)
+
+set(btstack_include_directories_gatt_service_client
     src
 )
 
@@ -1068,6 +1131,7 @@ set(btstack_sources_gatt_services
     src/ble/gatt-service/battery_service_server.c
     src/ble/gatt-service/battery_service_v1_server.c
     src/ble/gatt-service/bond_management_service_server.c
+    src/ble/gatt_service_client.c
     src/ble/gatt-service/cycling_power_service_server.c
     src/ble/gatt-service/cycling_speed_and_cadence_service_server.c
     src/ble/gatt-service/device_information_service_client.c

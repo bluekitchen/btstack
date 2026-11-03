@@ -15,6 +15,24 @@ set(btstack_group_dependencies_l2cap
 set(btstack_group_dependencies_ble
     l2cap
 )
+set(btstack_group_dependencies_att_db
+    core
+)
+set(btstack_group_dependencies_att_dispatch
+    l2cap
+)
+set(btstack_group_dependencies_gatt_server
+    att-db
+    att-dispatch
+    ble
+)
+set(btstack_group_dependencies_gatt_client
+    att-dispatch
+    ble
+)
+set(btstack_group_dependencies_gatt_service_client
+    gatt-client
+)
 set(btstack_group_dependencies_classic_rfcomm
     l2cap
 )

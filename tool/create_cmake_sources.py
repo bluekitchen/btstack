@@ -62,6 +62,15 @@ RULES = [
     ("src/btstack_audio_song.c", "audio-demo"),
     # LC3 is also used by HFP; the future resolver supplies it to both users
     ("src/btstack_lc3*.c", "lc3"),
+    # Keep GATT implementation layers separate from the common LE foundation.
+    # The gatt aggregate below preserves the all-in source selection used by
+    # existing ports while scoped targets can select only their required role.
+    ("src/ble/att_db.c", "att-db"),
+    ("src/ble/att_db_util.c", "att-db-util"),
+    ("src/ble/att_dispatch.c", "att-dispatch"),
+    ("src/ble/att_server.c", "gatt-server"),
+    ("src/ble/gatt_client.c", "gatt-client"),
+    ("src/ble/gatt_service_client.c", "gatt-service-client"),
     ("src/ble/*.c", "ble"),
     ("src/le-audio/*.c", "le-audio"),
     ("src/mesh/*.c", "mesh"),
@@ -301,6 +310,15 @@ CLASSIC_CONVENIENCE_GROUPS = {
     ],
 }
 
+GATT_IMPLEMENTATION_GROUPS = (
+    "att-db",
+    "att-db-util",
+    "att-dispatch",
+    "gatt-server",
+    "gatt-client",
+    "gatt-service-client",
+)
+
 # Leaf groups added while incrementally splitting the broad core group. Their
 # sources intentionally remain in core for existing ports; collection helpers
 # remove duplicates when a resolver selects both groups.
@@ -388,6 +406,7 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
     groups["gatt-clients"] = sources_for(gatt_client_groups)
     groups["gatt-servers"] = sources_for(gatt_server_groups)
     groups["gatt-services"] = sources_for(gatt_service_groups)
+    groups["gatt"] = sources_for(GATT_IMPLEMENTATION_GROUPS)
 
     classic_leaf_groups = sorted(group for group in groups if group.startswith("classic-"))
     groups["classic"] = sources_for(classic_leaf_groups)
