@@ -117,7 +117,9 @@ btstack_resolve_example_for_port(libusb gatt_counter
     BTSTACK_GATT_COUNTER_GROUPS
     BTSTACK_GATT_COUNTER_CONFIGURATION_REQUIREMENTS
 )
-set(BTSTACK_GATT_COUNTER_PORT_GROUPS
+# Support selected by the libusb port's common main.c. All examples need these
+# groups independently of their own protocol/profile requirements.
+set(BTSTACK_LIBUSB_BASE_GROUPS
     le-device-db-tlv
     link-key-db-tlv
     tlv-none
@@ -134,11 +136,11 @@ set(BTSTACK_GATT_COUNTER_PORT_GROUPS
 )
 if(PORTAUDIO_FOUND)
     # main.c configures the PortAudio instances whenever HAVE_PORTAUDIO is set.
-    list(APPEND BTSTACK_GATT_COUNTER_PORT_GROUPS platform-posix-audio-portaudio)
+    list(APPEND BTSTACK_LIBUSB_BASE_GROUPS platform-posix-audio-portaudio)
 endif()
 set(BTSTACK_GATT_COUNTER_LIBRARY_GROUPS
     ${BTSTACK_GATT_COUNTER_GROUPS}
-    ${BTSTACK_GATT_COUNTER_PORT_GROUPS}
+    ${BTSTACK_LIBUSB_BASE_GROUPS}
 )
 btstack_collect_sources(SOURCES_BTSTACK_GATT_COUNTER
  ROOT "${BTSTACK_ROOT}"
