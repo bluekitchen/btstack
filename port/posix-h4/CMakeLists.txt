@@ -26,6 +26,7 @@ set(BTSTACK_LIBRARY_GROUPS
     le-audio
     le-device-db-tlv
     link-key-db-tlv
+    lwip
     mesh
     tlv-none
     transport-h4
@@ -54,15 +55,22 @@ btstack_collect_include_directories(BTSTACK_INCLUDE_DIRECTORIES
  ROOT "${BTSTACK_ROOT}"
  GROUPS ${BTSTACK_LIBRARY_GROUPS}
 )
-file(GLOB SOURCES_PORT      "*.c")
 
+# Port specific files
+set(SOURCES_PORT
+    main.c
+    bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
+    bluetooth_init_cc2564C_1.5.c
+)
+
+# Complete list of sources
 set(SOURCES
   ${SOURCES_PORT}
   ${SOURCES_BTSTACK}
 )
 list(SORT SOURCES)
 
-# create static lib
+# create static 'btstack' lib
 add_library(btstack STATIC ${SOURCES})
 btstack_target_warnings(btstack STRICT)
 target_include_directories(btstack
@@ -75,10 +83,11 @@ target_include_directories(btstack
     ${BTSTACK_INCLUDE_DIRECTORIES}
 )
 
-# pkgconfig
+# Get libraries needed for this port
+
+# portaudio: needs pkgconfig
 find_package(PkgConfig)
 
-# portaudio
 if (PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
@@ -137,7 +146,10 @@ foreach(EXAMPLE ${EXAMPLES})
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
     endforeach()
 
+    # define example target
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+
+    # add includes
     target_include_directories(${EXAMPLE}
       PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -146,7 +158,7 @@ foreach(EXAMPLE ${EXAMPLES})
         ${BTSTACK_INCLUDE_DIRECTORIES}
     )
 
-    # Compile the declared GATT DB, if any.
+    # Compile GATT DB if needed
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
     if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
@@ -154,6 +166,9 @@ foreach(EXAMPLE ${EXAMPLES})
     else()
         message("example ${EXAMPLE}")
     endif()
+    # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
+
+    # link target with btstack library
     target_link_libraries(${EXAMPLE} btstack pthread)
 endforeach(EXAMPLE)
