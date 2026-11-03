@@ -39,7 +39,7 @@
 
 #include <inttypes.h>
 
-#include "btstack.h"
+#include "btstack_debug.h"
 #include "btstack_sample_rate_compensation.h"
 
 void btstack_sample_rate_compensation_reset(btstack_sample_rate_compensation_t *self, uint32_t timestamp_ms) {
