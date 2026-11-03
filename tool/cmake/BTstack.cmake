@@ -5,25 +5,19 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 
-# Collect root-relative source groups into absolute source paths.
-#
-# Usage:
-#   include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
-#   btstack_collect_sources(BTSTACK_SOURCES
-#       ROOT "${BTSTACK_ROOT}"
-#       GROUPS core ble le-audio lc3 transport-h5)
-#
-# The requested group IDs must be listed in btstack_source_groups. Group IDs
-# use lower-case hyphenated names; their backing variables use underscores.
-function(btstack_collect_sources output_variable)
-    cmake_parse_arguments(ARG "" "ROOT" "GROUPS" ${ARGN})
+function(btstack_collect_group_paths output_variable)
+    cmake_parse_arguments(ARG "" "ROOT;VARIABLE_PREFIX" "GROUPS" ${ARGN})
 
     if(NOT ARG_ROOT)
-        message(FATAL_ERROR "btstack_collect_sources requires ROOT")
+        message(FATAL_ERROR "btstack_collect_group_paths requires ROOT")
     endif()
 
     if(NOT ARG_GROUPS)
-        message(FATAL_ERROR "btstack_collect_sources requires at least one GROUP")
+        message(FATAL_ERROR "btstack_collect_group_paths requires at least one GROUP")
+    endif()
+
+    if(NOT ARG_VARIABLE_PREFIX)
+        message(FATAL_ERROR "btstack_collect_group_paths requires VARIABLE_PREFIX")
     endif()
 
     set(sources)
@@ -36,7 +30,7 @@ function(btstack_collect_sources output_variable)
         endif()
 
         string(REPLACE "-" "_" group_suffix "${group}")
-        set(group_variable "btstack_sources_${group_suffix}")
+        set(group_variable "${ARG_VARIABLE_PREFIX}_${group_suffix}")
         if(NOT DEFINED ${group_variable})
             message(FATAL_ERROR
                 "BTstack source group '${group}' has no ${group_variable} definition")
@@ -49,6 +43,33 @@ function(btstack_collect_sources output_variable)
 
     list(REMOVE_DUPLICATES sources)
     set(${output_variable} "${sources}" PARENT_SCOPE)
+endfunction()
+
+# Collect root-relative source groups into absolute source paths.
+#
+# Usage:
+#   include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
+#   btstack_collect_sources(BTSTACK_SOURCES
+#       ROOT "${BTSTACK_ROOT}"
+#       GROUPS core ble le-audio lc3 transport-h5)
+#
+# The requested group IDs must be listed in btstack_source_groups. Group IDs
+# use lower-case hyphenated names; their backing variables use underscores.
+function(btstack_collect_sources output_variable)
+    btstack_collect_group_paths(${output_variable}
+        VARIABLE_PREFIX btstack_sources
+        ${ARGN})
+    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
+endfunction()
+
+# Collect root-relative private include directories required by source groups.
+# Port configuration, SDK, and generated-header include directories remain
+# explicit in the port CMakeLists.txt.
+function(btstack_collect_include_directories output_variable)
+    btstack_collect_group_paths(${output_variable}
+        VARIABLE_PREFIX btstack_include_directories
+        ${ARGN})
+    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
 endfunction()
 
 # Generate a GATT database header and make a target depend on it.

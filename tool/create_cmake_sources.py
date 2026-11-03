@@ -187,6 +187,55 @@ BLUEDROID_SBC_GROUPS = [
     "third-party-bluedroid-sbc-encoder",
 ]
 
+# Include directories are curated metadata, not inferred from #include lines.
+# The source catalog can derive the simple in-tree cases below; dependencies
+# whose public headers live elsewhere are listed explicitly.
+GROUP_INCLUDE_DIRECTORIES = {
+    # btstack_link_key_db_fs.c in this group uses tinydir's header-only API.
+    "platform-posix": ["3rd-party/tinydir"],
+    "lwip-core": ["3rd-party/lwip/core/src/include"],
+    "lwip-ipv4": ["3rd-party/lwip/core/src/include"],
+    "lwip-netif": ["3rd-party/lwip/core/src/include"],
+    "lwip-httpd": ["3rd-party/lwip/core/src/include"],
+    "lwip-dhcp-server": [
+        "3rd-party/lwip/core/src/include",
+        "3rd-party/lwip/dhcp-server",
+    ],
+    "lwip-platform": [
+        "src",
+        "3rd-party/lwip/core/src/include",
+        "platform/lwip",
+        "platform/lwip/port",
+    ],
+    "lwip": [
+        "src",
+        "3rd-party/lwip/core/src/include",
+        "3rd-party/lwip/dhcp-server",
+        "platform/lwip",
+        "platform/lwip/port",
+    ],
+    "third-party-bluedroid-sbc-decoder": [
+        "3rd-party/bluedroid/decoder/include",
+    ],
+    "third-party-bluedroid-sbc-encoder": [
+        "3rd-party/bluedroid/encoder/include",
+    ],
+    "third-party-bluedroid-sbc": [
+        "3rd-party/bluedroid/decoder/include",
+        "3rd-party/bluedroid/encoder/include",
+    ],
+    "third-party-lc3-google": ["3rd-party/lc3-google/include"],
+    "third-party-micro-ecc": ["3rd-party/micro-ecc"],
+    "third-party-hxcmod": [
+        "3rd-party/hxcmod-player",
+        "3rd-party/hxcmod-player/mod",
+    ],
+    "third-party-md5": ["3rd-party/md5"],
+    "third-party-rijndael": ["3rd-party/rijndael"],
+    "third-party-yxml": ["3rd-party/yxml"],
+    "third-party-qr-code-generator": ["3rd-party/qr-code-generator"],
+}
+
 # Most GATT service roles are clear from their filenames. These two are named
 # after the local HID role instead, so record their role explicitly.
 GATT_SERVICE_ROLE_OVERRIDES = {
@@ -292,7 +341,32 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
     return groups, unclassified
 
 
+def unique(values: list[str]) -> list[str]:
+    return list(dict.fromkeys(values))
+
+
+def include_directories(groups: dict[str, list[str]]) -> dict[str, list[str]]:
+    directories: dict[str, list[str]] = {}
+    for group, sources in groups.items():
+        group_directories = list(GROUP_INCLUDE_DIRECTORIES.get(group, []))
+        for source in sources:
+            parts = source.split("/")
+            if source.startswith("src/"):
+                group_directories.append("src")
+            elif source.startswith("platform/posix/"):
+                group_directories.extend(["src", "platform/posix"])
+            elif source.startswith("platform/windows/"):
+                group_directories.extend(["src", "platform/windows"])
+            elif source.startswith("platform/libusb/"):
+                group_directories.extend(["src", "platform/libusb"])
+            elif source.startswith("chipset/"):
+                group_directories.extend(["src", "/".join(parts[:2])])
+        directories[group] = unique(group_directories)
+    return directories
+
+
 def render(groups: dict[str, list[str]], unclassified: list[str]) -> str:
+    group_include_directories = include_directories(groups)
     lines = [
         "# Source file lists for CMake consumers of BTstack.",
         "#",
@@ -311,6 +385,10 @@ def render(groups: dict[str, list[str]], unclassified: list[str]) -> str:
     for group in sorted(groups):
         lines.append(f"set(btstack_sources_{variable_suffix(group)}")
         lines.extend(f"    {source}" for source in groups[group])
+        lines.extend([")", ""])
+
+        lines.append(f"set(btstack_include_directories_{variable_suffix(group)}")
+        lines.extend(f"    {directory}" for directory in group_include_directories[group])
         lines.extend([")", ""])
 
     if unclassified:
