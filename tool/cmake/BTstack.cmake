@@ -286,6 +286,57 @@ function(btstack_declare_example example)
     set("btstack_example_${example}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
 endfunction()
 
+# Register a port that can provide implementation groups for logical example
+# capabilities. A port declaration is metadata only; it does not create a
+# target or configure BTstack features.
+function(btstack_declare_port port)
+    list(FIND btstack_declared_ports "${port}" port_index)
+    if(NOT port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${port}' is declared more than once")
+    endif()
+
+    list(APPEND btstack_declared_ports "${port}")
+    set(btstack_declared_ports "${btstack_declared_ports}" PARENT_SCOPE)
+endfunction()
+
+# Register concrete source groups that provide one port-neutral capability.
+# A port may provide multiple groups for a capability, for example multiple
+# runtime-selectable audio backends.
+#
+# Usage:
+#   btstack_declare_port_provider(libusb
+#       CAPABILITY audio
+#       GROUPS platform-posix-audio-portaudio)
+function(btstack_declare_port_provider port)
+    cmake_parse_arguments(ARG "" "CAPABILITY" "GROUPS" ${ARGN})
+
+    list(FIND btstack_declared_ports "${port}" port_index)
+    if(port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${port}' must be declared before its providers")
+    endif()
+    if(NOT ARG_CAPABILITY)
+        message(FATAL_ERROR "btstack_declare_port_provider(${port}) requires CAPABILITY")
+    endif()
+    if(NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_declare_port_provider(${port}) requires at least one GROUP")
+    endif()
+
+    foreach(group IN LISTS ARG_GROUPS)
+        list(FIND btstack_source_groups "${group}" group_index)
+        if(group_index EQUAL -1)
+            message(FATAL_ERROR
+                "BTstack port '${port}' provider '${ARG_CAPABILITY}' has unknown source group '${group}'")
+        endif()
+    endforeach()
+
+    string(REPLACE "-" "_" port_suffix "${port}")
+    string(REPLACE "-" "_" capability_suffix "${ARG_CAPABILITY}")
+    set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
+    set(provider_groups ${${provider_variable}} ${ARG_GROUPS})
+    list(REMOVE_DUPLICATES provider_groups)
+    set(${provider_variable} "${provider_groups}" PARENT_SCOPE)
+endfunction()
+
 # Resolve the source-group and configuration requirements declared by one
 # example. NEEDS entries that name catalog groups are expanded through the
 # source-group dependency graph. ENABLE_* entries are returned unchanged for a
@@ -294,7 +345,7 @@ endfunction()
 #
 # Usage:
 #   btstack_resolve_example(gatt_counter BTSTACK_GROUPS BTSTACK_CONFIG_NEEDS)
-function(btstack_resolve_example example groups_output_variable configuration_output_variable)
+function(btstack_resolve_example_requirements example port groups_output_variable configuration_output_variable)
     list(FIND btstack_declared_examples "${example}" example_index)
     if(example_index EQUAL -1)
         message(FATAL_ERROR "BTstack example '${example}' has not been declared")
@@ -308,6 +359,17 @@ function(btstack_resolve_example example groups_output_variable configuration_ou
             list(APPEND source_groups "${requirement}")
         elseif(requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
             list(APPEND configuration_requirements "${requirement}")
+        elseif(NOT "${port}" STREQUAL "")
+            string(REPLACE "-" "_" port_suffix "${port}")
+            string(REPLACE "-" "_" capability_suffix "${requirement}")
+            set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
+            if(DEFINED ${provider_variable})
+                list(APPEND source_groups ${${provider_variable}})
+            else()
+                message(FATAL_ERROR
+                    "BTstack example '${example}' needs capability '${requirement}', "
+                    "but port '${port}' does not provide it")
+            endif()
         else()
             message(FATAL_ERROR
                 "BTstack example '${example}' has unknown requirement '${requirement}'. "
@@ -321,6 +383,31 @@ function(btstack_resolve_example example groups_output_variable configuration_ou
         set(resolved_groups)
     endif()
 
+    set(${groups_output_variable} "${resolved_groups}" PARENT_SCOPE)
+    set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
+endfunction()
+
+function(btstack_resolve_example example groups_output_variable configuration_output_variable)
+    btstack_resolve_example_requirements("${example}" "" resolved_groups configuration_requirements)
+    set(${groups_output_variable} "${resolved_groups}" PARENT_SCOPE)
+    set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
+endfunction()
+
+# Resolve an example against a declared port. Alongside ordinary source groups
+# and ENABLE_* configuration requirements, NEEDS may name a capability that
+# the port provides through one or more concrete source groups.
+#
+# Usage:
+#   btstack_resolve_example_for_port(libusb a2dp_source_demo
+#       BTSTACK_GROUPS BTSTACK_CONFIG_NEEDS)
+function(btstack_resolve_example_for_port port example groups_output_variable configuration_output_variable)
+    list(FIND btstack_declared_ports "${port}" port_index)
+    if(port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${port}' has not been declared")
+    endif()
+
+    btstack_resolve_example_requirements("${example}" "${port}"
+        resolved_groups configuration_requirements)
     set(${groups_output_variable} "${resolved_groups}" PARENT_SCOPE)
     set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
 endfunction()

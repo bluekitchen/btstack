@@ -133,6 +133,20 @@ set(btstack_source_groups
     mesh
     platform-libusb-h2
     platform-posix
+    platform-posix-audio
+    platform-posix-audio-portaudio
+    platform-posix-audio-sdl2
+    platform-posix-hci-dump
+    platform-posix-link-key-db-fs
+    platform-posix-main-config
+    platform-posix-network
+    platform-posix-run-loop
+    platform-posix-sco-bridge
+    platform-posix-signal
+    platform-posix-stdin
+    platform-posix-tlv
+    platform-posix-uart
+    platform-posix-wav
     platform-windows
     platform-winusb-h2
     third-party-bluedroid-sbc
@@ -1327,6 +1341,135 @@ set(btstack_sources_platform_posix
 
 set(btstack_include_directories_platform_posix
     3rd-party/tinydir
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_audio
+    platform/posix/btstack_audio_portaudio.c
+    platform/posix/btstack_audio_sdl2.c
+    platform/posix/wav_util.c
+)
+
+set(btstack_include_directories_platform_posix_audio
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_audio_portaudio
+    platform/posix/btstack_audio_portaudio.c
+)
+
+set(btstack_include_directories_platform_posix_audio_portaudio
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_audio_sdl2
+    platform/posix/btstack_audio_sdl2.c
+)
+
+set(btstack_include_directories_platform_posix_audio_sdl2
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_hci_dump
+    platform/posix/hci_dump_posix_fs.c
+    platform/posix/hci_dump_posix_stdout.c
+)
+
+set(btstack_include_directories_platform_posix_hci_dump
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_link_key_db_fs
+    platform/posix/btstack_link_key_db_fs.c
+)
+
+set(btstack_include_directories_platform_posix_link_key_db_fs
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_main_config
+    platform/posix/btstack_main_config.c
+)
+
+set(btstack_include_directories_platform_posix_main_config
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_network
+    platform/posix/btstack_network_posix.c
+)
+
+set(btstack_include_directories_platform_posix_network
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_run_loop
+    platform/posix/btstack_run_loop_posix.c
+)
+
+set(btstack_include_directories_platform_posix_run_loop
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_sco_bridge
+    platform/posix/btstack_sco_transport_posix_i2s_test_bridge.c
+)
+
+set(btstack_include_directories_platform_posix_sco_bridge
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_signal
+    platform/posix/btstack_signal.c
+)
+
+set(btstack_include_directories_platform_posix_signal
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_stdin
+    platform/posix/btstack_stdin_posix.c
+)
+
+set(btstack_include_directories_platform_posix_stdin
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_tlv
+    platform/posix/btstack_tlv_posix.c
+)
+
+set(btstack_include_directories_platform_posix_tlv
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_uart
+    platform/posix/btstack_uart_posix.c
+)
+
+set(btstack_include_directories_platform_posix_uart
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_wav
+    platform/posix/wav_util.c
+)
+
+set(btstack_include_directories_platform_posix_wav
     src
     platform/posix
 )

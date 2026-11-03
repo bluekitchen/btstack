@@ -10,6 +10,7 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # BTstack library source groups. Port-local and example utility sources remain
 # below because they are selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_declare_port(libusb)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
  ROOT "${BTSTACK_ROOT}"
 )
@@ -96,6 +97,10 @@ if(PORTAUDIO_FOUND)
     target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
     target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
     add_compile_definitions(HAVE_PORTAUDIO)
+    btstack_declare_port_provider(libusb
+        CAPABILITY audio
+        GROUPS platform-posix-audio-portaudio
+    )
 endif()
 
 
@@ -108,7 +113,7 @@ set(EXAMPLES ${btstack_declared_examples})
 # configuration still enables Classic, while btstack.h requires some optional
 # profile headers. The required third-party header providers are explicit
 # below; profile implementation groups are not pulled in speculatively.
-btstack_resolve_example(gatt_counter
+btstack_resolve_example_for_port(libusb gatt_counter
     BTSTACK_GATT_COUNTER_GROUPS
     BTSTACK_GATT_COUNTER_CONFIGURATION_REQUIREMENTS
 )
@@ -116,13 +121,21 @@ set(BTSTACK_GATT_COUNTER_PORT_GROUPS
     le-device-db-tlv
     link-key-db-tlv
     tlv-none
-    platform-posix
+    platform-posix-run-loop
+    platform-posix-signal
+    platform-posix-stdin
+    platform-posix-tlv
+    platform-posix-hci-dump
     platform-libusb-h2
     chipset-realtek
     chipset-zephyr
     third-party-micro-ecc
     third-party-rijndael
 )
+if(PORTAUDIO_FOUND)
+    # main.c configures the PortAudio instances whenever HAVE_PORTAUDIO is set.
+    list(APPEND BTSTACK_GATT_COUNTER_PORT_GROUPS platform-posix-audio-portaudio)
+endif()
 set(BTSTACK_GATT_COUNTER_LIBRARY_GROUPS
     ${BTSTACK_GATT_COUNTER_GROUPS}
     ${BTSTACK_GATT_COUNTER_PORT_GROUPS}

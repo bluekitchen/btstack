@@ -42,7 +42,6 @@ btstack_declare_example(audio_player
 # examples below because its default configuration is LE.
 foreach(example IN ITEMS
     a2dp_sink_demo
-    a2dp_source_demo
     avrcp_browsing_client
     dut_mode_classic
     gap_dedicated_bonding
@@ -64,6 +63,11 @@ foreach(example IN ITEMS
         NEEDS classic
     )
 endforeach()
+
+btstack_declare_example(a2dp_source_demo
+    SOURCES a2dp_source_demo.c
+    NEEDS classic audio
+)
 
 foreach(example IN ITEMS
     hfp_ag_demo
