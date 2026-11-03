@@ -174,6 +174,7 @@ current_characteristic_uuid_string = ""
 enum_values_for_characteristics = []
 enum_values_for_services = []
 include_paths = []
+dependencies = []
 database_hash_message = bytearray()
 service_counter = {}
 
@@ -927,6 +928,7 @@ def parseLines(fname_in, fin, fout):
                 continue
 
             imported_file = getFile( imported_file )
+            dependencies.append(os.path.abspath(imported_file))
             verbose_print("Importing %s" % imported_file)
             try:
                 imported_fin = open (imported_file, encoding='utf-8')
@@ -1092,6 +1094,19 @@ def getFile( fileName ):
     exit(-1)
 
 
+def depfile_escape(path):
+    """Escape a path for a Make-style dependency file."""
+    return path.replace('\\', '\\\\').replace(' ', '\\ ').replace('#', '\\#').replace('$', '$$').replace(':', '\\:')
+
+
+def write_depfile(depfile, target, inputs):
+    unique_inputs = list(dict.fromkeys(inputs))
+    with open(depfile, 'w') as fout:
+        fout.write('%s: %s\n' % (
+            depfile_escape(os.path.abspath(target)),
+            ' '.join(depfile_escape(path) for path in unique_inputs)))
+
+
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 default_includes = [os.path.normpath(path) for path in [ 
     btstack_root + '/src/', 
@@ -1106,6 +1121,8 @@ parser.add_argument('-v', '--verbose', action='store_true',
         help='enable verbose output on stdout')
 parser.add_argument('-I', action='append', nargs=1, metavar='includes', 
         help='include search path for .gatt service files and bluetooth_gatt.h (default: %s)' % ", ".join(default_includes))
+parser.add_argument('--dependencies', '--depfile', dest='depfile', metavar='file',
+        help='write a Make-style dependency file for the generated header')
 parser.add_argument('gattfile', metavar='gattfile', type=str,
         help='gatt file to be compiled')
 parser.add_argument('hfile', metavar='hfile', type=str,
@@ -1128,8 +1145,12 @@ if args.I != None:
 include_paths.extend(default_includes)
 
 try:
+    dependencies.append(os.path.abspath(sys.argv[0]))
+    dependencies.append(os.path.abspath(args.gattfile))
+
     # read defines from bluetooth_gatt.h
     gen_path = getFile( 'bluetooth_gatt.h' )
+    dependencies.append(os.path.abspath(gen_path))
     bluetooth_gatt = read_defines(gen_path)
 
     filename = args.hfile
@@ -1162,6 +1183,9 @@ try:
         fout.write(line.replace('THE-DATABASE-HASH', db_hash_string))
     fout.close()
     ftemp.close()
+
+    if args.depfile:
+        write_depfile(args.depfile, filename, dependencies)
 
     verbose_print('Created %s' % filename)
 

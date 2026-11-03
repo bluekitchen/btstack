@@ -79,6 +79,8 @@ endfunction()
 #       DEPENDS ${service_gatt_files})
 #
 # DEPENDS is optional and is intended for imported .gatt service definitions.
+# The generator itself is always a dependency, so changes to compile_gatt.py
+# regenerate every affected header.
 # BTSTACK_ROOT must be set by the calling project.
 function(btstack_target_gatt target gatt_file)
     cmake_parse_arguments(ARG "" "" "DEPENDS" ${ARGN})
@@ -94,7 +96,7 @@ function(btstack_target_gatt target gatt_file)
 
     add_custom_command(
         OUTPUT "${output_header}"
-        DEPENDS "${gatt_file}" ${ARG_DEPENDS}
+        DEPENDS "${gatt_file}" "${BTSTACK_ROOT}/tool/compile_gatt.py" ${ARG_DEPENDS}
         COMMAND "${Python3_EXECUTABLE}"
         ARGS "${BTSTACK_ROOT}/tool/compile_gatt.py" "${gatt_file}" "${output_header}"
     )
