@@ -252,6 +252,16 @@ CLASSIC_CONVENIENCE_GROUPS = {
     ],
 }
 
+# Leaf groups added while incrementally splitting the broad core group. Their
+# sources intentionally remain in core for existing ports; collection helpers
+# remove duplicates when a resolver selects both groups.
+CORE_LEAF_SOURCES = {
+    "l2cap": [
+        "src/l2cap.c",
+        "src/l2cap_signaling.c",
+    ],
+}
+
 
 def matches(path: str, pattern: str) -> bool:
     """Match a path with * limited to one path component."""
@@ -298,6 +308,12 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
         for relative in sources:
             if not (root / relative).is_file():
                 raise RuntimeError(f"Explicit source group '{group}' references missing file: {relative}")
+        groups[group] = sources
+
+    for group, sources in CORE_LEAF_SOURCES.items():
+        for relative in sources:
+            if not (root / relative).is_file():
+                raise RuntimeError(f"Core leaf group '{group}' references missing file: {relative}")
         groups[group] = sources
 
     gatt_service_groups = sorted(group for group in groups if group.startswith("gatt-service-"))
