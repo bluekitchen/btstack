@@ -112,6 +112,65 @@ EXPLICIT_GROUP_SOURCES = {
         "platform/lwip/port/sys_arch.c",
         "platform/lwip/bnep_lwip.c",
     ],
+    "third-party-bluedroid-sbc-decoder": [
+        "3rd-party/bluedroid/decoder/srce/alloc.c",
+        "3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c",
+        "3rd-party/bluedroid/decoder/srce/bitalloc.c",
+        "3rd-party/bluedroid/decoder/srce/bitstream-decode.c",
+        "3rd-party/bluedroid/decoder/srce/decoder-oina.c",
+        "3rd-party/bluedroid/decoder/srce/decoder-private.c",
+        "3rd-party/bluedroid/decoder/srce/decoder-sbc.c",
+        "3rd-party/bluedroid/decoder/srce/dequant.c",
+        "3rd-party/bluedroid/decoder/srce/framing-sbc.c",
+        "3rd-party/bluedroid/decoder/srce/framing.c",
+        "3rd-party/bluedroid/decoder/srce/oi_codec_version.c",
+        "3rd-party/bluedroid/decoder/srce/synthesis-8-generated.c",
+        "3rd-party/bluedroid/decoder/srce/synthesis-dct8.c",
+        "3rd-party/bluedroid/decoder/srce/synthesis-sbc.c",
+    ],
+    "third-party-bluedroid-sbc-encoder": [
+        "3rd-party/bluedroid/encoder/srce/sbc_analysis.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_dct.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_mono.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_ste.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_enc_coeffs.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_encoder.c",
+        "3rd-party/bluedroid/encoder/srce/sbc_packing.c",
+    ],
+    "third-party-lc3-google": [
+        "3rd-party/lc3-google/src/attdet.c",
+        "3rd-party/lc3-google/src/bits.c",
+        "3rd-party/lc3-google/src/bwdet.c",
+        "3rd-party/lc3-google/src/energy.c",
+        "3rd-party/lc3-google/src/lc3.c",
+        "3rd-party/lc3-google/src/ltpf.c",
+        "3rd-party/lc3-google/src/mdct.c",
+        "3rd-party/lc3-google/src/plc.c",
+        "3rd-party/lc3-google/src/sns.c",
+        "3rd-party/lc3-google/src/spec.c",
+        "3rd-party/lc3-google/src/tables.c",
+        "3rd-party/lc3-google/src/tns.c",
+    ],
+    "third-party-micro-ecc": [
+        "3rd-party/micro-ecc/uECC.c",
+    ],
+    "third-party-hxcmod": [
+        "3rd-party/hxcmod-player/hxcmod.c",
+        "3rd-party/hxcmod-player/mods/mod.c",
+    ],
+    "third-party-md5": [
+        "3rd-party/md5/md5.c",
+    ],
+    "third-party-rijndael": [
+        "3rd-party/rijndael/rijndael.c",
+    ],
+    "third-party-yxml": [
+        "3rd-party/yxml/yxml.c",
+    ],
+    "third-party-qr-code-generator": [
+        "3rd-party/qr-code-generator/qrcodegen.c",
+    ],
 }
 
 LWIP_GROUPS = [
@@ -121,6 +180,11 @@ LWIP_GROUPS = [
     "lwip-httpd",
     "lwip-dhcp-server",
     "lwip-platform",
+]
+
+BLUEDROID_SBC_GROUPS = [
+    "third-party-bluedroid-sbc-decoder",
+    "third-party-bluedroid-sbc-encoder",
 ]
 
 # Most GATT service roles are clear from their filenames. These two are named
@@ -223,6 +287,7 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
         groups[aggregate] = sources_for(leaf_groups)
 
     groups["lwip"] = sources_for(LWIP_GROUPS)
+    groups["third-party-bluedroid-sbc"] = sources_for(BLUEDROID_SBC_GROUPS)
 
     return groups, unclassified
 

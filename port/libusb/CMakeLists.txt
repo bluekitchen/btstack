@@ -60,14 +60,18 @@ btstack_collect_sources(SOURCES_PLATFORM
 # Example Util
 file(GLOB SOURCES_EXAMPLE_UTIL "../../example/*_demo_util*.c")
 
-# 3rd-Party
-file(GLOB SOURCES_BLUEDROID "../../3rd-party/bluedroid/encoder/srce/*.c" "../../3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
-file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_QRCODEGEN "../../3rd-party/qr-code-generator/qrcodegen.c")
-file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
+btstack_collect_sources(SOURCES_THIRD_PARTY
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS
+    third-party-bluedroid-sbc
+    third-party-hxcmod
+    third-party-lc3-google
+    third-party-md5
+    third-party-micro-ecc
+    third-party-qr-code-generator
+    third-party-rijndael
+    third-party-yxml
+)
 
 # Port specific
 file(GLOB SOURCES_PORT      "../../port/libusb/*.c")
@@ -79,9 +83,6 @@ btstack_collect_sources(SOURCES_CHIPSETS
     chipset-zephyr
 )
 
-# LC3
-file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
-
 # lwIP is linked only by the examples that use it below.
 btstack_collect_sources(SOURCES_LWIP
  ROOT "${BTSTACK_ROOT}"
@@ -89,18 +90,11 @@ btstack_collect_sources(SOURCES_LWIP
 )
 
 set(SOURCES
- ${SOURCES_MD5}
- ${SOURCES_YXML}
- ${SOURCES_BLUEDROID}
+ ${SOURCES_THIRD_PARTY}
  ${SOURCES_PLATFORM}
- ${SOURCES_RIJNDAEL}
  ${SOURCES_PORT}
- ${SOURCES_LC3_GOOGLE}
  ${SOURCES_BTSTACK}
  ${SOURCES_EXAMPLE_UTIL}
- ${SOURCES_UECC}
- ${SOURCES_HXCMOD}
- ${SOURCES_QRCODEGEN}
  ${SOURCES_CHIPSETS}
 )
 list(SORT SOURCES)
