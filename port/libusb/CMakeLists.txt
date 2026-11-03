@@ -101,6 +101,73 @@ endif()
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 
+# gatt_counter is the first per-example source-scope pilot. The port's active
+# configuration still enables Classic, while btstack.h requires some optional
+# profile headers. The required third-party header providers are explicit
+# below; profile implementation groups are not pulled in speculatively.
+btstack_resolve_example(gatt_counter
+    BTSTACK_GATT_COUNTER_GROUPS
+    BTSTACK_GATT_COUNTER_CONFIGURATION_REQUIREMENTS
+)
+set(BTSTACK_GATT_COUNTER_PORT_GROUPS
+    le-device-db-tlv
+    link-key-db-tlv
+    tlv-none
+    platform-posix
+    platform-libusb-h2
+    chipset-realtek
+    chipset-zephyr
+    third-party-micro-ecc
+    third-party-rijndael
+)
+# btstack.h currently exposes these optional profile headers. They provide
+# include directories for this target, but gatt_counter does not link their
+# implementations.
+set(BTSTACK_GATT_COUNTER_HEADER_GROUPS
+    third-party-bluedroid-sbc
+    third-party-hxcmod
+    third-party-yxml
+)
+set(BTSTACK_GATT_COUNTER_LIBRARY_GROUPS
+    ${BTSTACK_GATT_COUNTER_GROUPS}
+    ${BTSTACK_GATT_COUNTER_PORT_GROUPS}
+)
+btstack_collect_sources(SOURCES_BTSTACK_GATT_COUNTER
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS ${BTSTACK_GATT_COUNTER_LIBRARY_GROUPS}
+)
+btstack_collect_include_directories(BTSTACK_GATT_COUNTER_INCLUDE_DIRECTORIES
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS ${BTSTACK_GATT_COUNTER_LIBRARY_GROUPS} ${BTSTACK_GATT_COUNTER_HEADER_GROUPS}
+)
+
+add_library(btstack_gatt_counter STATIC
+    ${SOURCES_PORT}
+    ${SOURCES_BTSTACK_GATT_COUNTER}
+)
+btstack_target_warnings(btstack_gatt_counter STRICT)
+target_include_directories(btstack_gatt_counter
+ PUBLIC
+    "${BTSTACK_ROOT}/src"
+    ${LIBUSB_INCLUDE_DIRS}
+ PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${BTSTACK_ROOT}/platform/embedded"
+    ${BTSTACK_GATT_COUNTER_INCLUDE_DIRECTORIES}
+)
+target_link_directories(btstack_gatt_counter PUBLIC ${LIBUSB_LIBRARY_DIRS})
+target_link_libraries(btstack_gatt_counter
+ PUBLIC
+    ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    m
+)
+if(PORTAUDIO_FOUND)
+    target_include_directories(btstack_gatt_counter PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+    target_link_directories(btstack_gatt_counter PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+    target_link_libraries(btstack_gatt_counter PUBLIC ${PORTAUDIO_LIBRARIES})
+endif()
+
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
     # Get the example sources from its declaration.
@@ -132,6 +199,11 @@ foreach(EXAMPLE ${EXAMPLES})
     # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
 
-    # link target with btstack library
-    target_link_libraries(${EXAMPLE} btstack)
+    # gatt_counter is built from the resolved source closure above. Other
+    # examples continue to use the compatibility all-sources library.
+    if(EXAMPLE STREQUAL "gatt_counter")
+        target_link_libraries(${EXAMPLE} btstack_gatt_counter)
+    else()
+        target_link_libraries(${EXAMPLE} btstack)
+    endif()
 endforeach(EXAMPLE)
