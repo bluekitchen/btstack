@@ -61,8 +61,8 @@
 
 #include <getopt.h>
 
-#include "btstack.h"
 #include "btstack_client.h"
+#include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_device_name_db.h"
 #include "btstack_event.h"
@@ -86,6 +86,8 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"
+#include "classic/sdp_util.h"
+#include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"

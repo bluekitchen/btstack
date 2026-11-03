@@ -45,12 +45,12 @@
  *  BTstack client API
  */
 
-#include "btstack.h"
-
+#include "btstack_client.h"
+#include "btstack_defines.h"
+#include "hci.h"
+#include "hci_cmd.h"
 #include "l2cap.h"
 #include "socket_connection.h"
-#include "btstack_run_loop.h"
-#include "btstack_client.h"
  
 #include <string.h>
 #include <unistd.h>

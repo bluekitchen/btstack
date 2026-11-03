@@ -49,11 +49,13 @@
 #include "socket_connection.h"
 
 #include "hci.h"
+#include "btstack_defines.h"
 #include "btstack_debug.h"
+#include "btstack_linked_list.h"
+#include "btstack_run_loop.h"
 
 #include "btstack_config.h"
 
-#include "btstack.h"
 #include "btstack_client.h"
  
 #include <errno.h>
