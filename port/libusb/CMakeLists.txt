@@ -21,6 +21,7 @@ set(BTSTACK_LIBRARY_GROUPS
     le-audio
     le-device-db-tlv
     link-key-db-tlv
+    lwip
     mesh
     tlv-none
     platform-posix
@@ -48,16 +49,6 @@ btstack_collect_include_directories(BTSTACK_INCLUDE_DIRECTORIES
 # Port specific
 set(SOURCES_PORT
     main.c
-)
-
-# lwIP is linked only by the examples that use it below.
-btstack_collect_sources(SOURCES_LWIP
- ROOT "${BTSTACK_ROOT}"
- GROUPS lwip
-)
-btstack_collect_include_directories(LWIP_INCLUDE_DIRECTORIES
- ROOT "${BTSTACK_ROOT}"
- GROUPS lwip
 )
 
 set(SOURCES
@@ -110,10 +101,6 @@ target_link_libraries(btstack m)
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 
-# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
-# workaround: add lwip sources only to lwip_examples
-set (LWIP_EXAMPLES pan_lwip_http_server)
-
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
     # Get the example sources from its declaration.
@@ -122,11 +109,6 @@ foreach(EXAMPLE ${EXAMPLES})
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
     endforeach()
 
-    # add lwip sources for lwip examples
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-    endif()
-
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
     target_include_directories(${EXAMPLE}
      PRIVATE
@@ -134,10 +116,6 @@ foreach(EXAMPLE ${EXAMPLES})
         "${BTSTACK_ROOT}/platform/embedded"
         ${BTSTACK_INCLUDE_DIRECTORIES}
     )
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        target_include_directories(${EXAMPLE} PRIVATE ${LWIP_INCLUDE_DIRECTORIES})
-    endif()
-
     # Compile GATT DB and add as dependency if needed
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
     if (EXAMPLE_GATT_DB)
