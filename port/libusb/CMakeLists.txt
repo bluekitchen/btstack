@@ -114,9 +114,6 @@ set(EXAMPLES ${btstack_declared_examples})
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
-# .gatt files in src
-file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
-
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
     # Get the example sources from its declaration.
@@ -145,8 +142,7 @@ foreach(EXAMPLE ${EXAMPLES})
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
     if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}"
-            DEPENDS ${GATT_FILES})
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}")
     else()
         message("example ${EXAMPLE}")
     endif()

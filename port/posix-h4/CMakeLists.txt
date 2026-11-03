@@ -129,8 +129,6 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
-file(GLOB GATT_FILES "${BTSTACK_ROOT}/src/*/gatt-service/*.gatt")
-
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
     # Get the example sources from its declaration.
@@ -152,8 +150,7 @@ foreach(EXAMPLE ${EXAMPLES})
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
     if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}"
-            DEPENDS ${GATT_FILES})
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}")
     else()
         message("example ${EXAMPLE}")
     endif()
