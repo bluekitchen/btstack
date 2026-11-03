@@ -12,6 +12,9 @@ include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 set(btstack_group_dependencies_l2cap
     core
 )
+set(btstack_group_dependencies_ble
+    l2cap
+)
 set(btstack_group_dependencies_classic_rfcomm
     l2cap
 )
@@ -238,14 +241,14 @@ endfunction()
 # Register the declarative requirements for one BTstack example.
 #
 # The declaration does not configure features or create a target. Port build
-# configuration selects the source closure; a future resolver will use this
-# metadata to validate whether the configured port can build the example.
+# configuration selects the source closure and validates configuration
+# requirements before it creates a target.
 #
 # Usage:
 #   btstack_declare_example(gatt_counter
 #       SOURCES gatt_counter.c
 #       GATT_DB gatt_counter.gatt
-#       NEEDS le-peripheral)
+#       NEEDS ble ENABLE_LE_PERIPHERAL)
 function(btstack_declare_example example)
     cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS" ${ARGN})
 
@@ -263,4 +266,43 @@ function(btstack_declare_example example)
     set("btstack_example_${example}_sources" "${ARG_SOURCES}" PARENT_SCOPE)
     set("btstack_example_${example}_gatt_db" "${ARG_GATT_DB}" PARENT_SCOPE)
     set("btstack_example_${example}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
+endfunction()
+
+# Resolve the source-group and configuration requirements declared by one
+# example. NEEDS entries that name catalog groups are expanded through the
+# source-group dependency graph. ENABLE_* entries are returned unchanged for a
+# port to validate against its active configuration; this helper deliberately
+# does not configure those options.
+#
+# Usage:
+#   btstack_resolve_example(gatt_counter BTSTACK_GROUPS BTSTACK_CONFIG_NEEDS)
+function(btstack_resolve_example example groups_output_variable configuration_output_variable)
+    list(FIND btstack_declared_examples "${example}" example_index)
+    if(example_index EQUAL -1)
+        message(FATAL_ERROR "BTstack example '${example}' has not been declared")
+    endif()
+
+    set(source_groups)
+    set(configuration_requirements)
+    foreach(requirement IN LISTS btstack_example_${example}_needs)
+        list(FIND btstack_source_groups "${requirement}" group_index)
+        if(NOT group_index EQUAL -1)
+            list(APPEND source_groups "${requirement}")
+        elseif(requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+            list(APPEND configuration_requirements "${requirement}")
+        else()
+            message(FATAL_ERROR
+                "BTstack example '${example}' has unknown requirement '${requirement}'. "
+                "Requirements must be source groups or ENABLE_* configuration symbols")
+        endif()
+    endforeach()
+
+    if(source_groups)
+        btstack_resolve_groups(resolved_groups GROUPS ${source_groups})
+    else()
+        set(resolved_groups)
+    endif()
+
+    set(${groups_output_variable} "${resolved_groups}" PARENT_SCOPE)
+    set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
 endfunction()

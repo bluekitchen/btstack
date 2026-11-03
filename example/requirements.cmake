@@ -97,7 +97,7 @@ endforeach()
 btstack_declare_example(gatt_counter
     SOURCES gatt_counter.c
     GATT_DB gatt_counter.gatt
-    NEEDS le-peripheral
+    NEEDS ble ENABLE_LE_PERIPHERAL
 )
 
 # Remaining LE examples with an application-specific GATT database.
