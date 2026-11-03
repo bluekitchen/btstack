@@ -64,13 +64,18 @@ btstack_collect_sources(SOURCES_BTSTACK
     transport-h4
 )
 file(GLOB SOURCES_EXAMPLE_UTIL "${BTSTACK_ROOT}/example/*_demo_util*.c")
-file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
-file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_QRCODEGEN "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
+btstack_collect_sources(SOURCES_THIRD_PARTY
+ ROOT "${BTSTACK_ROOT}"
+ GROUPS
+    third-party-bluedroid-sbc
+    third-party-hxcmod
+    third-party-lc3-google
+    third-party-md5
+    third-party-micro-ecc
+    third-party-qr-code-generator
+    third-party-rijndael
+    third-party-yxml
+)
 btstack_collect_sources(SOURCES_PLATFORM
  ROOT "${BTSTACK_ROOT}"
  GROUPS platform-posix
@@ -86,7 +91,6 @@ btstack_collect_sources(SOURCES_CHIPSETS
     chipset-tc3566x
     chipset-zephyr
 )
-file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
 # lwIP is linked only by the examples that use it below.
@@ -96,19 +100,12 @@ btstack_collect_sources(SOURCES_LWIP
 )
 
 set(SOURCES
-  ${SOURCES_BLUEDROID}
-  ${SOURCES_HXCMOD}
-  ${SOURCES_LC3_GOOGLE}
-  ${SOURCES_MD5}
   ${SOURCES_PORT}
-  ${SOURCES_RIJNDAEL}
-  ${SOURCES_UECC}
   ${SOURCES_PLATFORM}
   ${SOURCES_BTSTACK}
   ${SOURCES_EXAMPLE_UTIL}
-  ${SOURCES_YXML}
+  ${SOURCES_THIRD_PARTY}
   ${SOURCES_CHIPSETS}
-  ${SOURCES_QRCODEGEN}
 )
 list(SORT SOURCES)
 

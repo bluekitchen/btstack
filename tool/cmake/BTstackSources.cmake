@@ -123,6 +123,16 @@ set(btstack_source_groups
     platform-posix
     platform-windows
     platform-winusb-h2
+    third-party-bluedroid-sbc
+    third-party-bluedroid-sbc-decoder
+    third-party-bluedroid-sbc-encoder
+    third-party-hxcmod
+    third-party-lc3-google
+    third-party-md5
+    third-party-micro-ecc
+    third-party-qr-code-generator
+    third-party-rijndael
+    third-party-yxml
     tlv-none
     transport-em9304-spi
     transport-h4
@@ -834,6 +844,99 @@ set(btstack_sources_platform_windows
 
 set(btstack_sources_platform_winusb_h2
     platform/windows/hci_transport_h2_winusb.c
+)
+
+set(btstack_sources_third_party_bluedroid_sbc
+    3rd-party/bluedroid/decoder/srce/alloc.c
+    3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c
+    3rd-party/bluedroid/decoder/srce/bitalloc.c
+    3rd-party/bluedroid/decoder/srce/bitstream-decode.c
+    3rd-party/bluedroid/decoder/srce/decoder-oina.c
+    3rd-party/bluedroid/decoder/srce/decoder-private.c
+    3rd-party/bluedroid/decoder/srce/decoder-sbc.c
+    3rd-party/bluedroid/decoder/srce/dequant.c
+    3rd-party/bluedroid/decoder/srce/framing-sbc.c
+    3rd-party/bluedroid/decoder/srce/framing.c
+    3rd-party/bluedroid/decoder/srce/oi_codec_version.c
+    3rd-party/bluedroid/decoder/srce/synthesis-8-generated.c
+    3rd-party/bluedroid/decoder/srce/synthesis-dct8.c
+    3rd-party/bluedroid/decoder/srce/synthesis-sbc.c
+    3rd-party/bluedroid/encoder/srce/sbc_analysis.c
+    3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c
+    3rd-party/bluedroid/encoder/srce/sbc_dct.c
+    3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_mono.c
+    3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_ste.c
+    3rd-party/bluedroid/encoder/srce/sbc_enc_coeffs.c
+    3rd-party/bluedroid/encoder/srce/sbc_encoder.c
+    3rd-party/bluedroid/encoder/srce/sbc_packing.c
+)
+
+set(btstack_sources_third_party_bluedroid_sbc_decoder
+    3rd-party/bluedroid/decoder/srce/alloc.c
+    3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c
+    3rd-party/bluedroid/decoder/srce/bitalloc.c
+    3rd-party/bluedroid/decoder/srce/bitstream-decode.c
+    3rd-party/bluedroid/decoder/srce/decoder-oina.c
+    3rd-party/bluedroid/decoder/srce/decoder-private.c
+    3rd-party/bluedroid/decoder/srce/decoder-sbc.c
+    3rd-party/bluedroid/decoder/srce/dequant.c
+    3rd-party/bluedroid/decoder/srce/framing-sbc.c
+    3rd-party/bluedroid/decoder/srce/framing.c
+    3rd-party/bluedroid/decoder/srce/oi_codec_version.c
+    3rd-party/bluedroid/decoder/srce/synthesis-8-generated.c
+    3rd-party/bluedroid/decoder/srce/synthesis-dct8.c
+    3rd-party/bluedroid/decoder/srce/synthesis-sbc.c
+)
+
+set(btstack_sources_third_party_bluedroid_sbc_encoder
+    3rd-party/bluedroid/encoder/srce/sbc_analysis.c
+    3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c
+    3rd-party/bluedroid/encoder/srce/sbc_dct.c
+    3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_mono.c
+    3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_ste.c
+    3rd-party/bluedroid/encoder/srce/sbc_enc_coeffs.c
+    3rd-party/bluedroid/encoder/srce/sbc_encoder.c
+    3rd-party/bluedroid/encoder/srce/sbc_packing.c
+)
+
+set(btstack_sources_third_party_hxcmod
+    3rd-party/hxcmod-player/hxcmod.c
+    3rd-party/hxcmod-player/mods/mod.c
+)
+
+set(btstack_sources_third_party_lc3_google
+    3rd-party/lc3-google/src/attdet.c
+    3rd-party/lc3-google/src/bits.c
+    3rd-party/lc3-google/src/bwdet.c
+    3rd-party/lc3-google/src/energy.c
+    3rd-party/lc3-google/src/lc3.c
+    3rd-party/lc3-google/src/ltpf.c
+    3rd-party/lc3-google/src/mdct.c
+    3rd-party/lc3-google/src/plc.c
+    3rd-party/lc3-google/src/sns.c
+    3rd-party/lc3-google/src/spec.c
+    3rd-party/lc3-google/src/tables.c
+    3rd-party/lc3-google/src/tns.c
+)
+
+set(btstack_sources_third_party_md5
+    3rd-party/md5/md5.c
+)
+
+set(btstack_sources_third_party_micro_ecc
+    3rd-party/micro-ecc/uECC.c
+)
+
+set(btstack_sources_third_party_qr_code_generator
+    3rd-party/qr-code-generator/qrcodegen.c
+)
+
+set(btstack_sources_third_party_rijndael
+    3rd-party/rijndael/rijndael.c
+)
+
+set(btstack_sources_third_party_yxml
+    3rd-party/yxml/yxml.c
 )
 
 set(btstack_sources_tlv_none
