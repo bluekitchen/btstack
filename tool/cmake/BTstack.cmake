@@ -93,12 +93,15 @@ function(btstack_target_gatt target gatt_file)
 
     get_filename_component(gatt_file_name "${gatt_file}" NAME_WLE)
     set(output_header "${CMAKE_CURRENT_BINARY_DIR}/${gatt_file_name}.h")
+    set(depfile "${output_header}.d")
 
     add_custom_command(
         OUTPUT "${output_header}"
+        DEPFILE "${depfile}"
         DEPENDS "${gatt_file}" "${BTSTACK_ROOT}/tool/compile_gatt.py" ${ARG_DEPENDS}
         COMMAND "${Python3_EXECUTABLE}"
-        ARGS "${BTSTACK_ROOT}/tool/compile_gatt.py" "${gatt_file}" "${output_header}"
+        ARGS "${BTSTACK_ROOT}/tool/compile_gatt.py" --depfile "${depfile}"
+             "${gatt_file}" "${output_header}"
     )
 
     add_custom_target("MAKE_${gatt_file_name}" ALL DEPENDS "${output_header}")
