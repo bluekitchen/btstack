@@ -45,18 +45,18 @@ btstack_collect_include_directories(BTSTACK_INCLUDE_DIRECTORIES
  GROUPS ${BTSTACK_LIBRARY_GROUPS}
 )
 
-# Port specific
+# Port specific files
 set(SOURCES_PORT
     main.c
 )
 
+# Complete list of sources
 set(SOURCES
  ${SOURCES_PORT}
  ${SOURCES_BTSTACK}
 )
-list(SORT SOURCES)
 
-# create static lib
+# create static 'btstack' lib
 add_library(btstack STATIC ${SOURCES})
 btstack_target_warnings(btstack STRICT)
 target_include_directories(btstack
@@ -68,12 +68,19 @@ target_include_directories(btstack
     ${BTSTACK_INCLUDE_DIRECTORIES}
 )
 
-# pkgconfig required to link libusb
-find_package(PkgConfig REQUIRED)
+# Get libraries needed for this port
 
+find_package(PkgConfig REQUIRED)
 # libusb (including the temporary macOS workaround)
 include(${CMAKE_CURRENT_LIST_DIR}/libusb.cmake)
 btstack_configure_libusb(btstack)
+
+# pthread
+find_package(Threads)
+target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
+
+# libm
+target_link_libraries(btstack m)
 
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
@@ -84,13 +91,6 @@ if(PORTAUDIO_FOUND)
     target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
     add_compile_definitions(HAVE_PORTAUDIO)
 endif()
-
-# pthread
-find_package(Threads)
-target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
-
-# libm
-target_link_libraries(btstack m)
 
 
 # Get the declared examples. Feature-based filtering will be provided by the
@@ -106,14 +106,18 @@ foreach(EXAMPLE ${EXAMPLES})
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
     endforeach()
 
+    # define example target
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
+
+    # add includes
     target_include_directories(${EXAMPLE}
      PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
         "${BTSTACK_ROOT}/platform/embedded"
         ${BTSTACK_INCLUDE_DIRECTORIES}
     )
-    # Compile GATT DB and add as dependency if needed
+
+    # Compile GATT DB if needed
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
     if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
@@ -121,6 +125,10 @@ foreach(EXAMPLE ${EXAMPLES})
     else()
         message("example ${EXAMPLE}")
     endif()
+
+    # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
+
+    # link target with btstack library
     target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)
