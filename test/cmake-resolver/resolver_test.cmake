@@ -79,12 +79,18 @@ else()
     endif()
 
     btstack_resolve_example(gatt_counter gatt_counter_groups gatt_counter_configurations)
-    if(NOT "${gatt_counter_groups}" STREQUAL "core;l2cap;ble")
+    if(NOT "${gatt_counter_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-server")
         message(FATAL_ERROR "Unexpected gatt_counter source groups: ${gatt_counter_groups}")
     endif()
     if(NOT "${gatt_counter_configurations}" STREQUAL "ENABLE_LE_PERIPHERAL")
         message(FATAL_ERROR
             "Unexpected gatt_counter configuration requirements: ${gatt_counter_configurations}")
+    endif()
+
+    btstack_resolve_groups(gatt_service_client_groups GROUPS gatt-service-client)
+    if(NOT "${gatt_service_client_groups}" STREQUAL "core;l2cap;att-dispatch;ble;gatt-client;gatt-service-client")
+        message(FATAL_ERROR
+            "Unexpected gatt-service-client source groups: ${gatt_service_client_groups}")
     endif()
 
     btstack_resolve_example_for_port(test-audio a2dp_source_demo
