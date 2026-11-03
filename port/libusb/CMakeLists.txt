@@ -110,14 +110,6 @@ endif()
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 
-# gatt_counter is the first per-example source-scope pilot. The port's active
-# configuration still enables Classic, while btstack.h requires some optional
-# profile headers. The required third-party header providers are explicit
-# below; profile implementation groups are not pulled in speculatively.
-btstack_resolve_example_for_port(libusb gatt_counter
-    BTSTACK_GATT_COUNTER_GROUPS
-    BTSTACK_GATT_COUNTER_CONFIGURATION_REQUIREMENTS
-)
 # Support selected by the libusb port's common main.c. All examples need these
 # groups independently of their own protocol/profile requirements.
 set(BTSTACK_LIBUSB_BASE_GROUPS
@@ -139,45 +131,63 @@ if(PORTAUDIO_FOUND)
     # main.c configures the PortAudio instances whenever HAVE_PORTAUDIO is set.
     list(APPEND BTSTACK_LIBUSB_BASE_GROUPS platform-posix-audio-portaudio)
 endif()
-set(BTSTACK_GATT_COUNTER_LIBRARY_GROUPS
-    ${BTSTACK_GATT_COUNTER_GROUPS}
-    ${BTSTACK_LIBUSB_BASE_GROUPS}
-)
-btstack_collect_sources(SOURCES_BTSTACK_GATT_COUNTER
- ROOT "${BTSTACK_ROOT}"
- GROUPS ${BTSTACK_GATT_COUNTER_LIBRARY_GROUPS}
-)
-btstack_collect_include_directories(BTSTACK_GATT_COUNTER_INCLUDE_DIRECTORIES
- ROOT "${BTSTACK_ROOT}"
- GROUPS ${BTSTACK_GATT_COUNTER_LIBRARY_GROUPS}
-)
 
-add_library(btstack_gatt_counter STATIC
-    ${SOURCES_PORT}
-    ${SOURCES_BTSTACK_GATT_COUNTER}
+# The first scoped source-closure pilots. They share the port baseline above,
+# but their protocol implementation sources come only from their declared
+# requirements. This stays port-local until more ports establish a common API.
+set(BTSTACK_SCOPED_EXAMPLES
+    gatt_counter
+    gatt_heart_rate_client
 )
-btstack_target_warnings(btstack_gatt_counter STRICT)
-target_include_directories(btstack_gatt_counter
- PUBLIC
-    ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
-    ${LIBUSB_INCLUDE_DIRS}
- PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${BTSTACK_ROOT}/platform/embedded"
-    ${BTSTACK_GATT_COUNTER_INCLUDE_DIRECTORIES}
-)
-target_link_directories(btstack_gatt_counter PUBLIC ${LIBUSB_LIBRARY_DIRS})
-target_link_libraries(btstack_gatt_counter
- PUBLIC
-    ${LIBUSB_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
-    m
-)
-if(PORTAUDIO_FOUND)
-    target_include_directories(btstack_gatt_counter PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-    target_link_directories(btstack_gatt_counter PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-    target_link_libraries(btstack_gatt_counter PUBLIC ${PORTAUDIO_LIBRARIES})
-endif()
+function(btstack_add_libusb_scoped_library example)
+    btstack_resolve_example_for_port(libusb ${example}
+        example_groups
+        example_configuration_requirements
+    )
+    set(library_groups
+        ${example_groups}
+        ${BTSTACK_LIBUSB_BASE_GROUPS}
+    )
+    btstack_collect_sources(example_sources
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS ${library_groups}
+    )
+    btstack_collect_include_directories(example_include_directories
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS ${library_groups}
+    )
+
+    add_library(btstack_${example} STATIC
+        ${SOURCES_PORT}
+        ${example_sources}
+    )
+    btstack_target_warnings(btstack_${example} STRICT)
+    target_include_directories(btstack_${example}
+        PUBLIC
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            ${LIBUSB_INCLUDE_DIRS}
+        PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+            "${BTSTACK_ROOT}/platform/embedded"
+            ${example_include_directories}
+    )
+    target_link_directories(btstack_${example} PUBLIC ${LIBUSB_LIBRARY_DIRS})
+    target_link_libraries(btstack_${example}
+        PUBLIC
+            ${LIBUSB_LIBRARIES}
+            ${CMAKE_THREAD_LIBS_INIT}
+            m
+    )
+    if(PORTAUDIO_FOUND)
+        target_include_directories(btstack_${example} PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+        target_link_directories(btstack_${example} PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+        target_link_libraries(btstack_${example} PUBLIC ${PORTAUDIO_LIBRARIES})
+    endif()
+endfunction()
+
+foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
+    btstack_add_libusb_scoped_library(${example})
+endforeach()
 
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
@@ -210,10 +220,10 @@ foreach(EXAMPLE ${EXAMPLES})
     # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
 
-    # gatt_counter is built from the resolved source closure above. Other
-    # examples continue to use the compatibility all-sources library.
-    if(EXAMPLE STREQUAL "gatt_counter")
-        target_link_libraries(${EXAMPLE} btstack_gatt_counter)
+    # Scoped pilots use their resolved source closures. Other examples continue
+    # to use the compatibility all-sources library.
+    if(EXAMPLE IN_LIST BTSTACK_SCOPED_EXAMPLES)
+        target_link_libraries(${EXAMPLE} btstack_${EXAMPLE})
     else()
         target_link_libraries(${EXAMPLE} btstack)
     endif()

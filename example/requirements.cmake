@@ -84,7 +84,6 @@ endforeach()
 # LE examples without an application-specific GATT database.
 foreach(example IN ITEMS
     gap_le_advertisements
-    gatt_heart_rate_client
     hog_boot_host_demo
     le_credit_based_flow_control_mode_client
     le_mitm
@@ -95,6 +94,11 @@ foreach(example IN ITEMS
         NEEDS ble
     )
 endforeach()
+
+btstack_declare_example(gatt_heart_rate_client
+    SOURCES gatt_heart_rate_client.c
+    NEEDS gatt-client
+)
 
 # gatt_counter's normal configuration is a LE peripheral. Its optional
 # ENABLE_GATT_OVER_CLASSIC code path is intentionally not represented here yet.
