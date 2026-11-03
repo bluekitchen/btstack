@@ -48,7 +48,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_company_id.h"
+#include "btstack_event.h"
+#include "btstack_run_loop.h"
+#include "btstack_util.h"
+#include "hci.h"
+#include "hci_event.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static bd_addr_t cmdline_addr;
