@@ -265,7 +265,7 @@ btstack_declare_example(le_audio_unicast_headset_lite
     NEEDS le-audio
 )
 
-# Dual-mode examples not already declared above.
+# Dual-mode examples compose the GATT server with the SPP server profile.
 foreach(example IN ITEMS
     spp_and_gatt_counter
     spp_and_gatt_streamer
@@ -273,6 +273,6 @@ foreach(example IN ITEMS
     btstack_declare_example(${example}
         SOURCES ${example}.c
         GATT_DB ${example}.gatt
-        NEEDS ble classic
+        NEEDS gatt-server classic-spp-server
     )
 endforeach()

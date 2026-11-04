@@ -97,6 +97,11 @@ else()
         message(FATAL_ERROR "Unexpected spp_streamer_client source groups: ${spp_streamer_client_groups}")
     endif()
 
+    btstack_resolve_example(spp_and_gatt_counter spp_and_gatt_counter_groups spp_and_gatt_counter_configurations)
+    if(NOT "${spp_and_gatt_counter_groups}" STREQUAL "core;l2cap;classic-sdp-util;att-db;att-dispatch;ble;classic-rfcomm;classic-sdp-server;gatt-server;classic-spp-server")
+        message(FATAL_ERROR "Unexpected spp_and_gatt_counter source groups: ${spp_and_gatt_counter_groups}")
+    endif()
+
     btstack_resolve_example(gatt_counter gatt_counter_groups gatt_counter_configurations)
     if(NOT "${gatt_counter_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-server")
         message(FATAL_ERROR "Unexpected gatt_counter source groups: ${gatt_counter_groups}")

@@ -165,6 +165,8 @@ set(BTSTACK_SCOPED_EXAMPLES
     sdp_general_query
     sdp_rfcomm_query
     spp_streamer_client
+    spp_and_gatt_counter
+    spp_and_gatt_streamer
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
