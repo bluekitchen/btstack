@@ -767,6 +767,7 @@ set(btstack_sources_classic_pbap_client
 )
 
 set(btstack_include_directories_classic_pbap_client
+    3rd-party/md5
     src
 )
 

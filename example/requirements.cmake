@@ -40,20 +40,11 @@ btstack_declare_example(audio_player
 
 # Classic-only examples. ublox_spp_le_counter is declared with the LE GATT
 # examples below because its default configuration is LE.
-foreach(example IN ITEMS
-    a2dp_sink_demo
-    avrcp_browsing_client
-    dut_mode_classic
-    gap_dedicated_bonding
-    gap_inquiry
-    gap_link_keys
-    pbap_client_demo
-)
-    btstack_declare_example(${example}
-        SOURCES ${example}.c
-        NEEDS classic
-    )
-endforeach()
+btstack_declare_example(a2dp_sink_demo SOURCES a2dp_sink_demo.c
+    NEEDS classic-a2dp-sink classic-avrcp-controller classic-avrcp-target
+          classic-avrcp-cover-art-client classic-btstack-sbc-bluedroid
+          classic-btstack-sbc-decoder-bluedroid classic-btstack-sbc-plc
+          third-party-bluedroid-sbc classic-sdp-server classic-device-id-server)
 
 btstack_declare_example(spp_counter
     SOURCES spp_counter.c
@@ -100,22 +91,29 @@ btstack_declare_example(hid_host_demo
     NEEDS classic-hid-host
 )
 
+foreach(example IN ITEMS dut_mode_classic gap_dedicated_bonding gap_inquiry gap_link_keys)
+    btstack_declare_example(${example} SOURCES ${example}.c NEEDS core)
+endforeach()
+
+btstack_declare_example(pbap_client_demo SOURCES pbap_client_demo.c NEEDS classic-pbap-client)
+btstack_declare_example(avrcp_browsing_client SOURCES avrcp_browsing_client.c
+    NEEDS classic-a2dp-sink classic-avrcp-browsing-controller
+          classic-avrcp-browsing-target classic-avrcp-media-item-iterator
+          classic-sdp-server)
+
+btstack_declare_example(hfp_ag_demo SOURCES hfp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-ag)
+btstack_declare_example(hfp_hf_demo SOURCES hfp_hf_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-hf)
+btstack_declare_example(hsp_ag_demo SOURCES hsp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-ag)
+btstack_declare_example(hsp_hs_demo SOURCES hsp_hs_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-hs)
+
 btstack_declare_example(a2dp_source_demo
     SOURCES a2dp_source_demo.c
-    NEEDS classic audio
+    NEEDS classic-a2dp-source classic-avrcp-controller classic-avrcp-target
+          classic-btstack-sbc-bluedroid classic-btstack-sbc-encoder-bluedroid
+          classic-btstack-sbc-plc third-party-bluedroid-sbc audio-demo third-party-hxcmod audio
+          classic-sdp-server classic-device-id-server
 )
 
-foreach(example IN ITEMS
-    hfp_ag_demo
-    hfp_hf_demo
-    hsp_ag_demo
-    hsp_hs_demo
-)
-    btstack_declare_example(${example}
-        SOURCES ${example}.c ${sco_demo_util_sources}
-        NEEDS classic
-    )
-endforeach()
 
 # LE examples without an application-specific GATT database.
 foreach(example IN ITEMS
