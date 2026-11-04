@@ -112,6 +112,13 @@ set(btstack_group_dependencies_classic_sdp_server
     l2cap
     classic-sdp-util
 )
+set(btstack_group_dependencies_classic_sdp_client
+    l2cap
+    classic-sdp-util
+)
+set(btstack_group_dependencies_classic_sdp_client_rfcomm
+    classic-sdp-client
+)
 # The SPP server group supplies the record builder used by an SPP server.
 # Its profile-level closure also selects the RFCOMM data channel and SDP
 # registration server required to expose that record.

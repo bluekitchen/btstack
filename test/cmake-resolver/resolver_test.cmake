@@ -87,6 +87,16 @@ else()
             "Unexpected spp_counter configuration requirements: ${spp_counter_configurations}")
     endif()
 
+    btstack_resolve_example(sdp_general_query sdp_general_query_groups sdp_general_query_configurations)
+    if(NOT "${sdp_general_query_groups}" STREQUAL "classic-sdp-util;core;l2cap;classic-sdp-client")
+        message(FATAL_ERROR "Unexpected sdp_general_query source groups: ${sdp_general_query_groups}")
+    endif()
+
+    btstack_resolve_example(spp_streamer_client spp_streamer_client_groups spp_streamer_client_configurations)
+    if(NOT "${spp_streamer_client_groups}" STREQUAL "core;classic-sdp-util;l2cap;classic-sdp-client;classic-rfcomm;classic-sdp-client-rfcomm")
+        message(FATAL_ERROR "Unexpected spp_streamer_client source groups: ${spp_streamer_client_groups}")
+    endif()
+
     btstack_resolve_example(gatt_counter gatt_counter_groups gatt_counter_configurations)
     if(NOT "${gatt_counter_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-server")
         message(FATAL_ERROR "Unexpected gatt_counter source groups: ${gatt_counter_groups}")

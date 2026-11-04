@@ -51,11 +51,6 @@ foreach(example IN ITEMS
     hid_keyboard_demo
     hid_mouse_demo
     pbap_client_demo
-    sdp_bnep_query
-    sdp_general_query
-    sdp_rfcomm_query
-    spp_streamer
-    spp_streamer_client
 )
     btstack_declare_example(${example}
         SOURCES ${example}.c
@@ -66,6 +61,31 @@ endforeach()
 btstack_declare_example(spp_counter
     SOURCES spp_counter.c
     NEEDS classic-spp-server
+)
+
+btstack_declare_example(spp_streamer
+    SOURCES spp_streamer.c
+    NEEDS classic-spp-server
+)
+
+foreach(example IN ITEMS
+    sdp_bnep_query
+    sdp_general_query
+)
+    btstack_declare_example(${example}
+        SOURCES ${example}.c
+        NEEDS classic-sdp-client
+    )
+endforeach()
+
+btstack_declare_example(sdp_rfcomm_query
+    SOURCES sdp_rfcomm_query.c
+    NEEDS classic-sdp-client-rfcomm
+)
+
+btstack_declare_example(spp_streamer_client
+    SOURCES spp_streamer_client.c
+    NEEDS classic-rfcomm classic-sdp-client-rfcomm
 )
 
 btstack_declare_example(a2dp_source_demo

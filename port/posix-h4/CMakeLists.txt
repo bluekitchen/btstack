@@ -201,6 +201,11 @@ set(BTSTACK_SCOPED_EXAMPLES
     sm_pairing_peripheral
     ublox_spp_le_counter
     spp_counter
+    spp_streamer
+    sdp_bnep_query
+    sdp_general_query
+    sdp_rfcomm_query
+    spp_streamer_client
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
