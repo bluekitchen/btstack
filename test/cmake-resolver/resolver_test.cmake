@@ -102,6 +102,16 @@ else()
         message(FATAL_ERROR "Unexpected spp_and_gatt_counter source groups: ${spp_and_gatt_counter_groups}")
     endif()
 
+    btstack_resolve_example(hid_keyboard_demo hid_keyboard_demo_groups hid_keyboard_demo_configurations)
+    if(NOT "${hid_keyboard_demo_groups}" STREQUAL "classic-sdp-util;core;classic-device-id-server;l2cap;classic-sdp-server;classic-hid-device")
+        message(FATAL_ERROR "Unexpected hid_keyboard_demo source groups: ${hid_keyboard_demo_groups}")
+    endif()
+
+    btstack_resolve_example(hid_host_demo hid_host_demo_groups hid_host_demo_configurations)
+    if(NOT "${hid_host_demo_groups}" STREQUAL "core;classic-sdp-util;l2cap;classic-sdp-client;classic-hid-host")
+        message(FATAL_ERROR "Unexpected hid_host_demo source groups: ${hid_host_demo_groups}")
+    endif()
+
     btstack_resolve_example(gatt_counter gatt_counter_groups gatt_counter_configurations)
     if(NOT "${gatt_counter_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-server")
         message(FATAL_ERROR "Unexpected gatt_counter source groups: ${gatt_counter_groups}")
