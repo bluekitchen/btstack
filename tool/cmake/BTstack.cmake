@@ -33,6 +33,12 @@ set(btstack_group_dependencies_gatt_client
 set(btstack_group_dependencies_gatt_service_client
     gatt-client
 )
+set(btstack_group_dependencies_gatt_service_hids_host
+    gatt-service-client
+)
+set(btstack_group_dependencies_gatt_service_battery_service_client
+    gatt-client
+)
 set(btstack_group_dependencies_classic_rfcomm
     l2cap
 )

@@ -138,6 +138,8 @@ endif()
 set(BTSTACK_SCOPED_EXAMPLES
     gatt_counter
     gatt_heart_rate_client
+    gatt_battery_query
+    hog_host_demo
 )
 function(btstack_add_libusb_scoped_library example)
     btstack_resolve_example_for_port(libusb ${example}
