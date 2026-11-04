@@ -11,7 +11,7 @@ The Makefile downloads the wilc3000_bt_firmware.bin firmware from the [GitHub at
 
 Just run any of the provided examples, e.g.
 
-$ ./le_counter
+$ ./gatt_counter
 
 At start, the firmware file is first uploaded to the ATWILC3000, before BTstack start up.
 

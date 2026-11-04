@@ -120,7 +120,7 @@ button while showing a countdown.
 
 On start, BTstack prints the path to the packet log and prints the information on the detected Buetooth Controller.
 
-	$ ./le_counter
+	$ ./gatt_counter
 	Packet Log: /tmp/hci_dump.pklg
 	BTstack counter 0001
 	BTstack up and running on 00:1A:7D:DA:71:13.

@@ -87,7 +87,7 @@ For regular use, it makes sense to add Python permanently to the Docker containe
 
 Copy one of the examples to the Rasperry Pi and just run them. BTstack will power cycle the Bluetooth Controller on models without hardware flowcontrol, i.e., Pi 3 A/B. With flowcontrol, e.g Pi Zero W and Pi 3 A+/B+, the firmware will only uploaded on first start. 
 
-	pi@raspberrypi:~ $ ./le_counter
+	pi@raspberrypi:~ $ ./gatt_counter
 	Packet Log: /tmp/hci_dump.pklg
 	Hardware UART without flowcontrol
 	Phase 1: Download firmware

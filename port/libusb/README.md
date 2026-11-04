@@ -114,7 +114,7 @@ BTstack's HCI USB transport will try to find a suitable Bluetooth module and use
 
 On start, BTstack will try to find a suitable Bluetooth module. It will also print the path to the packet log as well as the USB path.
 
-	$ ./le_counter
+	$ ./gatt_counter
 	Packet Log: /tmp/hci_dump.pklg
 	BTstack counter 0001
 	Packet Log: /tmp/hci_dump_6.pklg

@@ -36,7 +36,7 @@ always start the examples with the `-u /path/to/serialport` option.
 
 Just run any of the created binaries, e.g.
 
-    $ ./le_counter
+    $ ./gatt_counter
 
 The packet log will be written to /tmp/hci_dump.pklg
 
