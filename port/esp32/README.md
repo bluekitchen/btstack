@@ -1,5 +1,7 @@
 # BTstack Port for the Espressif ESP32 Platform
 
+This port integrates BTstack with Espressif's ESP-IDF on supported ESP32 targets.
+
 ## Setup
 
 - Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa toolchain and the ESP-IDF. 

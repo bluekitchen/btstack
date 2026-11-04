@@ -1,5 +1,7 @@
 # BTstack Port for FreeBSD Systems
 
+This port uses FreeBSD's netgraph HCI interface to communicate with a Bluetooth Controller.
+
 ## Overview
 This port assumes that FreeBSD provides an ng_hci netgraph node for a connected Bluetooth Controller. 
 In most cases, these are Bluetooth USB dongles or built-in Bluetooth Controller connected via USB.

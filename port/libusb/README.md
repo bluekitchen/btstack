@@ -1,5 +1,7 @@
 # BTstack Port for POSIX Systems with libusb Library
 
+This port runs BTstack on Linux or macOS with a USB Bluetooth Controller through libusb.
+
 ## Compilation
 The quickest way to try BTstack is on a Linux or macOS system with an
 additional USB Bluetooth dongle. It requires

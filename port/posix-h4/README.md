@@ -1,5 +1,7 @@
 # BTstack Port for POSIX Systems with H4 Bluetooth Controller
 
+This port runs BTstack on a POSIX host with a Bluetooth Controller connected via UART/H4.
+
 ## Configuration
 Most Bluetooth Bluetooth Controllers connected via UART/H4 require some special configuration, e.g. to set the UART baud rate, and/or require firmware patches during startup. 
 In this port, we've tried to do most of these automatically based on information gathered from the Bluetooth Controller. Here's some Controller specific details:

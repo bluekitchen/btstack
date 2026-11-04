@@ -1,5 +1,7 @@
 # BTstack Port for Zephyr RTOS
 
+This port integrates BTstack with Zephyr-based targets and supported HCI transports.
+
 ## Overview
 
 This port targets any platform supported by Zephyr that either contains a built-in Bluetooth Controller
