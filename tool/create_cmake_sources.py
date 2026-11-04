@@ -33,6 +33,7 @@ RULES = [
     ("platform/windows/*.c", "platform-windows"),
     ("platform/posix/btstack_audio_portaudio.c", "platform-posix-audio-portaudio"),
     ("platform/posix/btstack_audio_sdl2.c", "platform-posix-audio-sdl2"),
+    ("platform/posix/hal_led_posix.c", "platform-posix-hal-led"),
     ("platform/posix/btstack_link_key_db_fs.c", "platform-posix-link-key-db-fs"),
     ("platform/posix/btstack_main_config.c", "platform-posix-main-config"),
     ("platform/posix/btstack_network_posix.c", "platform-posix-network"),
@@ -212,6 +213,7 @@ BLUEDROID_SBC_GROUPS = [
 PLATFORM_POSIX_GROUPS = [
     "platform-posix-audio-portaudio",
     "platform-posix-audio-sdl2",
+    "platform-posix-hal-led",
     "platform-posix-link-key-db-fs",
     "platform-posix-main-config",
     "platform-posix-network",
@@ -239,6 +241,7 @@ GROUP_INCLUDE_DIRECTORIES = {
     "core": ["3rd-party/micro-ecc", "3rd-party/rijndael"],
     # btstack_link_key_db_fs.c in this group uses tinydir's header-only API.
     "platform-posix": ["3rd-party/tinydir"],
+    "platform-posix-hal-led": ["platform/embedded"],
     # The runtime-selectable BCM chipset loader uses tinydir to locate firmware.
     "chipset-bcm": ["3rd-party/tinydir"],
     # pbap_client.c uses the Digest-MD5 helper directly.

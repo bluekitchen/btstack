@@ -26,30 +26,34 @@ set(sco_demo_util_sources
 # still link their normal controller setup for convenience.
 foreach(example IN ITEMS
     audio_duplex
-    led_counter
     sine_player
 )
     btstack_declare_example(${example}
         SOURCES ${example}.c
-        NEEDS core
+        NEEDS core audio
     )
 endforeach()
 
+btstack_declare_example(led_counter
+    SOURCES led_counter.c
+    NEEDS core led
+)
+
 btstack_declare_example(mod_player
     SOURCES mod_player.c
-    NEEDS core third-party-hxcmod
+    NEEDS core third-party-hxcmod audio
 )
 
 btstack_declare_example(audio_player
     SOURCES audio_player.c ${audio_demo_util_sources}
-    NEEDS core audio-demo third-party-hxcmod
+    NEEDS core audio-demo third-party-hxcmod audio
 )
 
 # Classic-only examples. ublox_spp_le_counter is declared with the LE GATT
 # examples below because its default configuration is LE.
 btstack_declare_example(a2dp_sink_demo SOURCES a2dp_sink_demo.c
     NEEDS classic-a2dp-sink classic-avrcp-controller classic-avrcp-target
-          classic-avrcp-cover-art-client classic-sdp-server classic-device-id-server)
+          classic-avrcp-cover-art-client classic-sdp-server classic-device-id-server audio)
 
 btstack_declare_example(spp_counter
     SOURCES spp_counter.c
@@ -106,10 +110,10 @@ btstack_declare_example(avrcp_browsing_client SOURCES avrcp_browsing_client.c
           classic-avrcp-browsing-target classic-avrcp-media-item-iterator
           classic-sdp-server)
 
-btstack_declare_example(hfp_ag_demo SOURCES hfp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-ag)
-btstack_declare_example(hfp_hf_demo SOURCES hfp_hf_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-hf)
-btstack_declare_example(hsp_ag_demo SOURCES hsp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-ag)
-btstack_declare_example(hsp_hs_demo SOURCES hsp_hs_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-hs)
+btstack_declare_example(hfp_ag_demo SOURCES hfp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-ag audio)
+btstack_declare_example(hfp_hf_demo SOURCES hfp_hf_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-hf audio)
+btstack_declare_example(hsp_ag_demo SOURCES hsp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-ag audio)
+btstack_declare_example(hsp_hs_demo SOURCES hsp_hs_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-hs audio)
 
 btstack_declare_example(a2dp_source_demo
     SOURCES a2dp_source_demo.c
@@ -257,26 +261,26 @@ btstack_declare_example(ublox_spp_le_counter
 # LE Audio examples, enabled by selected ports.
 btstack_declare_example(le_audio_broadcast_sink_lite
     SOURCES le_audio_broadcast_sink_lite.c ${le_audio_demo_util_sink_sources}
-    NEEDS le-audio
+    NEEDS le-audio audio
 )
 btstack_declare_example(le_audio_broadcast_source_lite
     SOURCES le_audio_broadcast_source_lite.c
             ${audio_demo_util_sources}
             ${le_audio_demo_util_source_sources}
-    NEEDS le-audio audio-demo third-party-hxcmod
+    NEEDS le-audio audio-demo third-party-hxcmod audio
 )
 btstack_declare_example(le_audio_unicast_gateway_lite
     SOURCES le_audio_unicast_gateway_lite.c
             ${audio_demo_util_sources}
             ${le_audio_demo_util_sink_sources}
             ${le_audio_demo_util_source_sources}
-    NEEDS le-audio audio-demo third-party-hxcmod
+    NEEDS le-audio audio-demo third-party-hxcmod audio
 )
 btstack_declare_example(le_audio_unicast_headset_lite
     SOURCES le_audio_unicast_headset_lite.c
             ${le_audio_demo_util_sink_sources}
             ${le_audio_demo_util_source_sources}
-    NEEDS le-audio audio-demo third-party-hxcmod
+    NEEDS le-audio audio-demo third-party-hxcmod audio
 )
 
 # Dual-mode examples compose the GATT server with the SPP server profile.

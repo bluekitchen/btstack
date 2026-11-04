@@ -39,6 +39,11 @@ if(PORTAUDIO_FOUND)
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 endif()
+btstack_declare_port_provider(libusb
+    CAPABILITY led
+    GROUPS platform-posix-hal-led
+    PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"
+)
 
 
 # Get the declared examples. Feature-based filtering will be provided by the
@@ -65,6 +70,10 @@ set(BTSTACK_LIBUSB_GROUPS
     third-party-micro-ecc
     third-party-rijndael
 )
+if(PORTAUDIO_FOUND)
+    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
+    list(APPEND BTSTACK_LIBUSB_GROUPS platform-posix-audio-portaudio)
+endif()
 # Every selected example is defined with its resolved source closure. EXAMPLES
 # is derived from the shared requirements manifest and any port exclusions.
 foreach(EXAMPLE IN LISTS EXAMPLES)
@@ -80,8 +89,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
-            # main.c provides hal_led_toggle for led_counter.
-            "${BTSTACK_ROOT}/platform/embedded"
             ${LIBUSB_INCLUDE_DIRS}
             ${PORTAUDIO_INCLUDE_DIRS}
         LINK_DIRECTORIES
@@ -94,13 +101,13 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             ${PORTAUDIO_LIBRARIES}
     )
 
-    # Get the example sources from its declaration.
+    # Construct full path to the example sources from its declaration.
     set(SOURCES_EXAMPLE)
     foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
     endforeach()
 
-    # define example target
+    # Define example target
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
 
     # Compile GATT DB if needed
@@ -112,9 +119,9 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         message("example ${EXAMPLE}")
     endif()
 
-    # configure warnings
+    # Configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
 
-    # add all libraries
+    # Add all libraries
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
