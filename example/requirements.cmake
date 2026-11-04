@@ -266,20 +266,20 @@ btstack_declare_example(le_audio_broadcast_source_lite
     SOURCES le_audio_broadcast_source_lite.c
             ${audio_demo_util_sources}
             ${le_audio_demo_util_source_sources}
-    NEEDS le-audio
+    NEEDS le-audio audio-demo third-party-hxcmod
 )
 btstack_declare_example(le_audio_unicast_gateway_lite
     SOURCES le_audio_unicast_gateway_lite.c
             ${audio_demo_util_sources}
             ${le_audio_demo_util_sink_sources}
             ${le_audio_demo_util_source_sources}
-    NEEDS le-audio
+    NEEDS le-audio audio-demo third-party-hxcmod
 )
 btstack_declare_example(le_audio_unicast_headset_lite
     SOURCES le_audio_unicast_headset_lite.c
             ${le_audio_demo_util_sink_sources}
             ${le_audio_demo_util_source_sources}
-    NEEDS le-audio
+    NEEDS le-audio audio-demo third-party-hxcmod
 )
 
 # Dual-mode examples compose the GATT server with the SPP server profile.

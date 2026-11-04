@@ -247,6 +247,11 @@ set(btstack_group_dependencies_classic_avrcp_browsing_target
     classic-avrcp-browsing
     classic-avrcp-target
 )
+set(btstack_group_dependencies_le_audio
+    ble
+    lc3
+    third-party-lc3-google
+)
 # The SPP server group supplies the record builder used by an SPP server.
 # Its profile-level closure also selects the RFCOMM data channel and SDP
 # registration server required to expose that record.
