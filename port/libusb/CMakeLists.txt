@@ -140,6 +140,22 @@ set(BTSTACK_SCOPED_EXAMPLES
     gatt_heart_rate_client
     gatt_battery_query
     hog_host_demo
+    hog_boot_host_demo
+    le_streamer_client
+    ancs_client_demo
+    att_delayed_response
+    gatt_browser
+    gatt_device_information_query
+    gatt_streamer_server
+    hog_keyboard_demo
+    hog_mouse_demo
+    le_credit_based_flow_control_mode_server
+    mesh_node_demo
+    nordic_spp_le_counter
+    nordic_spp_le_streamer
+    sm_pairing_central
+    sm_pairing_peripheral
+    ublox_spp_le_counter
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
