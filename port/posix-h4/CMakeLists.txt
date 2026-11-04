@@ -12,80 +12,14 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 #      -fsanitize=undefined -fsanitize=address
 #  )
 
-# BTstack library source groups. Port-local and example utility sources remain
-# below because they are selected by this port.
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(posix-h4)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
   ROOT "${BTSTACK_ROOT}"
 )
-set(BTSTACK_LIBRARY_GROUPS
-    audio-demo
-    ble
-    bnep
-    classic
-    core
-    gatt
-    gatt-services
-    lc3
-    le-audio
-    le-device-db-tlv
-    link-key-db-tlv
-    lwip
-    mesh
-    tlv-none
-    transport-h4
-    platform-posix
-    chipset-bcm
-    chipset-csr
-    chipset-em9301
-    chipset-realtek
-    chipset-stlc2500d
-    chipset-tc3566x
-    chipset-zephyr
-    third-party-bluedroid-sbc
-    third-party-hxcmod
-    third-party-lc3-google
-    third-party-md5
-    third-party-micro-ecc
-    third-party-qr-code-generator
-    third-party-rijndael
-    third-party-yxml
-)
-btstack_collect_sources(SOURCES_BTSTACK
- ROOT "${BTSTACK_ROOT}"
- GROUPS ${BTSTACK_LIBRARY_GROUPS}
-)
-btstack_collect_include_directories(BTSTACK_INCLUDE_DIRECTORIES
- ROOT "${BTSTACK_ROOT}"
- GROUPS ${BTSTACK_LIBRARY_GROUPS}
-)
-
 # Port specific files
 set(SOURCES_PORT
     main.c
-    bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
-    bluetooth_init_cc2564C_1.5.c
-)
-
-# Complete list of sources
-set(SOURCES
-  ${SOURCES_PORT}
-  ${SOURCES_BTSTACK}
-)
-list(SORT SOURCES)
-
-# create static 'btstack' lib
-add_library(btstack STATIC ${SOURCES})
-btstack_target_warnings(btstack STRICT)
-target_include_directories(btstack
-  PUBLIC
-    ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
-  PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${BTSTACK_ROOT}/platform/embedded"
-    "${BTSTACK_ROOT}/chipset/cc256x"
-    ${BTSTACK_INCLUDE_DIRECTORIES}
 )
 
 # Get libraries needed for this port
@@ -97,49 +31,42 @@ if (PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
-        target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-        target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-        target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
         add_compile_definitions(HAVE_PORTAUDIO)
         btstack_declare_port_provider(posix-h4
             CAPABILITY audio
-            GROUPS platform-posix-audio-portaudio
+            GROUPS platform-posix-audio-portaudio platform-posix-wav
         )
     endif()
 endif()
 
 # pthread
 find_package(Threads)
-target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
 # libm
-target_link_libraries(btstack m)
 
 
 # Add CC256x Support and specify init script
 set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
-target_sources(btstack PRIVATE
-    ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
-    ${CC256X_INIT_SCRIPT_SOURCES}
-)
-add_dependencies(btstack ${CC256X_INIT_SCRIPT_TARGETS})
+list(APPEND SOURCES_PORT ${CC256X_INIT_SCRIPT_SOURCES})
 
-# Add BCM Support and download PatchRAM files during the build.
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
-btstack_add_firmware_download(
-    TARGET bcm43430a1_patchram
-    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_BCM43430A1_PATCHRAM_FILE}"
-    URL "${BTSTACK_BCM43430A1_PATCHRAM_URL}"
-    SHA256 "${BTSTACK_BCM43430A1_PATCHRAM_SHA256}"
+# Add BCM Support and download PatchRAM files
+include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+
+set(CYW55310_PATCHRAM_NAME ${BTSTACK_CYW55310_PATCHRAM_FILE})
+message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from ${BTSTACK_CYW55310_PATCHRAM_BASE_URL}")
+file(
+    DOWNLOAD
+    ${BTSTACK_CYW55310_PATCHRAM_URL}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CYW55310_PATCHRAM_NAME}
+    STATUS CYW55310_PATCHRAM_STATUS
 )
-btstack_add_firmware_download(
-    TARGET cyw55310_patchram
-    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}"
-    URL "${BTSTACK_CYW55310_PATCHRAM_URL}"
-    SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}"
-)
-add_dependencies(btstack bcm43430a1_patchram cyw55310_patchram)
+list(GET CYW55310_PATCHRAM_STATUS 0 CYW55310_PATCHRAM_STATUS_CODE)
+if (NOT CYW55310_PATCHRAM_STATUS_CODE EQUAL 0)
+    list(GET CYW55310_PATCHRAM_STATUS 1 CYW55310_PATCHRAM_STATUS_MESSAGE)
+    message(FATAL_ERROR "Failed to download ${CYW55310_PATCHRAM_NAME}: ${CYW55310_PATCHRAM_STATUS_MESSAGE}")
+endif()
 
 # Get the declared examples. Feature-based filtering will be provided by the
 # future resolver; for now this port builds every declared example.
@@ -153,11 +80,7 @@ set(BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS
     platform-posix-run-loop
     platform-posix-signal
     platform-posix-stdin
-    platform-posix-wav
 )
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS platform-posix-audio-portaudio)
-endif()
 
 # Scoped Bluetooth examples use the H4 port's controller setup plus their
 # implementation closure resolved from each example declaration.
@@ -189,61 +112,25 @@ set(BTSTACK_POSIX_H4_BLUETOOTH_BASE_GROUPS
     ${BTSTACK_POSIX_H4_BLUETOOTH_GROUPS}
 )
 
-set(BTSTACK_SCOPED_EXAMPLES
-    gatt_counter
-    gatt_heart_rate_client
-    gatt_battery_query
-    hog_host_demo
-    hog_boot_host_demo
-    le_streamer_client
-    ancs_client_demo
-    att_delayed_response
-    gatt_browser
-    gatt_device_information_query
-    gatt_streamer_server
-    hog_keyboard_demo
-    hog_mouse_demo
-    le_credit_based_flow_control_mode_server
-    nordic_spp_le_counter
-    nordic_spp_le_streamer
-    sm_pairing_central
-    sm_pairing_peripheral
-    ublox_spp_le_counter
-    spp_counter
-    spp_streamer
-    sdp_bnep_query
-    sdp_general_query
-    sdp_rfcomm_query
-    spp_streamer_client
-    spp_and_gatt_counter
-    spp_and_gatt_streamer
-    hid_keyboard_demo
-    hid_mouse_demo
-    hid_host_demo
-    dut_mode_classic gap_dedicated_bonding gap_inquiry gap_link_keys
-    pbap_client_demo avrcp_browsing_client
-    hfp_ag_demo hfp_hf_demo hsp_ag_demo hsp_hs_demo
-    a2dp_sink_demo a2dp_source_demo
-    gap_le_advertisements le_credit_based_flow_control_mode_client le_mitm
-    audio_duplex led_counter mod_player sine_player audio_player
-    le_audio_broadcast_sink_lite le_audio_broadcast_source_lite
-    le_audio_unicast_gateway_lite le_audio_unicast_headset_lite
-)
-foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
+# Every selected example is defined with its resolved source closure. EXAMPLES
+# is derived from the shared requirements manifest and any port exclusions.
+foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_scoped_example_library(
-        TARGET btstack_${example}_library
+        TARGET btstack_${EXAMPLE}_library
         ROOT "${BTSTACK_ROOT}"
         PORT posix-h4
-        EXAMPLE ${example}
+        EXAMPLE ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_posix_h4
         BASE_GROUPS ${BTSTACK_POSIX_H4_BLUETOOTH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            # btstack_config.h is the port configuration seen by applications.
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+            # main.c provides hal_led_toggle for led_counter.
+            "${BTSTACK_ROOT}/platform/embedded"
             ${PORTAUDIO_INCLUDE_DIRS}
         PRIVATE_INCLUDE_DIRECTORIES
-            "${CMAKE_CURRENT_SOURCE_DIR}"
-            "${BTSTACK_ROOT}/platform/embedded"
             "${BTSTACK_ROOT}/chipset/cc256x"
         LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES
@@ -251,10 +138,7 @@ foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
             m
             ${PORTAUDIO_LIBRARIES}
     )
-endforeach()
 
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
     # Get the example sources from its declaration.
     set(SOURCES_EXAMPLE)
     foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
@@ -263,15 +147,6 @@ foreach(EXAMPLE ${EXAMPLES})
 
     # define example target
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-
-    # add includes
-    target_include_directories(${EXAMPLE}
-      PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}"
-        "${BTSTACK_ROOT}/platform/embedded"
-        "${BTSTACK_ROOT}/chipset/cc256x"
-        ${BTSTACK_INCLUDE_DIRECTORIES}
-    )
 
     # Compile GATT DB if needed
     set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
@@ -284,11 +159,5 @@ foreach(EXAMPLE ${EXAMPLES})
     # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
 
-    # Scoped pilots use their resolved source closures. Other examples continue
-    # to use the compatibility all-sources library.
-    if(EXAMPLE IN_LIST BTSTACK_SCOPED_EXAMPLES)
-        target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
-    else()
-        target_link_libraries(${EXAMPLE} btstack pthread)
-    endif()
-endforeach(EXAMPLE)
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
+endforeach()
