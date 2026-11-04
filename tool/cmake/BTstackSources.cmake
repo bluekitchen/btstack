@@ -855,6 +855,8 @@ set(btstack_sources_core
 )
 
 set(btstack_include_directories_core
+    3rd-party/micro-ecc
+    3rd-party/rijndael
     src
 )
 

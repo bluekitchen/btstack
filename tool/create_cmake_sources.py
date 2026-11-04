@@ -235,6 +235,8 @@ PLATFORM_POSIX_AUDIO_GROUPS = [
 # The source catalog can derive the simple in-tree cases below; dependencies
 # whose public headers live elsewhere are listed explicitly.
 GROUP_INCLUDE_DIRECTORIES = {
+    # btstack_crypto.c uses these optional crypto provider headers directly.
+    "core": ["3rd-party/micro-ecc", "3rd-party/rijndael"],
     # btstack_link_key_db_fs.c in this group uses tinydir's header-only API.
     "platform-posix": ["3rd-party/tinydir"],
     # The runtime-selectable BCM chipset loader uses tinydir to locate firmware.
