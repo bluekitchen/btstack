@@ -22,20 +22,27 @@ set(sco_demo_util_sources
     sco_demo_util.c
 )
 
-# General examples without Bluetooth.
+# General examples use the minimal BTstack core requirement. Host ports may
+# still link their normal controller setup for convenience.
 foreach(example IN ITEMS
     audio_duplex
     led_counter
-    mod_player
     sine_player
 )
     btstack_declare_example(${example}
         SOURCES ${example}.c
+        NEEDS core
     )
 endforeach()
 
+btstack_declare_example(mod_player
+    SOURCES mod_player.c
+    NEEDS core third-party-hxcmod
+)
+
 btstack_declare_example(audio_player
     SOURCES audio_player.c ${audio_demo_util_sources}
+    NEEDS core audio-demo third-party-hxcmod
 )
 
 # Classic-only examples. ublox_spp_le_counter is declared with the LE GATT
