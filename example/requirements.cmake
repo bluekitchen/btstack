@@ -54,7 +54,6 @@ foreach(example IN ITEMS
     sdp_bnep_query
     sdp_general_query
     sdp_rfcomm_query
-    spp_counter
     spp_streamer
     spp_streamer_client
 )
@@ -63,6 +62,11 @@ foreach(example IN ITEMS
         NEEDS classic
     )
 endforeach()
+
+btstack_declare_example(spp_counter
+    SOURCES spp_counter.c
+    NEEDS classic-spp-server
+)
 
 btstack_declare_example(a2dp_source_demo
     SOURCES a2dp_source_demo.c

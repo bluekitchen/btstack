@@ -113,6 +113,9 @@ set(EXAMPLES ${btstack_declared_examples})
 # Support selected by the libusb port's common main.c. All examples need these
 # groups independently of their own protocol/profile requirements.
 set(BTSTACK_LIBUSB_BASE_GROUPS
+    # This dual-mode port enables BLE in btstack_config.h. All Classic examples
+    # support pairing, and cross-transport key derivation requires SM.
+    ble
     le-device-db-tlv
     link-key-db-tlv
     tlv-none
@@ -156,6 +159,7 @@ set(BTSTACK_SCOPED_EXAMPLES
     sm_pairing_central
     sm_pairing_peripheral
     ublox_spp_le_counter
+    spp_counter
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
