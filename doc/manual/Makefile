@@ -83,7 +83,9 @@ pdf: docs
 	./markdown2tex.py  -i ${MKDOCS_FOLDER} -o ${LATEX_FOLDER}
 
 	cp ${MKDOCS_FOLDER}/ports/*.jpg ${MKDOCS_FOLDER}/ports/*.png ${LATEX_FOLDER}
-	cd ${LATEX_FOLDER} && pandoc -f markdown -t pdf --listings btstack_generated.md -o btstack_generated.pdf --pdf-engine=weasyprint
+	cd ${LATEX_FOLDER} && pandoc -f markdown -t html --standalone --listings btstack_generated.md -o btstack_generated.html
+	./html_postprocess_code_blocks.py --input ${LATEX_FOLDER}btstack_generated.html --output ${LATEX_FOLDER}btstack_generated_fixed.html --protect-arrow-operators
+	cd ${LATEX_FOLDER} && weasyprint btstack_generated_fixed.html btstack_generated.pdf
 
 	# create cover page
 	echo "" > ${LATEX_FOLDER}/btstack_final.tex

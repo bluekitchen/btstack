@@ -98,7 +98,7 @@ def main(argv):
     with open(latex_filepath, 'wt') as fout:
         # The WeasyPrint PDF renders code blocks at 12 pt. 
         # Reduce them without requiring a separate stylesheet.
-        fout.write("<style>pre > code { font-size: 9pt; }</style>\n\n")
+        fout.write("<style>pre > code { font-size: 9pt; } .code-operator { white-space: nowrap; }</style>\n\n")
         with open(yml_file, 'rt') as yin:
             doc = yaml.load(yin, Loader=yaml.SafeLoader)
             for page in doc["nav"]:
