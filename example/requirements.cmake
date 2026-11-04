@@ -49,9 +49,7 @@ btstack_declare_example(audio_player
 # examples below because its default configuration is LE.
 btstack_declare_example(a2dp_sink_demo SOURCES a2dp_sink_demo.c
     NEEDS classic-a2dp-sink classic-avrcp-controller classic-avrcp-target
-          classic-avrcp-cover-art-client classic-btstack-sbc-bluedroid
-          classic-btstack-sbc-decoder-bluedroid classic-btstack-sbc-plc
-          third-party-bluedroid-sbc classic-sdp-server classic-device-id-server)
+          classic-avrcp-cover-art-client classic-sdp-server classic-device-id-server)
 
 btstack_declare_example(spp_counter
     SOURCES spp_counter.c
@@ -116,8 +114,7 @@ btstack_declare_example(hsp_hs_demo SOURCES hsp_hs_demo.c ${sco_demo_util_source
 btstack_declare_example(a2dp_source_demo
     SOURCES a2dp_source_demo.c
     NEEDS classic-a2dp-source classic-avrcp-controller classic-avrcp-target
-          classic-btstack-sbc-bluedroid classic-btstack-sbc-encoder-bluedroid
-          classic-btstack-sbc-plc third-party-bluedroid-sbc audio-demo third-party-hxcmod audio
+          audio-demo third-party-hxcmod audio
           classic-sdp-server classic-device-id-server
 )
 
