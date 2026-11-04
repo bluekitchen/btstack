@@ -501,3 +501,77 @@ function(btstack_resolve_example_for_port port example groups_output_variable co
     set(${groups_output_variable} "${resolved_groups}" PARENT_SCOPE)
     set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
 endfunction()
+
+# Create a static BTstack library for one example's resolved source closure.
+# Port policy remains with the caller: it supplies the baseline source groups,
+# port-local sources, and all target include/link settings.
+#
+# Usage:
+#   btstack_add_scoped_example_library(
+#       TARGET btstack_gatt_counter
+#       ROOT "${BTSTACK_ROOT}"
+#       PORT libusb
+#       EXAMPLE gatt_counter
+#       BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
+#       PORT_SOURCES ${SOURCES_PORT}
+#       PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+#       PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
+#       LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} m
+#   )
+#
+# CONFIGURATION_REQUIREMENTS_OUTPUT is optional. If set, it receives the
+# example's unresolved ENABLE_* requirements for future port validation.
+function(btstack_add_scoped_example_library)
+    cmake_parse_arguments(ARG ""
+        "TARGET;ROOT;PORT;EXAMPLE;CONFIGURATION_REQUIREMENTS_OUTPUT"
+        "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;LINK_LIBRARIES;LINK_DIRECTORIES"
+        ${ARGN})
+
+    foreach(required TARGET ROOT PORT EXAMPLE)
+        if(NOT ARG_${required})
+            message(FATAL_ERROR "btstack_add_scoped_example_library requires ${required}")
+        endif()
+    endforeach()
+
+    btstack_resolve_example_for_port(${ARG_PORT} ${ARG_EXAMPLE}
+        example_groups
+        example_configuration_requirements
+    )
+    set(library_groups
+        ${example_groups}
+        ${ARG_BASE_GROUPS}
+    )
+    btstack_collect_sources(example_sources
+        ROOT "${ARG_ROOT}"
+        GROUPS ${library_groups}
+    )
+    btstack_collect_include_directories(example_include_directories
+        ROOT "${ARG_ROOT}"
+        GROUPS ${library_groups}
+    )
+
+    add_library(${ARG_TARGET} STATIC
+        ${ARG_PORT_SOURCES}
+        ${example_sources}
+    )
+    btstack_target_warnings(${ARG_TARGET} STRICT)
+    if(ARG_PUBLIC_INCLUDE_DIRECTORIES)
+        target_include_directories(${ARG_TARGET} PUBLIC
+            ${ARG_PUBLIC_INCLUDE_DIRECTORIES})
+    endif()
+    target_include_directories(${ARG_TARGET} PRIVATE
+        ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+        ${example_include_directories}
+    )
+    if(ARG_LINK_DIRECTORIES)
+        target_link_directories(${ARG_TARGET} PUBLIC ${ARG_LINK_DIRECTORIES})
+    endif()
+    if(ARG_LINK_LIBRARIES)
+        target_link_libraries(${ARG_TARGET} PUBLIC ${ARG_LINK_LIBRARIES})
+    endif()
+
+    if(ARG_CONFIGURATION_REQUIREMENTS_OUTPUT)
+        set(${ARG_CONFIGURATION_REQUIREMENTS_OUTPUT}
+            "${example_configuration_requirements}" PARENT_SCOPE)
+    endif()
+endfunction()
