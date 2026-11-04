@@ -208,6 +208,9 @@ set(BTSTACK_SCOPED_EXAMPLES
     spp_streamer_client
     spp_and_gatt_counter
     spp_and_gatt_streamer
+    hid_keyboard_demo
+    hid_mouse_demo
+    hid_host_demo
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(

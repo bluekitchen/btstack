@@ -47,9 +47,6 @@ foreach(example IN ITEMS
     gap_dedicated_bonding
     gap_inquiry
     gap_link_keys
-    hid_host_demo
-    hid_keyboard_demo
-    hid_mouse_demo
     pbap_client_demo
 )
     btstack_declare_example(${example}
@@ -86,6 +83,21 @@ btstack_declare_example(sdp_rfcomm_query
 btstack_declare_example(spp_streamer_client
     SOURCES spp_streamer_client.c
     NEEDS classic-rfcomm classic-sdp-client-rfcomm
+)
+
+foreach(example IN ITEMS
+    hid_keyboard_demo
+    hid_mouse_demo
+)
+    btstack_declare_example(${example}
+        SOURCES ${example}.c
+        NEEDS classic-hid-device classic-device-id-server
+    )
+endforeach()
+
+btstack_declare_example(hid_host_demo
+    SOURCES hid_host_demo.c
+    NEEDS classic-hid-host
 )
 
 btstack_declare_example(a2dp_source_demo
