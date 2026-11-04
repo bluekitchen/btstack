@@ -343,11 +343,15 @@ def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name
             aout.write("\n")
         aout.write("\n")
 
+        emitted_examples = set()
         for group_title in list_of_groups:
             if not group_title in list_of_examples: continue
             examples = list_of_examples[group_title]
             
             for example in examples:
+                if example[0] in emitted_examples:
+                    continue
+                emitted_examples.add(example[0])
                 file_name = examples_folder + example[0] + ".c"
                 writeListings(aout, file_name, example[0].replace("_",""), git_branch_name)
 
