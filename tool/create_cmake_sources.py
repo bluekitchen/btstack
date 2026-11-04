@@ -241,6 +241,8 @@ GROUP_INCLUDE_DIRECTORIES = {
     "platform-posix": ["3rd-party/tinydir"],
     # The runtime-selectable BCM chipset loader uses tinydir to locate firmware.
     "chipset-bcm": ["3rd-party/tinydir"],
+    # pbap_client.c uses the Digest-MD5 helper directly.
+    "classic-pbap-client": ["3rd-party/md5"],
     "lwip-core": ["3rd-party/lwip/core/src/include"],
     "lwip-ipv4": ["3rd-party/lwip/core/src/include"],
     "lwip-netif": ["3rd-party/lwip/core/src/include"],

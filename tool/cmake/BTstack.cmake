@@ -130,6 +130,123 @@ set(btstack_group_dependencies_classic_hid_host
 set(btstack_group_dependencies_classic_device_id_server
     classic-sdp-util
 )
+set(btstack_group_dependencies_classic_goep_client
+    classic-rfcomm
+    classic-sdp-client
+    classic-obex-message-builder
+    classic-obex-iterator
+)
+set(btstack_group_dependencies_classic_pbap_client
+    classic-goep-client
+    classic-obex-parser
+    third-party-md5
+    classic-obex-srm-client
+    third-party-yxml
+)
+set(btstack_group_dependencies_classic_hfp
+    classic-rfcomm
+    classic-sdp-client-rfcomm
+    classic-sdp-server
+    classic-hfp-codec
+    audio-demo
+    classic-btstack-cvsd-plc
+    classic-btstack-sbc-encoder-bluedroid
+    classic-btstack-sbc-decoder-bluedroid
+    classic-btstack-sbc-bluedroid
+    classic-btstack-sbc-plc
+    third-party-bluedroid-sbc
+    third-party-hxcmod
+)
+set(btstack_group_dependencies_classic_hfp_ag
+    classic-hfp
+    classic-hfp-gsm-model
+)
+set(btstack_group_dependencies_classic_hfp_hf
+    classic-hfp
+)
+set(btstack_group_dependencies_classic_hsp_ag
+    classic-rfcomm
+    classic-sdp-client-rfcomm
+    classic-sdp-server
+    classic-hfp-codec
+    audio-demo
+    classic-btstack-cvsd-plc
+    classic-btstack-sbc-bluedroid
+    classic-btstack-sbc-encoder-bluedroid
+    classic-btstack-sbc-plc
+    third-party-bluedroid-sbc
+    third-party-hxcmod
+)
+set(btstack_group_dependencies_classic_hsp_hs
+    classic-rfcomm
+    classic-sdp-client-rfcomm
+    classic-sdp-server
+    classic-hfp-codec
+    audio-demo
+    classic-btstack-cvsd-plc
+    classic-btstack-sbc-bluedroid
+    classic-btstack-sbc-encoder-bluedroid
+    classic-btstack-sbc-plc
+    third-party-bluedroid-sbc
+    third-party-hxcmod
+)
+set(btstack_group_dependencies_classic_avrcp
+    l2cap
+    classic-sdp-client
+)
+set(btstack_group_dependencies_classic_avrcp_controller
+    classic-avrcp
+)
+set(btstack_group_dependencies_classic_avrcp_browsing
+    l2cap
+    classic-sdp-client
+)
+set(btstack_group_dependencies_classic_avrcp_browsing_controller
+    classic-avrcp-browsing
+    classic-avrcp-controller
+)
+set(btstack_group_dependencies_classic_avdtp
+    l2cap
+    classic-sdp-client
+    classic-avdtp-util
+)
+set(btstack_group_dependencies_classic_avdtp_acceptor
+    classic-avdtp
+)
+set(btstack_group_dependencies_classic_avdtp_initiator
+    classic-avdtp
+)
+set(btstack_group_dependencies_classic_avdtp_sink
+    classic-avdtp-acceptor
+    classic-avdtp-initiator
+)
+set(btstack_group_dependencies_classic_a2dp
+    classic-avdtp
+)
+set(btstack_group_dependencies_classic_a2dp_sink
+    classic-a2dp
+    classic-avdtp-sink
+)
+set(btstack_group_dependencies_classic_avdtp_source
+    classic-avdtp-initiator
+    classic-avdtp-acceptor
+)
+set(btstack_group_dependencies_classic_a2dp_source
+    classic-a2dp
+    classic-avdtp-source
+)
+set(btstack_group_dependencies_classic_avrcp_cover_art_client
+    classic-goep-client
+    classic-obex-parser
+    classic-obex-srm-client
+)
+set(btstack_group_dependencies_classic_avrcp_target
+    classic-avrcp
+)
+set(btstack_group_dependencies_classic_avrcp_browsing_target
+    classic-avrcp-browsing
+    classic-avrcp-target
+)
 # The SPP server group supplies the record builder used by an SPP server.
 # Its profile-level closure also selects the RFCOMM data channel and SDP
 # registration server required to expose that record.

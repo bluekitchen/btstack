@@ -201,7 +201,7 @@ else()
 
     btstack_resolve_example_for_port(test-audio a2dp_source_demo
         a2dp_source_groups a2dp_source_configurations)
-    if(NOT "${a2dp_source_groups}" STREQUAL "classic;platform-posix-audio-portaudio")
+    if(NOT "${a2dp_source_groups}" STREQUAL "classic-btstack-sbc-bluedroid;classic-btstack-sbc-encoder-bluedroid;classic-btstack-sbc-plc;third-party-bluedroid-sbc;audio-demo;third-party-hxcmod;platform-posix-audio-portaudio;classic-sdp-util;core;classic-avdtp-util;classic-device-id-server;l2cap;classic-sdp-client;classic-sdp-server;classic-avrcp;classic-avdtp;classic-avdtp-initiator;classic-avdtp-acceptor;classic-avrcp-controller;classic-avrcp-target;classic-a2dp;classic-avdtp-source;classic-a2dp-source")
         message(FATAL_ERROR "Unexpected a2dp_source_demo source groups: ${a2dp_source_groups}")
     endif()
     if(a2dp_source_configurations)

@@ -152,6 +152,8 @@ list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 set(BTSTACK_POSIX_H4_BASE_GROUPS
     # This dual-mode port enables BLE in btstack_config.h. All Classic examples
     # support pairing, and cross-transport key derivation requires SM.
+    # btstack_add_scoped_example_library does not resolve BASE_GROUPS.
+    l2cap
     ble
     le-device-db-tlv
     link-key-db-tlv
@@ -164,6 +166,7 @@ set(BTSTACK_POSIX_H4_BASE_GROUPS
     platform-posix-tlv
     platform-posix-uart
     platform-posix-hci-dump
+    platform-posix-wav
     chipset-bcm
     chipset-cc256x
     chipset-csr
@@ -211,6 +214,10 @@ set(BTSTACK_SCOPED_EXAMPLES
     hid_keyboard_demo
     hid_mouse_demo
     hid_host_demo
+    dut_mode_classic gap_dedicated_bonding gap_inquiry gap_link_keys
+    pbap_client_demo avrcp_browsing_client
+    hfp_ag_demo hfp_hf_demo hsp_ag_demo hsp_hs_demo
+    a2dp_sink_demo a2dp_source_demo
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
