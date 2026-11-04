@@ -147,9 +147,21 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
-# Scoped pilots use the H4 port's common setup plus the implementation closure
-# resolved from each example declaration.
-set(BTSTACK_POSIX_H4_BASE_GROUPS
+# Host runtime/platform facilities that can be shared by Bluetooth and
+# standalone examples. Bluetooth controller setup remains separate below.
+set(BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS
+    platform-posix-run-loop
+    platform-posix-signal
+    platform-posix-stdin
+    platform-posix-wav
+)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS platform-posix-audio-portaudio)
+endif()
+
+# Scoped Bluetooth examples use the H4 port's controller setup plus their
+# implementation closure resolved from each example declaration.
+set(BTSTACK_POSIX_H4_BLUETOOTH_GROUPS
     # This dual-mode port enables BLE in btstack_config.h. All Classic examples
     # support pairing, and cross-transport key derivation requires SM.
     # btstack_add_scoped_example_library does not resolve BASE_GROUPS.
@@ -160,13 +172,9 @@ set(BTSTACK_POSIX_H4_BASE_GROUPS
     tlv-none
     transport-h4
     platform-posix-main-config
-    platform-posix-run-loop
-    platform-posix-signal
-    platform-posix-stdin
     platform-posix-tlv
     platform-posix-uart
     platform-posix-hci-dump
-    platform-posix-wav
     chipset-bcm
     chipset-cc256x
     chipset-csr
@@ -178,10 +186,10 @@ set(BTSTACK_POSIX_H4_BASE_GROUPS
     third-party-micro-ecc
     third-party-rijndael
 )
-if(PORTAUDIO_FOUND)
-    # btstack_main_config configures PortAudio instances when it is available.
-    list(APPEND BTSTACK_POSIX_H4_BASE_GROUPS platform-posix-audio-portaudio)
-endif()
+set(BTSTACK_POSIX_H4_BLUETOOTH_BASE_GROUPS
+    ${BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS}
+    ${BTSTACK_POSIX_H4_BLUETOOTH_GROUPS}
+)
 
 set(BTSTACK_SCOPED_EXAMPLES
     gatt_counter
@@ -226,7 +234,7 @@ foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
         PORT posix-h4
         EXAMPLE ${example}
         GROUP_OBJECT_TARGET_PREFIX btstack_posix_h4
-        BASE_GROUPS ${BTSTACK_POSIX_H4_BASE_GROUPS}
+        BASE_GROUPS ${BTSTACK_POSIX_H4_BLUETOOTH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
