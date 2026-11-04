@@ -84,16 +84,24 @@ endforeach()
 # LE examples without an application-specific GATT database.
 foreach(example IN ITEMS
     gap_le_advertisements
-    hog_boot_host_demo
     le_credit_based_flow_control_mode_client
     le_mitm
-    le_streamer_client
 )
     btstack_declare_example(${example}
         SOURCES ${example}.c
         NEEDS ble
     )
 endforeach()
+
+btstack_declare_example(hog_boot_host_demo
+    SOURCES hog_boot_host_demo.c
+    NEEDS gatt-client
+)
+
+btstack_declare_example(le_streamer_client
+    SOURCES le_streamer_client.c
+    NEEDS gatt-service-client
+)
 
 btstack_declare_example(gatt_heart_rate_client
     SOURCES gatt_heart_rate_client.c
@@ -120,29 +128,93 @@ btstack_declare_example(hog_host_demo
     NEEDS gatt-server gatt-service-hids-host
 )
 
-# Remaining LE examples with an application-specific GATT database.
+btstack_declare_example(ancs_client_demo
+    SOURCES ancs_client_demo.c
+    GATT_DB ancs_client_demo.gatt
+    NEEDS gatt-server gatt-service-ancs-client
+)
+
+btstack_declare_example(att_delayed_response
+    SOURCES att_delayed_response.c
+    GATT_DB att_delayed_response.gatt
+    NEEDS gatt-server
+)
+
+btstack_declare_example(gatt_browser
+    SOURCES gatt_browser.c
+    GATT_DB gatt_browser.gatt
+    NEEDS gatt-server gatt-client
+)
+
+btstack_declare_example(gatt_device_information_query
+    SOURCES gatt_device_information_query.c
+    GATT_DB gatt_device_information_query.gatt
+    NEEDS gatt-server gatt-service-device-information-service-client
+)
+
+btstack_declare_example(gatt_streamer_server
+    SOURCES gatt_streamer_server.c
+    GATT_DB gatt_streamer_server.gatt
+    NEEDS gatt-server
+)
+
 foreach(example IN ITEMS
-    ancs_client_demo
-    att_delayed_response
-    gatt_browser
-    gatt_device_information_query
-    gatt_streamer_server
     hog_keyboard_demo
     hog_mouse_demo
-    le_credit_based_flow_control_mode_server
-    mesh_node_demo
-    nordic_spp_le_counter
-    nordic_spp_le_streamer
-    sm_pairing_central
-    sm_pairing_peripheral
-    ublox_spp_le_counter
 )
     btstack_declare_example(${example}
         SOURCES ${example}.c
         GATT_DB ${example}.gatt
-        NEEDS ble
+        NEEDS
+            gatt-server
+            gatt-service-battery-service-server
+            gatt-service-device-information-service-server
+            gatt-service-hids-device
     )
 endforeach()
+
+btstack_declare_example(le_credit_based_flow_control_mode_server
+    SOURCES le_credit_based_flow_control_mode_server.c
+    GATT_DB le_credit_based_flow_control_mode_server.gatt
+    NEEDS gatt-server
+)
+
+btstack_declare_example(mesh_node_demo
+    SOURCES mesh_node_demo.c
+    GATT_DB mesh_node_demo.gatt
+    NEEDS gatt-server mesh
+)
+
+foreach(example IN ITEMS
+    nordic_spp_le_counter
+    nordic_spp_le_streamer
+)
+    btstack_declare_example(${example}
+        SOURCES ${example}.c
+        GATT_DB ${example}.gatt
+        NEEDS gatt-server gatt-service-nordic-spp-service-server
+    )
+endforeach()
+
+foreach(example IN ITEMS
+    sm_pairing_central
+    sm_pairing_peripheral
+)
+    btstack_declare_example(${example}
+        SOURCES ${example}.c
+        GATT_DB ${example}.gatt
+        NEEDS gatt-server gatt-client
+    )
+endforeach()
+
+btstack_declare_example(ublox_spp_le_counter
+    SOURCES ublox_spp_le_counter.c
+    GATT_DB ublox_spp_le_counter.gatt
+    NEEDS
+        gatt-server
+        gatt-service-device-information-service-server
+        gatt-service-ublox-spp-service-server
+)
 
 # LE Audio examples, enabled by selected ports.
 btstack_declare_example(le_audio_broadcast_sink_lite
