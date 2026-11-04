@@ -113,6 +113,58 @@ else()
             "Unexpected hog_host_demo configuration requirements: ${hog_host_demo_configurations}")
     endif()
 
+    set(gatt_service_client_leaves
+        gatt-service-hids-host
+        gatt-service-immediate-alert-service-client
+        gatt-service-link-loss-service-client
+        gatt-service-object-transfer-service-client
+        gatt-service-scan-parameters-service-client
+        gatt-service-tx-power-service-client
+    )
+    set(gatt_client_leaves
+        gatt-service-ancs-client
+        gatt-service-battery-service-client
+        gatt-service-device-information-service-client
+    )
+    set(gatt_server_leaves
+        gatt-service-battery-service-server
+        gatt-service-battery-service-v1-server
+        gatt-service-bond-management-service-server
+        gatt-service-cycling-power-service-server
+        gatt-service-cycling-speed-and-cadence-service-server
+        gatt-service-device-information-service-server
+        gatt-service-heart-rate-service-server
+        gatt-service-hids-device
+        gatt-service-immediate-alert-service-server
+        gatt-service-link-loss-service-server
+        gatt-service-nordic-spp-service-server
+        gatt-service-object-transfer-service-server
+        gatt-service-scan-parameters-service-server
+        gatt-service-tx-power-service-server
+        gatt-service-ublox-spp-service-server
+    )
+    foreach(group IN LISTS gatt_service_client_leaves)
+        btstack_resolve_groups(resolved GROUPS ${group})
+        list(FIND resolved gatt-service-client dependency_index)
+        if(dependency_index EQUAL -1)
+            message(FATAL_ERROR "${group} did not resolve gatt-service-client")
+        endif()
+    endforeach()
+    foreach(group IN LISTS gatt_client_leaves)
+        btstack_resolve_groups(resolved GROUPS ${group})
+        list(FIND resolved gatt-client dependency_index)
+        if(dependency_index EQUAL -1)
+            message(FATAL_ERROR "${group} did not resolve gatt-client")
+        endif()
+    endforeach()
+    foreach(group IN LISTS gatt_server_leaves)
+        btstack_resolve_groups(resolved GROUPS ${group})
+        list(FIND resolved gatt-server dependency_index)
+        if(dependency_index EQUAL -1)
+            message(FATAL_ERROR "${group} did not resolve gatt-server")
+        endif()
+    endforeach()
+
     btstack_resolve_example_for_port(test-audio a2dp_source_demo
         a2dp_source_groups a2dp_source_configurations)
     if(NOT "${a2dp_source_groups}" STREQUAL "classic;platform-posix-audio-portaudio")

@@ -237,6 +237,7 @@ set(btstack_sources_chipset_bcm
 )
 
 set(btstack_include_directories_chipset_bcm
+    3rd-party/tinydir
     src
     chipset/bcm
 )

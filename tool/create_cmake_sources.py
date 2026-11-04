@@ -237,6 +237,8 @@ PLATFORM_POSIX_AUDIO_GROUPS = [
 GROUP_INCLUDE_DIRECTORIES = {
     # btstack_link_key_db_fs.c in this group uses tinydir's header-only API.
     "platform-posix": ["3rd-party/tinydir"],
+    # The runtime-selectable BCM chipset loader uses tinydir to locate firmware.
+    "chipset-bcm": ["3rd-party/tinydir"],
     "lwip-core": ["3rd-party/lwip/core/src/include"],
     "lwip-ipv4": ["3rd-party/lwip/core/src/include"],
     "lwip-netif": ["3rd-party/lwip/core/src/include"],

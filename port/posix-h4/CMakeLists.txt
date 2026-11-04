@@ -147,6 +147,91 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
+# Scoped pilots use the H4 port's common setup plus the implementation closure
+# resolved from each example declaration. This remains local until a second
+# port establishes a common target-construction API.
+set(BTSTACK_POSIX_H4_BASE_GROUPS
+    le-device-db-tlv
+    link-key-db-tlv
+    tlv-none
+    transport-h4
+    platform-posix-main-config
+    platform-posix-run-loop
+    platform-posix-signal
+    platform-posix-stdin
+    platform-posix-tlv
+    platform-posix-uart
+    platform-posix-hci-dump
+    chipset-bcm
+    chipset-cc256x
+    chipset-csr
+    chipset-em9301
+    chipset-realtek
+    chipset-stlc2500d
+    chipset-tc3566x
+    chipset-zephyr
+    third-party-micro-ecc
+    third-party-rijndael
+)
+if(PORTAUDIO_FOUND)
+    # btstack_main_config configures PortAudio instances when it is available.
+    list(APPEND BTSTACK_POSIX_H4_BASE_GROUPS platform-posix-audio-portaudio)
+endif()
+
+set(BTSTACK_SCOPED_EXAMPLES
+    gatt_counter
+    gatt_heart_rate_client
+    gatt_battery_query
+    hog_host_demo
+)
+function(btstack_add_posix_h4_scoped_library example)
+    btstack_resolve_example_for_port(posix-h4 ${example}
+        example_groups
+        example_configuration_requirements
+    )
+    set(library_groups
+        ${example_groups}
+        ${BTSTACK_POSIX_H4_BASE_GROUPS}
+    )
+    btstack_collect_sources(example_sources
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS ${library_groups}
+    )
+    btstack_collect_include_directories(example_include_directories
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS ${library_groups}
+    )
+
+    add_library(btstack_${example} STATIC
+        ${SOURCES_PORT}
+        ${example_sources}
+    )
+    btstack_target_warnings(btstack_${example} STRICT)
+    target_include_directories(btstack_${example}
+        PUBLIC
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+        PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+            "${BTSTACK_ROOT}/platform/embedded"
+            "${BTSTACK_ROOT}/chipset/cc256x"
+            ${example_include_directories}
+    )
+    target_link_libraries(btstack_${example}
+        PUBLIC
+            ${CMAKE_THREAD_LIBS_INIT}
+            m
+    )
+    if(PORTAUDIO_FOUND)
+        target_include_directories(btstack_${example} PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+        target_link_directories(btstack_${example} PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+        target_link_libraries(btstack_${example} PUBLIC ${PORTAUDIO_LIBRARIES})
+    endif()
+endfunction()
+
+foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
+    btstack_add_posix_h4_scoped_library(${example})
+endforeach()
+
 # create targets
 foreach(EXAMPLE ${EXAMPLES})
     # Get the example sources from its declaration.
@@ -178,6 +263,11 @@ foreach(EXAMPLE ${EXAMPLES})
     # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
 
-    # link target with btstack library
-    target_link_libraries(${EXAMPLE} btstack pthread)
+    # Scoped pilots use their resolved source closures. Other examples continue
+    # to use the compatibility all-sources library.
+    if(EXAMPLE IN_LIST BTSTACK_SCOPED_EXAMPLES)
+        target_link_libraries(${EXAMPLE} btstack_${EXAMPLE} pthread)
+    else()
+        target_link_libraries(${EXAMPLE} btstack pthread)
+    endif()
 endforeach(EXAMPLE)
