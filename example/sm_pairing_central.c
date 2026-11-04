@@ -237,6 +237,8 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
+/* LISTING_END */
+
 /* @section HCI packet handler
  * 
  * @text The SM packet handler receives Security Manager Events required for pairing.

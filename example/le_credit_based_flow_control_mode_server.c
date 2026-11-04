@@ -313,6 +313,8 @@ static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
+/* LISTING_END */
+
 /* @section Main Application Setup
  *
  * @text Listing MainConfiguration shows main application code.
@@ -321,6 +323,7 @@ static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *p
  * and boots the Bluetooth stack.
  */
 
+/* LISTING_START(MainConfiguration): Main application setup */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
@@ -364,4 +367,6 @@ int btstack_main(int argc, const char * argv[]){
 	    
     return 0;
 }
+/* LISTING_END */
+
 /* EXAMPLE_END */

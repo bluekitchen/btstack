@@ -55,12 +55,14 @@
 #include "btstack.h"
 
 
+/* LISTING_START(Remote): Configure remote address. */
 #ifndef HAVE_POSIX_FILE_IO
 #ifndef REMOTE_ADDR_STRING
 #define REMOTE_ADDR_STRING "00:1A:7D:DA:71:01"
 #endif
 static const char * remote_addr_string = REMOTE_ADDR_STRING;
 #endif
+/* LISTING_END */
 
 static bd_addr_t remote_addr;
 
