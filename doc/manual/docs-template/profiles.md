@@ -454,7 +454,7 @@ can also provide Scan Response data, which has to be explicitly queried
 by the central device. It can be set with *gap_scan_response_set_data*.
 
 Please have a look at the [SPP and LE
-Counter example](examples/examples.md#sec:sppandlecounterExample).
+Counter example](examples/examples.md#sec:sppandgattcounterExample).
 
 The scan parameters can be set with
 *gap_set_scan_parameters*. The scan can be started/stopped

@@ -23,9 +23,8 @@ nav:
   - 'Events and Errors': appendix/events_errors.md
   - 'Migration to v1.0': appendix/migration.md
 
-# markdown_extensions:
-#   - toc:
-#       permalink: '#'
+markdown_extensions:
+  - attr_list
 
 # extra:
 #   history_buttons: false

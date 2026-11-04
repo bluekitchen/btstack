@@ -23,12 +23,51 @@ def process_source_file_link(mdin, mdout, githuburl, line):
         line = ''
     return line
 
+def process_relative_links(source_file, line):
+    def add_markdown_extension(match):
+        prefix, url, suffix = match.groups()
+
+        # Preserve anchors, external URLs, and links that already name a file.
+        if url.startswith(("#", "/", "http://", "https://", "mailto:")):
+            return match.group(0)
+
+        target, separator, fragment = url.partition("#")
+        if not target or target.endswith(".md"):
+            return match.group(0)
+
+        # The templates use MkDocs site-style links (e.g. ../profiles/#anchor),
+        # while MkDocs validates source links against Markdown files.
+        target_without_slash = target.rstrip("/")
+        source_dir = os.path.dirname(source_file)
+        candidates = [
+            (os.path.normpath(os.path.join(source_dir, target_without_slash + ".md")), target_without_slash + ".md")
+        ]
+
+        # Root-level pages historically used ../foo/ for the site's /foo/
+        # route. In Markdown, the corresponding source file is foo.md in the
+        # same directory.
+        if target_without_slash.startswith("../"):
+            candidates.append((
+                os.path.normpath(os.path.join(source_dir, target_without_slash[3:] + ".md")),
+                target_without_slash[3:] + ".md"
+            ))
+
+        for candidate, updated_target in candidates:
+            if os.path.isfile(candidate):
+                updated_url = updated_target + (separator + fragment if separator else "")
+                return prefix + updated_url + suffix
+
+        return match.group(0)
+
+    return re.sub(r'(\[[^\]]+\]\()([^)\s]+)(\))', add_markdown_extension, line)
+
 # handlers for various elements
 def process_section(mdin, mdout, line):
     section = re.match(r'(#+.*){#(sec:.*)}',line)
     if section:
-        insert_anchor(mdout, section.group(2))
-        mdout.write(section.group(1)+"\n")
+        # Keep explicit heading IDs as Markdown attributes.  With MkDocs'
+        # attr_list extension these are both rendered and validated as anchors.
+        mdout.write(line)
         line = ''
     return line
 
@@ -88,6 +127,7 @@ def process_file(mk_file, markdownfolder, mkdocsfolder, githuburl):
     with open(dest_file, 'wt') as mdout:
         with open(source_file, 'rt') as mdin:
             for line in mdin:
+                line = process_relative_links(source_file, line)
                 line = process_section(mdin, mdout, line)
                 if len(line) == 0:
                     continue

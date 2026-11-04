@@ -186,10 +186,12 @@ def writeListings(aout, infile_name, ref_prefix, git_branch_name):
             if state == State.SearchExampleStart:
                 parts = re.match(r'.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
                 if parts: 
-                    label = parts.group(2).replace("_","")
                     title = latexText(parts.group(2), ref_prefix)
                     desc  = latexText(parts.group(3), ref_prefix)
-                    aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABEL", label).replace("GIT_BRANCH", git_branch_name))
+                    # The example index is keyed by source filename.  Use the
+                    # same stable label for its section, even if EXAMPLE_START
+                    # contains a legacy name.
+                    aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABEL", ref_prefix).replace("GIT_BRANCH", git_branch_name))
                     state = State.SearchListingStart
                 continue
            
