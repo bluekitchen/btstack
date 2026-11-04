@@ -110,9 +110,20 @@ endif()
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 
-# Support selected by the libusb port's common main.c. All examples need these
-# groups independently of their own protocol/profile requirements.
-set(BTSTACK_LIBUSB_BASE_GROUPS
+# Host runtime/platform facilities that can be shared by Bluetooth and
+# standalone examples. Bluetooth controller setup remains separate below.
+set(BTSTACK_LIBUSB_RUNTIME_PLATFORM_GROUPS
+    platform-posix-run-loop
+    platform-posix-signal
+    platform-posix-stdin
+    platform-posix-wav
+)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_LIBUSB_RUNTIME_PLATFORM_GROUPS platform-posix-audio-portaudio)
+endif()
+
+# Support selected by the libusb port's common Bluetooth main.c.
+set(BTSTACK_LIBUSB_BLUETOOTH_GROUPS
     # This dual-mode port enables BLE in btstack_config.h. All Classic examples
     # support pairing, and cross-transport key derivation requires SM.
     # btstack_add_scoped_example_library does not resolve BASE_GROUPS.
@@ -121,22 +132,18 @@ set(BTSTACK_LIBUSB_BASE_GROUPS
     le-device-db-tlv
     link-key-db-tlv
     tlv-none
-    platform-posix-run-loop
-    platform-posix-signal
-    platform-posix-stdin
     platform-posix-tlv
     platform-posix-hci-dump
-    platform-posix-wav
     platform-libusb-h2
     chipset-realtek
     chipset-zephyr
     third-party-micro-ecc
     third-party-rijndael
 )
-if(PORTAUDIO_FOUND)
-    # main.c configures the PortAudio instances whenever HAVE_PORTAUDIO is set.
-    list(APPEND BTSTACK_LIBUSB_BASE_GROUPS platform-posix-audio-portaudio)
-endif()
+set(BTSTACK_LIBUSB_BLUETOOTH_BASE_GROUPS
+    ${BTSTACK_LIBUSB_RUNTIME_PLATFORM_GROUPS}
+    ${BTSTACK_LIBUSB_BLUETOOTH_GROUPS}
+)
 
 # The first scoped source-closure pilots. They share the port baseline above,
 # but their protocol implementation sources come only from their declared
@@ -185,7 +192,7 @@ foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
         PORT libusb
         EXAMPLE ${example}
         GROUP_OBJECT_TARGET_PREFIX btstack_libusb
-        BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
+        BASE_GROUPS ${BTSTACK_LIBUSB_BLUETOOTH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
