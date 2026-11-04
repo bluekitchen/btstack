@@ -226,6 +226,8 @@ set(btstack_group_dependencies_classic_a2dp
 set(btstack_group_dependencies_classic_a2dp_sink
     classic-a2dp
     classic-avdtp-sink
+    classic-btstack-sbc
+    third-party-bluedroid-sbc
 )
 set(btstack_group_dependencies_classic_avdtp_source
     classic-avdtp-initiator
@@ -234,6 +236,8 @@ set(btstack_group_dependencies_classic_avdtp_source
 set(btstack_group_dependencies_classic_a2dp_source
     classic-a2dp
     classic-avdtp-source
+    classic-btstack-sbc
+    third-party-bluedroid-sbc
 )
 set(btstack_group_dependencies_classic_avrcp_cover_art_client
     classic-goep-client
@@ -749,11 +753,11 @@ function(btstack_add_scoped_example_library)
         example_groups
         example_configuration_requirements
     )
-    set(library_groups
+    set(requested_library_groups
         ${example_groups}
         ${ARG_BASE_GROUPS}
     )
-    list(REMOVE_DUPLICATES library_groups)
+    btstack_resolve_groups(library_groups GROUPS ${requested_library_groups})
     btstack_collect_include_directories(example_include_directories
         ROOT "${ARG_ROOT}"
         GROUPS ${library_groups}

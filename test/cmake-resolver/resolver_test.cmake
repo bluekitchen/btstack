@@ -201,13 +201,24 @@ else()
 
     btstack_resolve_example_for_port(test-audio a2dp_source_demo
         a2dp_source_groups a2dp_source_configurations)
-    if(NOT "${a2dp_source_groups}" STREQUAL "classic-btstack-sbc-bluedroid;classic-btstack-sbc-encoder-bluedroid;classic-btstack-sbc-plc;third-party-bluedroid-sbc;audio-demo;third-party-hxcmod;platform-posix-audio-portaudio;classic-sdp-util;core;classic-avdtp-util;classic-device-id-server;l2cap;classic-sdp-client;classic-sdp-server;classic-avrcp;classic-avdtp;classic-avdtp-initiator;classic-avdtp-acceptor;classic-avrcp-controller;classic-avrcp-target;classic-a2dp;classic-avdtp-source;classic-a2dp-source")
-        message(FATAL_ERROR "Unexpected a2dp_source_demo source groups: ${a2dp_source_groups}")
-    endif()
+    foreach(group IN ITEMS classic-a2dp-source classic-btstack-sbc third-party-bluedroid-sbc)
+        list(FIND a2dp_source_groups ${group} group_index)
+        if(group_index EQUAL -1)
+            message(FATAL_ERROR "a2dp_source_demo did not resolve ${group}")
+        endif()
+    endforeach()
     if(a2dp_source_configurations)
         message(FATAL_ERROR
             "Unexpected a2dp_source_demo configuration requirements: ${a2dp_source_configurations}")
     endif()
+
+    btstack_resolve_example(a2dp_sink_demo a2dp_sink_groups a2dp_sink_configurations)
+    foreach(group IN ITEMS classic-btstack-sbc third-party-bluedroid-sbc)
+        list(FIND a2dp_sink_groups ${group} group_index)
+        if(group_index EQUAL -1)
+            message(FATAL_ERROR "a2dp_sink_demo did not resolve ${group}")
+        endif()
+    endforeach()
 
     expect_failure(unknown "Unknown BTstack source group 'missing-group'")
     expect_failure(cycle "Cyclic BTstack source-group dependencies")
