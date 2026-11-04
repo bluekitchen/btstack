@@ -227,6 +227,7 @@ set(BTSTACK_SCOPED_EXAMPLES
     hfp_ag_demo hfp_hf_demo hsp_ag_demo hsp_hs_demo
     a2dp_sink_demo a2dp_source_demo
     gap_le_advertisements le_credit_based_flow_control_mode_client le_mitm
+    audio_duplex led_counter mod_player sine_player audio_player
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
