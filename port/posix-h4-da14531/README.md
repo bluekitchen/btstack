@@ -16,7 +16,7 @@ and change the initial UART baud rate to 460800 as long as you don't power cycle
 For production use, the DA14531 could be power cycled from the main CPU during startup, e.g. after the call
 to btstack_chipset_da145xx_download_firmware_with_uart, or, the HCI firmware could be burned into the OTP.
 
-# Software Setup / Firmware
+## Software Setup / Firmware
 
 On the [DA14531 USB Development Kit](https://www.dialog-semiconductor.com/products/bluetooth-low-energy/da14531-development-kit-usb),
 the UART is configured via DIP switched. By this, the mapping to the DA14531 GPIOs is fixed. In SDK 6.0.6.1144, the
@@ -54,7 +54,7 @@ After compilation with Keil uVision 5, the generated .hex file is copied into bt
 `convert_hex_files" is used to convert it into a C data array.
 
 
-# Hardware Setup - Dev Kit Pro
+## Hardware Setup - Dev Kit Pro
 
 To use the [DA14531 Dev Kit Pro](https://www.dialog-semiconductor.com/products/bluetooth-low-energy/da14530-and-da14531-development-kit-pro)
 with BTstack, please make the following modifications:
@@ -63,7 +63,7 @@ with BTstack, please make the following modifications:
   and set SW1 of the 14531 daughter board into position "BUCK" position marked with an "H" on the left side.
 - configure the dev kit for Full UART (4-wire) Configuration by adding jumper wires between J1 and J2
 
-# Hardware Setup - Dev Kit USB
+## Hardware Setup - Dev Kit USB
 
 To use the [Dev Kit USB](https://www.dialog-semiconductor.com/products/bluetooth-low-energy/da14531-development-kit-usb#tab-field_tab_content_overview)
 with BTstack, please make the following modifications:
