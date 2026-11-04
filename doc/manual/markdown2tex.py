@@ -62,7 +62,7 @@ def postprocess_file(markdown_filepath, fout, title):
     with open(markdown_filepath, 'r') as fin:
         for line in fin:
             if line == "#\n":
-                fout.write("\n\n#"+ title +"\n\n")
+                fout.write("\n\n# "+ title +"\n\n")
                 continue
             # remove path from section reference
             # e.g. [the SPP Counter example](examples/generated/#sec:sppcounterExample)
