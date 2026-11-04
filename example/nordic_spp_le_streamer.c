@@ -159,10 +159,10 @@ static void test_track_sent(nordic_spp_le_streamer_connection_t * context, int b
 /* 
  * @section HCI Packet Handler
  *
- * @text The packet handler prints the welcome message and requests a connection paramter update for LE Connections
+ * @text The packet handler prints the welcome message and requests a connection parameter update for LE Connections
  */
 
-/* LISTING_START(packetHandler): Packet Handler */
+/* LISTING_START(hciPacketHandler): HCI Packet Handler */
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -222,7 +222,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
  * @text The packet handler is used to setup and tear down the spp-over-gatt connection and its MTU
  */
 
-/* LISTING_START(packetHandler): Packet Handler */
+/* LISTING_START(attPacketHandler): ATT Packet Handler */
 static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
