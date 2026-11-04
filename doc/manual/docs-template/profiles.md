@@ -190,7 +190,7 @@ preserve packet boundaries if you try to send data as packets and read about
 ### Accessing an SPP Server on a remote device
 
 To access a remote SPP server, you first need to query the remote device
-for its SPP services. Section [on querying remote SDP service](#sec:querySDPProtocols)
+for its SPP services. Section [on querying remote SDP service](protocols.md#sec:querySDPProtocols)
 shows how to query for all RFCOMM channels. For SPP, you can do the same
 but use the SPP UUID 0x1101 for the query. After you have identified the
 correct RFCOMM channel, you can create an RFCOMM connection as shown
@@ -403,9 +403,9 @@ Typical HID hosts would be a personal computer, tablets, gaming console, industr
 
 Please refer to:
 
-- [HID Host API](../appendix/apis/#sec:hidHostAPIAppendix) and [hid_host_demo](../examples/examples/#sec:hidhostdemoExample) for the HID Host role
+- [HID Host API](appendix/apis.md#sec:hid_host_api) and [hid_host_demo](../examples/examples/#sec:hidhostdemoExample) for the HID Host role
 
-- [HID Device API](../appendix/apis/#sec:hidDeviceAPIAppendix), [hid_keyboard_demo](../examples/examples/#sec:hidkeyboarddemoExample) and [hid_mouse_demo](../examples/examples/#sec:hidmousedemoExample)  for the HID Device role.
+- [HID Device API](appendix/apis.md#sec:hid_device_api), [hid_keyboard_demo](../examples/examples/#sec:hidkeyboarddemoExample) and [hid_mouse_demo](../examples/examples/#sec:hidmousedemoExample)  for the HID Device role.
 
 
 ## GAP LE - Generic Access Profile for Low Energy
@@ -454,7 +454,7 @@ can also provide Scan Response data, which has to be explicitly queried
 by the central device. It can be set with *gap_scan_response_set_data*.
 
 Please have a look at the [SPP and LE
-Counter example](../examples/examples/#sec:sppandlecounterExample).
+Counter example](examples/examples.md#sec:sppandlecounterExample).
 
 The scan parameters can be set with
 *gap_set_scan_parameters*. The scan can be started/stopped
@@ -686,7 +686,7 @@ The following code snippet shows how to perform write without response.
 
 
 For more details on the available GATT queries, please consult
-[GATT Client API](#sec:gattClientAPIAppendix).
+[GATT Client API](appendix/apis.md#sec:gatt_client_api).
 
 
 #### GATT Client Caching

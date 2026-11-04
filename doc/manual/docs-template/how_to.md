@@ -93,7 +93,7 @@ BTstack properties:
 |--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | ENABLE_A2DP_EXPLICIT_CONFIG                                                    | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                                |
 | ENABLE_AIROC_DOWNLOAD_MODE                                                     | Enable AIROC (newer Infineon) Controller PatchRAM download mode                                                             |
-| ENABLE_ATT_DELAYED_RESPONSE                                                    | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)                               |
+| ENABLE_ATT_DELAYED_RESPONSE                                                    | Enable support for delayed ATT operations, see [GATT Server](profiles.md#sec:GATTServerProfiles)                            |
 | ENABLE_AVDTP_ACCEPTOR_<br>EXPLICIT_START_STREAM_<br>CONFIRMATION               | Allow accept or reject of stream start on A2DP_SUBEVENT_<br>START_STREAM_REQUESTED                                          |
 | ENABLE_BCM_PCM_WBS                                                             | Enable support for Wide-Band Speech codec in BCM controller, requires<br>ENABLE_SCO_OVER_PCM                                |
 | ENABLE_BLE                                                                     | Enable BLE related code in HCI and L2CAP                                                                                    |
@@ -430,7 +430,7 @@ before its event handler callback is executed. If you need a periodic
 timer, you can re-register the same timer source in the callback
 function, as shown in Listing [PeriodicTimerHandler]. Note that BTstack
 expects to get called periodically to keep its time, see Section
-[on time abstraction](#sec:timeAbstractionPorting) for more on the
+[on time abstraction](porting.md#sec:timeAbstractionPorting) for more on the
 tick hardware abstraction.
 
 BTstack provides different run loop implementations that implement the *btstack_run_loop_t* interface:
@@ -467,7 +467,7 @@ If the run loop allows to trigger polling of data sources from interrupt context
 On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS,
 *btstack_run_loop_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
 
-The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix).
+The complete Run loop API is provided [here](appendix/apis.md#sec:btstack_run_loop_api).
 
 
 ### Run Loop Embedded
@@ -697,7 +697,7 @@ resulting events are delivered back to the application. Instead of
 writing a single callback handler for each possible event (as it is done
 in some other Bluetooth stacks), BTstack groups events logically and
 provides them over a single generic interface. Appendix
-[Events and Errors](generated/appendix/#sec:eventsAndErrorsAppendix)
+[Events and Errors](appendix/events_errors.md#sec:eventsAndErrorsAppendix)
 summarizes the parameters and event
 codes of L2CAP and RFCOMM events, as well as possible errors and the
 corresponding error codes.

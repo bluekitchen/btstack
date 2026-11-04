@@ -779,7 +779,7 @@ record.
 ### Query remote SDP service {#sec:querySDPProtocols}
 
 BTstack provides an SDP client to query SDP services of a remote device.
-The SDP Client API is shown in [here](../appendix/apis/#sec:sdpAPIAppendix). The
+The SDP Client API is shown [here](appendix/apis.md#sec:sdp_client_api). The
 *sdp_client_query* function initiates an L2CAP connection to the
 remote SDP server. Upon connect, a *Service Search Attribute* request
 with a *Service Search Pattern* and a *Attribute ID List* is sent. The
@@ -925,7 +925,7 @@ implementation. The constant data are automatically served by the ATT server upo
 request. To receive the dynamic data, such is characteristic value, the
 application needs to register read and/or write callback. In addition,
 notifications and indications can be sent. Please see Section on 
-[GATT server](../profiles/#sec:GATTServerProfile) for more.
+[GATT server](profiles.md#sec:GATTServerProfiles) for more.
 
 ## SMP - Security Manager Protocol {#sec:smpProtocols}
 
