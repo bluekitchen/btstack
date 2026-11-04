@@ -164,8 +164,6 @@ endif()
 set(BTSTACK_POSIX_H4_BLUETOOTH_GROUPS
     # This dual-mode port enables BLE in btstack_config.h. All Classic examples
     # support pairing, and cross-transport key derivation requires SM.
-    # btstack_add_scoped_example_library does not resolve BASE_GROUPS.
-    l2cap
     ble
     le-device-db-tlv
     link-key-db-tlv
