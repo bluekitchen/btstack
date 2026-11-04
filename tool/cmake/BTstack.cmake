@@ -108,6 +108,17 @@ set(btstack_group_dependencies_gatt_service_ublox_spp_service_server
 set(btstack_group_dependencies_classic_rfcomm
     l2cap
 )
+set(btstack_group_dependencies_classic_sdp_server
+    l2cap
+    classic-sdp-util
+)
+# The SPP server group supplies the record builder used by an SPP server.
+# Its profile-level closure also selects the RFCOMM data channel and SDP
+# registration server required to expose that record.
+set(btstack_group_dependencies_classic_spp_server
+    classic-rfcomm
+    classic-sdp-server
+)
 
 # During the incremental split, l2cap sources remain in the legacy core group
 # as well as their l2cap leaf group. Group object targets give each source one

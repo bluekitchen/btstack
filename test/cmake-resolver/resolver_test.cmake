@@ -78,6 +78,15 @@ else()
         message(FATAL_ERROR "Resolver did not remove duplicate groups: ${resolved}")
     endif()
 
+    btstack_resolve_example(spp_counter spp_counter_groups spp_counter_configurations)
+    if(NOT "${spp_counter_groups}" STREQUAL "classic-sdp-util;core;l2cap;classic-rfcomm;classic-sdp-server;classic-spp-server")
+        message(FATAL_ERROR "Unexpected spp_counter source groups: ${spp_counter_groups}")
+    endif()
+    if(spp_counter_configurations)
+        message(FATAL_ERROR
+            "Unexpected spp_counter configuration requirements: ${spp_counter_configurations}")
+    endif()
+
     btstack_resolve_example(gatt_counter gatt_counter_groups gatt_counter_configurations)
     if(NOT "${gatt_counter_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-server")
         message(FATAL_ERROR "Unexpected gatt_counter source groups: ${gatt_counter_groups}")

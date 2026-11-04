@@ -150,6 +150,9 @@ list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 # Scoped pilots use the H4 port's common setup plus the implementation closure
 # resolved from each example declaration.
 set(BTSTACK_POSIX_H4_BASE_GROUPS
+    # This dual-mode port enables BLE in btstack_config.h. All Classic examples
+    # support pairing, and cross-transport key derivation requires SM.
+    ble
     le-device-db-tlv
     link-key-db-tlv
     tlv-none
@@ -197,6 +200,7 @@ set(BTSTACK_SCOPED_EXAMPLES
     sm_pairing_central
     sm_pairing_peripheral
     ublox_spp_le_counter
+    spp_counter
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
