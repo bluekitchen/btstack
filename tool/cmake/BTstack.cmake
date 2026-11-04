@@ -347,7 +347,7 @@ function(btstack_resolve_groups output_variable)
 endfunction()
 
 function(btstack_collect_group_paths output_variable)
-    cmake_parse_arguments(ARG "" "ROOT;VARIABLE_PREFIX" "GROUPS" ${ARGN})
+    cmake_parse_arguments(ARG "ALLOW_UNDEFINED" "ROOT;VARIABLE_PREFIX" "GROUPS" ${ARGN})
 
     if(NOT ARG_ROOT)
         message(FATAL_ERROR "btstack_collect_group_paths requires ROOT")
@@ -373,8 +373,12 @@ function(btstack_collect_group_paths output_variable)
         string(REPLACE "-" "_" group_suffix "${group}")
         set(group_variable "${ARG_VARIABLE_PREFIX}_${group_suffix}")
         if(NOT DEFINED ${group_variable})
-            message(FATAL_ERROR
-                "BTstack source group '${group}' has no ${group_variable} definition")
+            if(ARG_ALLOW_UNDEFINED)
+                continue()
+            else()
+                message(FATAL_ERROR
+                    "BTstack source group '${group}' has no ${group_variable} definition")
+            endif()
         endif()
 
         foreach(source IN LISTS ${group_variable})
@@ -409,6 +413,17 @@ endfunction()
 function(btstack_collect_include_directories output_variable)
     btstack_collect_group_paths(${output_variable}
         VARIABLE_PREFIX btstack_include_directories
+        ${ARGN})
+    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
+endfunction()
+
+# Collect root-relative include directories that applications need when they
+# directly use APIs supplied by selected source groups. These are intentionally
+# distinct from private implementation include directories.
+function(btstack_collect_consumer_include_directories output_variable)
+    btstack_collect_group_paths(${output_variable}
+        ALLOW_UNDEFINED
+        VARIABLE_PREFIX btstack_consumer_include_directories
         ${ARGN})
     set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
 endfunction()
@@ -552,16 +567,17 @@ function(btstack_declare_port port)
     set(btstack_declared_ports "${btstack_declared_ports}" PARENT_SCOPE)
 endfunction()
 
-# Register concrete source groups that provide one port-neutral capability.
-# A port may provide multiple groups for a capability, for example multiple
-# runtime-selectable audio backends.
+# Register source groups, port-local sources, and public include directories
+# that provide one port-neutral capability. A port may provide multiple groups
+# for a capability, for example multiple runtime-selectable audio backends.
+# Header-only capabilities are supported as well.
 #
 # Usage:
 #   btstack_declare_port_provider(libusb
 #       CAPABILITY audio
 #       GROUPS platform-posix-audio-portaudio)
 function(btstack_declare_port_provider port)
-    cmake_parse_arguments(ARG "" "CAPABILITY" "GROUPS" ${ARGN})
+    cmake_parse_arguments(ARG "" "CAPABILITY" "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES" ${ARGN})
 
     list(FIND btstack_declared_ports "${port}" port_index)
     if(port_index EQUAL -1)
@@ -570,8 +586,9 @@ function(btstack_declare_port_provider port)
     if(NOT ARG_CAPABILITY)
         message(FATAL_ERROR "btstack_declare_port_provider(${port}) requires CAPABILITY")
     endif()
-    if(NOT ARG_GROUPS)
-        message(FATAL_ERROR "btstack_declare_port_provider(${port}) requires at least one GROUP")
+    if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES)
+        message(FATAL_ERROR
+            "btstack_declare_port_provider(${port}) requires GROUPS, SOURCES, or PUBLIC_INCLUDE_DIRECTORIES")
     endif()
 
     foreach(group IN LISTS ARG_GROUPS)
@@ -588,6 +605,21 @@ function(btstack_declare_port_provider port)
     set(provider_groups ${${provider_variable}} ${ARG_GROUPS})
     list(REMOVE_DUPLICATES provider_groups)
     set(${provider_variable} "${provider_groups}" PARENT_SCOPE)
+
+    set(provider_include_directories_variable
+        "${provider_variable}_public_include_directories")
+    set(provider_include_directories
+        ${${provider_include_directories_variable}}
+        ${ARG_PUBLIC_INCLUDE_DIRECTORIES})
+    list(REMOVE_DUPLICATES provider_include_directories)
+    set(${provider_include_directories_variable}
+        "${provider_include_directories}" PARENT_SCOPE)
+
+    set(provider_sources_variable "${provider_variable}_sources")
+    set(provider_sources ${${provider_sources_variable}} ${ARG_SOURCES})
+    list(REMOVE_DUPLICATES provider_sources)
+    set(${provider_sources_variable} "${provider_sources}" PARENT_SCOPE)
+    set(${provider_variable}_declared TRUE PARENT_SCOPE)
 endfunction()
 
 # Resolve the source-group and configuration requirements declared by one
@@ -616,7 +648,7 @@ function(btstack_resolve_example_requirements example port groups_output_variabl
             string(REPLACE "-" "_" port_suffix "${port}")
             string(REPLACE "-" "_" capability_suffix "${requirement}")
             set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
-            if(DEFINED ${provider_variable})
+            if(DEFINED ${provider_variable}_declared)
                 list(APPEND source_groups ${${provider_variable}})
             else()
                 message(FATAL_ERROR
@@ -638,6 +670,55 @@ function(btstack_resolve_example_requirements example port groups_output_variabl
 
     set(${groups_output_variable} "${resolved_groups}" PARENT_SCOPE)
     set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
+endfunction()
+
+# Collect one metadata property supplied by port capabilities requested by an
+# example. This supports header-only and port-local-source capabilities.
+function(btstack_collect_example_port_provider_property output_variable port example property)
+    list(FIND btstack_declared_ports "${port}" port_index)
+    if(port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${port}' has not been declared")
+    endif()
+    list(FIND btstack_declared_examples "${example}" example_index)
+    if(example_index EQUAL -1)
+        message(FATAL_ERROR "BTstack example '${example}' has not been declared")
+    endif()
+
+    string(REPLACE "-" "_" port_suffix "${port}")
+    set(values)
+    foreach(requirement IN LISTS btstack_example_${example}_needs)
+        list(FIND btstack_source_groups "${requirement}" group_index)
+        if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+            continue()
+        endif()
+
+        string(REPLACE "-" "_" capability_suffix "${requirement}")
+        set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
+        if(NOT DEFINED ${provider_variable}_declared)
+            message(FATAL_ERROR
+                "BTstack example '${example}' needs capability '${requirement}', "
+                "but port '${port}' does not provide it")
+        endif()
+        list(APPEND values ${${provider_variable}_${property}})
+    endforeach()
+
+    list(REMOVE_DUPLICATES values)
+    set(${output_variable} "${values}" PARENT_SCOPE)
+endfunction()
+
+# Collect public include directories supplied by port capabilities requested by
+# an example.
+function(btstack_collect_example_port_public_include_directories output_variable port example)
+    btstack_collect_example_port_provider_property(${output_variable}
+        "${port}" "${example}" public_include_directories)
+    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
+endfunction()
+
+# Collect port-local sources supplied by capabilities requested by an example.
+function(btstack_collect_example_port_sources output_variable port example)
+    btstack_collect_example_port_provider_property(${output_variable}
+        "${port}" "${example}" sources)
+    set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
 endfunction()
 
 function(btstack_resolve_example example groups_output_variable configuration_output_variable)
@@ -753,6 +834,10 @@ function(btstack_add_scoped_example_library)
         example_groups
         example_configuration_requirements
     )
+    btstack_collect_example_port_public_include_directories(
+        example_port_public_include_directories ${ARG_PORT} ${ARG_EXAMPLE})
+    btstack_collect_example_port_sources(example_port_sources
+        ${ARG_PORT} ${ARG_EXAMPLE})
     set(requested_library_groups
         ${example_groups}
         ${ARG_BASE_GROUPS}
@@ -762,8 +847,12 @@ function(btstack_add_scoped_example_library)
         ROOT "${ARG_ROOT}"
         GROUPS ${library_groups}
     )
+    btstack_collect_consumer_include_directories(example_consumer_include_directories
+        ROOT "${ARG_ROOT}"
+        GROUPS ${library_groups}
+    )
 
-    set(example_library_sources ${ARG_PORT_SOURCES})
+    set(example_library_sources ${ARG_PORT_SOURCES} ${example_port_sources})
     if(ARG_GROUP_OBJECT_TARGET_PREFIX)
         foreach(group IN LISTS library_groups)
             btstack_add_scoped_group_object_library(
@@ -786,9 +875,12 @@ function(btstack_add_scoped_example_library)
 
     add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)
-    if(ARG_PUBLIC_INCLUDE_DIRECTORIES)
+    if(ARG_PUBLIC_INCLUDE_DIRECTORIES OR example_port_public_include_directories
+            OR example_consumer_include_directories)
         target_include_directories(${ARG_TARGET} PUBLIC
-            ${ARG_PUBLIC_INCLUDE_DIRECTORIES})
+            ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
+            ${example_port_public_include_directories}
+            ${example_consumer_include_directories})
     endif()
     target_include_directories(${ARG_TARGET} PRIVATE
         ${ARG_PRIVATE_INCLUDE_DIRECTORIES}

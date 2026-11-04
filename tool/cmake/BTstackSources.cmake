@@ -143,6 +143,7 @@ set(btstack_source_groups
     platform-posix-audio
     platform-posix-audio-portaudio
     platform-posix-audio-sdl2
+    platform-posix-hal-led
     platform-posix-hci-dump
     platform-posix-link-key-db-fs
     platform-posix-main-config
@@ -1393,6 +1394,7 @@ set(btstack_include_directories_platform_libusb_h2
 set(btstack_sources_platform_posix
     platform/posix/btstack_audio_portaudio.c
     platform/posix/btstack_audio_sdl2.c
+    platform/posix/hal_led_posix.c
     platform/posix/btstack_link_key_db_fs.c
     platform/posix/btstack_main_config.c
     platform/posix/btstack_network_posix.c
@@ -1438,6 +1440,16 @@ set(btstack_sources_platform_posix_audio_sdl2
 )
 
 set(btstack_include_directories_platform_posix_audio_sdl2
+    src
+    platform/posix
+)
+
+set(btstack_sources_platform_posix_hal_led
+    platform/posix/hal_led_posix.c
+)
+
+set(btstack_include_directories_platform_posix_hal_led
+    platform/embedded
     src
     platform/posix
 )

@@ -38,6 +38,11 @@ if (PkgConfig_FOUND)
         )
     endif()
 endif()
+btstack_declare_port_provider(posix-h4
+    CAPABILITY led
+    GROUPS platform-posix-hal-led
+    PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"
+)
 
 # pthread
 find_package(Threads)
@@ -81,6 +86,10 @@ set(BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS
     platform-posix-signal
     platform-posix-stdin
 )
+if(PORTAUDIO_FOUND)
+    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
+    list(APPEND BTSTACK_POSIX_H4_RUNTIME_PLATFORM_GROUPS platform-posix-audio-portaudio)
+endif()
 
 # Scoped Bluetooth examples use the H4 port's controller setup plus their
 # implementation closure resolved from each example declaration.
@@ -127,11 +136,8 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
-            # main.c provides hal_led_toggle for led_counter.
-            "${BTSTACK_ROOT}/platform/embedded"
             ${PORTAUDIO_INCLUDE_DIRS}
-        PRIVATE_INCLUDE_DIRECTORIES
-            "${BTSTACK_ROOT}/chipset/cc256x"
+        PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
         LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES
             ${CMAKE_THREAD_LIBS_INIT}

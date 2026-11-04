@@ -218,12 +218,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
-}
-
 static void use_fast_uart(void){
     // only increase baudrate if started with default baudrate
     // to avoid issues with custom default baudrates

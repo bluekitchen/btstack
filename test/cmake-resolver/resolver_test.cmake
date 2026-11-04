@@ -51,6 +51,13 @@ else()
             GROUPS platform-posix-audio-portaudio)
     endmacro()
     declare_test_audio_port()
+    macro(declare_test_led_port)
+        btstack_declare_port(test-led)
+        btstack_declare_port_provider(test-led
+            CAPABILITY led
+            PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
+    endmacro()
+    declare_test_led_port()
 
     btstack_collect_public_include_directories(public_include_directories
         ROOT "${BTSTACK_ROOT}")
@@ -65,6 +72,17 @@ else()
     if(NOT "${public_include_directories}" STREQUAL "${expected_public_include_directories}")
         message(FATAL_ERROR
             "Unexpected public include directories: ${public_include_directories}")
+    endif()
+
+    btstack_resolve_example_for_port(test-led led_counter
+        led_counter_groups led_counter_configurations)
+    if(NOT "${led_counter_groups}" STREQUAL "core")
+        message(FATAL_ERROR "Unexpected led_counter source groups: ${led_counter_groups}")
+    endif()
+    btstack_collect_example_port_public_include_directories(led_include_directories
+        test-led led_counter)
+    if(NOT "${led_include_directories}" STREQUAL "${BTSTACK_ROOT}/platform/embedded")
+        message(FATAL_ERROR "Unexpected LED provider includes: ${led_include_directories}")
     endif()
 
     btstack_resolve_groups(resolved GROUPS classic-rfcomm)
