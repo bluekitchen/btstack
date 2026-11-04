@@ -129,7 +129,7 @@ static const char * flags[] = {
 /* LISTING_END */
 
 /* @text BTstack offers an iterator for parsing sequence of advertising data (AD) structures, 
- * see [BLE advertisements parser API](../appendix/apis/#ble-advertisements-parser-api).
+ * see [BLE advertisements parser API](../appendix/apis/#sec:ad_parser_api).
  * After initializing the iterator, each AD structure is dumped according to its type.
  */
 

@@ -41,7 +41,7 @@
 /* EXAMPLE_START(le_credit_based_flow_control_mode_server): LE Credit-Based Flow-Control Mode Server - Receive data over L2CAP
  *
  * @text iOS 11 and newer supports L2CAP channels in LE Credit-Based Flow-Control Mode for fast transfer over LE
- *       [https://github.com/bluekitchen/CBL2CAPChannel-Demo](Basic iOS example on GitHub)
+ *       [Basic iOS example on GitHub](https://github.com/bluekitchen/CBL2CAPChannel-Demo)
  */
  // *****************************************************************************
 
