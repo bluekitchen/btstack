@@ -88,7 +88,7 @@ Chipset properties:
 ### ENABLE_* directives {#sec:enableDirectives}
 BTstack properties:
 
-
+::: {.pdf-config-table}
 | \#define                                                                       | Description                                                                                                                 |
 |--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | ENABLE_A2DP_EXPLICIT_CONFIG                                                    | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                                |
@@ -111,11 +111,11 @@ BTstack properties:
 | ENABLE_EXPLICIT_DEDICATED_<br>BONDING_DISCONNECT                               | Keep connection after dedicated bonding is complete                                                                         |
 | ENABLE_EXPLICIT_IO_<br>CAPABILITIES_REPLY                                      | Let application trigger sending IO Capabilities (Negative) Reply                                                            |
 | ENABLE_EXPLICIT_LINK_<br>KEY_REPLY                                             | Let application trigger sending Link Key (Negative) Response, allows for asynchronous link key lookup                       |
-| ENABLE_EXPLICIT_PAIRING_ON_SECURITY_REQUEST                                    | Let application trigger LE Pairing upon SM_EVENT_SECURITY_REQUEST                                                           |
+| ENABLE_EXPLICIT_<br>PAIRING_ON_SECURITY_<br>REQUEST                            | Let application trigger LE Pairing upon SM_EVENT_SECURITY_REQUEST                                                           |
 | ENABLE_GATT_CLIENT_<br>PAIRING                                                 | Enable GATT Client to start pairing and retry operation on security error                                                   |
 | ENABLE_GATT_CLIENT_<br>CACHING                                                 | Enable GATT Service Client to cache Characteristics in TLV                                                                  |
 | ENABLE_H5                                                                      | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                     |
-| ENABLE_HCI_ACL_PACKET_RESERVATION                                              | Allow to reserve ACL packets independent from the stack                                                                     |                                                                    |
+| ENABLE_HCI_ACL_PACKET_<br>RESERVATION                                              | Allow to reserve ACL packets independent from the stack                                                                     |                                                                    |
 | ENABLE_HCI_COMMAND_STATUS_<br>DISCARDED_FOR_FAILED_<br>CONNECTIONS WORKAROUND  | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received        |
 | ENABLE_HCI_CONTROLLER_<br>TO_HOST_FLOW_CONTROL                                 | Enable HCI Controller to Host Flow Control, see below                                                                       |
 | ENABLE_HCI_SERIALIZED_<br>CONTROLLER_OPERATIONS                                | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                    |
@@ -135,7 +135,7 @@ BTstack properties:
 | ENABLE_LE_PROACTIVE_<br>AUTHENTICATION                                         | Enable automatic encryption for bonded devices on re-connect                                                                |
 | ENABLE_LE_SECURE_<br>CONNECTIONS                                               | Enable LE Secure Connections                                                                                                |
 | ENABLE_LE_SECURE_<br>CONNECTIONS_DEBUG_KEY                                     | Enable support for LE Secure Connection debug keys for testing                                                              |
-| ENABLE_LE_SHORTER_CONNECTION_INTERVALS                                         | Enable LE Shorter Connection Intervals via Frame Space Update and Connection Rate Update                                    |
+| ENABLE_LE_SHORTER_<br>CONNECTION_INTERVALS                                     | Enable LE Shorter Connection Intervals via Frame Space Update and Connection Rate Update                                    |
 | ENABLE_LE_SET_<br>ADV_PARAMS_ON_RANDOM_<br>ADDRESS_CHANGE                      | Send HCI LE Set Advertising Params after HCI LE Set Random Address - workaround for Controller Bug                          |
 | ENABLE_LE_SIGNED_WRITE                                                         | Enable LE Signed Writes in ATT/GATT                                                                                         |
 | ENABLE_LE_WHITELIST<br>_TOUCH_AFTER_<br>RESOLVING_LIST_UPDATE                  | Enable Workaround for Controller bug                                                                                        |
@@ -154,6 +154,8 @@ BTstack properties:
 | ENABLE_TLV_FLASH_<br>EXPLICIT_DELETE_FIELD                                     | Enable use of explicit delete field in TLV Flash implementation - required when flash value cannot be overwritten with zero |
 | ENABLE_TLV_FLASH_<br>WRITE_ONCE                                                | Enable storing of emtpy tag instead of overwriting existing tag - required when flash value cannot be overwritten at all    |
 | ENABLE_VORBIS                                                                  | Enable OGG-Vorbis support in btstack_audio_genrator and examples                                                            |
+:::
+
 Notes:
 
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
