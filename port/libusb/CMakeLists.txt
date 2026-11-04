@@ -134,61 +134,37 @@ endif()
 
 # The first scoped source-closure pilots. They share the port baseline above,
 # but their protocol implementation sources come only from their declared
-# requirements. This stays port-local until more ports establish a common API.
+# requirements.
 set(BTSTACK_SCOPED_EXAMPLES
     gatt_counter
     gatt_heart_rate_client
     gatt_battery_query
     hog_host_demo
 )
-function(btstack_add_libusb_scoped_library example)
-    btstack_resolve_example_for_port(libusb ${example}
-        example_groups
-        example_configuration_requirements
-    )
-    set(library_groups
-        ${example_groups}
-        ${BTSTACK_LIBUSB_BASE_GROUPS}
-    )
-    btstack_collect_sources(example_sources
+foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${example}_library
         ROOT "${BTSTACK_ROOT}"
-        GROUPS ${library_groups}
-    )
-    btstack_collect_include_directories(example_include_directories
-        ROOT "${BTSTACK_ROOT}"
-        GROUPS ${library_groups}
-    )
-
-    add_library(btstack_${example} STATIC
-        ${SOURCES_PORT}
-        ${example_sources}
-    )
-    btstack_target_warnings(btstack_${example} STRICT)
-    target_include_directories(btstack_${example}
-        PUBLIC
+        PORT libusb
+        EXAMPLE ${example}
+        BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
+        PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES
             ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             ${LIBUSB_INCLUDE_DIRS}
-        PRIVATE
+            ${PORTAUDIO_INCLUDE_DIRS}
+        PRIVATE_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
             "${BTSTACK_ROOT}/platform/embedded"
-            ${example_include_directories}
-    )
-    target_link_directories(btstack_${example} PUBLIC ${LIBUSB_LIBRARY_DIRS})
-    target_link_libraries(btstack_${example}
-        PUBLIC
+        LINK_DIRECTORIES
+            ${LIBUSB_LIBRARY_DIRS}
+            ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES
             ${LIBUSB_LIBRARIES}
             ${CMAKE_THREAD_LIBS_INIT}
             m
+            ${PORTAUDIO_LIBRARIES}
     )
-    if(PORTAUDIO_FOUND)
-        target_include_directories(btstack_${example} PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-        target_link_directories(btstack_${example} PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-        target_link_libraries(btstack_${example} PUBLIC ${PORTAUDIO_LIBRARIES})
-    endif()
-endfunction()
-
-foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
-    btstack_add_libusb_scoped_library(${example})
 endforeach()
 
 # create targets
@@ -225,7 +201,7 @@ foreach(EXAMPLE ${EXAMPLES})
     # Scoped pilots use their resolved source closures. Other examples continue
     # to use the compatibility all-sources library.
     if(EXAMPLE IN_LIST BTSTACK_SCOPED_EXAMPLES)
-        target_link_libraries(${EXAMPLE} btstack_${EXAMPLE})
+        target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
     else()
         target_link_libraries(${EXAMPLE} btstack)
     endif()
