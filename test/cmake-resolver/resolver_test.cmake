@@ -93,6 +93,26 @@ else()
             "Unexpected gatt-service-client source groups: ${gatt_service_client_groups}")
     endif()
 
+    btstack_resolve_example(gatt_battery_query gatt_battery_query_groups gatt_battery_query_configurations)
+    if(NOT "${gatt_battery_query_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-client;gatt-server;gatt-service-battery-service-client")
+        message(FATAL_ERROR
+            "Unexpected gatt_battery_query source groups: ${gatt_battery_query_groups}")
+    endif()
+    if(gatt_battery_query_configurations)
+        message(FATAL_ERROR
+            "Unexpected gatt_battery_query configuration requirements: ${gatt_battery_query_configurations}")
+    endif()
+
+    btstack_resolve_example(hog_host_demo hog_host_demo_groups hog_host_demo_configurations)
+    if(NOT "${hog_host_demo_groups}" STREQUAL "core;l2cap;att-db;att-dispatch;ble;gatt-client;gatt-server;gatt-service-client;gatt-service-hids-host")
+        message(FATAL_ERROR
+            "Unexpected hog_host_demo source groups: ${hog_host_demo_groups}")
+    endif()
+    if(hog_host_demo_configurations)
+        message(FATAL_ERROR
+            "Unexpected hog_host_demo configuration requirements: ${hog_host_demo_configurations}")
+    endif()
+
     btstack_resolve_example_for_port(test-audio a2dp_source_demo
         a2dp_source_groups a2dp_source_configurations)
     if(NOT "${a2dp_source_groups}" STREQUAL "classic;platform-posix-audio-portaudio")

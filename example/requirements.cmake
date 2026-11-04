@@ -108,15 +108,25 @@ btstack_declare_example(gatt_counter
     NEEDS gatt-server ENABLE_LE_PERIPHERAL
 )
 
+btstack_declare_example(gatt_battery_query
+    SOURCES gatt_battery_query.c
+    GATT_DB gatt_battery_query.gatt
+    NEEDS gatt-server gatt-service-battery-service-client
+)
+
+btstack_declare_example(hog_host_demo
+    SOURCES hog_host_demo.c
+    GATT_DB hog_host_demo.gatt
+    NEEDS gatt-server gatt-service-hids-host
+)
+
 # Remaining LE examples with an application-specific GATT database.
 foreach(example IN ITEMS
     ancs_client_demo
     att_delayed_response
-    gatt_battery_query
     gatt_browser
     gatt_device_information_query
     gatt_streamer_server
-    hog_host_demo
     hog_keyboard_demo
     hog_mouse_demo
     le_credit_based_flow_control_mode_server
