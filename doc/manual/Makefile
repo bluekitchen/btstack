@@ -45,6 +45,7 @@ docs: docs-markdown
 
 	# docs-markdown -> docs
 	./markdown_update_references.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} -g ${GITHUB_URL}
+	./markdown_validate_links.py -i ${MKDOCS_FOLDER}
 
 
 html: docs

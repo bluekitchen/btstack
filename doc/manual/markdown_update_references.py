@@ -61,6 +61,11 @@ def process_relative_links(source_file, line):
 
     return re.sub(r'(\[[^\]]+\]\()([^)\s]+)(\))', add_markdown_extension, line)
 
+def process_listing_links(line):
+    # MkDocs 1.5 does not validate legacy <a name="lst:..."> targets. Render
+    # their links as HTML and let markdown_validate_links.py validate them.
+    return re.sub(r'\[([^\]]+)\]\((#lst:[^\)\s]+)\)', r'<a href="\2">\1</a>', line)
+
 # handlers for various elements
 def process_section(mdin, mdout, line):
     section = re.match(r'(#+.*){#(sec:.*)}',line)
@@ -128,6 +133,7 @@ def process_file(mk_file, markdownfolder, mkdocsfolder, githuburl):
         with open(source_file, 'rt') as mdin:
             for line in mdin:
                 line = process_relative_links(source_file, line)
+                line = process_listing_links(line)
                 line = process_section(mdin, mdout, line)
                 if len(line) == 0:
                     continue

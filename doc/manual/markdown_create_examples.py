@@ -283,6 +283,18 @@ def writeListings(aout, infile_name, ref_prefix, git_branch_name):
                 parts = re.match(r'.*(LISTING_RESUME).*',line)
                 if parts:
                     state = State.SearchListingEnd
+                    continue
+
+                # A paused listing may intentionally omit its remainder. Close
+                # it on LISTING_END so subsequent listings are still emitted.
+                parts_end = re.match(r'.*(LISTING_END).*',line)
+                if parts_end:
+                    aout.write(code_in_listing)
+                    code_in_listing = ""
+                    aout.write(listing_ending)
+                    state = State.SearchListingStart
+                    writeItemizeBlock(aout, 0)
+                    writeTextBlock(aout, 0)
                 continue
         
             parts = re.match(r'.*(EXAMPLE_END).*',line)
