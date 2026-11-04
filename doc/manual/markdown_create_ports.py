@@ -39,7 +39,14 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                 ports.write(line)
         fin.close()
 
-        for readme_dir, readme_file in sorted(matches.items()):
+        # Sort by directory name, but keep archived ports last in both the
+        # index and the documentation.
+        ordered_readmes = sorted(
+            matches.items(),
+            key=lambda item: (item[0] == "archive", item[0])
+        )
+
+        for readme_dir, readme_file in ordered_readmes:
             with open(readme_file, 'r') as fin:
                 for line in fin:
                     # find title, add reference
@@ -51,7 +58,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
         fin.close()
         ports.write("\n\n")
 
-        for readme_dir, readme_file in sorted(matches.items()):
+        for readme_dir, readme_file in ordered_readmes:
             found_port_title = False
             with open(readme_file, 'r') as fin:
                 for line in fin:
