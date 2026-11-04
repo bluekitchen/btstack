@@ -39,6 +39,72 @@ set(btstack_group_dependencies_gatt_service_hids_host
 set(btstack_group_dependencies_gatt_service_battery_service_client
     gatt-client
 )
+set(btstack_group_dependencies_gatt_service_ancs_client
+    gatt-client
+)
+set(btstack_group_dependencies_gatt_service_device_information_service_client
+    gatt-client
+)
+set(btstack_group_dependencies_gatt_service_immediate_alert_service_client
+    gatt-service-client
+)
+set(btstack_group_dependencies_gatt_service_link_loss_service_client
+    gatt-service-client
+)
+set(btstack_group_dependencies_gatt_service_object_transfer_service_client
+    gatt-service-client
+)
+set(btstack_group_dependencies_gatt_service_scan_parameters_service_client
+    gatt-service-client
+)
+set(btstack_group_dependencies_gatt_service_tx_power_service_client
+    gatt-service-client
+)
+set(btstack_group_dependencies_gatt_service_battery_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_battery_service_v1_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_bond_management_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_cycling_power_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_cycling_speed_and_cadence_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_device_information_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_heart_rate_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_hids_device
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_immediate_alert_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_link_loss_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_nordic_spp_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_object_transfer_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_scan_parameters_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_tx_power_service_server
+    gatt-server
+)
+set(btstack_group_dependencies_gatt_service_ublox_spp_service_server
+    gatt-server
+)
 set(btstack_group_dependencies_classic_rfcomm
     l2cap
 )
