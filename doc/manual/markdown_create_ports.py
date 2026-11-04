@@ -52,18 +52,22 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
         ports.write("\n\n")
 
         for readme_dir, readme_file in sorted(matches.items()):
+            found_port_title = False
             with open(readme_file, 'r') as fin:
                 for line in fin:
-                    #increase level of indentation
-                    parts = re.match(r'#(.*)\n',line)
+                    heading = re.match(r'(#+)\s+(.*)\n', line)
+                    if heading:
+                        level = len(heading.group(1))
+                        title = heading.group(2)
 
-                    title_parts_level1 = re.match(r'(#\s+)(.*)\n',line)
-                    title_parts_level2 = re.match(r'(##\s+)(.*)\n',line)
-                    
-                    if parts and title_parts_level1:
-                        ports.write("## " + title_parts_level1.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
-                    elif parts and title_parts_level2:
-                        ports.write("### " + title_parts_level2.group(2)+ "\n" )
+                        # Separate concatenated READMEs so Pandoc cannot treat
+                        # a port title as continuation text of the prior port.
+                        # Only the README title receives the stable port anchor.
+                        if level == 1 and not found_port_title:
+                            ports.write("\n## " + title + " {#sec:" + readme_dir + "Port}\n\n")
+                            found_port_title = True
+                        else:
+                            ports.write("\n" + "#" * (level + 1) + " " + title + "\n\n")
                     else:
                         ports.write(line)
 
