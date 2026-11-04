@@ -36,7 +36,9 @@
  */
 
 /**
- *  BTstack Run Loop Abstraction
+ * @title BTstack Run Loop
+ *
+ * BTstack Run Loop Abstraction
  *
  *  Provides generic functionality required by the Bluetooth stack and example applications:
  *  - asynchronous IO for various devices Serial, USB, network sockets, console
