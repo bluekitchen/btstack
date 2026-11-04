@@ -226,6 +226,7 @@ set(BTSTACK_SCOPED_EXAMPLES
     pbap_client_demo avrcp_browsing_client
     hfp_ag_demo hfp_hf_demo hsp_ag_demo hsp_hs_demo
     a2dp_sink_demo a2dp_source_demo
+    gap_le_advertisements le_credit_based_flow_control_mode_client le_mitm
 )
 foreach(example IN LISTS BTSTACK_SCOPED_EXAMPLES)
     btstack_add_scoped_example_library(
