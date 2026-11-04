@@ -109,6 +109,14 @@ set(btstack_group_dependencies_classic_rfcomm
     l2cap
 )
 
+# During the incremental split, l2cap sources remain in the legacy core group
+# as well as their l2cap leaf group. Group object targets give each source one
+# owner, so exclude the compatibility copy from core there. Legacy source-list
+# consumers continue to receive the overlapping core list unchanged.
+set(btstack_group_object_excluded_sources_core
+    ${btstack_sources_l2cap}
+)
+
 # Resolve a source-group dependency closure in dependency-first order.
 #
 # Usage:
@@ -502,6 +510,56 @@ function(btstack_resolve_example_for_port port example groups_output_variable co
     set(${configuration_output_variable} "${configuration_requirements}" PARENT_SCOPE)
 endfunction()
 
+# Create a reusable object target for one source group. This is an internal
+# building block for btstack_add_scoped_example_library, but remains separate
+# so groups shared by multiple example closures compile only once per port.
+function(btstack_add_scoped_group_object_library)
+    cmake_parse_arguments(ARG ""
+        "OUTPUT_TARGET;TARGET_PREFIX;ROOT;GROUP"
+        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES"
+        ${ARGN})
+
+    foreach(required OUTPUT_TARGET TARGET_PREFIX ROOT GROUP)
+        if(NOT ARG_${required})
+            message(FATAL_ERROR "btstack_add_scoped_group_object_library requires ${required}")
+        endif()
+    endforeach()
+
+    list(FIND btstack_source_groups "${ARG_GROUP}" group_index)
+    if(group_index EQUAL -1)
+        message(FATAL_ERROR
+            "btstack_add_scoped_group_object_library has unknown source group '${ARG_GROUP}'")
+    endif()
+
+    string(REPLACE "-" "_" group_suffix "${ARG_GROUP}")
+    set(target "${ARG_TARGET_PREFIX}_group_${group_suffix}_objects")
+    if(NOT TARGET ${target})
+        set(group_relative_sources ${btstack_sources_${group_suffix}})
+        set(exclusion_variable "btstack_group_object_excluded_sources_${group_suffix}")
+        if(DEFINED ${exclusion_variable})
+            list(REMOVE_ITEM group_relative_sources ${${exclusion_variable}})
+        endif()
+
+        set(group_sources)
+        foreach(source IN LISTS group_relative_sources)
+            list(APPEND group_sources "${ARG_ROOT}/${source}")
+        endforeach()
+        btstack_collect_include_directories(group_include_directories
+            ROOT "${ARG_ROOT}"
+            GROUPS ${ARG_GROUP}
+        )
+
+        add_library(${target} OBJECT ${group_sources})
+        btstack_target_warnings(${target} STRICT)
+        target_include_directories(${target} PRIVATE
+            ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
+            ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+            ${group_include_directories}
+        )
+    endif()
+    set(${ARG_OUTPUT_TARGET} "${target}" PARENT_SCOPE)
+endfunction()
+
 # Create a static BTstack library for one example's resolved source closure.
 # Port policy remains with the caller: it supplies the baseline source groups,
 # port-local sources, and all target include/link settings.
@@ -521,9 +579,12 @@ endfunction()
 #
 # CONFIGURATION_REQUIREMENTS_OUTPUT is optional. If set, it receives the
 # example's unresolved ENABLE_* requirements for future port validation.
+# GROUP_OBJECT_TARGET_PREFIX is optional. When provided, each selected source
+# group is compiled once into a reusable object target named from that prefix;
+# the example library is then assembled from only the objects in its closure.
 function(btstack_add_scoped_example_library)
     cmake_parse_arguments(ARG ""
-        "TARGET;ROOT;PORT;EXAMPLE;CONFIGURATION_REQUIREMENTS_OUTPUT"
+        "TARGET;ROOT;PORT;EXAMPLE;CONFIGURATION_REQUIREMENTS_OUTPUT;GROUP_OBJECT_TARGET_PREFIX"
         "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;LINK_LIBRARIES;LINK_DIRECTORIES"
         ${ARGN})
 
@@ -541,19 +602,34 @@ function(btstack_add_scoped_example_library)
         ${example_groups}
         ${ARG_BASE_GROUPS}
     )
-    btstack_collect_sources(example_sources
-        ROOT "${ARG_ROOT}"
-        GROUPS ${library_groups}
-    )
+    list(REMOVE_DUPLICATES library_groups)
     btstack_collect_include_directories(example_include_directories
         ROOT "${ARG_ROOT}"
         GROUPS ${library_groups}
     )
 
-    add_library(${ARG_TARGET} STATIC
-        ${ARG_PORT_SOURCES}
-        ${example_sources}
-    )
+    set(example_library_sources ${ARG_PORT_SOURCES})
+    if(ARG_GROUP_OBJECT_TARGET_PREFIX)
+        foreach(group IN LISTS library_groups)
+            btstack_add_scoped_group_object_library(
+                OUTPUT_TARGET group_object_target
+                TARGET_PREFIX "${ARG_GROUP_OBJECT_TARGET_PREFIX}"
+                ROOT "${ARG_ROOT}"
+                GROUP "${group}"
+                PUBLIC_INCLUDE_DIRECTORIES ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
+                PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+            )
+            list(APPEND example_library_sources "$<TARGET_OBJECTS:${group_object_target}>")
+        endforeach()
+    else()
+        btstack_collect_sources(example_sources
+            ROOT "${ARG_ROOT}"
+            GROUPS ${library_groups}
+        )
+        list(APPEND example_library_sources ${example_sources})
+    endif()
+
+    add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)
     if(ARG_PUBLIC_INCLUDE_DIRECTORIES)
         target_include_directories(${ARG_TARGET} PUBLIC
