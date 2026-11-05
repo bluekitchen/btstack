@@ -1,243 +1,89 @@
 cmake_minimum_required(VERSION 3.13)
 project(BTstack-Web-H4 C)
-
-# Require C99
 set(CMAKE_C_STANDARD 99)
 
-# Path to custom HTML shell
-set(SHELL_FILE_TEMPLATE ${CMAKE_SOURCE_DIR}/html/shell_template.html)
+set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+set(SHELL_FILE_TEMPLATE ${CMAKE_CURRENT_SOURCE_DIR}/html/shell_template.html)
+set(PRE_JS ${CMAKE_CURRENT_SOURCE_DIR}/js/interop.js)
 
-# Path to interop js code
-set(PRE_JS ${CMAKE_SOURCE_DIR}/js/interop.js)
-
-# Allow to set path BTstack repository
-if( NOT DEFINED ${BTSTACK_ROOT} )
-    if( NOT DEFINED ENV{EXAMPLE} )
-        set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
-    else()
-        set(EXAMPLE $ENV{EXAMPLE})
-    endif()
-endif()
-message("BTstack root: ${BTSTACK_ROOT}")
-
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
-set(CYW55310_PATCHRAM_NAME ${BTSTACK_CYW55310_PATCHRAM_FILE})
+btstack_declare_port(web-h4)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
 
-# Downloaded web assets, format: "URL|relative/output/path"
-set(WEB_H4_DOWNLOADED_ASSETS
-    "${BTSTACK_CYW55310_PATCHRAM_URL}|${CYW55310_PATCHRAM_NAME}"
-)
+set(PATCHRAM_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}")
+btstack_add_firmware_download(
+    TARGET web_h4_patchram_download
+    OUTPUT "${PATCHRAM_PATH}"
+    URL "${BTSTACK_CYW55310_PATCHRAM_URL}"
+    SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}")
 
-function(web_h4_download_asset asset_entry)
-    string(REPLACE "|" ";" asset_fields "${asset_entry}")
-    list(LENGTH asset_fields asset_fields_len)
-    if (NOT asset_fields_len EQUAL 2)
-        message(FATAL_ERROR "Invalid WEB_H4_DOWNLOADED_ASSETS entry: ${asset_entry}")
-    endif()
+add_compile_definitions(HAVE_SDL2)
+btstack_declare_port_provider(web-h4 CAPABILITY audio
+    GROUPS platform-posix-audio-sdl2)
+btstack_declare_port_provider(web-h4 CAPABILITY led
+    PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-    list(GET asset_fields 0 asset_url)
-    list(GET asset_fields 1 asset_output_relpath)
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+# The browser H4 bridge does not implement the Mesh advertising bearer.
+list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 
-    set(asset_output_abspath "${CMAKE_CURRENT_BINARY_DIR}/${asset_output_relpath}")
-    get_filename_component(asset_output_dir "${asset_output_abspath}" DIRECTORY)
-    file(MAKE_DIRECTORY "${asset_output_dir}")
-
-    file(DOWNLOAD "${asset_url}" "${asset_output_abspath}" STATUS asset_status)
-    list(GET asset_status 0 asset_status_code)
-    if (NOT asset_status_code EQUAL 0)
-        list(GET asset_status 1 asset_status_message)
-        message(FATAL_ERROR "Failed to download ${asset_url}: ${asset_status_message}")
-    endif()
-endfunction()
-
-foreach(asset_entry IN LISTS WEB_H4_DOWNLOADED_ASSETS)
-    web_h4_download_asset("${asset_entry}")
-endforeach()
-
-# to generate .h from .gatt files
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include("${BTSTACK_ROOT}/tool/cmake/BTstackUtils.cmake")
-
-# Include dirs
-include_directories(src)
-include_directories(${BTSTACK_ROOT}/3rd-party/micro-ecc)
-include_directories(${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lc3-google/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/md5)
-include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player)
-include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player/mod)
-include_directories(${BTSTACK_ROOT}/3rd-party/lc3-google/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lwip/core/src/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server)
-include_directories(${BTSTACK_ROOT}/3rd-party/rijndael)
-include_directories(${BTSTACK_ROOT}/3rd-party/yxml)
-include_directories(${BTSTACK_ROOT}/3rd-party/tinydir)
-include_directories(${BTSTACK_ROOT}/3rd-party/qr-code-generator)
-include_directories(${BTSTACK_ROOT}/3rd-party/stb)
-include_directories(${BTSTACK_ROOT}/src)
-include_directories(${BTSTACK_ROOT}/chipset/bcm)
-include_directories(${BTSTACK_ROOT}/chipset/zephyr)
-include_directories(${BTSTACK_ROOT}/platform/embedded)
-include_directories(${BTSTACK_ROOT}/platform/lwip)
-include_directories(${BTSTACK_ROOT}/platform/lwip/port)
-include_directories(${BTSTACK_ROOT}/platform/posix)
-
-
-file(GLOB SOURCES_SRC
-        "${BTSTACK_ROOT}/src/*.c"
-        "${BTSTACK_ROOT}/example/sco_demo_util.c"
-        "${BTSTACK_ROOT}/example/audio_player_demo_util.c"
-)
-file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
-file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
-file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
-file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_LE_AUDIO  "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
-file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
-file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_QRCODEGEN "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
-file(GLOB SOURCES_BCM       "${BTSTACK_ROOT}/chipset/bcm/*.c")
-file(GLOB SOURCES_ZEPHYR    "${BTSTACK_ROOT}/chipset/zephyr/*.c")
-file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
-file(GLOB SOURCES_PORT       "${CMAKE_SOURCE_DIR}/src/*.c")
-
-file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/le_device_db_memory.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
-set(SOURCES
-        ${SOURCES_BLE}
-        ${SOURCES_BCM}
-        ${SOURCES_BLUEDROID}
-        ${SOURCES_CLASSIC}
-        ${SOURCES_GATT}
-        ${SOURCES_HXCMOD}
-        ${SOURCES_LC3_GOOGLE}
-        # ${SOURCES_LE_AUDIO}
-        ${SOURCES_LIBUSB}
-        ${SOURCES_MD5}
-        ${SOURCES_PORT}
-        ${SOURCES_REALTEK}
-        ${SOURCES_RIJNDAEL}
-        ${SOURCES_SRC}
-        ${SOURCES_CSR}
-        ${SOURCES_STLC2500D}
-        ${SOURCES_TC2566X}
-        ${SOURCES_UECC}
-        ${SOURCES_YXML}
-        ${SOURCES_ZEPHYR}
-        ${SOURCES_QRCODEGEN}
-        ${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c
-        ${BTSTACK_ROOT}/platform/posix/btstack_audio_sdl2.c
-)
-list(SORT SOURCES)
-
-# create static lib from sources
-add_library(btstack STATIC ${SOURCES})
-target_compile_options(btstack PRIVATE
-    "-DHAVE_SDL2"
-    "-sUSE_SDL=2"
-)
-
-# create targets for all examples
-include(${BTSTACK_ROOT}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
-
-# remove some
-file(GLOB EXAMPLES_OFF
-    "${BTSTACK_ROOT}/example/*demo_util*.c"
-    "${BTSTACK_ROOT}/example/ant_test.c"
-    "${BTSTACK_ROOT}/example/avrcp_browsing_client.c"
-    "${BTSTACK_ROOT}/example/mesh_node_demo.c"
-    "${BTSTACK_ROOT}/example/pbap_client_demo.c"
-    "${BTSTACK_ROOT}/example/panu_demo.c"
-    "${BTSTACK_ROOT}/example/pan_lwip_http_server.c"
-)
-list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
-
-# Export functions for JavaScript interop
+set(BTSTACK_WEB_H4_GROUPS
+    ble le-device-db-tlv link-key-db-tlv tlv-none
+    chipset-bcm chipset-zephyr
+    platform-embedded-hci-dump-stdout
+    platform-posix-audio-sdl2
+    third-party-micro-ecc third-party-rijndael third-party-qr-code-generator)
+set(SOURCES_PORT
+    src/btstack_run_loop_js.c
+    src/btstack_stdin_js.c
+    src/btstack_tlv_js.c
+    src/hci_dump_js.c
+    src/hci_transport_h4_js.c
+    src/main.c)
 set(EXPORTED_FUNCTIONS
-    "_main"
-    "_main_set_initial_baudrate"
-    "_main_start_with_patchram"
-    "_main_set_airoc_download_mode"
-    "_main_set_log_level"
-    "_main_set_hci_log"
-    "_btstack_main"
-    # STDIN
-    "_btstack_stdin_js_process"
-    # Run Loop
-    "_btstack_run_loop_js_execute_once"
-    "_btstack_run_loop_js_process_timer"
-    # HCI Transport H4
-    "_hci_transport_h4_get_receive_buffer"
-    "_hci_transport_h4_get_receive_buffer_size"
-    "_hci_transport_h4_process_packet"
-    "_hci_transport_h4_packet_sent"
-)
+    _main _main_set_initial_baudrate _main_start_with_patchram
+    _main_set_airoc_download_mode _main_set_log_level _main_set_hci_log
+    _btstack_main _btstack_stdin_js_process _btstack_run_loop_js_execute_once
+    _btstack_run_loop_js_process_timer _hci_transport_h4_get_receive_buffer
+    _hci_transport_h4_get_receive_buffer_size _hci_transport_h4_process_packet
+    _hci_transport_h4_packet_sent)
 string(JOIN "," EXPORTED_FUNCTIONS_STR ${EXPORTED_FUNCTIONS})
 
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        PORT web-h4 EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_web_h4
+        BASE_GROUPS ${BTSTACK_WEB_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    add_dependencies(btstack_${EXAMPLE}_library web_h4_patchram_download)
 
-    # Your sources
-    message("Building example: ${EXAMPLE}")
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
-        target_gatt(${EXAMPLE} ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt)
+    if(btstack_example_${EXAMPLE}_gatt_db)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
     endif()
-    set(IS_GENERAL_EXAMPLE "false")
-    if ( "${EXAMPLES_GENERAL}" MATCHES ${EXAMPLE} )
-        set(IS_GENERAL_EXAMPLE "true")
-    endif()
-
-    # --- Emscripten specific settings ---
-    # Tell CMake/Emscripten to output .html instead of just .wasm/.js
-    set_target_properties(${EXAMPLE} PROPERTIES SUFFIX ".html")
-
-    # hci_transport_h4_js_set_baudrate needs to be synchronous
-    # we use Asyncify but limit it to this function to reduce overhead
-    # note: adding ASYNCIFY_IGNORE_INDIRECT saves a few hundred bytes, but causes a hang
+    btstack_target_warnings(${EXAMPLE} STRICT)
+    target_compile_options(${EXAMPLE} PRIVATE -O3 -sUSE_SDL=2)
     target_link_options(${EXAMPLE} PRIVATE
         "-sEXPORTED_FUNCTIONS=[${EXPORTED_FUNCTIONS_STR}]"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
-        "-sASYNCIFY"
-        "-sASYNCIFY_IMPORTS=['hci_transport_h4_js_set_baudrate']"
-        "-sFETCH"
-        "-sUSE_SDL=2"
-        "--pre-js" "${PRE_JS}"
-    )
-
-    # Ensure CMake re-links when shell_minimal.html or interop.js changes
-    set_property(TARGET ${EXAMPLE} APPEND PROPERTY LINK_DEPENDS ${SHELL_FILE_TEMPLATE} ${PRE_JS})
-
-    # Optional: optimize
-    target_compile_options(${EXAMPLE} PRIVATE "-O3")
-    target_link_options(${EXAMPLE} PRIVATE "-O3")
-
-    # Configured Shell HTML
-    set (SHELL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.in.html)
+        -sASYNCIFY "-sASYNCIFY_IMPORTS=['hci_transport_h4_js_set_baudrate']"
+        -sFETCH -sUSE_SDL=2 --pre-js "${PRE_JS}" -O3)
+    set(SHELL_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.in.html)
     configure_file(${SHELL_FILE_TEMPLATE} ${SHELL_FILE})
-
-    # Provide custom HTML shell (instead of default)
-    set_target_properties(${EXAMPLE} PROPERTIES LINK_FLAGS "--shell-file ${SHELL_FILE}")
-
-    # Add our JS files
+    set_target_properties(${EXAMPLE} PROPERTIES SUFFIX ".html"
+        LINK_FLAGS "--shell-file ${SHELL_FILE}")
+    set_property(TARGET ${EXAMPLE} APPEND PROPERTY LINK_DEPENDS ${SHELL_FILE_TEMPLATE} ${PRE_JS})
     add_custom_command(TARGET ${EXAMPLE} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_SOURCE_DIR}/js/buffered_reader.js
-            ${CMAKE_CURRENT_BINARY_DIR}/buffered_reader.js
-    )
-
-    # Link example against static library
-    target_link_libraries(${EXAMPLE} PRIVATE btstack)
-
-endforeach(EXAMPLE)
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/js/buffered_reader.js
+            ${CMAKE_CURRENT_BINARY_DIR}/buffered_reader.js)
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
+endforeach()
