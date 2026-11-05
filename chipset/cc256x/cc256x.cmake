@@ -8,6 +8,8 @@
 
 set(BLUEKITCHEN_URL https://bluekitchen-gmbh.com/files/ti/service-packs)
 set(CONVERSION_SCRIPT ${BTSTACK_ROOT}/chipset/cc256x/convert_bts_init_scripts.py)
+include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
+set(CC256X_GENERATOR_SCRIPT ${BTSTACK_ROOT}/tool/cmake/BTstackGenerateCc256xInitScript.cmake)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 #
@@ -18,7 +20,60 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 function(cc256x_init_script output_file archive main_script optional_script)
     if (DEFINED CC256X_INIT_SCRIPT)
         if ("${CC256X_INIT_SCRIPT}" STREQUAL ${output_file})
+            set(archive_sha256 "${ARGV4}")
+            if(NOT "${archive_sha256}" STREQUAL "")
+                # A checksum-pinned archive uses only build-time actions.
+                set(archive_file "${CMAKE_CURRENT_BINARY_DIR}/${archive}")
+                get_filename_component(output_name "${output_file}" NAME_WE)
+                string(MAKE_C_IDENTIFIER "cc256x_${output_name}" target_suffix)
+                set(download_target "${target_suffix}_download")
+                set(generate_target "${target_suffix}_generate")
+                set(generated_source "${CMAKE_CURRENT_BINARY_DIR}/${output_file}")
+                set(work_directory "${CMAKE_CURRENT_BINARY_DIR}/${target_suffix}_work")
 
+                btstack_add_firmware_download(
+                    TARGET "${download_target}"
+                    OUTPUT "${archive_file}"
+                    URL "${BLUEKITCHEN_URL}/${archive}"
+                    SHA256 "${archive_sha256}"
+                )
+                add_custom_command(
+                    OUTPUT "${generated_source}"
+                    COMMAND "${CMAKE_COMMAND}"
+                        "-DARCHIVE=${archive_file}"
+                        "-DWORK_DIRECTORY=${work_directory}"
+                        "-DMAIN_SCRIPT=${main_script}"
+                        "-DOPTIONAL_SCRIPT=${optional_script}"
+                        "-DOUTPUT=${generated_source}"
+                        "-DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}"
+                        "-DCONVERSION_SCRIPT=${CONVERSION_SCRIPT}"
+                        -P "${CC256X_GENERATOR_SCRIPT}"
+                    DEPENDS "${archive_file}" "${CONVERSION_SCRIPT}" "${CC256X_GENERATOR_SCRIPT}"
+                    COMMENT "Generate ${output_file} from ${archive}"
+                    VERBATIM
+                )
+                add_custom_target("${generate_target}" DEPENDS "${generated_source}")
+                add_dependencies("${generate_target}" "${download_target}")
+
+                if(TARGET btstack)
+                    target_include_directories(btstack PRIVATE ${BTSTACK_ROOT}/chipset/cc256x)
+                    target_sources(btstack PRIVATE ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c)
+                    target_sources(btstack PRIVATE "${generated_source}")
+                    add_dependencies(btstack "${generate_target}")
+                else()
+                    set(CC256X_INIT_SCRIPT_SOURCES
+                        ${CC256X_INIT_SCRIPT_SOURCES}
+                        "${generated_source}"
+                        PARENT_SCOPE)
+                    set(CC256X_INIT_SCRIPT_TARGETS
+                        ${CC256X_INIT_SCRIPT_TARGETS}
+                        "${generate_target}"
+                        PARENT_SCOPE)
+                endif()
+                return()
+            endif()
+
+            # Legacy archive selections do not yet have a pinned checksum.
             # Download init scripts
             message("CC256x: Download ${archive}")
             file(DOWNLOAD ${BLUEKITCHEN_URL}/${archive} ${CMAKE_CURRENT_BINARY_DIR}/${archive})
@@ -115,7 +170,7 @@ cc256x_init_script(bluetooth_init_cc2564C_1.4.c                  cc256xc_bt_sp_v
 # - v1.5 - unversioned files from BlueKitchen website, original: http://www.ti.com/tool/cc256xc-bt-sp
 cc256x_init_script(bluetooth_init_cc2560C_1.5.c                  cc256xc_bt_sp_v1.5.zip          CC256XC_v1.5/v1.5/initscripts-TIInit_6.12.26.bts             "")
 cc256x_init_script(bluetooth_init_cc2560C_avpr_1.5.c             cc256xc_bt_sp_v1.5.zip          CC256XC_v1.5/v1.5/initscripts-TIInit_6.12.26.bts             CC256XC_v1.5/v1.5i/nitscripts-TIInit_6.12.26_avpr_add-on.bts)
-cc256x_init_script(bluetooth_init_cc2564C_1.5.c                  cc256xc_bt_sp_v1.5.zip          CC256XC_v1.5/v1.5/initscripts-TIInit_6.12.26.bts             CC256XC_v1.5/v1.5/initscripts-TIInit_6.12.26_ble_add-on.bts)
+cc256x_init_script(bluetooth_init_cc2564C_1.5.c                  cc256xc_bt_sp_v1.5.zip          CC256XC_v1.5/v1.5/initscripts-TIInit_6.12.26.bts             CC256XC_v1.5/v1.5/initscripts-TIInit_6.12.26_ble_add-on.bts bb4263528b16a3ebadfca500ac5d5cc4f3e6da3990192030c75c6fbbf95d0f4d)
 
 # Various scripts for WL chipsets from http://www.ti.com/tool/wl18xx-bt-sp
 cc256x_init_script(TIInit_11.8.32_4.2.c                          TIInit_11.8.32_4.2.bts          TIInit_11.8.32_4.2.bts                                       "")
