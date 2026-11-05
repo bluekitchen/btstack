@@ -118,24 +118,9 @@ cc256x_init_script(bluetooth_init_cc2560A_2.14.c                 CC2560A_BT_SP_B
 cc256x_init_script(bluetooth_init_cc2564_2.14.c                  CC2564_BT_BLE_SP_BTS.zip        CC2564_BT_BLE_SP_BTS/bluetooth_init_cc2564_2.14.bts          "")
 
 # Third generation CC256xB - AKA TIInit_6.7.16.bts
-# - v1.2 - versioned files TI Git Repo
-cc256x_init_script(bluetooth_init_cc2560B_1.2_BT_Spec_4.1.c      cc256xb_bt_sp_v1.2.zip          bluetooth_init_cc2560B_1.2_BT_Spec_4.1.bts                   "")
-cc256x_init_script(bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c      cc256xb_bt_sp_v1.2.zip          bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts                   BLE_init_cc2564B_1.2.bts)
-
-# - v1.3 - not available, please use v1.8 or newer
-
-# - v1.4 - versioned files TI Git Repo
-cc256x_init_script(bluetooth_init_cc2560B_1.4_BT_Spec_4.1.c      cc256xb_bt_sp_v1.4.zip          TIInit_6.7.16_bt_spec_4.1.bts                                "")
-cc256x_init_script(bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c      cc256xb_bt_sp_v1.4.zip          TIInit_6.7.16_bt_spec_4.1.bts                                TIInit_6.7.16_ble_add-on.bts)
-
-# - v1.5 - unversioned files from BlueKitchen website, original: http://www.ti.com/tool/cc256xb-bt-sp
-cc256x_init_script(bluetooth_init_cc2560B_1.5_BT_Spec_4.1.c      cc256xb_bt_sp_v1.5.zip          cc256x_bt_sp_v1.5/initscripts-TIInit_6.7.16_bt_spec_4.1.bts  "")
-cc256x_init_script(bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c      cc256xb_bt_sp_v1.5.zip          cc256x_bt_sp_v1.5/initscripts-TIInit_6.7.16_bt_spec_4.1.bts  cc256x_bt_sp_v1.5/initscripts-TIInit_6.7.16_ble_add-on.bts)
-
 # - v1.6 - unversioned files from BlueKitchen website, original: http://www.ti.com/tool/cc256xb-bt-sp
 cc256x_init_script(bluetooth_init_cc2560B_1.6_BT_Spec_4.1.c      cc256xb_bt_sp_v1.6.zip          cc256xb_bt_sp_v1.6/initscripts-TIInit_6.7.16_bt_spec_4.1.bts "")
 cc256x_init_script(bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c      cc256xb_bt_sp_v1.6.zip          cc256xb_bt_sp_v1.6/initscripts-TIInit_6.7.16_bt_spec_4.1.bts cc256xb_bt_sp_v1.6/initscripts-TIInit_6.7.16_ble_add-on.bts)
-cc256x_init_script(bluetooth_init_cc2560B_1.8_BT_Spec_4.1.c      cc256xb_bt_sp_v1.6.zip          cc256xb_bt_sp_v1.8/initscripts-TIInit_6.7.16_bt_spec_4.1.bts "")
 
 # - v1.7 - not available, please use v1.8 or newer
 
