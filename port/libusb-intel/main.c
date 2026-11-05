@@ -152,12 +152,6 @@ static void trigger_shutdown(void){
     hci_power_control(HCI_POWER_OFF);
 }
 
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
-}
-
 static void intel_firmware_done(int result){
 
     printf("Done %x\n", result);
