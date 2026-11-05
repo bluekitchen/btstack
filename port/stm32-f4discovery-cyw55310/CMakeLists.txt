@@ -49,8 +49,10 @@ include(cmake/bsp.cmake)
 # Build information
 message("Build: ${CMAKE_BUILD_TYPE}\n")
 
-# Include BTStack
-include(cmake/btstack.cmake)
+# Include BTstack and its scoped STM32F4 helper.
+set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+include(${BTSTACK_ROOT}/tool/cmake/BTstackStm32F4.cmake)
 
 # PatchRAM file for CYW55310
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
@@ -68,11 +70,7 @@ add_custom_command(
     ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE} ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-# get list of examples
-include(${BTSTACK_ROOT}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client" "mesh_node_demo")
+set(SOURCES_PORT port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/port.c ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
 
 # .gatt files in src
 file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
@@ -84,46 +82,33 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 # Sources that implement this board's platform, including the generated
 # PatchRAM array, are identical for every example. Build them once instead of
 # adding them to each executable below.
-add_library(stm32f4_discovery_cyw55310_port STATIC
-    port/hal_audio_f4discovery.c
-    port/hal_flash_bank_stm32.c
-    port/port.c
-    ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c
-)
-target_link_libraries(stm32f4_discovery_cyw55310_port PRIVATE
-    stm32cubemx
-    bsp
-    btstack
+add_custom_target(cyw55310_patchram_source DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
+btstack_add_stm32f4_examples(
+    PORT stm32-f4discovery-cyw55310 ROOT "${BTSTACK_ROOT}"
+    BASE_GROUPS core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-bcm third-party-micro-ecc third-party-rijndael third-party-hxcmod platform-embedded-audio platform-embedded-run-loop platform-embedded-stdin platform-embedded-tlv-flash-bank platform-embedded-uart-block platform-embedded-hci-dump-stdout
+    PORT_SOURCES ${SOURCES_PORT}
+    PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}"
+    LINK_LIBRARIES stm32cubemx bsp
+    FIRMWARE_TARGETS cyw55310_patchram_source
 )
 
-# Create targets
+if(FALSE)
+# Legacy target loop retained temporarily for reference; the scoped helper above owns targets.
 foreach(EXAMPLE ${EXAMPLES})
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
-
-    # add SCO Demo util
-    if ("hfp_ag_demo hfp_hf_demo hsp_hs_demo hsp_ag_demo" MATCHES ${EXAMPLE})
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/sco_demo_util.c)
-    endif()
-
-    # add lwip sources for lwip examples
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-    endif()
-
-    # add Audio Player Demo Util
-    if ("audio_player le_audio_unicast_gateway" MATCHES ${EXAMPLE})
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/audio_player_demo_util.c)
-    endif()
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
+    if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
+            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${GATT_FILES}
             COMMAND ${Python3_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
         )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
     else()
@@ -161,3 +146,4 @@ foreach(EXAMPLE ${EXAMPLES})
     )
 
 endforeach()
+endif()
