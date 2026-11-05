@@ -777,8 +777,12 @@ function(btstack_add_scoped_group_object_library)
         endif()
 
         set(group_sources)
+        set(group_is_third_party TRUE)
         foreach(source IN LISTS group_relative_sources)
             list(APPEND group_sources "${ARG_ROOT}/${source}")
+            if(NOT source MATCHES "^3rd-party/")
+                set(group_is_third_party FALSE)
+            endif()
         endforeach()
         btstack_collect_include_directories(group_include_directories
             ROOT "${ARG_ROOT}"
@@ -786,7 +790,18 @@ function(btstack_add_scoped_group_object_library)
         )
 
         add_library(${target} OBJECT ${group_sources})
-        btstack_target_warnings(${target} STRICT)
+        # Vendored code should not impose its warning debt on BTstack users.
+        # Derive this from the source paths so groups such as lwip-core are
+        # covered too. Chipset and platform implementations remain strict.
+        if(group_is_third_party)
+            if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+                target_compile_options(${target} PRIVATE -w)
+            elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+                target_compile_options(${target} PRIVATE /w)
+            endif()
+        else()
+            btstack_target_warnings(${target} STRICT)
+        endif()
         target_compile_options(${target} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
         target_include_directories(${target} PRIVATE
             ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
