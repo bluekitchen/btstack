@@ -109,12 +109,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
             ${PORTAUDIO_INCLUDE_DIRS}
-        # The legacy NXP port did not enable -Wextra. Keep its intentionally
-        # unused controller parser helper and callback parameters from becoming
-        # build errors.
-        PRIVATE_COMPILE_OPTIONS
-            -Wno-unused-function
-            -Wno-unused-parameter
         LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES
             ${CMAKE_THREAD_LIBS_INIT}
