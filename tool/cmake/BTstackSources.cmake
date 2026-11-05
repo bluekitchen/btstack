@@ -31,6 +31,9 @@ set(btstack_source_groups
     chipset-cinnamon
     chipset-csr
     chipset-da145xx
+    chipset-da145xx-531
+    chipset-da145xx-581
+    chipset-da145xx-585
     chipset-em9301
     chipset-intel
     chipset-nxp
@@ -275,12 +278,36 @@ set(btstack_include_directories_chipset_csr
 
 set(btstack_sources_chipset_da145xx
     chipset/da145xx/btstack_chipset_da145xx.c
-    chipset/da145xx/hci_531_active_uart_460800.c
-    chipset/da145xx/hci_581_active_uart.c
-    chipset/da145xx/hci_585.c
 )
 
 set(btstack_include_directories_chipset_da145xx
+    src
+    chipset/da145xx
+)
+
+set(btstack_sources_chipset_da145xx_531
+    chipset/da145xx/hci_531_active_uart_460800.c
+)
+
+set(btstack_include_directories_chipset_da145xx_531
+    src
+    chipset/da145xx
+)
+
+set(btstack_sources_chipset_da145xx_581
+    chipset/da145xx/hci_581_active_uart.c
+)
+
+set(btstack_include_directories_chipset_da145xx_581
+    src
+    chipset/da145xx
+)
+
+set(btstack_sources_chipset_da145xx_585
+    chipset/da145xx/hci_585.c
+)
+
+set(btstack_include_directories_chipset_da145xx_585
     src
     chipset/da145xx
 )

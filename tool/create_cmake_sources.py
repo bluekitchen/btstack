@@ -46,6 +46,12 @@ RULES = [
     ("platform/posix/hci_dump_posix_*.c", "platform-posix-hci-dump"),
     ("platform/posix/wav_util.c", "platform-posix-wav"),
     ("platform/posix/*.c", "platform-posix"),
+    # DA145xx firmware images define the same symbols. Keep each selectable
+    # image in its own leaf group instead of compiling all of them together.
+    ("chipset/da145xx/btstack_chipset_da145xx.c", "chipset-da145xx"),
+    ("chipset/da145xx/hci_531_active_uart_460800.c", "chipset-da145xx-531"),
+    ("chipset/da145xx/hci_581_active_uart.c", "chipset-da145xx-581"),
+    ("chipset/da145xx/hci_585.c", "chipset-da145xx-585"),
     ("src/hci_transport_h4.c", "transport-h4"),
     ("src/hci_transport_h5.c", "transport-h5"),
     ("src/hci_transport_em9304_spi.c", "transport-em9304-spi"),
