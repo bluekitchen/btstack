@@ -187,6 +187,8 @@ static void nxp_send_ack_v3() {
     nxp_uart_driver->send_block(nxp_ack_buffer_v3, sizeof(nxp_ack_buffer_v3));
 }
 
+#if 0
+// Currently not used, might be useful later
 static bool nxp_valid_packet(void){
     switch (nxp_input_buffer[0]){
         case NXP_V1_FIRMWARE_REQUEST_PACKET:
@@ -201,6 +203,7 @@ static bool nxp_valid_packet(void){
             return false;
     }
 }
+#endif
 
 static void nxp_handle_chip_version_v1(void){
     printf("RECV: NXP_V1_CHIP_VER_PKT, id = 0x%x02, revision = 0x%02x\n", nxp_input_buffer[0], nxp_input_buffer[1]);
