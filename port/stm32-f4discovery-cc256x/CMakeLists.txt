@@ -49,23 +49,18 @@ include(cmake/bsp.cmake)
 # Build information
 message("Build: ${CMAKE_BUILD_TYPE}\n")
 
-# Include BTStack
-include(cmake/btstack.cmake)
+# Include BTstack and its scoped STM32F4 helper.
+set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+include(${BTSTACK_ROOT}/tool/cmake/BTstackStm32F4.cmake)
 
 # Add CC256x Support and specify init script
 set(CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
-target_sources(btstack PRIVATE
-    ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
+set(SOURCES_PORT
+    port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/port.c
     ${CC256X_INIT_SCRIPT_SOURCES}
 )
-add_dependencies(btstack ${CC256X_INIT_SCRIPT_TARGETS})
-
-# get list of examples
-include(${BTSTACK_ROOT}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client" "mesh_node_demo")
 
 # .gatt files in src
 file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
@@ -74,47 +69,32 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
-# Sources that implement this board's platform are identical for every
-# example. Build them once instead of adding them to each executable below.
-add_library(stm32f4_discovery_cc256x_port STATIC
-    port/hal_audio_f4discovery.c
-    port/hal_flash_bank_stm32.c
-    port/port.c
-)
-target_link_libraries(stm32f4_discovery_cc256x_port PRIVATE
-    stm32cubemx
-    bsp
-    btstack
+btstack_add_stm32f4_examples(
+    PORT stm32-f4discovery-cc256x ROOT "${BTSTACK_ROOT}"
+    BASE_GROUPS core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-cc256x third-party-micro-ecc third-party-rijndael third-party-hxcmod third-party-segger-rtt platform-embedded-audio platform-embedded-run-loop platform-embedded-stdin platform-embedded-tlv-flash-bank platform-embedded-uart-block platform-embedded-hci-dump-segger-rtt
+    PORT_SOURCES ${SOURCES_PORT}
+    PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
+    LINK_LIBRARIES stm32cubemx bsp
+    FIRMWARE_TARGETS ${CC256X_INIT_SCRIPT_TARGETS}
+    EXCLUDE_EXAMPLES avrcp_browsing_client mesh_node_demo le_audio_broadcast_sink_lite le_audio_broadcast_source_lite le_audio_unicast_gateway_lite le_audio_unicast_headset_lite
 )
 
-# Create targets
+if(FALSE)
 foreach(EXAMPLE ${EXAMPLES})
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
-
-    # add SCO Demo util
-    if ("hfp_ag_demo hfp_hf_demo hsp_hs_demo hsp_ag_demo" MATCHES ${EXAMPLE})
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/sco_demo_util.c)
-    endif()
-
-    # add lwip sources for lwip examples
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-    endif()
-
-    # add Audio Player Demo Util
-    if ("audio_player" MATCHES ${EXAMPLE})
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/audio_player_demo_util.c)
-    endif()
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
+    if (EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
+            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${GATT_FILES}
             COMMAND ${Python3_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
         )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
     else()
@@ -152,3 +132,4 @@ foreach(EXAMPLE ${EXAMPLES})
     )
 
 endforeach()
+endif()
