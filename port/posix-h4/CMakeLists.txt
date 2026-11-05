@@ -56,15 +56,25 @@ set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 list(APPEND SOURCES_PORT ${CC256X_INIT_SCRIPT_SOURCES})
 
-# Add BCM Support and download PatchRAM files
-include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
+# Add BCM Support and download PatchRAM files.
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm43430a1_patchram.cmake)
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
 
+btstack_add_firmware_download(
+    TARGET bcm43430a1_patchram
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_BCM43430A1_PATCHRAM_FILE}"
+    URL "${BTSTACK_BCM43430A1_PATCHRAM_URL}"
+    SHA256 "${BTSTACK_BCM43430A1_PATCHRAM_SHA256}"
+)
 btstack_add_firmware_download(
     TARGET cyw55310_patchram
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}"
     URL "${BTSTACK_CYW55310_PATCHRAM_URL}"
     SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}"
+)
+set(BTSTACK_POSIX_H4_FIRMWARE_TARGETS
+    bcm43430a1_patchram
+    cyw55310_patchram
 )
 
 # Get the declared examples. Feature-based filtering will be provided by the
@@ -161,5 +171,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_target_warnings(${EXAMPLE} STRICT)
 
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
-    add_dependencies(${EXAMPLE} cyw55310_patchram)
+    add_dependencies(${EXAMPLE} ${BTSTACK_POSIX_H4_FIRMWARE_TARGETS})
 endforeach()
