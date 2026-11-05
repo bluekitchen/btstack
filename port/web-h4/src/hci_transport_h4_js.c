@@ -75,6 +75,7 @@ void hci_transport_h4_process_packet(uint16_t len){
 }
 
 static int hci_transport_h4_js_can_send_now(uint8_t packet_type) {
+    (void) packet_type;
     return hci_transport_h4_js_tx_state_busy == false;
 }
 

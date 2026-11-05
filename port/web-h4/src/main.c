@@ -164,6 +164,7 @@ static void local_version_information_handler(uint8_t * packet){
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    (void) channel;
     const uint8_t *params;
     static bd_addr_t local_addr;
 
