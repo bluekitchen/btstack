@@ -138,6 +138,7 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             m
             ${PORTAUDIO_LIBRARIES}
     )
+    add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
 
     # Get the example sources from its declaration.
     set(SOURCES_EXAMPLE)
