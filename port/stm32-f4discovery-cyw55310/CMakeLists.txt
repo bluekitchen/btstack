@@ -53,7 +53,7 @@ message("Build: ${CMAKE_BUILD_TYPE}\n")
 include(cmake/btstack.cmake)
 
 # PatchRAM file for CYW55310
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
 set(PATCHRAM ${BTSTACK_CYW55310_PATCHRAM_NAME})
 set(PATCHRAM_FILE ${BTSTACK_CYW55310_PATCHRAM_FILE})
 message("Downloading PatchRAM ${PATCHRAM_FILE} from ${BTSTACK_CYW55310_PATCHRAM_BASE_URL}")

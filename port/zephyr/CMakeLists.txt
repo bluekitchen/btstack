@@ -12,7 +12,7 @@ if( DEFINED ENV{BTSTACK_ROOT} )
     set(BTSTACK_ROOT $ENV{BTSTACK_ROOT})
 endif()
 
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
 
 if(BOARD MATCHES "^if310($|/)")
     set(BTSTACK_CYW55310_PATCHRAM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}")

@@ -20,7 +20,7 @@ if( NOT DEFINED ${BTSTACK_ROOT} )
 endif()
 message("BTstack root: ${BTSTACK_ROOT}")
 
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
 set(CYW55310_PATCHRAM_NAME ${BTSTACK_CYW55310_PATCHRAM_FILE})
 
 # Downloaded web assets, format: "URL|relative/output/path"

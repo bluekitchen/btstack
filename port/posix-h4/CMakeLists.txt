@@ -57,8 +57,7 @@ include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 list(APPEND SOURCES_PORT ${CC256X_INIT_SCRIPT_SOURCES})
 
 # Add BCM Support and download PatchRAM files.
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm43430a1_patchram.cmake)
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
 
 btstack_add_firmware_download(
     TARGET bcm43430a1_patchram
