@@ -82,7 +82,7 @@ EXAMPLES += pan_lwip_http_server
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-CYW55310_PATCHRAM_CMAKE = ${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake
+CYW55310_PATCHRAM_CMAKE = ${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake
 CYW55310_PATCHRAM = $(shell sed -n 's/^set(BTSTACK_CYW55310_PATCHRAM_FILE "\([^"]*\)")/\1/p' $(CYW55310_PATCHRAM_CMAKE))
 CYW55310_PATCHRAM_BASE_URL = $(shell sed -n 's/^set(BTSTACK_CYW55310_PATCHRAM_BASE_URL "\([^"]*\)")/\1/p' $(CYW55310_PATCHRAM_CMAKE))
 

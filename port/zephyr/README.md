@@ -143,7 +143,7 @@ runner options.
 
 The IF310 build downloads the CYW55310 PatchRAM HCD file automatically if it is
 missing. The filename, pinned Ezurio `ifx_flasher` URL, and SHA256 are defined in
-`chipset/bcm/btstack_cyw55310_patchram.cmake`.
+`chipset/bcm/btstack_bcm_patchram.cmake`.
 
 ### 3b. Flash Example with Ozone & J-Link
 
