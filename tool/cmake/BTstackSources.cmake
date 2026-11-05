@@ -142,6 +142,7 @@ set(btstack_source_groups
     lwip-platform
     mesh
     platform-libusb-h2
+    platform-linux-audio-alsa
     platform-posix
     platform-posix-audio
     platform-posix-audio-portaudio
@@ -174,6 +175,7 @@ set(btstack_source_groups
     transport-em9304-spi
     transport-h4
     transport-h5
+    transport-linux
 )
 
 set(btstack_sources_att_db
@@ -1418,6 +1420,15 @@ set(btstack_include_directories_platform_libusb_h2
     platform/libusb
 )
 
+set(btstack_sources_platform_linux_audio_alsa
+    platform/linux/btstack_audio_alsa.c
+)
+
+set(btstack_include_directories_platform_linux_audio_alsa
+    src
+    platform/linux
+)
+
 set(btstack_sources_platform_posix
     platform/posix/btstack_audio_portaudio.c
     platform/posix/btstack_audio_sdl2.c
@@ -1774,4 +1785,17 @@ set(btstack_sources_transport_h5
 
 set(btstack_include_directories_transport_h5
     src
+)
+
+set(btstack_sources_transport_linux
+    platform/linux/hci_transport_linux.c
+)
+
+set(btstack_include_directories_transport_linux
+    src
+    platform/linux
+)
+
+set(btstack_consumer_include_directories_transport_linux
+    platform/linux
 )

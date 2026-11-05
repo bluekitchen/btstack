@@ -29,6 +29,8 @@ RULES = [
     # Shared platform sources. le_device_db_fs.c is explicitly excluded below
     # because it is deprecated in favor of src/ble/le_device_db_tlv.c.
     ("platform/libusb/hci_transport_h2_libusb.c", "platform-libusb-h2"),
+    ("platform/linux/btstack_audio_alsa.c", "platform-linux-audio-alsa"),
+    ("platform/linux/hci_transport_linux.c", "transport-linux"),
     ("platform/windows/hci_transport_h2_winusb.c", "platform-winusb-h2"),
     ("platform/windows/*.c", "platform-windows"),
     ("platform/posix/btstack_audio_portaudio.c", "platform-posix-audio-portaudio"),
@@ -89,6 +91,7 @@ RULES = [
 # their own SDK-specific ownership and are deliberately outside this catalog.
 SCANNED_SOURCE_DIRECTORIES = (
     "src",
+    "platform/linux",
     "platform/posix",
     "platform/windows",
     "platform/libusb",
@@ -302,6 +305,7 @@ GROUP_INCLUDE_DIRECTORIES = {
 # audio backend provides the audio capability.
 GROUP_CONSUMER_INCLUDE_DIRECTORIES = {
     "platform-posix-wav": ["platform/posix"],
+    "transport-linux": ["platform/linux"],
 }
 
 # Include paths required by BTstack's public headers. These are intentionally
@@ -463,6 +467,8 @@ def include_directories(groups: dict[str, list[str]]) -> dict[str, list[str]]:
             parts = source.split("/")
             if source.startswith("src/"):
                 group_directories.append("src")
+            elif source.startswith("platform/linux/"):
+                group_directories.extend(["src", "platform/linux"])
             elif source.startswith("platform/posix/"):
                 group_directories.extend(["src", "platform/posix"])
             elif source.startswith("platform/windows/"):
