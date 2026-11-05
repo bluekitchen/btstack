@@ -175,12 +175,6 @@ static void trigger_shutdown(void){
     hci_power_control(HCI_POWER_OFF);
 }
 
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
-}
-
 #define USB_MAX_PATH_LEN 7
 int btstack_main(int argc, const char * argv[]);
 
