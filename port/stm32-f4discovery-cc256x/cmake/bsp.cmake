@@ -16,6 +16,14 @@ if(DEFINED BSP)
     # Create bsp library
     add_library(bsp ${BSP_SOURCES} ${BSP_COMPONENT_SOURCES})
 
+    # stm32f4_discovery_audio.c implements BTstack's audio callback hooks.
+    # The BSP is compiled as its own target, so it must explicitly receive
+    # the embedded platform headers rather than relying on an example target.
+    target_include_directories(bsp PRIVATE
+        ${CMAKE_SOURCE_DIR}/../../src
+        ${CMAKE_SOURCE_DIR}/../../platform/embedded
+    )
+
     # Ignore unused parameters in the STM32CubeF4 BSP sources.
     target_compile_options(bsp PRIVATE -Wno-unused-parameter)
 
