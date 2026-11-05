@@ -9,6 +9,8 @@
 #   )
 #   add_dependencies(my_target cyw55310_patchram)
 
+include_guard(GLOBAL)
+
 set(_btstack_firmware_module_directory "${CMAKE_CURRENT_LIST_DIR}")
 
 function(btstack_add_firmware_download)
