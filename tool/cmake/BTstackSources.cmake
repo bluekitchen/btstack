@@ -141,6 +141,13 @@ set(btstack_source_groups
     lwip-netif
     lwip-platform
     mesh
+    platform-embedded-audio
+    platform-embedded-hci-dump-segger-rtt
+    platform-embedded-hci-dump-stdout
+    platform-embedded-run-loop
+    platform-embedded-stdin
+    platform-embedded-tlv-flash-bank
+    platform-embedded-uart-block
     platform-libusb-h2
     platform-linux-audio-alsa
     platform-posix
@@ -170,6 +177,7 @@ set(btstack_source_groups
     third-party-micro-ecc
     third-party-qr-code-generator
     third-party-rijndael
+    third-party-segger-rtt
     third-party-yxml
     tlv-none
     transport-em9304-spi
@@ -1411,6 +1419,62 @@ set(btstack_include_directories_mesh
     src
 )
 
+set(btstack_sources_platform_embedded_audio
+    platform/embedded/btstack_audio_embedded.c
+)
+
+set(btstack_include_directories_platform_embedded_audio
+    platform/embedded
+)
+
+set(btstack_sources_platform_embedded_hci_dump_segger_rtt
+    platform/embedded/hci_dump_segger_rtt_stdout.c
+)
+
+set(btstack_include_directories_platform_embedded_hci_dump_segger_rtt
+    platform/embedded
+)
+
+set(btstack_sources_platform_embedded_hci_dump_stdout
+    platform/embedded/hci_dump_embedded_stdout.c
+)
+
+set(btstack_include_directories_platform_embedded_hci_dump_stdout
+    platform/embedded
+)
+
+set(btstack_sources_platform_embedded_run_loop
+    platform/embedded/btstack_run_loop_embedded.c
+)
+
+set(btstack_include_directories_platform_embedded_run_loop
+    platform/embedded
+)
+
+set(btstack_sources_platform_embedded_stdin
+    platform/embedded/btstack_stdin_embedded.c
+)
+
+set(btstack_include_directories_platform_embedded_stdin
+    platform/embedded
+)
+
+set(btstack_sources_platform_embedded_tlv_flash_bank
+    platform/embedded/btstack_tlv_flash_bank.c
+)
+
+set(btstack_include_directories_platform_embedded_tlv_flash_bank
+    platform/embedded
+)
+
+set(btstack_sources_platform_embedded_uart_block
+    platform/embedded/btstack_uart_block_embedded.c
+)
+
+set(btstack_include_directories_platform_embedded_uart_block
+    platform/embedded
+)
+
 set(btstack_sources_platform_libusb_h2
     platform/libusb/hci_transport_h2_libusb.c
 )
@@ -1744,6 +1808,16 @@ set(btstack_sources_third_party_rijndael
 
 set(btstack_include_directories_third_party_rijndael
     3rd-party/rijndael
+)
+
+set(btstack_sources_third_party_segger_rtt
+    3rd-party/segger-rtt/SEGGER_RTT.c
+    3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
+    3rd-party/segger-rtt/SEGGER_RTT_printf.c
+)
+
+set(btstack_include_directories_third_party_segger_rtt
+    3rd-party/segger-rtt
 )
 
 set(btstack_sources_third_party_yxml

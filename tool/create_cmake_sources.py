@@ -105,6 +105,35 @@ EXCLUDED_SOURCES = {
 # Explicit third-party selections. Avoid broad scans here: vendored trees also
 # contain tests, tools, examples, and alternative implementations.
 EXPLICIT_GROUP_SOURCES = {
+    # Embedded runtime implementations are selected explicitly. platform/embedded
+    # contains mutually exclusive alternatives and must not be scanned as one
+    # broad source group.
+    "platform-embedded-audio": [
+        "platform/embedded/btstack_audio_embedded.c",
+    ],
+    "platform-embedded-run-loop": [
+        "platform/embedded/btstack_run_loop_embedded.c",
+    ],
+    "platform-embedded-stdin": [
+        "platform/embedded/btstack_stdin_embedded.c",
+    ],
+    "platform-embedded-tlv-flash-bank": [
+        "platform/embedded/btstack_tlv_flash_bank.c",
+    ],
+    "platform-embedded-uart-block": [
+        "platform/embedded/btstack_uart_block_embedded.c",
+    ],
+    "platform-embedded-hci-dump-stdout": [
+        "platform/embedded/hci_dump_embedded_stdout.c",
+    ],
+    "platform-embedded-hci-dump-segger-rtt": [
+        "platform/embedded/hci_dump_segger_rtt_stdout.c",
+    ],
+    "third-party-segger-rtt": [
+        "3rd-party/segger-rtt/SEGGER_RTT.c",
+        "3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c",
+        "3rd-party/segger-rtt/SEGGER_RTT_printf.c",
+    ],
     "lwip-core": [
         "3rd-party/lwip/core/src/core/def.c",
         "3rd-party/lwip/core/src/core/inet_chksum.c",
@@ -246,6 +275,14 @@ PLATFORM_POSIX_AUDIO_GROUPS = [
 # The source catalog can derive the simple in-tree cases below; dependencies
 # whose public headers live elsewhere are listed explicitly.
 GROUP_INCLUDE_DIRECTORIES = {
+    "platform-embedded-audio": ["platform/embedded"],
+    "platform-embedded-run-loop": ["platform/embedded"],
+    "platform-embedded-stdin": ["platform/embedded"],
+    "platform-embedded-tlv-flash-bank": ["platform/embedded"],
+    "platform-embedded-uart-block": ["platform/embedded"],
+    "platform-embedded-hci-dump-stdout": ["platform/embedded"],
+    "platform-embedded-hci-dump-segger-rtt": ["platform/embedded"],
+    "third-party-segger-rtt": ["3rd-party/segger-rtt"],
     # btstack_crypto.c uses these optional crypto provider headers directly.
     "core": ["3rd-party/micro-ecc", "3rd-party/rijndael"],
     # btstack_link_key_db_fs.c in this group uses tinydir's header-only API.
