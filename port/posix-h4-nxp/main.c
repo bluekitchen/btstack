@@ -87,7 +87,6 @@ static bool airoc_download_mode = false;
 static bool shutdown_triggered;
 
 int btstack_main(int argc, const char * argv[]);
-static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t transport_config = {
     .type = HCI_TRANSPORT_CONFIG_UART,
@@ -101,6 +100,8 @@ static hci_transport_config_uart_t transport_config = {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_POWERON_FAILED:
