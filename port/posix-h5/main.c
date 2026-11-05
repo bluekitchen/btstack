@@ -97,11 +97,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void local_version_information_handler(uint8_t * packet);
 
 
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
-}
 static void use_fast_uart(void){
      printf("Using 921600 baud.\n");
      config.baudrate_main = 921600;
