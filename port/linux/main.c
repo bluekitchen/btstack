@@ -95,6 +95,8 @@ int btstack_main(int argc, const char * argv[]);
 static void local_version_information_handler(uint8_t * packet);
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
     static bd_addr_t local_addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
@@ -157,12 +159,6 @@ static void trigger_shutdown(void){
     log_info("sigint_handler: shutting down");
     shutdown_triggered = true;
     hci_power_control(HCI_POWER_OFF);
-}
-
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
 }
 
 static void local_version_information_handler(uint8_t * packet){
