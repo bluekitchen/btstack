@@ -190,24 +190,27 @@ target_link_libraries(btstack m)
 # Add CC256x Support and specify init script
 set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
-
-# Add BCM Support and download PatchRAM files
-include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
-
-set(CYW55310_PATCHRAM_NAME ${BTSTACK_CYW55310_PATCHRAM_FILE})
-message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from ${BTSTACK_CYW55310_PATCHRAM_BASE_URL}")
-file(
-    DOWNLOAD
-    ${BTSTACK_CYW55310_PATCHRAM_URL}
-    ${CMAKE_CURRENT_BINARY_DIR}/${CYW55310_PATCHRAM_NAME}
-    STATUS CYW55310_PATCHRAM_STATUS
+target_sources(btstack PRIVATE
+    ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
+    ${CC256X_INIT_SCRIPT_SOURCES}
 )
-list(GET CYW55310_PATCHRAM_STATUS 0 CYW55310_PATCHRAM_STATUS_CODE)
-if (NOT CYW55310_PATCHRAM_STATUS_CODE EQUAL 0)
-    list(GET CYW55310_PATCHRAM_STATUS 1 CYW55310_PATCHRAM_STATUS_MESSAGE)
-    message(FATAL_ERROR "Failed to download ${CYW55310_PATCHRAM_NAME}: ${CYW55310_PATCHRAM_STATUS_MESSAGE}")
-endif()
+add_dependencies(btstack ${CC256X_INIT_SCRIPT_TARGETS})
+
+# Add BCM Support and download PatchRAM files during the build.
+include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
+btstack_add_firmware_download(
+    TARGET bcm43430a1_patchram
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_BCM43430A1_PATCHRAM_FILE}"
+    URL "${BTSTACK_BCM43430A1_PATCHRAM_URL}"
+    SHA256 "${BTSTACK_BCM43430A1_PATCHRAM_SHA256}"
+)
+btstack_add_firmware_download(
+    TARGET cyw55310_patchram
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}"
+    URL "${BTSTACK_CYW55310_PATCHRAM_URL}"
+    SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}"
+)
+add_dependencies(btstack bcm43430a1_patchram cyw55310_patchram)
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
