@@ -56,18 +56,23 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstackStm32F4.cmake)
 
 # PatchRAM file for CYW55310
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
+include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 set(PATCHRAM ${BTSTACK_CYW55310_PATCHRAM_NAME})
 set(PATCHRAM_FILE ${BTSTACK_CYW55310_PATCHRAM_FILE})
-message("Downloading PatchRAM ${PATCHRAM_FILE} from ${BTSTACK_CYW55310_PATCHRAM_BASE_URL}")
-file (DOWNLOAD ${BTSTACK_CYW55310_PATCHRAM_URL} ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE})
+set(PATCHRAM_PATH ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE})
+btstack_add_firmware_download(
+    TARGET cyw55310_patchram_download
+    OUTPUT ${PATCHRAM_PATH}
+    URL ${BTSTACK_CYW55310_PATCHRAM_URL}
+    SHA256 ${BTSTACK_CYW55310_PATCHRAM_SHA256}
+)
 
 # Convert PatchRAM file into C
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE}
+    DEPENDS ${PATCHRAM_PATH} ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py
     COMMAND ${Python3_EXECUTABLE}
-    ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM_FILE} ${CMAKE_CURRENT_BINARY_DIR}
+    ARGS ${BTSTACK_ROOT}/chipset/bcm/convert_hcd.py ${PATCHRAM_PATH} ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 set(SOURCES_PORT port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/port.c ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
@@ -83,6 +88,7 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 # PatchRAM array, are identical for every example. Build them once instead of
 # adding them to each executable below.
 add_custom_target(cyw55310_patchram_source DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
+add_dependencies(cyw55310_patchram_source cyw55310_patchram_download)
 btstack_add_stm32f4_examples(
     PORT stm32-f4discovery-cyw55310 ROOT "${BTSTACK_ROOT}"
     BASE_GROUPS core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-bcm third-party-micro-ecc third-party-rijndael third-party-hxcmod platform-embedded-audio platform-embedded-run-loop platform-embedded-stdin platform-embedded-tlv-flash-bank platform-embedded-uart-block platform-embedded-hci-dump-stdout
