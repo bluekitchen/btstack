@@ -154,6 +154,12 @@ target_link_libraries(btstack m)
 
 # Add NXP Support
 include(${BTSTACK_ROOT}/chipset/nxp/nxp.cmake)
+btstack_add_nxp_firmware_downloads(
+    OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    TARGETS_VARIABLE NXP_FIRMWARE_TARGETS
+    FILES_VARIABLE NXP_FIRMWARE_FILES
+)
+add_dependencies(btstack ${NXP_FIRMWARE_TARGETS})
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
