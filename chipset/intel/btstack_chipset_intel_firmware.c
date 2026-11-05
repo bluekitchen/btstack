@@ -170,7 +170,7 @@ static void state_machine(uint8_t *packet, uint16_t size);
 // functions
 
 static uint16_t intel_get_dev_revid(intel_boot_params_t * boot_params){
-    return little_endian_read_16((uint8_t*)&intel_boot_params.dev_revid, 0);
+    return little_endian_read_16((uint8_t*)&boot_params->dev_revid, 0);
 }
 
 static void dump_intel_version(intel_version_t     * version){
