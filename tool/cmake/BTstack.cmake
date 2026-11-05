@@ -264,6 +264,16 @@ set(btstack_group_dependencies_classic_spp_server
     classic-sdp-server
 )
 
+# These embedded adapters use SEGGER RTT when ENABLE_SEGGER_RTT is selected
+# in the port configuration.  Keep the header and implementation in the
+# same scoped closure as the adapters that consume them.
+set(btstack_group_dependencies_platform_embedded_hci_dump_segger_rtt
+    third-party-segger-rtt
+)
+set(btstack_group_dependencies_platform_embedded_stdin
+    third-party-segger-rtt
+)
+
 # During the incremental split, l2cap sources remain in the legacy core group
 # as well as their l2cap leaf group. Group object targets give each source one
 # owner, so exclude the compatibility copy from core there. Legacy source-list
@@ -784,9 +794,12 @@ function(btstack_add_scoped_group_object_library)
                 set(group_is_third_party FALSE)
             endif()
         endforeach()
+        # Object targets compile one group at a time, but that group's source
+        # files may include headers owned by its declared dependencies.
+        btstack_resolve_groups(group_include_groups GROUPS ${ARG_GROUP})
         btstack_collect_include_directories(group_include_directories
             ROOT "${ARG_ROOT}"
-            GROUPS ${ARG_GROUP}
+            GROUPS ${group_include_groups}
         )
 
         add_library(${target} OBJECT ${group_sources})
