@@ -80,7 +80,7 @@ typedef enum {
 } broadcast_source_t;
 static broadcast_source_t broadcast_source = BROADCAST_SOURCE_PLAYER;
 
-static btstack_audio_player_t audio_player[MAX_NUM_BIS];;
+static btstack_audio_player_t audio_player[MAX_NUM_BIS];
 
 static int num_iso_generators;
 static le_audio_demo_source_generator_t iso_gen[MAX_NUM_BIS];
