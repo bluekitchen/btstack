@@ -1554,6 +1554,10 @@ set(btstack_include_directories_platform_posix_wav
     platform/posix
 )
 
+set(btstack_consumer_include_directories_platform_posix_wav
+    platform/posix
+)
+
 set(btstack_sources_platform_windows
     platform/windows/btstack_run_loop_windows.c
     platform/windows/btstack_stdin_windows.c

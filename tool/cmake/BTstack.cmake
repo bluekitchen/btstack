@@ -752,7 +752,7 @@ endfunction()
 function(btstack_add_scoped_group_object_library)
     cmake_parse_arguments(ARG ""
         "OUTPUT_TARGET;TARGET_PREFIX;ROOT;GROUP"
-        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES"
+        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS"
         ${ARGN})
 
     foreach(required OUTPUT_TARGET TARGET_PREFIX ROOT GROUP)
@@ -787,6 +787,7 @@ function(btstack_add_scoped_group_object_library)
 
         add_library(${target} OBJECT ${group_sources})
         btstack_target_warnings(${target} STRICT)
+        target_compile_options(${target} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
         target_include_directories(${target} PRIVATE
             ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
             ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
@@ -821,7 +822,7 @@ endfunction()
 function(btstack_add_scoped_example_library)
     cmake_parse_arguments(ARG ""
         "TARGET;ROOT;PORT;EXAMPLE;CONFIGURATION_REQUIREMENTS_OUTPUT;GROUP_OBJECT_TARGET_PREFIX"
-        "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;LINK_LIBRARIES;LINK_DIRECTORIES"
+        "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;LINK_LIBRARIES;LINK_DIRECTORIES"
         ${ARGN})
 
     foreach(required TARGET ROOT PORT EXAMPLE)
@@ -862,6 +863,7 @@ function(btstack_add_scoped_example_library)
                 GROUP "${group}"
                 PUBLIC_INCLUDE_DIRECTORIES ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
                 PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+                PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
             )
             list(APPEND example_library_sources "$<TARGET_OBJECTS:${group_object_target}>")
         endforeach()
@@ -875,6 +877,7 @@ function(btstack_add_scoped_example_library)
 
     add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)
+    target_compile_options(${ARG_TARGET} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
     if(ARG_PUBLIC_INCLUDE_DIRECTORIES OR example_port_public_include_directories
             OR example_consumer_include_directories)
         target_include_directories(${ARG_TARGET} PUBLIC
