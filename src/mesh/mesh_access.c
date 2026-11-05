@@ -658,9 +658,9 @@ void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, ui
 
 void mesh_access_message_add_model_identifier(mesh_upper_transport_builder_t * builder, uint32_t model_identifier){
     if (mesh_model_is_bluetooth_sig(model_identifier)){
-        return mesh_access_message_add_uint16(builder, mesh_model_get_model_id(model_identifier) );
+        mesh_access_message_add_uint16(builder, mesh_model_get_model_id(model_identifier) );
     } else {
-        return mesh_access_message_add_uint32(builder, model_identifier );
+        mesh_access_message_add_uint32(builder, model_identifier );
     }
 }
 

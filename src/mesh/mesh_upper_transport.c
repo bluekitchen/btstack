@@ -266,7 +266,7 @@ static void mesh_upper_transport_dump_pdus(const char *name, btstack_linked_list
     btstack_linked_list_iterator_init(&it, list);
     while (btstack_linked_list_iterator_has_next(&it)){
         mesh_pdu_t * pdu = (mesh_pdu_t*) btstack_linked_list_iterator_next(&it);
-        printf("- %p\n", pdu);
+        printf("- %p\n", (void *) pdu);
         // printf_hexdump( mesh_pdu_data(pdu), mesh_pdu_len(pdu));
     }
 }
@@ -781,7 +781,7 @@ static void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t
     mesh_network_pdu_set_seq(network_pdu, seq);
     // Dump PDU
     uint8_t opcode = network_pdu->data[9];
-    printf("[+] Upper transport, send unsegmented Control PDU %p - seq %06" PRIx32 " opcode %02x\n", network_pdu, seq, opcode);
+    printf("[+] Upper transport, send unsegmented Control PDU %p - seq %06" PRIx32 " opcode %02x\n", (void *) network_pdu, seq, opcode);
     mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
 
     // send

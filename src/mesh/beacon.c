@@ -477,6 +477,9 @@ void beacon_unprovisioned_device_start(const uint8_t * device_uuid, uint16_t oob
         btstack_run_loop_remove_timer(&beacon_timer);
         beacon_timer_handler(&beacon_timer);
     }
+#else
+    UNUSED(device_uuid);
+    UNUSED(oob_information);
 #endif
 }
 

@@ -264,12 +264,12 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
 static void mesh_network_send_complete(mesh_network_pdu_t * network_pdu){
     if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY){
 #ifdef LOG_NETWORK
-        printf("TX-F-NetworkPDU (%p): relay -> free packet\n", network_pdu);
+        printf("TX-F-NetworkPDU (%p): relay -> free packet\n", (void *) network_pdu);
 #endif
         mesh_network_pdu_free(network_pdu);
     } else {
 #ifdef LOG_NETWORK
-        printf("TX-F-NetworkPDU (%p): notify lower transport\n", network_pdu);
+        printf("TX-F-NetworkPDU (%p): notify lower transport\n", (void *) network_pdu);
 #endif
         // notify higher layer
         (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
@@ -287,7 +287,7 @@ static void mesh_network_send_c(void *arg){
     }
 
 #ifdef LOG_NETWORK
-    printf("TX-C-NetworkPDU (%p): ", outgoing_pdu);
+    printf("TX-C-NetworkPDU (%p): ", (void *) outgoing_pdu);
     printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
 #endif
 
@@ -305,7 +305,7 @@ static void mesh_network_send_c(void *arg){
     }
 
 #ifdef LOG_NETWORK
-    printf("TX-D-NetworkPDU (%p): ", network_pdu);
+    printf("TX-D-NetworkPDU (%p): ", (void *) network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
@@ -333,7 +333,7 @@ static void mesh_network_send_b(void *arg){
     btstack_assert(outgoing_pdu->len <= 29);
     
 #ifdef LOG_NETWORK
-    printf("TX-B-NetworkPDU (%p): ", outgoing_pdu);
+    printf("TX-B-NetworkPDU (%p): ", (void *) outgoing_pdu);
     printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
 #endif
 
@@ -367,7 +367,7 @@ static void mesh_network_send_a(void){
     current_network_key = mesh_subnet_get_outgoing_network_key(subnet);
 
 #ifdef LOG_NETWORK
-    printf("TX-A-NetworkPDU (%p): ", outgoing_pdu);
+    printf("TX-A-NetworkPDU (%p): ", (void *) outgoing_pdu);
     printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
 #endif
 
@@ -410,7 +410,7 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
     network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
 
 #ifdef LOG_NETWORK
-    printf("TX-Relay-NetworkPDU (%p): ", network_pdu);
+    printf("TX-Relay-NetworkPDU (%p): ", (void *) network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
     printf("^^ into network_pdus_queued\n");
 #endif
@@ -499,7 +499,7 @@ static void process_network_pdu_validate_d(void * arg){
     uint8_t net_mic[8];
     btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 #ifdef LOG_NETWORK
-    printf("RX-NetMIC (%p): ", incoming_pdu_decoded); 
+    printf("RX-NetMIC (%p): ", (void *) incoming_pdu_decoded); 
     printf_hexdump(net_mic, net_mic_len);
 #endif
     // store in decoded pdu
@@ -508,7 +508,7 @@ static void process_network_pdu_validate_d(void * arg){
 
 #ifdef LOG_NETWORK
     uint8_t cypher_len  = incoming_pdu_decoded->len - 9 - net_mic_len;
-    printf("RX-Decrypted DST/TransportPDU (%p): ", incoming_pdu_decoded);
+    printf("RX-Decrypted DST/TransportPDU (%p): ", (void *) incoming_pdu_decoded);
     printf_hexdump(&incoming_pdu_decoded->data[7], 2 + cypher_len);
 
     printf("RX-Decrypted: ");
@@ -518,7 +518,7 @@ static void process_network_pdu_validate_d(void * arg){
     // validate network mic
     if (memcmp(net_mic, &incoming_pdu_raw->data[incoming_pdu_decoded->len-net_mic_len], net_mic_len) != 0){
         // fail
-        printf("RX-NetMIC mismatch, try next key (%p)\n", incoming_pdu_decoded);
+        printf("RX-NetMIC mismatch, try next key (%p)\n", (void *) incoming_pdu_decoded);
         process_network_pdu_validate();
         return;
     }    
@@ -528,8 +528,8 @@ static void process_network_pdu_validate_d(void * arg){
 
 #ifdef LOG_NETWORK
     // match
-    printf("RX-NetMIC matches (%p)\n", incoming_pdu_decoded);
-    printf("RX-TTL (%p): 0x%02x\n", incoming_pdu_decoded, incoming_pdu_decoded->data[1] & 0x7f);
+    printf("RX-NetMIC matches (%p)\n", (void *) incoming_pdu_decoded);
+    printf("RX-TTL (%p): 0x%02x\n", (void *) incoming_pdu_decoded, incoming_pdu_decoded->data[1] & 0x7f);
 #endif
 
     // set netkey_index
@@ -551,7 +551,7 @@ static void process_network_pdu_validate_d(void * arg){
         int valid = mesh_network_addresses_valid(ctl, src, dst);
         if (!valid){
 #ifdef LOG_NETWORK
-            printf("RX Address invalid (%p)\n", incoming_pdu_decoded);
+            printf("RX Address invalid (%p)\n", (void *) incoming_pdu_decoded);
 #endif
             btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
             incoming_pdu_decoded = NULL;
@@ -562,12 +562,12 @@ static void process_network_pdu_validate_d(void * arg){
         // check cache
         uint32_t hash = mesh_network_cache_hash(incoming_pdu_decoded);
 #ifdef LOG_NETWORK
-        printf("RX-Hash (%p): %08" PRIx32 "\n", incoming_pdu_decoded, hash);
+        printf("RX-Hash (%p): %08" PRIx32 "\n", (void *) incoming_pdu_decoded, hash);
 #endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
 #ifdef LOG_NETWORK
-            printf("Found in cache -> drop packet (%p)\n", incoming_pdu_decoded);
+            printf("Found in cache -> drop packet (%p)\n", (void *) incoming_pdu_decoded);
 #endif
             btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
             incoming_pdu_decoded = NULL;
@@ -579,7 +579,7 @@ static void process_network_pdu_validate_d(void * arg){
         mesh_network_cache_add(hash);
 
 #ifdef LOG_NETWORK
-            printf("RX-Validated (%p) - forward to lower transport\n", incoming_pdu_decoded);
+            printf("RX-Validated (%p) - forward to lower transport\n", (void *) incoming_pdu_decoded);
 #endif
 
         // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
@@ -718,7 +718,7 @@ static bool mesh_network_run_gatt(void){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_gatt);
 
 #ifdef LOG_NETWORK
-    printf("network run 1: pop %p from network_pdus_outgoing_gatt\n", network_pdu);
+    printf("network run 1: pop %p from network_pdus_outgoing_gatt\n", (void *) network_pdu);
 #endif
     // request to send via gatt if:
     // proxy active and connected
@@ -729,7 +729,7 @@ static bool mesh_network_run_gatt(void){
     if (send_via_gatt){
 
 #ifdef LOG_NETWORK
-        printf("network run 2: set %p as gatt_bearer_network_pdu\n", network_pdu);
+        printf("network run 2: set %p as gatt_bearer_network_pdu\n", (void *) network_pdu);
 #endif
         gatt_bearer_network_pdu = network_pdu;
         gatt_bearer_request_can_send_now_for_network_pdu();
@@ -737,7 +737,7 @@ static bool mesh_network_run_gatt(void){
     } else {
 
 #ifdef LOG_NETWORK
-        printf("network run 3: push %p to network_pdus_outgoing_adv\n", network_pdu);
+        printf("network run 3: push %p to network_pdus_outgoing_adv\n", (void *) network_pdu);
 #endif
         btstack_linked_list_add_tail(&network_pdus_outgoing_adv, (btstack_linked_item_t *) network_pdu);
 
@@ -769,9 +769,9 @@ static bool mesh_network_run_adv(void){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
 
 #ifdef LOG_NETWORK
-    printf("network run 4: pop %p from network_pdus_outgoing_adv\n", network_pdu);
+    printf("network run 4: pop %p from network_pdus_outgoing_adv\n", (void *) network_pdu);
     mesh_network_dump_network_pdus("network_pdus_outgoing_adv (3)", &network_pdus_outgoing_adv);
-    printf("network run 5: %p -> flags 0x%02x, gatt_proxy %u, relay %u\n", network_pdu, network_pdu->flags, mesh_foundation_gatt_proxy_get(), mesh_foundation_relay_get());
+    printf("network run 5: %p -> flags 0x%02x, gatt_proxy %u, relay %u\n", (void *) network_pdu, network_pdu->flags, mesh_foundation_gatt_proxy_get(), mesh_foundation_relay_get());
 #endif
 
     // send via adv if:
@@ -784,13 +784,13 @@ static bool mesh_network_run_adv(void){
 
     if (send_via_adv){
 #ifdef LOG_NETWORK
-        printf("network run 6: set %p as to adv_bearer_network_pdu\n", network_pdu);
+        printf("network run 6: set %p as to adv_bearer_network_pdu\n", (void *) network_pdu);
 #endif
         adv_bearer_network_pdu = network_pdu;
         adv_bearer_request_can_send_now_for_network_pdu();
     } else {
 #ifdef LOG_NETWORK
-        printf("network run 7: skip sending %p via adv bearer\n", network_pdu);
+        printf("network run 7: skip sending %p via adv bearer\n", (void *) network_pdu);
         #endif
         // directly notify upper layer
         mesh_network_send_complete(network_pdu);
@@ -838,7 +838,7 @@ static bool mesh_network_run_queued(void){
     outgoing_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
 
 #ifdef LOG_NETWORK
-    printf("network run 5: pop %p from network_pdus_queued\n", outgoing_pdu);
+    printf("network run 5: pop %p from network_pdus_queued\n", (void *) outgoing_pdu);
     mesh_network_dump_network_pdus("network_pdus_queued (2)", &network_pdus_queued);
 #endif
     mesh_network_send_a();
@@ -893,7 +893,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                     transmission_interval = (transmit_config >> 3) * 10;
 
 #ifdef LOG_NETWORK
-                    printf("TX-E-NetworkPDU (%p) count %u, interval %u ms: ", adv_bearer_network_pdu, transmission_count, transmission_interval);
+                    printf("TX-E-NetworkPDU (%p) count %u, interval %u ms: ", (void *) adv_bearer_network_pdu, transmission_count, transmission_interval);
                     printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
 #endif
 
@@ -955,7 +955,7 @@ static void mesh_network_gatt_bearer_handle_network_event(uint8_t packet_type, u
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             if (gatt_bearer_network_pdu == NULL) break;
 #ifdef LOG_NETWORK
-                            printf("G-TX-E-NetworkPDU (%p): ", gatt_bearer_network_pdu);
+                            printf("G-TX-E-NetworkPDU (%p): ", (void *) gatt_bearer_network_pdu);
                             printf_hexdump(gatt_bearer_network_pdu->data, gatt_bearer_network_pdu->len);
 #endif
                             gatt_bearer_send_network_pdu(gatt_bearer_network_pdu->data, gatt_bearer_network_pdu->len);
@@ -1065,7 +1065,7 @@ void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, 
 
 void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
 #ifdef LOG_NETWORK
-    printf("TX-NetworkPDU (%p):   ", network_pdu);
+    printf("TX-NetworkPDU (%p):   ", (void *) network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
     printf("^^ into network_pdus_queued\n");
 #endif
@@ -1188,7 +1188,7 @@ void mesh_network_pdu_set_seq(mesh_network_pdu_t * network_pdu, uint32_t seq){
 
 static void mesh_network_dump_network_pdu(mesh_network_pdu_t * network_pdu){
     if (network_pdu){
-        printf("- %p: ", network_pdu); printf_hexdump(network_pdu->data, network_pdu->len);
+        printf("- %p: ", (void *) network_pdu); printf_hexdump(network_pdu->data, network_pdu->len);
     }
 }
 static void mesh_network_dump_network_pdus(const char * name, btstack_linked_list_t * list){

@@ -117,7 +117,7 @@ void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, ui
 int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it){
     // find next matching key
     while (true){
-        printf("check %p\n", it->address);
+        printf("check %p\n", (void *) it->address);
         if (it->address && it->address->hash == it->hash) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->address = (mesh_virtual_address_t *) btstack_linked_list_iterator_next(&it->it);

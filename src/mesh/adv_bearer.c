@@ -261,7 +261,7 @@ static void adv_bearer_run(void){
                         // queue again
                         btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);                        
                         // time to advertise again
-                        log_debug("Start GAP ADV, %p", item);
+                        log_debug("Start GAP ADV, %p", (void *) item);
                         gap_advertisements_set_params(ADVERTISING_INTERVAL_CONNECTABLE_MIN, ADVERTISING_INTERVAL_CONNECTABLE_MIN, gap_adv_type, gap_direct_address_typ, gap_direct_address, gap_channel_map, gap_filter_policy);
                         gap_advertisements_set_data(item->adv_length, item->adv_data);
                         gap_advertisements_enable(1);
