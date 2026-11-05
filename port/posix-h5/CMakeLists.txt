@@ -121,9 +121,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             "${CMAKE_CURRENT_SOURCE_DIR}"
             ${PORTAUDIO_INCLUDE_DIRS}
         PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
-        # The established H5 implementation has intentional unused callback
-        # parameters. Preserve this legacy port-local warning policy.
-        PRIVATE_COMPILE_OPTIONS -Wno-unused-parameter
         LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES
             ${CMAKE_THREAD_LIBS_INIT}
