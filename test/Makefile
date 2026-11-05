@@ -94,10 +94,13 @@ SUBDIRS_BLE := \
 SUBDIRS_UNIQ := $(sort $(SUBDIRS) $(SUBDIRS_BLE))
 test coverage-all clean: $(SUBDIRS_UNIQ)
 
-test: version-test
+test: version-test cmake-firmware-test
 
 version-test:
 	python3 version_test.py
+
+cmake-firmware-test:
+	$(MAKE) -C cmake-firmware
 
 test-ble: MAKECMDGOALS = test
 test-ble: $(SUBDIRS_BLE)
@@ -108,7 +111,7 @@ coverage-ble: $(SUBDIRS_BLE)
 $(SUBDIRS_UNIQ):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-.PHONY: $(SUBDIRS_UNIQ) version-test
+.PHONY: $(SUBDIRS_UNIQ) version-test cmake-firmware-test
 .SUFFIXES:
 
 coverage%: export LLVM_PROFILE_FILE=coverage-%m-%p.profraw
