@@ -6199,7 +6199,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
                                   l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
     log_error("deprecated - please use l2cap_ertm_create_channel");
     return l2cap_ertm_create_channel(packet_handler, address, psm, ertm_contig, buffer, size, out_local_cid);
-};
+}
 
 // @deprecated - please use l2cap_ertm_accept_connection
 uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size){
