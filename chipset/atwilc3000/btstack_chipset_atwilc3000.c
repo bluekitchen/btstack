@@ -237,6 +237,7 @@ static void atwilc3000_wait_for_reset_completed(void){
 }
 
 static void atwilc3000_configure_uart(btstack_timer_source_t * ts){
+    UNUSED(ts);
     // reset baud rate if higher baud rate was requested before
     if (fw_baudrate){
         the_uart_driver->set_baudrate(HCI_DEFAULT_BAUDRATE);
