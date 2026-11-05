@@ -150,6 +150,8 @@ static void local_version_information_handler(uint8_t * packet){
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_POWERON_FAILED:
