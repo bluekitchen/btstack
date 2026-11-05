@@ -37,7 +37,7 @@ copyright = """/*
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -316,6 +316,12 @@ list_of_iso_structs = [
     ['hci_iso_stream']
 ]
 
+# Most pool-count macros use the upper-case type name plus an "S". Names
+# ending in "address" need the conventional plural spelling instead.
+pool_count_names = {
+    "mesh_virtual_address": "MAX_NR_MESH_VIRTUAL_ADDRESSES",
+}
+
 def writeln(f, data):
     f.write(data + "\n")
 
@@ -324,7 +330,7 @@ def replacePlaceholder(template, struct_name):
     if struct_name.endswith('try'):
         pool_count = "MAX_NR_" + struct_name.upper()[:-3] + "TRIES"
     else:
-        pool_count = "MAX_NR_" + struct_name.upper() + "S"
+        pool_count = pool_count_names.get(struct_name, "MAX_NR_" + struct_name.upper() + "S")
     pool_count_old_no = pool_count.replace("MAX_NR_", "MAX_NO_")
     snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT_OLD_NO", pool_count_old_no).replace("POOL_COUNT", pool_count)
     return snippet
@@ -456,11 +462,9 @@ TEST(btstack_memory, STRUCT_NAME_NotEnoughBuffers){
 }
 """
 
-test_footer = """
-int main (int argc, const char * argv[]){
+test_footer = """int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
-}
-"""
+}"""
 
 file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.cpp"
 print ('Generating %s' % file_name)

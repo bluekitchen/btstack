@@ -1323,7 +1323,7 @@ TEST(btstack_memory, mesh_virtual_address_GetAndFree){
     CHECK(context != NULL);
     btstack_memory_mesh_virtual_address_free(context);
 #else
-#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSS
+#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSES
     // single
     context = btstack_memory_mesh_virtual_address_get();
     CHECK(context != NULL);
@@ -1342,10 +1342,10 @@ TEST(btstack_memory, mesh_virtual_address_NotEnoughBuffers){
 #ifdef HAVE_MALLOC
     btstack_memory_simulate_malloc_failure(true);
 #else
-#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSS
+#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSES
     int i;
     // alloc all static buffers
-    for (i = 0; i < MAX_NR_MESH_VIRTUAL_ADDRESSS; i++){
+    for (i = 0; i < MAX_NR_MESH_VIRTUAL_ADDRESSES; i++){
         context = btstack_memory_mesh_virtual_address_get();
         CHECK(context != NULL);
     }
@@ -1445,7 +1445,6 @@ TEST(btstack_memory, hci_iso_stream_NotEnoughBuffers){
 
 
 #endif
-
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

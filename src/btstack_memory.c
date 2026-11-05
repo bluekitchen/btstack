@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at 
+ * Please inquire about commercial licensing options at
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -1828,17 +1828,17 @@ void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport
 
 
 // MARK: mesh_virtual_address_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_VIRTUAL_ADDRESSS)
-    #if defined(MAX_NO_MESH_VIRTUAL_ADDRESSS)
-        #error "Deprecated MAX_NO_MESH_VIRTUAL_ADDRESSS defined instead of MAX_NR_MESH_VIRTUAL_ADDRESSS. Please update your btstack_config.h to use MAX_NR_MESH_VIRTUAL_ADDRESSS."
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_VIRTUAL_ADDRESSES)
+    #if defined(MAX_NO_MESH_VIRTUAL_ADDRESSES)
+        #error "Deprecated MAX_NO_MESH_VIRTUAL_ADDRESSES defined instead of MAX_NR_MESH_VIRTUAL_ADDRESSES. Please update your btstack_config.h to use MAX_NR_MESH_VIRTUAL_ADDRESSES."
     #else
-        #define MAX_NR_MESH_VIRTUAL_ADDRESSS 0
+        #define MAX_NR_MESH_VIRTUAL_ADDRESSES 0
     #endif
 #endif
 
-#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSS
-#if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
-static mesh_virtual_address_t mesh_virtual_address_storage[MAX_NR_MESH_VIRTUAL_ADDRESSS];
+#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSES
+#if MAX_NR_MESH_VIRTUAL_ADDRESSES > 0
+static mesh_virtual_address_t mesh_virtual_address_storage[MAX_NR_MESH_VIRTUAL_ADDRESSES];
 static btstack_memory_pool_t mesh_virtual_address_pool;
 mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
     void * buffer = btstack_memory_pool_get(&mesh_virtual_address_pool);
@@ -2119,8 +2119,8 @@ void btstack_memory_init(void){
 #if MAX_NR_MESH_TRANSPORT_KEYS > 0
     btstack_memory_pool_create(&mesh_transport_key_pool, mesh_transport_key_storage, MAX_NR_MESH_TRANSPORT_KEYS, sizeof(mesh_transport_key_t));
 #endif
-#if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
-    btstack_memory_pool_create(&mesh_virtual_address_pool, mesh_virtual_address_storage, MAX_NR_MESH_VIRTUAL_ADDRESSS, sizeof(mesh_virtual_address_t));
+#if MAX_NR_MESH_VIRTUAL_ADDRESSES > 0
+    btstack_memory_pool_create(&mesh_virtual_address_pool, mesh_virtual_address_storage, MAX_NR_MESH_VIRTUAL_ADDRESSES, sizeof(mesh_virtual_address_t));
 #endif
 #if MAX_NR_MESH_SUBNETS > 0
     btstack_memory_pool_create(&mesh_subnet_pool, mesh_subnet_storage, MAX_NR_MESH_SUBNETS, sizeof(mesh_subnet_t));
