@@ -55,6 +55,11 @@ include(cmake/btstack.cmake)
 # Add CC256x Support and specify init script
 set(CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
+target_sources(btstack PRIVATE
+    ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
+    ${CC256X_INIT_SCRIPT_SOURCES}
+)
+add_dependencies(btstack ${CC256X_INIT_SCRIPT_TARGETS})
 
 # get list of examples
 include(${BTSTACK_ROOT}/example/CMakeLists.txt)

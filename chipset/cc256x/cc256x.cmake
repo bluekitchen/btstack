@@ -83,21 +83,14 @@ function(cc256x_init_script output_file archive main_script optional_script)
             add_custom_target("${generate_target}" DEPENDS "${generated_source}")
             add_dependencies("${generate_target}" "${download_target}")
 
-            if(TARGET btstack)
-                target_include_directories(btstack PRIVATE ${BTSTACK_ROOT}/chipset/cc256x)
-                target_sources(btstack PRIVATE ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c)
-                target_sources(btstack PRIVATE "${generated_source}")
-                add_dependencies(btstack "${generate_target}")
-            else()
-                set(CC256X_INIT_SCRIPT_SOURCES
-                    ${CC256X_INIT_SCRIPT_SOURCES}
-                    "${generated_source}"
-                    PARENT_SCOPE)
-                set(CC256X_INIT_SCRIPT_TARGETS
-                    ${CC256X_INIT_SCRIPT_TARGETS}
-                    "${generate_target}"
-                    PARENT_SCOPE)
-            endif()
+            set(CC256X_INIT_SCRIPT_SOURCES
+                ${CC256X_INIT_SCRIPT_SOURCES}
+                "${generated_source}"
+                PARENT_SCOPE)
+            set(CC256X_INIT_SCRIPT_TARGETS
+                ${CC256X_INIT_SCRIPT_TARGETS}
+                "${generate_target}"
+                PARENT_SCOPE)
             return()
 
         endif()
