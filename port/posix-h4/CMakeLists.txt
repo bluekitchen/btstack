@@ -13,6 +13,7 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 #  )
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 btstack_declare_port(posix-h4)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
   ROOT "${BTSTACK_ROOT}"
@@ -59,19 +60,12 @@ list(APPEND SOURCES_PORT ${CC256X_INIT_SCRIPT_SOURCES})
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_cyw55310_patchram.cmake)
 
-set(CYW55310_PATCHRAM_NAME ${BTSTACK_CYW55310_PATCHRAM_FILE})
-message("Downloading PatchRAM ${CYW55310_PATCHRAM_NAME} from ${BTSTACK_CYW55310_PATCHRAM_BASE_URL}")
-file(
-    DOWNLOAD
-    ${BTSTACK_CYW55310_PATCHRAM_URL}
-    ${CMAKE_CURRENT_BINARY_DIR}/${CYW55310_PATCHRAM_NAME}
-    STATUS CYW55310_PATCHRAM_STATUS
+btstack_add_firmware_download(
+    TARGET cyw55310_patchram
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}"
+    URL "${BTSTACK_CYW55310_PATCHRAM_URL}"
+    SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}"
 )
-list(GET CYW55310_PATCHRAM_STATUS 0 CYW55310_PATCHRAM_STATUS_CODE)
-if (NOT CYW55310_PATCHRAM_STATUS_CODE EQUAL 0)
-    list(GET CYW55310_PATCHRAM_STATUS 1 CYW55310_PATCHRAM_STATUS_MESSAGE)
-    message(FATAL_ERROR "Failed to download ${CYW55310_PATCHRAM_NAME}: ${CYW55310_PATCHRAM_STATUS_MESSAGE}")
-endif()
 
 # Get the declared examples. Feature-based filtering will be provided by the
 # future resolver; for now this port builds every declared example.
@@ -166,4 +160,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_target_warnings(${EXAMPLE} STRICT)
 
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
+    add_dependencies(${EXAMPLE} cyw55310_patchram)
 endforeach()
