@@ -61,7 +61,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_qt.h"
-#incldue "btstack_uart.h"
+#include "btstack_uart.h"
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -103,8 +103,6 @@ static bool shutdown_triggered;
 
 extern "C" int btstack_main(int argc, const char * argv[]);
 
-static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
-
 static bd_addr_t static_address;
 static int using_static_address;
 
@@ -117,6 +115,7 @@ static hci_transport_config_uart_t config = {
     0,  // main baudrate
     1,  // flow control
     NULL,
+    BTSTACK_UART_PARITY_OFF,
 };
 
 static void use_fast_uart(void){
@@ -233,12 +232,6 @@ static void trigger_shutdown(void){
     log_info("sigint_handler: shutting down");
     shutdown_triggered = true;
     hci_power_control(HCI_POWER_OFF);
-}
-
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
 }
 
 #define USB_MAX_PATH_LEN 7

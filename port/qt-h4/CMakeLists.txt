@@ -1,224 +1,61 @@
 cmake_minimum_required(VERSION 3.12)
-
 project(qt-h4 LANGUAGES C CXX)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
-message("${Qt5_DIR}")
+find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+btstack_declare_port(qt-h4)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
+add_compile_definitions(HAVE_PORTAUDIO)
+btstack_declare_port_provider(qt-h4 CAPABILITY audio
+    GROUPS platform-posix-audio-portaudio platform-posix-wav)
+btstack_declare_port_provider(qt-h4 CAPABILITY led
+    GROUPS platform-posix-hal-led
+    PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-# BTstack Root
-SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
-message("BTSTACK_ROOT: ${BTSTACK_ROOT}")
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(BTSTACK_QT_H4_GROUPS
+    ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
+    platform-posix-hci-dump platform-posix-network platform-posix-uart
+    transport-h4
+    platform-posix-signal platform-posix-stdin platform-posix-hal-led
+    platform-posix-audio-portaudio chipset-bcm chipset-cc256x chipset-csr
+    third-party-micro-ecc third-party-rijndael)
+set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 
-# BTstack include
-include_directories(${BTSTACK_ROOT}/3rd-party/micro-ecc)
-include_directories(${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lc3-google/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/md5)
-include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player)
-include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player/mod)
-include_directories(${BTSTACK_ROOT}/3rd-party/lwip/core/src/include)
-include_directories(${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server)
-include_directories(${BTSTACK_ROOT}/3rd-party/rijndael)
-include_directories(${BTSTACK_ROOT}/3rd-party/yxml)
-include_directories(${BTSTACK_ROOT}/3rd-party/tinydir)
-include_directories(${BTSTACK_ROOT}/chipset/bcm)
-include_directories(${BTSTACK_ROOT}/chipset/cc256x)
-include_directories(${BTSTACK_ROOT}/chipset/csr)
-include_directories(${BTSTACK_ROOT}/src)
-include_directories(${BTSTACK_ROOT}/platform/posix)
-include_directories(${BTSTACK_ROOT}/platform/embedded)
-include_directories(${BTSTACK_ROOT}/platform/lwip)
-include_directories(${BTSTACK_ROOT}/platform/lwip/port)
-include_directories(${BTSTACK_ROOT}/platform/qt)
-include_directories(.)
-
-# BTstack sources
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/sco_demo_util.c")
-file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
-file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
-file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
-file(GLOB SOURCES_MESH      "../../src/mesh/*.c" "../../src/mesh/gatt-service/*.c")
-file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
-file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
-
-set(SOURCES_POSIX
-    ${BTSTACK_ROOT}/platform/posix/btstack_audio_portaudio.c
-    ${BTSTACK_ROOT}/platform/posix/btstack_tlv_posix.c
-    ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_fs.c
-    ${BTSTACK_ROOT}/platform/posix/wav_util.c
-)
-
-set(SOURCES_CHIPSET
-    ${BTSTACK_ROOT}/chipset/bcm/btstack_chipset_bcm.c
-    ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
-    bluetooth_init_cc2564C_1.5.c
-    ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
-)
-
-set(LWIP_CORE_SRC
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c
-)
-set (LWIP_IPV4_SRC
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
-)
-set (LWIP_NETIF_SRC
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c
-)
-set (LWIP_HTTPD
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
-        ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
-)
-set (LWIP_DHCPD
-        ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
-)
-set (LWIP_PORT
-        ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
-        ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c
-)
-
-set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
-
-file(GLOB SOURCES_BLE_OFF   "${BTSTACK_ROOT}/src/ble/le_device_db_memory.c")
-list(REMOVE_ITEM SOURCES_BLE ${SOURCES_BLE_OFF})
-
-
-# select files for H4 UART support
-IF (WIN32)
-    message("Building for Windows with H4 UART")
-    include_directories(${BTSTACK_ROOT}/platform/windows)
-    file(GLOB SOURCES_WINDOWS "${BTSTACK_ROOT}/platform/windows/*.c")
-    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/windows/btstack_stdin_windows.c)
-ELSE()
-    message("Building for POSIX with H4 UART")
-    list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c)
-    list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_block_posix.c)
-    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c ${BTSTACK_ROOT}/platform/posix/btstack_signal.c)
-ENDIF()
-
-set(SOURCES
-        ${SOURCES_MD5}
-        ${SOURCES_YXML}
-        ${SOURCES_BLUEDROID}
-        ${SOURCES_POSIX}
-        ${SOURCES_RIJNDAEL}
-        ${SOURCES_STDIN}
-        ${SOURCES_SRC}
-        ${SOURCES_BLE}
-        ${SOURCES_GATT}
-        ${SOURCES_MESH}
-        ${SOURCES_CLASSIC}
-        ${SOURCES_UECC}
-        ${SOURCES_HXCMOD}
-        ${SOURCES_CHIPSET}
-        ${SOURCES_WINDOWS}
-)
-list(SORT SOURCES)
-
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-
-# pkgconfig
-find_package(PkgConfig QUIET)
-
-# link libraries for H4 UART support
-IF (WIN32)
-    target_link_libraries(btstack setupapi)
-ELSE()
-    # find pkgconfig
-    find_package(PkgConfig REQUIRED)
-
-    # libusb
-    pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-    target_include_directories(btstack PUBLIC ${LIBUSB_INCLUDE_DIRS})
-    target_link_directories(btstack PUBLIC ${LIBUSB_LIBRARY_DIRS})
-    target_link_libraries(btstack ${LIBUSB_LIBRARIES})
-ENDIF()
-
-# portaudio
-if (PkgConfig_FOUND)
-    pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-    if(PORTAUDIO_FOUND)
-        message("HAVE_PORTAUDIO")
-        target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-        target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-        target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
-        add_compile_definitions(HAVE_PORTAUDIO)
-        SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+foreach(EXAMPLE IN LISTS btstack_declared_examples)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        PORT qt-h4 EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_qt_h4
+        BASE_GROUPS ${BTSTACK_QT_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}" ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES ${PORTAUDIO_LIBRARIES} Qt5::Core)
+    set(SOURCES_EXAMPLE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+        ${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    if(btstack_example_${EXAMPLE}_gatt_db)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
     endif()
-endif()
-
-# get list of examples
-include(${BTSTACK_ROOT}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "avrcp_browsing_client")
-
-# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
-# workaround: add lwip sources only to lwip_examples
-set (LWIP_EXAMPLES pan_lwip_http_server)
-
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
-
-    # add qt main.cpp and run loop
-    list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp main.cpp)
-
-    # add lwip sources for lwip examples
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-    endif()
-
-    # add GATT DB creation
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
-        message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-                    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-                        COMMAND ${Python3_EXECUTABLE}
-                        ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-                )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-
-        # generated file does not need AUTOMOC and AUOUIC processing
-        set_property(SOURCE {CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h PROPERTY SKIP_AUTOGEN ON)
-    else()
-        message("example ${EXAMPLE}")
-    endif()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
-    target_link_libraries(${EXAMPLE} btstack Qt5::Core)
-endforeach(EXAMPLE)
+    btstack_target_warnings(${EXAMPLE} STRICT)
+    target_include_directories(${EXAMPLE} PRIVATE
+        "${BTSTACK_ROOT}/chipset/bcm"
+        "${BTSTACK_ROOT}/chipset/cc256x"
+        "${BTSTACK_ROOT}/chipset/csr"
+        "${BTSTACK_ROOT}/platform/embedded"
+        "${BTSTACK_ROOT}/platform/posix"
+        "${BTSTACK_ROOT}/platform/qt")
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library Qt5::Core)
+endforeach()
