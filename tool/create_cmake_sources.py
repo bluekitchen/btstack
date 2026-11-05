@@ -289,6 +289,15 @@ GROUP_INCLUDE_DIRECTORIES = {
     "third-party-qr-code-generator": ["3rd-party/qr-code-generator"],
 }
 
+# Headers in this mapping are used directly by example/application sources,
+# rather than only by the implementation of the source group. They are emitted
+# separately so target consumers do not inherit every implementation include
+# directory. wav_util.h is used by the LE Audio demo utilities when a desktop
+# audio backend provides the audio capability.
+GROUP_CONSUMER_INCLUDE_DIRECTORIES = {
+    "platform-posix-wav": ["platform/posix"],
+}
+
 # Include paths required by BTstack's public headers. These are intentionally
 # independent of selected source groups: an application can include btstack.h
 # (or another public BTstack header) without compiling the corresponding
@@ -493,6 +502,12 @@ def render(groups: dict[str, list[str]], unclassified: list[str]) -> str:
         lines.append(f"set(btstack_include_directories_{variable_suffix(group)}")
         lines.extend(f"    {directory}" for directory in group_include_directories[group])
         lines.extend([")", ""])
+
+        consumer_include_directories = GROUP_CONSUMER_INCLUDE_DIRECTORIES.get(group)
+        if consumer_include_directories:
+            lines.append(f"set(btstack_consumer_include_directories_{variable_suffix(group)}")
+            lines.extend(f"    {directory}" for directory in consumer_include_directories)
+            lines.extend([")", ""])
 
     if unclassified:
         lines.extend([
