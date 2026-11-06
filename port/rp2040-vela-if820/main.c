@@ -47,6 +47,7 @@ static hci_transport_config_uart_t config = {
     0,  // main baudrate
     1,        // flow control
     NULL,
+    0,        // parity off
 };
 
 static void setup_tlv(void) {

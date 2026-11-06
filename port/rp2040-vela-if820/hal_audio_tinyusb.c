@@ -140,7 +140,7 @@ static void hal_audio_sink_usb_simulation_stop(void) {
 // Sink functions
 void hal_audio_sink_init(uint8_t channels, uint32_t samplerate, void (*playback)(uint8_t buffer_index)) {
 
-    log_info("hal_audio_sink_init, sample rate %u hz, channels %u", samplerate, channels);
+    log_info("hal_audio_sink_init, sample rate %u hz, channels %u", (unsigned int) samplerate, channels);
 
     // validate configuration: 8 kHz <= samplerate <= 48 kHz, 2 channels
     btstack_assert(channels == CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX);
@@ -160,7 +160,7 @@ void hal_audio_sink_init(uint8_t channels, uint32_t samplerate, void (*playback)
         // setup resample buffer
         btstack_resample_init(&resampler, 2);
         uint32_t resampling_factor = (samplerate << 16) / 48000;
-        log_info("Resampling factor 0x%08x", resampling_factor);
+        log_info("Resampling factor 0x%08x", (unsigned int) resampling_factor);
         btstack_resample_set_factor( &resampler,  resampling_factor);
         btstack_chunk_buffer_init(&resample_chunk_buffer, resample_chunk_buffer_storage, 0);
     }
@@ -234,10 +234,10 @@ void hal_audio_source_set_gain(uint8_t gain) {
     audio_source_state.gain = gain;
 }
 
-void hal_audio_source_start_stream(void) {
+void hal_audio_source_start(void) {
 }
 
-void hal_audio_source_stop_stream(void) {
+void hal_audio_source_stop(void) {
 }
 
 void hal_audio_source_close(void) {
@@ -322,6 +322,7 @@ static void hal_audio_sink_handle_tx_done(void) {
 
 // USB Audio TX Simulation - only one call every NUM_USB_BUFFERS_PER_APP_BUFFER ms
 static void hal_audio_sink_usb_simulation_handler(btstack_timer_source_t * ts) {
+    UNUSED(ts);
     for (int i = 0 ; i < NUM_USB_BUFFERS_PER_APP_BUFFER; i++) {
         hal_audio_sink_handle_usb_buffer_processed();
     }

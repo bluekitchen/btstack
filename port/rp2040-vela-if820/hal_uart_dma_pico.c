@@ -215,8 +215,9 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
-    log_info("UART DMA set baud %u", baud);
+    log_info("UART DMA set baud %u", (unsigned int) baud);
     (void) uart_set_baudrate(UART_ID, baud);
+    return 0;
 }
 
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
@@ -233,8 +234,10 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
 
 void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void)){
     // Not implemented
+    UNUSED(csr_irq_handler);
 }
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
     // Not implemented
+    UNUSED(sleep);
 }
