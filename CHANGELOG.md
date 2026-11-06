@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
          Applications should provide additional buffer storage
 - AVDTP: enable send of automatically flushable packets for media transport
 - example/a2dp_source_demo: set automatic flush timeout to 150 ms
+- ESP32: allow to specify the Bluetooth type of external Bluetooth Controller
 
 
 ## Release v1.8.3
