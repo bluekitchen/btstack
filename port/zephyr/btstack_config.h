@@ -7,6 +7,10 @@
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H
 
+// Zephyr force-includes this header for normal compilation. Include it here as
+// well so CMake's btstack_config.h preprocessor sees the same Kconfig values.
+#include <zephyr/autoconf.h>
+
 // Port related features
 
 // Zephyr's shared configuration enables SEGGER RTT for every supported board.

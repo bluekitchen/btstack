@@ -1,245 +1,198 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
 
-SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
-SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 list(APPEND BOARD_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
-#set(CMAKE_BUILD_TYPE RelWithDebInfo)
-
-set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../../)
-if( DEFINED ENV{BTSTACK_ROOT} )
-    set(BTSTACK_ROOT $ENV{BTSTACK_ROOT})
+get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+if(DEFINED ENV{BTSTACK_ROOT})
+    set(BTSTACK_ROOT "$ENV{BTSTACK_ROOT}")
 endif()
 
-include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
+include("${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake")
 
+set(BTSTACK_ZEPHYR_PATCHRAM_CHIPSETS)
 if(BOARD MATCHES "^if310($|/)")
-    set(BTSTACK_CYW55310_PATCHRAM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}")
-    if(NOT EXISTS "${BTSTACK_CYW55310_PATCHRAM_PATH}")
-        message(STATUS "Downloading ${BTSTACK_CYW55310_PATCHRAM_FILE}")
+    list(APPEND BTSTACK_ZEPHYR_PATCHRAM_CHIPSETS CYW55310)
+elseif(BOARD MATCHES "^nucleo_(f439zi|h563zi|h753zi)($|/)")
+    # Provide both firmware choices documented in the Nucleo configurations.
+    list(APPEND BTSTACK_ZEPHYR_PATCHRAM_CHIPSETS CYW55513 CYW55573)
+endif()
+
+foreach(chipset IN LISTS BTSTACK_ZEPHYR_PATCHRAM_CHIPSETS)
+    set(BTSTACK_ZEPHYR_PATCHRAM_FILE "${BTSTACK_${chipset}_PATCHRAM_FILE}")
+    set(BTSTACK_ZEPHYR_PATCHRAM_URL "${BTSTACK_${chipset}_PATCHRAM_URL}")
+    set(BTSTACK_ZEPHYR_PATCHRAM_SHA256 "${BTSTACK_${chipset}_PATCHRAM_SHA256}")
+    set(BTSTACK_ZEPHYR_PATCHRAM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${BTSTACK_ZEPHYR_PATCHRAM_FILE}")
+    if(NOT EXISTS "${BTSTACK_ZEPHYR_PATCHRAM_PATH}")
+        message(STATUS "Downloading ${BTSTACK_ZEPHYR_PATCHRAM_FILE}")
         file(DOWNLOAD
-            "${BTSTACK_CYW55310_PATCHRAM_URL}"
-            "${BTSTACK_CYW55310_PATCHRAM_PATH}"
-            EXPECTED_HASH SHA256=${BTSTACK_CYW55310_PATCHRAM_SHA256}
-            STATUS BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_STATUS
-        )
-        list(GET BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_STATUS 0 BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_RESULT)
-        if(NOT BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_RESULT EQUAL 0)
-            list(GET BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_STATUS 1 BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_ERROR)
-            file(REMOVE "${BTSTACK_CYW55310_PATCHRAM_PATH}")
-            message(FATAL_ERROR "Failed to download ${BTSTACK_CYW55310_PATCHRAM_FILE}: ${BTSTACK_CYW55310_PATCHRAM_DOWNLOAD_ERROR}")
+            "${BTSTACK_ZEPHYR_PATCHRAM_URL}"
+            "${BTSTACK_ZEPHYR_PATCHRAM_PATH}"
+            EXPECTED_HASH SHA256=${BTSTACK_ZEPHYR_PATCHRAM_SHA256}
+            STATUS BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_STATUS)
+        list(GET BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_STATUS 0 BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_RESULT)
+        if(NOT BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_RESULT EQUAL 0)
+            list(GET BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_STATUS 1 BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_ERROR)
+            file(REMOVE "${BTSTACK_ZEPHYR_PATCHRAM_PATH}")
+            message(FATAL_ERROR "Failed to download ${BTSTACK_ZEPHYR_PATCHRAM_FILE}: ${BTSTACK_ZEPHYR_PATCHRAM_DOWNLOAD_ERROR}")
         endif()
     endif()
-endif()
+endforeach()
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-
 project(BTstack-Zephyr)
 
-# pkgconfig
-find_package(PkgConfig REQUIRED)
-
-# to generate .h from .gatt files
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
+include("${BTSTACK_ROOT}/example/requirements.cmake")
 
-# local dir for btstack_config.h after build dir to avoid using .h from Makefile
-set(INCLUDES_PATH "" )
-list(APPEND INCLUDES_PATH 3rd-party/micro-ecc )
-list(APPEND INCLUDES_PATH 3rd-party/bluedroid/decoder/include)
-list(APPEND INCLUDES_PATH 3rd-party/bluedroid/encoder/include)
-list(APPEND INCLUDES_PATH 3rd-party/lc3-google/include)
-list(APPEND INCLUDES_PATH 3rd-party/md5)
-list(APPEND INCLUDES_PATH 3rd-party/hxcmod-player)
-list(APPEND INCLUDES_PATH 3rd-party/hxcmod-player/mod)
-list(APPEND INCLUDES_PATH 3rd-party/lwip/core/src/include)
-list(APPEND INCLUDES_PATH 3rd-party/lwip/dhcp-server)
-list(APPEND INCLUDES_PATH 3rd-party/rijndael)
-list(APPEND INCLUDES_PATH 3rd-party/qr-code-generator)
-list(APPEND INCLUDES_PATH 3rd-party/tinydir)
-list(APPEND INCLUDES_PATH 3rd-party/yxml)
-list(APPEND INCLUDES_PATH src)
-list(APPEND INCLUDES_PATH chipset/zephyr)
-list(APPEND INCLUDES_PATH platform/embedded)
-list(APPEND INCLUDES_PATH platform/zephyr)
-list(APPEND INCLUDES_PATH platform/lwip)
-list(APPEND INCLUDES_PATH platform/lwip/port)
-list(TRANSFORM INCLUDES_PATH PREPEND ${BTSTACK_ROOT}/)
-list(APPEND INCLUDES_PATH . )
-include_directories( ${INCLUDES_PATH} )
+btstack_declare_port(zephyr)
+btstack_collect_public_include_directories(BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES
+    ROOT "${BTSTACK_ROOT}")
 
-file(GLOB SOURCES_SRC            "${BTSTACK_ROOT}/src/*.c" ) #"${BTSTACK_ROOT}/example/sco_demo_util.c")
+# Zephyr normally force-includes autoconf.h for compilation. Include it
+# explicitly while extracting btstack_config.h's ENABLE_*/HAVE_* macros so the
+# resolver sees the same Kconfig values as the compiler.
+btstack_collect_port_configuration_macros(BTSTACK_ZEPHYR_CONFIGURATION_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/zephyr/include/generated")
+# Zephyr normally reconfigures after Kconfig changes; retain the generated
+# header explicitly because it directly controls resolver selection.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_BINARY_DIR}/zephyr/include/generated/zephyr/autoconf.h")
+btstack_set_port_configuration_macros(zephyr ${BTSTACK_ZEPHYR_CONFIGURATION_MACROS})
+string(JOIN ", " BTSTACK_ZEPHYR_CONFIGURATION_MACROS_DISPLAY ${BTSTACK_ZEPHYR_CONFIGURATION_MACROS})
+message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_ZEPHYR_CONFIGURATION_MACROS_DISPLAY}")
 
-file(GLOB SOURCES_BLE            "${BTSTACK_ROOT}/src/ble/*.c")
-file(GLOB SOURCES_GATT           "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
-file(GLOB SOURCES_CLASSIC        "${BTSTACK_ROOT}/src/classic/*.c")
-file(GLOB SOURCES_LE_AUDIO       "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
-file(GLOB SOURCES_MESH           "${BTSTACK_ROOT}/src/mesh/*.c" "${BTSTACK_ROOT}/src/mesh/gatt-service/*.c")
-file(GLOB SOURCES_BLUEDROID      "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_MD5            "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
-file(GLOB SOURCES_UECC           "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_YXML           "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_RIJNDAEL       "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_QRCODEGEN      "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
-file(GLOB SOURCES_EMBEDDED       "${BTSTACK_ROOT}/platform/embedded/*.c")
-file(GLOB SOURCES_ZEPHYR         "${BTSTACK_ROOT}/platform/zephyr/*.c")
-file(GLOB SOURCES_CHIPSET_ZEPHYR "${BTSTACK_ROOT}/chipset/zephyr/*.c")
-file(GLOB SOURCES_LC3_GOOGLE     "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
-
-set(LWIP_CORE_SRC
-    3rd-party/lwip/core/src/core/def.c
-    3rd-party/lwip/core/src/core/inet_chksum.c
-    3rd-party/lwip/core/src/core/init.c
-    3rd-party/lwip/core/src/core/ip.c
-    3rd-party/lwip/core/src/core/mem.c
-    3rd-party/lwip/core/src/core/memp.c
-    3rd-party/lwip/core/src/core/netif.c
-    3rd-party/lwip/core/src/core/pbuf.c
-    3rd-party/lwip/core/src/core/tcp.c
-    3rd-party/lwip/core/src/core/tcp_in.c
-    3rd-party/lwip/core/src/core/tcp_out.c
-    3rd-party/lwip/core/src/core/timeouts.c
-    3rd-party/lwip/core/src/core/udp.c
-)
-set (LWIP_IPV4_SRC
-    3rd-party/lwip/core/src/core/ipv4/acd.c
-    3rd-party/lwip/core/src/core/ipv4/dhcp.c
-    3rd-party/lwip/core/src/core/ipv4/etharp.c
-    3rd-party/lwip/core/src/core/ipv4/icmp.c
-    3rd-party/lwip/core/src/core/ipv4/ip4.c
-    3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
-    3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
-)
-set (LWIP_NETIF_SRC
-    3rd-party/lwip/core/src/netif/ethernet.c
-)
-set (LWIP_HTTPD
-    3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
-    3rd-party/lwip/core/src/apps/http/fs.c
-    3rd-party/lwip/core/src/apps/http/httpd.c
-)
-set (LWIP_DHCPD
-    3rd-party/lwip/dhcp-server/dhserver.c
-)
-set (LWIP_PORT
-    platform/lwip/port/sys_arch.c
-    platform/lwip/bnep_lwip.c
-)
-
-set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
-list(TRANSFORM SOURCES_LWIP PREPEND ${BTSTACK_ROOT}/)
-
-file(GLOB SOURCES_SRC_OFF "${BTSTACK_ROOT}/src/hci_transport_*.c")
-list(REMOVE_ITEM SOURCES_SRC   ${SOURCES_SRC_OFF})
-
-file(GLOB SOURCES_BLE_OFF "${BTSTACK_ROOT}/src/ble/att_db_util.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
-set(SOURCES
-    ${SOURCES_MD5}
-    ${SOURCES_YXML}
-    ${SOURCES_BLUEDROID}
-    ${SOURCES_EMBEDDED}
-    ${SOURCES_LC3_GOOGLE}
-    ${SOURCES_RIJNDAEL}
-    ${SOURCES_QRCODEGEN}
-    ${SOURCES_SRC}
-    ${SOURCES_UECC}
-    ${SOURCES_HXCMOD}
-    ${SOURCES_CHIPSET_ZEPHYR}
-    ${SOURCES_ZEPHYR}
-)
-
-if(CONFIG_BTSTACK_ENABLE_BLE)
-    list(APPEND SOURCES
-        ${SOURCES_BLE}
-        ${SOURCES_GATT}
-        ${SOURCES_LE_AUDIO}
-    )
+if(DEFINED BTSTACK_ZEPHYR_EXAMPLE AND NOT "${BTSTACK_ZEPHYR_EXAMPLE}" STREQUAL "")
+    set(BTSTACK_ZEPHYR_EXAMPLE "${BTSTACK_ZEPHYR_EXAMPLE}")
+elseif(DEFINED ENV{EXAMPLE} AND NOT "$ENV{EXAMPLE}" STREQUAL "")
+    set(BTSTACK_ZEPHYR_EXAMPLE "$ENV{EXAMPLE}")
+else()
+    set(BTSTACK_ZEPHYR_EXAMPLE gatt_counter)
 endif()
 
-if(CONFIG_BTSTACK_ENABLE_CLASSIC)
-    list(APPEND SOURCES ${SOURCES_CLASSIC})
+btstack_filter_examples_for_port(BTSTACK_ZEPHYR_EXAMPLES
+    PORT zephyr
+    CANDIDATES ${btstack_declared_examples})
+
+list(FIND btstack_declared_examples "${BTSTACK_ZEPHYR_EXAMPLE}" BTSTACK_ZEPHYR_EXAMPLE_INDEX)
+if(BTSTACK_ZEPHYR_EXAMPLE_INDEX EQUAL -1)
+    message(FATAL_ERROR "Unknown Zephyr example '${BTSTACK_ZEPHYR_EXAMPLE}'")
+endif()
+list(FIND BTSTACK_ZEPHYR_EXAMPLES "${BTSTACK_ZEPHYR_EXAMPLE}" BTSTACK_ZEPHYR_ENABLED_EXAMPLE_INDEX)
+if(BTSTACK_ZEPHYR_ENABLED_EXAMPLE_INDEX EQUAL -1)
+    message(FATAL_ERROR
+        "Zephyr example '${BTSTACK_ZEPHYR_EXAMPLE}' is not enabled by btstack_config.h. "
+        "Run 'cmake --build <build-dir> --target port-info' for the available configuration.")
 endif()
 
-list(SORT SOURCES)
+# src/main.c always installs the Zephyr HCI transport, flash-backed TLV
+# implementation, and the optional LE/Classic databases. Feature-gated groups
+# are pruned by btstack_filter_groups_for_port.
+set(BTSTACK_ZEPHYR_BASE_GROUPS
+    core
+    chipset-zephyr
+    le-device-db-tlv
+    link-key-db-tlv
+    tlv-none
+    platform-embedded-tlv-flash-bank
+    third-party-micro-ecc
+    third-party-rijndael)
 
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-add_dependencies(btstack zephyr_interface)
-# extra compiler warnings
-target_compile_options(btstack PRIVATE
-     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
-            -Wunused-variable -Wswitch-default -Werror -Wall>
-     $<$<CXX_COMPILER_ID:GNU>:
-            -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror -Wall>
-     $<$<CXX_COMPILER_ID:MSVC>:
-            /W4>)
+set(BTSTACK_ZEPHYR_PORT_SOURCES
+    "${BTSTACK_ROOT}/platform/zephyr/btstack_run_loop_zephyr.c"
+    "${BTSTACK_ROOT}/platform/zephyr/hal_flash_bank_zephyr.c"
+    "${BTSTACK_ROOT}/platform/zephyr/hci_transport_zephyr.c")
 
-# get zephyr's idea of build flags
-zephyr_get_include_directories_for_lang(       C includes)
+# Match the toolchain settings that Zephyr applies to its own targets.
+zephyr_get_include_directories_for_lang(C includes)
 zephyr_get_system_include_directories_for_lang(C system_includes)
-zephyr_get_compile_definitions_for_lang(       C definitions)
-zephyr_get_compile_options_for_lang(           C options)
-
+zephyr_get_compile_definitions_for_lang(C definitions)
+zephyr_get_compile_options_for_lang(C options)
 set(external_project_cflags
-    ${includes}$<SEMICOLON>${definitions}$<SEMICOLON>${options}$<SEMICOLON>${system_includes}
-  )
-
-# prevent imacros argument from deduplication
-string( REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$]+)"
+    ${includes}$<SEMICOLON>${definitions}$<SEMICOLON>${options}$<SEMICOLON>${system_includes})
+string(REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$]+)"
     "\$<1:SHELL:-imacros \\1>"
-     _all_options ${external_project_cflags} )
+    BTSTACK_ZEPHYR_COMPILE_OPTIONS "${external_project_cflags}")
 
-target_compile_options( btstack PUBLIC ${_all_options})
-target_compile_options( btstack PUBLIC -std=c11 )
+btstack_add_scoped_example_library(
+    TARGET btstack_zephyr
+    ROOT "${BTSTACK_ROOT}"
+    PORT zephyr
+    EXAMPLE ${BTSTACK_ZEPHYR_EXAMPLE}
+    BASE_GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS}
+    PORT_SOURCES ${BTSTACK_ZEPHYR_PORT_SOURCES}
+    PUBLIC_INCLUDE_DIRECTORIES
+        ${BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES}
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}"
+        "${BTSTACK_ROOT}/chipset/zephyr"
+        "${BTSTACK_ROOT}/platform/embedded"
+        "${BTSTACK_ROOT}/platform/zephyr"
+    PRIVATE_COMPILE_OPTIONS ${BTSTACK_ZEPHYR_COMPILE_OPTIONS})
+# The BTstack library is external to Zephyr's normal app target dependency
+# chain. Wait for both the standard interface and generated headers (including
+# heap_constants.h, which upstream Zephyr creates separately).
+add_dependencies(btstack_zephyr zephyr_interface zephyr_generated_headers)
 
-set(EXAMPLES "gatt_counter" )
-if(DEFINED ENV{EXAMPLE})
-    set( EXAMPLES $ENV{EXAMPLE} )
+set(BTSTACK_ZEPHYR_APPLICATION_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
+foreach(source IN LISTS btstack_example_${BTSTACK_ZEPHYR_EXAMPLE}_sources)
+    list(APPEND BTSTACK_ZEPHYR_APPLICATION_SOURCES "${BTSTACK_ROOT}/example/${source}")
+endforeach()
+target_sources(app PRIVATE ${BTSTACK_ZEPHYR_APPLICATION_SOURCES})
+target_include_directories(app PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+
+if(btstack_example_${BTSTACK_ZEPHYR_EXAMPLE}_gatt_db)
+    message(STATUS "Zephyr example ${BTSTACK_ZEPHYR_EXAMPLE} -- with GATT DB")
+    btstack_target_gatt(app
+        "${BTSTACK_ROOT}/example/${btstack_example_${BTSTACK_ZEPHYR_EXAMPLE}_gatt_db}")
+else()
+    message(STATUS "Zephyr example ${BTSTACK_ZEPHYR_EXAMPLE}")
 endif()
+target_link_libraries(app PRIVATE btstack_zephyr)
 
-list(SORT EXAMPLES)
-file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
+# Register a complete source and include closure for every supported example.
+# Zephyr builds one application at a time, so only the selected one needs a
+# library target during this configure pass.
+foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
+    btstack_resolve_example_for_port(zephyr "${example}" example_groups example_configuration)
+    btstack_filter_groups_for_port(example_base_groups
+        PORT zephyr
+        GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS})
+    btstack_resolve_groups(example_all_groups
+        GROUPS ${example_groups} ${example_base_groups})
+    btstack_collect_sources(example_sources
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS ${example_all_groups})
+    list(APPEND example_sources
+        ${BTSTACK_ZEPHYR_PORT_SOURCES}
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
+    foreach(source IN LISTS btstack_example_${example}_sources)
+        list(APPEND example_sources "${BTSTACK_ROOT}/example/${source}")
+    endforeach()
+    list(REMOVE_DUPLICATES example_sources)
+    list(SORT example_sources)
+    string(REPLACE "-" "_" example_suffix "${example}")
+    set_property(GLOBAL PROPERTY "btstack_info_zephyr_${example_suffix}_sources" "${example_sources}")
 
-# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
-# workaround: add lwip sources only to lwip_examples
-set (LWIP_EXAMPLES pan_lwip_http_server)
+    btstack_collect_include_directories(example_group_include_directories
+        ROOT "${BTSTACK_ROOT}"
+        GROUPS ${example_all_groups})
+    set(example_include_directories
+        ${BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES}
+        ${example_group_include_directories}
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}"
+        "${BTSTACK_ROOT}/chipset/zephyr"
+        "${BTSTACK_ROOT}/platform/embedded"
+        "${BTSTACK_ROOT}/platform/zephyr")
+    list(REMOVE_DUPLICATES example_include_directories)
+    list(SORT example_include_directories)
+    set_property(GLOBAL PROPERTY
+        "btstack_info_zephyr_${example_suffix}_include_directories"
+        "${example_include_directories}")
+endforeach()
 
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
-    #   get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-
-    # get c file, either from examples or local
-    if( EXISTS "${BTSTACK_ROOT}/example/${EXAMPLE}.c" )
-        set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
-    else()
-        set (SOURCES_EXAMPLE ${EXAMPLE}.c)
-    endif()
-    list(APPEND SOURCES_EXAMPLE "${CMAKE_SOURCE_DIR}/src/main.c")
-
-    message("${BTSTACK_ROOT}")
-    message("${SOURCES_EXAMPLE}")
-    # add lwip sources for lwip examples
-    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
-        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
-    endif()
-
-    # add GATT DB creation
-    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
-        message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-            COMMAND ${Python3_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-        )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-    else()
-        message("example ${EXAMPLE}")
-    endif()
-    target_sources( app PRIVATE ${SOURCES_EXAMPLE} )
-    target_link_libraries( app PRIVATE btstack )
-endforeach(EXAMPLE)
+btstack_add_info_targets(PORT zephyr)
