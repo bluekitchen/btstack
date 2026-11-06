@@ -1239,6 +1239,7 @@ function(btstack_add_scoped_example_library)
         list(APPEND info_sources "${info_root}/example/${source}")
     endforeach()
     list(REMOVE_DUPLICATES info_sources)
+    list(SORT info_sources)
     string(REPLACE "-" "_" info_port_suffix "${ARG_PORT}")
     string(REPLACE "-" "_" info_example_suffix "${ARG_EXAMPLE}")
     set_property(GLOBAL PROPERTY
@@ -1280,6 +1281,7 @@ function(btstack_add_scoped_example_library)
         endif()
     endforeach()
     list(REMOVE_DUPLICATES info_normalized_include_directories)
+    list(SORT info_normalized_include_directories)
     set_property(GLOBAL PROPERTY
         "btstack_info_${info_port_suffix}_${info_example_suffix}_include_directories"
         "${info_normalized_include_directories}")
