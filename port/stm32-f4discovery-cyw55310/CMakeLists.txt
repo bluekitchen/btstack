@@ -97,8 +97,15 @@ set(SOURCES_PORT port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/p
 add_custom_target(cyw55310_patchram_source DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
 add_dependencies(cyw55310_patchram_source cyw55310_patchram_download)
 
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
+btstack_set_port_configuration_macros(stm32-f4discovery-cyw55310 ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT stm32-f4discovery-cyw55310
+    CANDIDATES ${EXAMPLES})
 
 set(BTSTACK_STM32_F4_BASE_GROUPS
     core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-bcm

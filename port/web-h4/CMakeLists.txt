@@ -25,8 +25,16 @@ btstack_declare_port_provider(web-h4 CAPABILITY audio
 btstack_declare_port_provider(web-h4 CAPABILITY led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/src/btstack_config.h"
+    DEFINITIONS HAVE_SDL2)
+btstack_set_port_configuration_macros(web-h4 ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT web-h4
+    CANDIDATES ${EXAMPLES})
 # The browser H4 bridge does not implement the Mesh advertising bearer.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 

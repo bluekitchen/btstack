@@ -20,7 +20,16 @@ btstack_declare_port_provider(qt-h4 CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS HAVE_PORTAUDIO)
+btstack_set_port_configuration_macros(qt-h4 ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT qt-h4
+    CANDIDATES ${EXAMPLES})
 set(BTSTACK_QT_H4_GROUPS
     ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
     platform-posix-hci-dump platform-posix-network platform-posix-uart
@@ -30,7 +39,7 @@ set(BTSTACK_QT_H4_GROUPS
     third-party-micro-ecc third-party-rijndael)
 set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 
-foreach(EXAMPLE IN LISTS btstack_declared_examples)
+foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_scoped_example_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
         PORT qt-h4 EXAMPLE ${EXAMPLE}

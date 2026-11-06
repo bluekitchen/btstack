@@ -21,14 +21,23 @@ btstack_declare_port_provider(qt-usb CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS HAVE_PORTAUDIO)
+btstack_set_port_configuration_macros(qt-usb ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT qt-usb
+    CANDIDATES ${EXAMPLES})
 set(BTSTACK_QT_USB_GROUPS
     ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
     platform-posix-hci-dump platform-posix-network platform-posix-signal
     platform-posix-stdin platform-posix-hal-led platform-posix-audio-portaudio
     platform-libusb-h2 third-party-micro-ecc third-party-rijndael)
 
-foreach(EXAMPLE IN LISTS btstack_declared_examples)
+foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_scoped_example_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
         PORT qt-usb EXAMPLE ${EXAMPLE}

@@ -22,8 +22,20 @@ btstack_declare_port_provider(libusb-intel CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
+set(BTSTACK_CONFIG_DEFINITIONS)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
+endif()
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_set_port_configuration_macros(libusb-intel ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT libusb-intel
+    CANDIDATES ${EXAMPLES})
 set(BTSTACK_LIBUSB_INTEL_GROUPS
     platform-posix-run-loop platform-posix-signal platform-posix-stdin
     ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
