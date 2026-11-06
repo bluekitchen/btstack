@@ -1030,6 +1030,9 @@ function(btstack_add_info_targets)
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_MISSING_CONFIGURATION [==[${missing_configuration}]==])\n")
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_MISSING_CAPABILITIES [==[${missing_capabilities}]==])\n")
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_SOURCES [==[${sources}]==])\n")
+        get_property(include_directories GLOBAL PROPERTY
+            "btstack_info_${port_suffix}_${example_suffix}_include_directories")
+        file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_INCLUDE_DIRECTORIES [==[${include_directories}]==])\n")
     endforeach()
 
     add_custom_target(port-info
@@ -1261,6 +1264,25 @@ function(btstack_add_scoped_example_library)
     if(ARG_LINK_LIBRARIES)
         target_link_libraries(${ARG_TARGET} PUBLIC ${ARG_LINK_LIBRARIES})
     endif()
+
+    get_target_property(info_include_directories ${ARG_TARGET} INCLUDE_DIRECTORIES)
+    if(info_include_directories STREQUAL "info_include_directories-NOTFOUND")
+        set(info_include_directories)
+    endif()
+    set(info_normalized_include_directories)
+    foreach(include_directory IN LISTS info_include_directories)
+        if(include_directory MATCHES "^\\$<")
+            list(APPEND info_normalized_include_directories "${include_directory}")
+        else()
+            get_filename_component(normalized_include_directory
+                "${include_directory}" ABSOLUTE)
+            list(APPEND info_normalized_include_directories "${normalized_include_directory}")
+        endif()
+    endforeach()
+    list(REMOVE_DUPLICATES info_normalized_include_directories)
+    set_property(GLOBAL PROPERTY
+        "btstack_info_${info_port_suffix}_${info_example_suffix}_include_directories"
+        "${info_normalized_include_directories}")
 
     if(ARG_CONFIGURATION_REQUIREMENTS_OUTPUT)
         set(${ARG_CONFIGURATION_REQUIREMENTS_OUTPUT}
