@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "btstack_sample_rate_comnpensation.h"
 
 #include <inttypes.h>
+#include <stddef.h>
 
 #include "btstack_debug.h"
 #include "btstack_sample_rate_compensation.h"
