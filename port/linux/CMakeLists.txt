@@ -42,22 +42,24 @@ btstack_declare_port_provider(linux
 
 find_package(Threads)
 
+set(BTSTACK_CONFIG_DEFINITIONS)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
+elseif(ALSA_FOUND)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_ALSA)
+endif()
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_set_port_configuration_macros(linux ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT linux
+    CANDIDATES ${EXAMPLES})
 # Preserve the legacy port selection. Mesh is intentionally excluded.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
-if(NOT PORTAUDIO_FOUND AND NOT ALSA_FOUND)
-    list(REMOVE_ITEM EXAMPLES
-        audio_duplex
-        sine_player
-        mod_player
-        audio_player
-        le_audio_broadcast_sink_lite
-        le_audio_broadcast_source_lite
-        le_audio_unicast_gateway_lite
-        le_audio_unicast_headset_lite
-    )
-endif()
 
 set(BTSTACK_LINUX_BASE_GROUPS
     ble

@@ -46,19 +46,22 @@ btstack_add_nxp_firmware_downloads(
     FILES_VARIABLE NXP_FIRMWARE_FILES
 )
 
-# Get the declared examples. Feature-based filtering will be provided by the
-# future resolver; for now this port builds every declared non-mesh example.
+set(BTSTACK_CONFIG_DEFINITIONS)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
+endif()
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_set_port_configuration_macros(posix-h4-nxp ${BTSTACK_CONFIG_MACROS})
+
+# Get the declared examples supported by this port configuration and providers.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT posix-h4-nxp
+    CANDIDATES ${EXAMPLES})
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
-# This port has not enabled the LE Audio configuration required by the Lite
-# examples. Keep the legacy port coverage until feature filtering is added.
-list(REMOVE_ITEM EXAMPLES
-    le_audio_broadcast_sink_lite
-    le_audio_broadcast_source_lite
-    le_audio_unicast_gateway_lite
-    le_audio_unicast_headset_lite
-)
 
 # Host runtime/platform facilities that can be shared by Bluetooth and
 # standalone examples. Bluetooth controller setup remains separate below.

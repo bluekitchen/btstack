@@ -76,15 +76,18 @@ set(SOURCES_PORT
     ${CC256X_INIT_SCRIPT_SOURCES}
 )
 
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
+btstack_set_port_configuration_macros(stm32-f4discovery-cc256x ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT stm32-f4discovery-cc256x
+    CANDIDATES ${EXAMPLES})
 list(REMOVE_ITEM EXAMPLES
     avrcp_browsing_client
-    mesh_node_demo
-    le_audio_broadcast_sink_lite
-    le_audio_broadcast_source_lite
-    le_audio_unicast_gateway_lite
-    le_audio_unicast_headset_lite)
+    mesh_node_demo)
 
 set(BTSTACK_STM32_F4_BASE_GROUPS
     core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-cc256x

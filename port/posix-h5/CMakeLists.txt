@@ -56,10 +56,21 @@ set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 list(APPEND SOURCES_PORT ${CC256X_INIT_SCRIPT_SOURCES})
 
-# Get the declared examples. Feature-based filtering will be provided by the
-# future resolver; for now this port builds every declared example.
+set(BTSTACK_CONFIG_DEFINITIONS)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
+endif()
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_set_port_configuration_macros(posix-h5 ${BTSTACK_CONFIG_MACROS})
+
+# Get the declared examples supported by this port configuration and providers.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT posix-h5
+    CANDIDATES ${EXAMPLES})
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
 # Host runtime/platform facilities that can be shared by Bluetooth and
