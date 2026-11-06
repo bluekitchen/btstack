@@ -162,3 +162,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
 
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
 endforeach()
+
+btstack_add_info_targets(PORT posix-h5)

@@ -142,3 +142,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     # Add all libraries
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
+
+btstack_add_info_targets(PORT libusb)

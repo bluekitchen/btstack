@@ -1,0 +1,53 @@
+# Display configure-time BTstack port and example selection information.
+
+if(NOT DEFINED INFO_FILE)
+    message(FATAL_ERROR "BTstack info requires INFO_FILE")
+endif()
+include("${INFO_FILE}")
+
+if(INFO_MODE STREQUAL "port")
+    message(STATUS "BTstack port: ${BTSTACK_INFO_PORT}")
+    message(STATUS "Configuration macros: ${BTSTACK_INFO_CONFIGURATION_MACROS}")
+    if(BTSTACK_INFO_CAPABILITIES)
+        message(STATUS "Port capabilities: ${BTSTACK_INFO_CAPABILITIES}")
+    else()
+        message(STATUS "Port capabilities: (none)")
+    endif()
+    return()
+endif()
+
+if(NOT INFO_MODE STREQUAL "example")
+    message(FATAL_ERROR "Unknown BTstack info mode: ${INFO_MODE}")
+endif()
+
+if(NOT DEFINED ENV{EXAMPLE} OR "$ENV{EXAMPLE}" STREQUAL "")
+    message(FATAL_ERROR
+        "Set EXAMPLE when building example-info, for example:\n"
+        "  EXAMPLE=gatt_counter cmake --build <build-dir> --target example-info")
+endif()
+
+set(example "$ENV{EXAMPLE}")
+list(FIND BTSTACK_INFO_EXAMPLES "${example}" example_index)
+if(example_index EQUAL -1)
+    message(FATAL_ERROR "Unknown BTstack example '${example}'")
+endif()
+
+string(REPLACE "-" "_" example_suffix "${example}")
+set(status_variable "BTSTACK_INFO_${example_suffix}_STATUS")
+if(${status_variable})
+    message(STATUS "BTstack example '${example}' is included for port ${BTSTACK_INFO_PORT}")
+    set(sources_variable "BTSTACK_INFO_${example_suffix}_SOURCES")
+    foreach(source IN LISTS ${sources_variable})
+        message(STATUS "  ${source}")
+    endforeach()
+else()
+    message(STATUS "BTstack example '${example}' is excluded for port ${BTSTACK_INFO_PORT}")
+    set(config_variable "BTSTACK_INFO_${example_suffix}_MISSING_CONFIGURATION")
+    set(capabilities_variable "BTSTACK_INFO_${example_suffix}_MISSING_CAPABILITIES")
+    if(${config_variable})
+        message(STATUS "  Missing configuration: ${${config_variable}}")
+    endif()
+    if(${capabilities_variable})
+        message(STATUS "  Missing port capabilities: ${${capabilities_variable}}")
+    endif()
+endif()

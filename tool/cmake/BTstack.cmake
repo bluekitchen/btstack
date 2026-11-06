@@ -5,6 +5,7 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 set(btstack_config_extractor "${CMAKE_CURRENT_LIST_DIR}/../extract_btstack_config.py")
+set(btstack_info_script "${CMAKE_CURRENT_LIST_DIR}/BTstackInfo.cmake")
 
 # Configuration marker groups are resolver-only metadata and deliberately
 # stay out of the generated source catalog.
@@ -482,6 +483,10 @@ function(btstack_collect_group_paths output_variable)
         message(FATAL_ERROR "btstack_collect_group_paths requires VARIABLE_PREFIX")
     endif()
 
+    # Ports commonly set BTSTACK_ROOT relative to their CMakeLists.txt.
+    # Normalize it once so source and include lists never retain ../ segments.
+    get_filename_component(root "${ARG_ROOT}" ABSOLUTE)
+
     set(sources)
     foreach(group IN LISTS ARG_GROUPS)
         list(FIND btstack_source_groups "${group}" group_index)
@@ -503,7 +508,7 @@ function(btstack_collect_group_paths output_variable)
         endif()
 
         foreach(source IN LISTS ${group_variable})
-            list(APPEND sources "${ARG_ROOT}/${source}")
+            list(APPEND sources "${root}/${source}")
         endforeach()
     endforeach()
 
@@ -792,6 +797,10 @@ function(btstack_declare_port_provider port)
     list(REMOVE_DUPLICATES provider_sources)
     set(${provider_sources_variable} "${provider_sources}" PARENT_SCOPE)
     set(${provider_variable}_declared TRUE PARENT_SCOPE)
+    get_property(port_capabilities GLOBAL PROPERTY "btstack_info_${port_suffix}_capabilities")
+    list(APPEND port_capabilities "${ARG_CAPABILITY}")
+    list(REMOVE_DUPLICATES port_capabilities)
+    set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_capabilities" "${port_capabilities}")
 endfunction()
 
 # Resolve the source-group and configuration requirements declared by one
@@ -920,6 +929,7 @@ function(btstack_filter_examples_for_port output_variable)
     set(configuration_macros
         ${btstack_port_${port_suffix}_configuration_macros})
     set(selected_examples)
+    set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_examples" "${ARG_CANDIDATES}")
     foreach(example IN LISTS ARG_CANDIDATES)
         list(FIND btstack_declared_examples "${example}" example_index)
         if(example_index EQUAL -1)
@@ -927,6 +937,8 @@ function(btstack_filter_examples_for_port output_variable)
         endif()
 
         set(supported TRUE)
+        set(missing_capabilities)
+        set(missing_configuration)
         foreach(requirement IN LISTS btstack_example_${example}_needs)
             list(FIND btstack_source_groups "${requirement}" group_index)
             if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
@@ -938,6 +950,7 @@ function(btstack_filter_examples_for_port output_variable)
                 "btstack_port_${port_suffix}_provider_${capability_suffix}")
             if(NOT DEFINED ${provider_variable}_declared)
                 set(supported FALSE)
+                list(APPEND missing_capabilities "${requirement}")
                 break()
             endif()
         endforeach()
@@ -962,10 +975,17 @@ function(btstack_filter_examples_for_port output_variable)
                 list(FIND configuration_macros "${configuration_requirement}" configuration_index)
                 if(configuration_index EQUAL -1)
                     set(supported FALSE)
-                    break()
+                    list(APPEND missing_configuration "${configuration_requirement}")
                 endif()
             endforeach()
         endif()
+
+        list(REMOVE_DUPLICATES missing_capabilities)
+        list(REMOVE_DUPLICATES missing_configuration)
+        string(REPLACE "-" "_" example_suffix "${example}")
+        set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_selected" "${supported}")
+        set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_missing_capabilities" "${missing_capabilities}")
+        set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_missing_configuration" "${missing_configuration}")
 
         if(supported)
             list(APPEND selected_examples "${example}")
@@ -973,6 +993,51 @@ function(btstack_filter_examples_for_port output_variable)
     endforeach()
 
     set(${output_variable} "${selected_examples}" PARENT_SCOPE)
+endfunction()
+
+# Add configure-time introspection targets for one port. Invoke this after the
+# port's example loop so example-info can report its complete source closure.
+# Example usage:
+#   cmake --build build --target port-info
+#   EXAMPLE=gatt_counter cmake --build build --target example-info
+function(btstack_add_info_targets)
+    cmake_parse_arguments(ARG "" "PORT" "" ${ARGN})
+    if(NOT ARG_PORT)
+        message(FATAL_ERROR "btstack_add_info_targets requires PORT")
+    endif()
+    string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
+    get_property(examples GLOBAL PROPERTY "btstack_info_${port_suffix}_examples")
+    if(NOT examples)
+        message(FATAL_ERROR "No filtered examples registered for BTstack port '${ARG_PORT}'")
+    endif()
+    get_property(capabilities GLOBAL PROPERTY "btstack_info_${port_suffix}_capabilities")
+    set(configuration_macros ${btstack_port_${port_suffix}_configuration_macros})
+
+    set(info_file "${CMAKE_CURRENT_BINARY_DIR}/btstack-info-${ARG_PORT}.cmake")
+    file(WRITE "${info_file}" "set(BTSTACK_INFO_PORT [==[${ARG_PORT}]==])\n")
+    file(APPEND "${info_file}" "set(BTSTACK_INFO_CONFIGURATION_MACROS [==[${configuration_macros}]==])\n")
+    file(APPEND "${info_file}" "set(BTSTACK_INFO_CAPABILITIES [==[${capabilities}]==])\n")
+    file(APPEND "${info_file}" "set(BTSTACK_INFO_EXAMPLES [==[${examples}]==])\n")
+    foreach(example IN LISTS examples)
+        string(REPLACE "-" "_" example_suffix "${example}")
+        get_property(selected GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_selected")
+        get_property(missing_configuration GLOBAL PROPERTY
+            "btstack_info_${port_suffix}_${example_suffix}_missing_configuration")
+        get_property(missing_capabilities GLOBAL PROPERTY
+            "btstack_info_${port_suffix}_${example_suffix}_missing_capabilities")
+        get_property(sources GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_sources")
+        file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_STATUS [==[${selected}]==])\n")
+        file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_MISSING_CONFIGURATION [==[${missing_configuration}]==])\n")
+        file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_MISSING_CAPABILITIES [==[${missing_capabilities}]==])\n")
+        file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_SOURCES [==[${sources}]==])\n")
+    endforeach()
+
+    add_custom_target(port-info
+        COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=port -P "${btstack_info_script}"
+        COMMENT "Display BTstack port configuration")
+    add_custom_target(example-info
+        COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=example -P "${btstack_info_script}"
+        COMMENT "Display BTstack example information")
 endfunction()
 
 function(btstack_resolve_example example groups_output_variable configuration_output_variable)
@@ -1151,6 +1216,30 @@ function(btstack_add_scoped_example_library)
         )
         list(APPEND example_library_sources ${example_sources})
     endif()
+
+    # Retain the resolved source list for the example-info target. Include the
+    # application sources as well as all port and BTstack implementation files.
+    btstack_collect_sources(info_library_sources
+        ROOT "${ARG_ROOT}"
+        GROUPS ${library_groups})
+    set(info_port_sources)
+    foreach(source IN LISTS ARG_PORT_SOURCES example_port_sources)
+        if(IS_ABSOLUTE "${source}")
+            list(APPEND info_port_sources "${source}")
+        else()
+            list(APPEND info_port_sources "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+        endif()
+    endforeach()
+    set(info_sources ${info_port_sources} ${info_library_sources})
+    get_filename_component(info_root "${ARG_ROOT}" ABSOLUTE)
+    foreach(source IN LISTS btstack_example_${ARG_EXAMPLE}_sources)
+        list(APPEND info_sources "${info_root}/example/${source}")
+    endforeach()
+    list(REMOVE_DUPLICATES info_sources)
+    string(REPLACE "-" "_" info_port_suffix "${ARG_PORT}")
+    string(REPLACE "-" "_" info_example_suffix "${ARG_EXAMPLE}")
+    set_property(GLOBAL PROPERTY
+        "btstack_info_${info_port_suffix}_${info_example_suffix}_sources" "${info_sources}")
 
     add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)

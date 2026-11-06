@@ -183,3 +183,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
     add_dependencies(${EXAMPLE} ${BTSTACK_POSIX_H4_FIRMWARE_TARGETS})
 endforeach()
+
+btstack_add_info_targets(PORT posix-h4)
