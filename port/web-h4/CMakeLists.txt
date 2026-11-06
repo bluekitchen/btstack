@@ -95,3 +95,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             ${CMAKE_CURRENT_BINARY_DIR}/buffered_reader.js)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
+
+btstack_add_info_targets(PORT web-h4)

@@ -123,3 +123,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
+
+btstack_add_info_targets(PORT stm32-f4discovery-cc256x)

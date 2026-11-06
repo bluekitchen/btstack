@@ -97,3 +97,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
 endforeach()
+
+btstack_add_info_targets(PORT posix-h4-atwilc3000)

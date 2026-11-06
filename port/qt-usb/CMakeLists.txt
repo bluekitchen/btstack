@@ -63,3 +63,5 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         "${BTSTACK_ROOT}/platform/qt")
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library Qt5::Core)
 endforeach()
+
+btstack_add_info_targets(PORT qt-usb)
