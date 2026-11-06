@@ -60,9 +60,13 @@
 #include "hci_dump_embedded_stdout.h"
 #include "btstack_uart_block.h"
 
+#if defined(ENABLE_BLE)
 #include "ble/le_device_db_tlv.h"
+#endif
+#if defined(ENABLE_CLASSIC)
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_link_key_db_tlv.h"
+#endif
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
@@ -96,7 +100,9 @@ uint32_t hal_time_ms(void) {
 }
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+#if defined(ENABLE_BLE) && defined(CONFIG_BTSTACK_EXTERNAL_UART_BT)
 static bd_addr_t             static_address;
+#endif
 
 static void local_version_information_handler(uint8_t * packet){
     printf("Local version information:\n");
@@ -126,16 +132,20 @@ static void local_version_information_handler(uint8_t * packet){
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
+#if defined(ENABLE_BLE) && defined(CONFIG_BTSTACK_EXTERNAL_UART_BT)
     const uint8_t *params;
+#endif
 
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
                 bd_addr_t local_addr;
                 gap_local_bd_addr(local_addr);
+#if defined(ENABLE_BLE) && defined(CONFIG_BTSTACK_EXTERNAL_UART_BT)
                 if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_address) ) {
                     memcpy(local_addr, static_address, sizeof(bd_addr_t));
                 }
+#endif
                 printf("BTstack up and running at %s\n",  bd_addr_to_str(local_addr));
             }
             break;
@@ -144,6 +154,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;
+#if defined(ENABLE_BLE) && defined(CONFIG_BTSTACK_EXTERNAL_UART_BT)
                 case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
                     printf("Zephyr read static address available\n");
                     params = hci_event_command_complete_get_return_parameters(packet);
@@ -152,6 +163,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         gap_random_address_set(static_address);
                     }
                     break;
+#endif
                 default:
                     break;
             }

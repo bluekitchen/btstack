@@ -4,6 +4,13 @@ This can be used as a basis for custom projects - just copy this folder and adap
 The file `main/CMakeLists.txt` contains the main component. We have provided a trivial `your_project.c` file.
 You can replace it with one of the official examples.
 
+The skeleton imports BTstack's shared ESP32 component from `BTSTACK_ROOT`.
+That component preprocesses its `btstack_config.h` with ESP-IDF's generated
+`sdkconfig.h`, so the BTstack source closure follows the selected target and
+Kconfig configuration automatically. The skeleton explicitly selects its
+local `your_project.c` application, independent of an `EXAMPLE` environment
+variable inherited from another build.
+
 ## Setup
 
 - Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa and RISC-V toolchains and the ESP-IDF.
@@ -18,6 +25,12 @@ Choose a target and build. Bluetooth Classic is only supported on the ESP32, new
 ```sh
 $ idf.py set-target <desired target>
 $ idf.py build
+```
+
+After configuring, inspect the resolved port configuration with:
+
+```sh
+$ cmake --build build --target port-info
 ```
 
 To upload the binary to your device, run:
