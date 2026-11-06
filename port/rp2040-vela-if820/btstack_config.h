@@ -9,6 +9,8 @@ uint32_t hal_audio_sink_get_frequency(void);
 #define BSP_AUDIO_OUT_GetFrequency hal_audio_sink_get_frequency
 
 // BTstack features that can be enabled
+#define ENABLE_BLE
+#define ENABLE_CLASSIC
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_PRINTF_HEXDUMP
