@@ -544,9 +544,10 @@ endfunction()
 #   btstack_declare_example(gatt_counter
 #       SOURCES gatt_counter.c
 #       GATT_DB gatt_counter.gatt
-#       NEEDS ble ENABLE_LE_PERIPHERAL)
+#       NEEDS ble ENABLE_LE_PERIPHERAL
+#       CONTROLLER_NEEDS le)
 function(btstack_declare_example example)
-    cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS" ${ARGN})
+    cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS;CONTROLLER_NEEDS" ${ARGN})
 
     if(NOT ARG_SOURCES)
         message(FATAL_ERROR "btstack_declare_example(${example}) requires SOURCES")
@@ -562,12 +563,19 @@ function(btstack_declare_example example)
     set("btstack_example_${example}_sources" "${ARG_SOURCES}" PARENT_SCOPE)
     set("btstack_example_${example}_gatt_db" "${ARG_GATT_DB}" PARENT_SCOPE)
     set("btstack_example_${example}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
+    set("btstack_example_${example}_controller_needs" "${ARG_CONTROLLER_NEEDS}" PARENT_SCOPE)
 endfunction()
 
 # Register a port that can provide implementation groups for logical example
-# capabilities. A port declaration is metadata only; it does not create a
-# target or configure BTstack features.
+# capabilities and controller features. A port declaration is metadata only;
+# it does not create a target or configure BTstack features.
+#
+# CONTROLLER_CAPABILITIES describes the Bluetooth controller attached to the
+# port, for example "le" or "le;classic". It is deliberately independent of
+# btstack_config.h; configuration validation is handled separately.
 function(btstack_declare_port port)
+    cmake_parse_arguments(ARG "" "" "CONTROLLER_CAPABILITIES" ${ARGN})
+
     list(FIND btstack_declared_ports "${port}" port_index)
     if(NOT port_index EQUAL -1)
         message(FATAL_ERROR "BTstack port '${port}' is declared more than once")
@@ -575,6 +583,10 @@ function(btstack_declare_port port)
 
     list(APPEND btstack_declared_ports "${port}")
     set(btstack_declared_ports "${btstack_declared_ports}" PARENT_SCOPE)
+
+    string(REPLACE "-" "_" port_suffix "${port}")
+    set("btstack_port_${port_suffix}_controller_capabilities"
+        "${ARG_CONTROLLER_CAPABILITIES}" PARENT_SCOPE)
 endfunction()
 
 # Register source groups, port-local sources, and public include directories
@@ -729,6 +741,70 @@ function(btstack_collect_example_port_sources output_variable port example)
     btstack_collect_example_port_provider_property(${output_variable}
         "${port}" "${example}" sources)
     set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
+endfunction()
+
+# Filter candidates to examples supported by a port's controller and declared
+# port providers. Controller requirements are metadata only and do not inspect
+# or alter btstack_config.h. An unavailable port provider, such as optional
+# audio support, also makes an example ineligible rather than an error.
+#
+# Usage:
+#   btstack_filter_examples_for_port(EXAMPLES
+#       PORT posix-h4-atwilc3000
+#       CANDIDATES ${btstack_declared_examples})
+function(btstack_filter_examples_for_port output_variable)
+    cmake_parse_arguments(ARG "" "PORT" "CANDIDATES" ${ARGN})
+
+    if(NOT ARG_PORT)
+        message(FATAL_ERROR "btstack_filter_examples_for_port requires PORT")
+    endif()
+    list(FIND btstack_declared_ports "${ARG_PORT}" port_index)
+    if(port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${ARG_PORT}' has not been declared")
+    endif()
+
+    string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
+    set(controller_capabilities
+        ${btstack_port_${port_suffix}_controller_capabilities})
+    set(selected_examples)
+    foreach(example IN LISTS ARG_CANDIDATES)
+        list(FIND btstack_declared_examples "${example}" example_index)
+        if(example_index EQUAL -1)
+            message(FATAL_ERROR "BTstack example '${example}' has not been declared")
+        endif()
+
+        set(supported TRUE)
+        foreach(controller_need IN LISTS btstack_example_${example}_controller_needs)
+            list(FIND controller_capabilities "${controller_need}" capability_index)
+            if(capability_index EQUAL -1)
+                set(supported FALSE)
+                break()
+            endif()
+        endforeach()
+
+        if(supported)
+            foreach(requirement IN LISTS btstack_example_${example}_needs)
+                list(FIND btstack_source_groups "${requirement}" group_index)
+                if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+                    continue()
+                endif()
+
+                string(REPLACE "-" "_" capability_suffix "${requirement}")
+                set(provider_variable
+                    "btstack_port_${port_suffix}_provider_${capability_suffix}")
+                if(NOT DEFINED ${provider_variable}_declared)
+                    set(supported FALSE)
+                    break()
+                endif()
+            endforeach()
+        endif()
+
+        if(supported)
+            list(APPEND selected_examples "${example}")
+        endif()
+    endforeach()
+
+    set(${output_variable} "${selected_examples}" PARENT_SCOPE)
 endfunction()
 
 function(btstack_resolve_example example groups_output_variable configuration_output_variable)
