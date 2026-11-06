@@ -9,57 +9,111 @@ project(${PROJECT} C CXX)
 
 pico_sdk_init()
 
-# Source files for HCI transport and UART driver
-pico_add_library(pico_btstack_hci_transport_h4 NOFLAG)
-target_sources(pico_btstack_hci_transport_h4 INTERFACE
-    ${PICO_BTSTACK_PATH}/src/hci_transport_h4.c
-    ${PICO_BTSTACK_PATH}/platform/embedded/btstack_uart_block_embedded.c
-)
+# Pico SDK's TinyUSB audio-device implementation intentionally uses switches
+# without default clauses. Keep BTstack warnings strict while suppressing this
+# third-party warning for every example that pulls in tinyusb_device.
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    set_source_files_properties(
+        "${PICO_SDK_PATH}/lib/tinyusb/src/class/audio/audio_device.c"
+        PROPERTIES COMPILE_OPTIONS "-Wno-switch-default")
+endif()
+
+# Use this checkout's BTstack source catalog rather than the broad BTstack
+# libraries bundled with pico-sdk. Pico SDK still supplies the RP2040-specific
+# run loop, flash bank, and stdin implementations below.
+get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
+
+btstack_declare_port(rp2040-vela-if820)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+    ROOT "${BTSTACK_ROOT}")
+btstack_declare_port_provider(rp2040-vela-if820
+    CAPABILITY audio
+    PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
+
+# The feature macros live in btstack_config.h. Keeping ENABLE_BLE and
+# ENABLE_CLASSIC in that file (rather than inheriting them from pico-sdk's
+# pico_btstack_ble/classic targets) makes it the single source of truth.
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
+btstack_set_port_configuration_macros(rp2040-vela-if820 ${BTSTACK_CONFIG_MACROS})
+string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
+message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_DISPLAY}")
 
 # port specific source files
-pico_add_library(vela_port NOFLAG)
-target_include_directories(vela_port INTERFACE
-    ${PICO_BTSTACK_PATH}/3rd-party/hxcmod-player
-)
-target_sources(vela_port INTERFACE
-    ${PICO_BTSTACK_PATH}/platform/embedded/btstack_audio_embedded.c
-    ${PICO_BTSTACK_PATH}/src/btstack_audio_generator.c
-    ${PICO_BTSTACK_PATH}/src/btstack_audio_player.c
-    ${PICO_BTSTACK_PATH}/src/btstack_audio_song.c
-    btstack_chunk_buffer.c
+set(SOURCES_PORT
     hal_audio_tinyusb.c
     hal_uart_dma_pico.c
     main.c
     uac2.c
     usb_descriptors.c
+    # pico-sdk integrations that normally arrive through pico_btstack_base.
+    ${PICO_SDK_PATH}/src/rp2_common/pico_btstack/btstack_flash_bank.c
+    ${PICO_SDK_PATH}/src/rp2_common/pico_btstack/btstack_run_loop_async_context.c
+    ${PICO_SDK_PATH}/src/rp2_common/pico_btstack/btstack_stdin_pico.c
 )
 
-# create examples
-# get list of examples, skipping mesh_node_demo
-include(${PICO_BTSTACK_PATH}/example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "mesh_node_demo" "hsp_ag_demo" "hsp_hs_demo" "hfp_ag_demo" "hfp_hf_demo" "led_counter")
-set (EXAMPLES_MODPLAYER "a2dp_source_demo" "audio_player" "mod_player")
-set (EXAMPLES_SBC "a2dp_source_demo" "a2dp_sink_demo")
+# This port has an RP2040 USB audio implementation, but no LED backend.
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT rp2040-vela-if820
+    CANDIDATES ${EXAMPLES})
+# The port does not configure the Mesh feature or its provisioning backend.
+list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 
-foreach(EXAMPLE ${EXAMPLES})
+set(BTSTACK_RP2040_VELA_BASE_GROUPS
+    core
+    ble
+    le-device-db-tlv
+    link-key-db-tlv
+    transport-h4
+    third-party-micro-ecc
+    third-party-rijndael
+    platform-embedded-audio
+    platform-embedded-hci-dump-stdout
+    platform-embedded-tlv-flash-bank
+    platform-embedded-uart-block)
 
-    add_executable(${EXAMPLE})
+# pico-sdk and TinyUSB provide INTERFACE sources to their consumers. They are
+# compiled as part of the BTstack library below, so do not impose BTstack's
+# warning-as-error policy on this externally owned code.
+set(BTSTACK_RP2040_VELA_PRIVATE_COMPILE_OPTIONS)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    list(APPEND BTSTACK_RP2040_VELA_PRIVATE_COMPILE_OPTIONS -Wno-error)
+endif()
 
-    target_include_directories(${EXAMPLE} PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
-    )
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library
+        ROOT "${BTSTACK_ROOT}"
+        PORT rp2040-vela-if820
+        EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_rp2040_vela_if820
+        BASE_GROUPS ${BTSTACK_RP2040_VELA_BASE_GROUPS}
+        PORT_SOURCES ${SOURCES_PORT}
+        PRIVATE_COMPILE_OPTIONS ${BTSTACK_RP2040_VELA_PRIVATE_COMPILE_OPTIONS}
+        PUBLIC_INCLUDE_DIRECTORIES
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+            "${PICO_SDK_PATH}/src/rp2_common/pico_btstack/include"
+        LINK_LIBRARIES
+            hardware_uart
+            hardware_dma
+            pico_async_context_poll
+            pico_async_context_base
+            pico_flash
+            pico_sync
+            pico_stdlib
+            pico_stdio_usb
+            tinyusb_device
+            tinyusb_board)
 
-    target_sources(${EXAMPLE} PUBLIC
-        ${PICO_BTSTACK_PATH}/example/${EXAMPLE}.c
-    )
-
-    if ("audio_player" MATCHES ${EXAMPLE})
-        target_sources(${EXAMPLE} PUBLIC
-            ${PICO_BTSTACK_PATH}/example/audio_player_demo_util.c
-        )
-    endif()
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
 
     target_compile_definitions(${EXAMPLE} PRIVATE
         # Uncomment for HCI traces
@@ -79,54 +133,23 @@ foreach(EXAMPLE ${EXAMPLES})
     )
 
     # create .h file from .gatt if needed
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+    if(btstack_example_${EXAMPLE}_gatt_db)
         message("example ${EXAMPLE} -- with GATT DB")
-        pico_btstack_make_gatt_header(${EXAMPLE} PRIVATE "${PICO_BTSTACK_PATH}/example/${EXAMPLE}.gatt")
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
     else()
         message("example ${EXAMPLE}")
     endif()
 
-    # add mod player sources for mod player examples
-    if ( "${EXAMPLES_MODPLAYER}" MATCHES ${EXAMPLE} )
-        target_include_directories(${EXAMPLE} PUBLIC
-            ${PICO_BTSTACK_PATH}/3rd-party/hxcmod-player/
-        )
-        file(GLOB SOURCES_HXCMOD
-                "${PICO_BTSTACK_PATH}/3rd-party/hxcmod-player/*.c"
-                "${PICO_BTSTACK_PATH}/3rd-party/hxcmod-player/mods/*.c")
-        target_sources(${EXAMPLE} PUBLIC ${SOURCES_HXCMOD})
-    endif()
-
-    # add SBC codec for a2dp examples
-    if ( "${EXAMPLES_SBC}" MATCHES ${EXAMPLE} )
-        target_link_libraries(${EXAMPLE} PUBLIC
-            pico_btstack_sbc_common
-            pico_btstack_sbc_encoder
-            pico_btstack_sbc_decoder
-        )
-    endif()
-
-    target_link_libraries(${EXAMPLE} PUBLIC
-        vela_port
-        hardware_uart
-        hardware_dma
-        pico_async_context_poll
-        pico_sync
-        pico_btstack_ble
-        pico_btstack_classic
-        pico_btstack_flash_bank
-        pico_btstack_hci_transport_h4
-        pico_btstack_run_loop_async_context
-        pico_btstack_run_loop_async_context_headers
-        pico_stdlib
-        pico_stdio_usb
-        tinyusb_device
-        tinyusb_board
-    )
+    # Pico SDK and TinyUSB add implementation sources to executable targets,
+    # so their warning policy must remain independent of BTstack's strict
+    # warning policy.
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 
     pico_add_extra_outputs(${EXAMPLE})
 
     pico_enable_stdio_usb(${EXAMPLE} 1)
     pico_enable_stdio_uart(${EXAMPLE} 0)
 
-endforeach(EXAMPLE)
+endforeach()
+
+btstack_add_info_targets(PORT rp2040-vela-if820)
