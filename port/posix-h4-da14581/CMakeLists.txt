@@ -2,14 +2,80 @@ cmake_minimum_required(VERSION 3.18)
 
 project(BTstack-posix-h4-da14581)
 
-set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
-include(${BTSTACK_ROOT}/tool/cmake/BTstackPosixH4Le.cmake)
 
-btstack_add_posix_h4_le_port(
+btstack_declare_port(posix-h4-da14581 CONTROLLER_CAPABILITIES le)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+    ROOT "${BTSTACK_ROOT}")
+
+set(SOURCES_PORT main.c)
+
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+    pkg_check_modules(PORTAUDIO portaudio-2.0)
+    if(PORTAUDIO_FOUND)
+        message("HAVE_PORTAUDIO")
+        add_compile_definitions(HAVE_PORTAUDIO)
+        btstack_declare_port_provider(posix-h4-da14581
+            CAPABILITY audio
+            GROUPS platform-posix-audio-portaudio platform-posix-wav)
+    endif()
+endif()
+btstack_declare_port_provider(posix-h4-da14581
+    CAPABILITY led
+    GROUPS platform-posix-hal-led
+    PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
+
+find_package(Threads)
+
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
     PORT posix-h4-da14581
-    ROOT "${BTSTACK_ROOT}"
-    CHIPSET_GROUPS chipset-da145xx chipset-da145xx-581
-    PORT_SOURCES main.c
-)
+    CANDIDATES ${EXAMPLES})
+list(REMOVE_ITEM EXAMPLES
+    le_audio_broadcast_sink_lite
+    le_audio_broadcast_source_lite
+    le_audio_unicast_gateway_lite
+    le_audio_unicast_headset_lite)
+
+set(BTSTACK_POSIX_H4_LE_BASE_GROUPS
+    ble le-device-db-tlv tlv-none transport-h4
+    platform-posix-run-loop platform-posix-signal platform-posix-stdin
+    platform-posix-main-config platform-posix-tlv platform-posix-uart
+    platform-posix-hci-dump
+    chipset-da145xx chipset-da145xx-581
+    third-party-micro-ecc third-party-rijndael)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_POSIX_H4_LE_BASE_GROUPS platform-posix-audio-portaudio)
+endif()
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library
+        ROOT "${BTSTACK_ROOT}"
+        PORT posix-h4-da14581
+        EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_posix_h4_da14581
+        BASE_GROUPS ${BTSTACK_POSIX_H4_LE_BASE_GROUPS}
+        PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+            ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} m ${PORTAUDIO_LIBRARIES})
+
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    endforeach()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    if(btstack_example_${EXAMPLE}_gatt_db)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
+    endif()
+    btstack_target_warnings(${EXAMPLE} STRICT)
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
+endforeach()

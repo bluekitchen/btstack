@@ -58,6 +58,10 @@ else()
             PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
     endmacro()
     declare_test_led_port()
+    macro(declare_test_le_port)
+        btstack_declare_port(test-le CONTROLLER_CAPABILITIES le)
+    endmacro()
+    declare_test_le_port()
 
     btstack_collect_public_include_directories(public_include_directories
         ROOT "${BTSTACK_ROOT}")
@@ -83,6 +87,15 @@ else()
         test-led led_counter)
     if(NOT "${led_include_directories}" STREQUAL "${BTSTACK_ROOT}/platform/embedded")
         message(FATAL_ERROR "Unexpected LED provider includes: ${led_include_directories}")
+    endif()
+
+    # LE-only controllers select LE examples, while Classic examples and
+    # examples needing an unavailable port provider are omitted.
+    btstack_filter_examples_for_port(le_examples
+        PORT test-le
+        CANDIDATES spp_counter gatt_counter audio_duplex led_counter)
+    if(NOT "${le_examples}" STREQUAL "gatt_counter")
+        message(FATAL_ERROR "Unexpected LE-only example selection: ${le_examples}")
     endif()
 
     btstack_resolve_groups(resolved GROUPS classic-rfcomm)
@@ -230,7 +243,8 @@ else()
             "Unexpected a2dp_source_demo configuration requirements: ${a2dp_source_configurations}")
     endif()
 
-    btstack_resolve_example(a2dp_sink_demo a2dp_sink_groups a2dp_sink_configurations)
+    btstack_resolve_example_for_port(test-audio a2dp_sink_demo
+        a2dp_sink_groups a2dp_sink_configurations)
     foreach(group IN ITEMS classic-btstack-sbc third-party-bluedroid-sbc)
         list(FIND a2dp_sink_groups ${group} group_index)
         if(group_index EQUAL -1)
