@@ -1,30 +1,33 @@
-# Set default example to build, update to build your own application
-# e.g. if there is btstack/port/esp32/main/my_app.c, you can set DEFAULT_EXAMPLE to "my_app"
-set (DEFAULT_EXAMPLE gatt_counter)
-
-if( NOT DEFINED ENV{EXAMPLE} )
-    set(EXAMPLE ${DEFAULT_EXAMPLE})
+if(DEFINED BTSTACK_ESP32_EXAMPLE AND NOT "${BTSTACK_ESP32_EXAMPLE}" STREQUAL "")
+    set(EXAMPLE "${BTSTACK_ESP32_EXAMPLE}")
+elseif(DEFINED ENV{EXAMPLE} AND NOT "$ENV{EXAMPLE}" STREQUAL "")
+    set(EXAMPLE "$ENV{EXAMPLE}")
 else()
-    set(EXAMPLE $ENV{EXAMPLE})
+    set(EXAMPLE gatt_counter)
 endif()
 
-if( NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/${EXAMPLE}.c" )
+include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
+include("${BTSTACK_ROOT}/example/requirements.cmake")
+
+list(FIND btstack_declared_examples "${EXAMPLE}" EXAMPLE_INDEX)
+if(EXAMPLE_INDEX EQUAL -1 AND NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/${EXAMPLE}.c")
+    message(FATAL_ERROR "Unknown ESP32 example '${EXAMPLE}'")
+elseif(NOT EXAMPLE_INDEX EQUAL -1)
     set(BUILD_MESSAGE  "Building example: \"${EXAMPLE}\"")
-    list(TRANSFORM EXAMPLE PREPEND ${BTSTACK_ROOT}/example/ OUTPUT_VARIABLE EXAMPLE_SOURCE)
+    foreach(source IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND EXAMPLE_SOURCES "${BTSTACK_ROOT}/example/${source}")
+    endforeach()
+    set(GATT_DB "${btstack_example_${EXAMPLE}_gatt_db}")
+    if(GATT_DB)
+        set(GATT_PATH "${BTSTACK_ROOT}/example/${GATT_DB}")
+    endif()
 else()
     set(BUILD_MESSAGE  "Building custom application \"${EXAMPLE}\"")
-    list(TRANSFORM EXAMPLE PREPEND ${CMAKE_CURRENT_LIST_DIR}/ OUTPUT_VARIABLE EXAMPLE_SOURCE)
-endif()
-
-# detect optional .gatt file
-set( GATT_PATH "${EXAMPLE_SOURCE}.gatt" )
-string( CONCAT EXAMPLE_SOURCE ${EXAMPLE_SOURCE} ".c" )
-if( NOT EXISTS "${GATT_PATH}" )
-    unset( GATT_PATH )
+    set(EXAMPLE_SOURCES "${CMAKE_CURRENT_LIST_DIR}/${EXAMPLE}.c")
 endif()
 
 idf_component_register(
-    SRCS "main.c" "${EXAMPLE_SOURCE}"
+    SRCS "main.c" ${EXAMPLE_SOURCES}
     REQUIRES btstack esp_phy bt esp_driver_gpio esp_driver_i2s)
 
 include(BTstackUtils)
@@ -38,28 +41,6 @@ else()
     message(${BUILD_MESSAGE})
 endif()
 message("===\n")
-
-# add example utils as needed
-set(SCO_EXAMPLES hfp_ag_demo hfp_hf_demo hsp_ag_demo hsp_hs_demo )
-if( ${EXAMPLE} IN_LIST SCO_EXAMPLES )
-    list(APPEND SRCS ${BTSTACK_ROOT}/example/sco_demo_util.c )
-    target_include_directories(${COMPONENT_LIB} PRIVATE ${BTSTACK_ROOT}/example/)
-endif()
-
-set(LE_AUDIO_SINK_EXAMPLES le_audio_unicast_headset le_audio_unicast_gateway le_audio_broadcast_sink le_audio_broadcast_sink_lite le_audio_unicast_gateway_lite le_audio_unicast_headset_lite)
-if( ${EXAMPLE} IN_LIST LE_AUDIO_SINK_EXAMPLES )
-    list(APPEND SRCS ${BTSTACK_ROOT}/example/le_audio_demo_util_sink.c )
-    target_include_directories(${COMPONENT_LIB} PRIVATE ${BTSTACK_ROOT}/example/)
-endif()
-
-set(LE_AUDIO_SOURCE_EXAMPLES le_audio_unicast_gateway le_audio_broadcast_source le_audio_broadcast_source_lite le_audio_unicast_gateway_lite le_audio_unicast_headset_lite)
-if( ${EXAMPLE} IN_LIST LE_AUDIO_SOURCE_EXAMPLES )
-    list(APPEND SRCS ${BTSTACK_ROOT}/example/le_audio_demo_util_source.c )
-    target_include_directories(${COMPONENT_LIB} PRIVATE ${BTSTACK_ROOT}/example/)
-endif()
-
-# define sources for main component
-target_sources(${COMPONENT_LIB} PRIVATE ${SRCS})
 
 # custom target to list all BTstack examples
 add_custom_target(list-examples
