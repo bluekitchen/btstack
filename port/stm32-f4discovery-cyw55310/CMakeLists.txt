@@ -49,10 +49,24 @@ include(cmake/bsp.cmake)
 # Build information
 message("Build: ${CMAKE_BUILD_TYPE}\n")
 
-# Include BTstack and its scoped STM32F4 helper.
+# Include BTstack.
 set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
-include(${BTSTACK_ROOT}/tool/cmake/BTstackStm32F4.cmake)
+
+btstack_declare_port(stm32-f4discovery-cyw55310)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+    ROOT "${BTSTACK_ROOT}")
+btstack_declare_port_provider(stm32-f4discovery-cyw55310
+    CAPABILITY audio
+    GROUPS platform-embedded-audio
+    PUBLIC_INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}/port"
+        "${BTSTACK_ROOT}/platform/embedded")
+btstack_declare_port_provider(stm32-f4discovery-cyw55310
+    CAPABILITY led
+    PUBLIC_INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}/port"
+        "${BTSTACK_ROOT}/platform/embedded")
 
 # PatchRAM file for CYW55310
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
@@ -77,79 +91,46 @@ add_custom_command(
 
 set(SOURCES_PORT port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/port.c ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
 
-# .gatt files in src
-file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
-
-# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
-# workaround: add lwip sources only to lwip_examples
-set (LWIP_EXAMPLES pan_lwip_http_server)
-
 # Sources that implement this board's platform, including the generated
 # PatchRAM array, are identical for every example. Build them once instead of
 # adding them to each executable below.
 add_custom_target(cyw55310_patchram_source DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
 add_dependencies(cyw55310_patchram_source cyw55310_patchram_download)
-btstack_add_stm32f4_examples(
-    PORT stm32-f4discovery-cyw55310 ROOT "${BTSTACK_ROOT}"
-    BASE_GROUPS core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-bcm third-party-micro-ecc third-party-rijndael third-party-hxcmod platform-embedded-audio platform-embedded-run-loop platform-embedded-stdin platform-embedded-tlv-flash-bank platform-embedded-uart-block platform-embedded-hci-dump-stdout
-    PORT_SOURCES ${SOURCES_PORT}
-    PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}"
-    LINK_LIBRARIES stm32cubemx bsp
-    FIRMWARE_TARGETS cyw55310_patchram_source
-)
 
-if(FALSE)
-# Legacy target loop retained temporarily for reference; the scoped helper above owns targets.
-foreach(EXAMPLE ${EXAMPLES})
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+
+set(BTSTACK_STM32_F4_BASE_GROUPS
+    core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-bcm
+    third-party-micro-ecc third-party-rijndael third-party-hxcmod
+    platform-embedded-audio platform-embedded-run-loop platform-embedded-stdin
+    platform-embedded-tlv-flash-bank platform-embedded-uart-block
+    platform-embedded-hci-dump-stdout)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library
+        ROOT "${BTSTACK_ROOT}"
+        PORT stm32-f4discovery-cyw55310
+        EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_stm32_f4discovery_cyw55310
+        BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
+        PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}/port"
+        PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}"
+        LINK_LIBRARIES stm32cubemx bsp)
+    add_dependencies(btstack_${EXAMPLE}_library cyw55310_patchram_source)
+
     set(SOURCES_EXAMPLE)
     foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
     endforeach()
-
-    # add GATT DB creation
-    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
-    if (EXAMPLE_GATT_DB)
-        message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${GATT_FILES}
-            COMMAND ${Python3_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-        )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-    else()
-        message("example ${EXAMPLE}")
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    if(btstack_example_${EXAMPLE}_gatt_db)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
     endif()
-
-    # Create Ozone Project
-    set(OZONE_PROJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug)
-    configure_file(${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE})
-    list(APPEND SOURCES_EXAMPLE ${OZONE_PROJECT_FILE})
-
-    # Create an executable target for the example
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
-
-    # Add project symbols (macros)
-    target_compile_definitions(${EXAMPLE} PRIVATE
-            # Add user-defined symbols
-    )
-
-    # Add include paths
-    target_include_directories(${EXAMPLE} PRIVATE
-        # Add user defined include paths
-        port
-    )
-
-    # Link directories and libraries
-    target_link_directories(${EXAMPLE} PRIVATE
-        # Add user-defined library search paths
-    )
-    target_link_libraries(${EXAMPLE}
-        stm32f4_discovery_cyw55310_port
-        stm32cubemx
-        bsp
-        btstack
-    )
-
+    btstack_target_warnings(${EXAMPLE} STRICT)
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
-endif()
