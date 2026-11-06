@@ -7,7 +7,7 @@ set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 
-btstack_declare_port(posix-h4-atwilc3000 CONTROLLER_CAPABILITIES le)
+btstack_declare_port(posix-h4-atwilc3000)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
     ROOT "${BTSTACK_ROOT}")
 
@@ -38,14 +38,17 @@ btstack_declare_port_provider(posix-h4-atwilc3000
 
 find_package(Threads)
 
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
+btstack_set_port_configuration_macros(posix-h4-atwilc3000 ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
 btstack_filter_examples_for_port(EXAMPLES
     PORT posix-h4-atwilc3000
     CANDIDATES ${EXAMPLES})
 
-# This port has an LE controller, but its configuration does not yet select
-# LE Audio. Configuration-based example filtering is handled separately.
+# This port does not select the configuration prerequisites for LE Audio yet.
 list(REMOVE_ITEM EXAMPLES
     le_audio_broadcast_sink_lite
     le_audio_broadcast_source_lite

@@ -59,7 +59,10 @@ else()
     endmacro()
     declare_test_led_port()
     macro(declare_test_le_port)
-        btstack_declare_port(test-le CONTROLLER_CAPABILITIES le)
+        btstack_declare_port(test-le)
+        btstack_set_port_configuration_macros(test-le
+            ENABLE_BLE
+            ENABLE_LE_PERIPHERAL)
     endmacro()
     declare_test_le_port()
 
@@ -89,8 +92,8 @@ else()
         message(FATAL_ERROR "Unexpected LED provider includes: ${led_include_directories}")
     endif()
 
-    # LE-only controllers select LE examples, while Classic examples and
-    # examples needing an unavailable port provider are omitted.
+    # A BLE-only configuration selects LE examples, while Classic examples
+    # and examples needing an unavailable port provider are omitted.
     btstack_filter_examples_for_port(le_examples
         PORT test-le
         CANDIDATES spp_counter gatt_counter audio_duplex led_counter)

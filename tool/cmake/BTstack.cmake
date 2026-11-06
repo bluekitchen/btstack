@@ -4,6 +4,13 @@
 # keeps those responsibilities in its own CMakeLists.txt.
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
+set(btstack_config_extractor "${CMAKE_CURRENT_LIST_DIR}/../extract_btstack_config.py")
+
+# Configuration marker groups are resolver-only metadata and deliberately
+# stay out of the generated source catalog.
+list(APPEND btstack_source_groups core-classic core-le)
+set(btstack_sources_core_classic)
+set(btstack_sources_core_le)
 
 # Explicit internal source-group dependencies. This is resolver metadata, not
 # source-catalog metadata: the generator classifies files but never infers
@@ -14,6 +21,76 @@ set(btstack_group_dependencies_l2cap
 )
 set(btstack_group_dependencies_ble
     l2cap
+    core-le
+)
+set(btstack_group_configuration_requirements_core_classic
+    ENABLE_CLASSIC
+)
+set(btstack_group_configuration_requirements_core_le
+    ENABLE_BLE
+)
+set(btstack_group_dependencies_classic
+    core-classic
+)
+set(btstack_group_dependencies_classic_avdtp_util
+    core-classic
+)
+set(btstack_group_dependencies_classic_avrcp_media_item_iterator
+    core-classic
+)
+set(btstack_group_dependencies_classic_btstack_cvsd_plc
+    core-classic
+)
+set(btstack_group_dependencies_classic_btstack_sbc
+    core-classic
+)
+set(btstack_group_dependencies_classic_btstack_sbc_bluedroid
+    core-classic
+)
+set(btstack_group_dependencies_classic_btstack_sbc_decoder_bluedroid
+    core-classic
+)
+set(btstack_group_dependencies_classic_btstack_sbc_encoder_bluedroid
+    core-classic
+)
+set(btstack_group_dependencies_classic_btstack_sbc_plc
+    core-classic
+)
+set(btstack_group_dependencies_classic_gatt_sdp
+    core-classic
+)
+set(btstack_group_dependencies_classic_goep_server
+    core-classic
+)
+set(btstack_group_dependencies_classic_hfp_codec
+    core-classic
+)
+set(btstack_group_dependencies_classic_hfp_gsm_model
+    core-classic
+)
+set(btstack_group_dependencies_classic_hfp_msbc
+    core-classic
+)
+set(btstack_group_dependencies_classic_obex_iterator
+    core-classic
+)
+set(btstack_group_dependencies_classic_obex_message_builder
+    core-classic
+)
+set(btstack_group_dependencies_classic_obex_parser
+    core-classic
+)
+set(btstack_group_dependencies_classic_obex_srm_client
+    core-classic
+)
+set(btstack_group_dependencies_classic_obex_srm_server
+    core-classic
+)
+set(btstack_group_dependencies_classic_pan
+    core-classic
+)
+set(btstack_group_dependencies_classic_sdp_util
+    core-classic
 )
 set(btstack_group_dependencies_att_db
     core
@@ -107,34 +184,42 @@ set(btstack_group_dependencies_gatt_service_ublox_spp_service_server
 )
 set(btstack_group_dependencies_classic_rfcomm
     l2cap
+    core-classic
 )
 set(btstack_group_dependencies_classic_sdp_server
     l2cap
     classic-sdp-util
+    core-classic
 )
 set(btstack_group_dependencies_classic_sdp_client
     l2cap
     classic-sdp-util
+    core-classic
 )
 set(btstack_group_dependencies_classic_sdp_client_rfcomm
     classic-sdp-client
+    core-classic
 )
 set(btstack_group_dependencies_classic_hid_device
     l2cap
     classic-sdp-server
+    core-classic
 )
 set(btstack_group_dependencies_classic_hid_host
     l2cap
     classic-sdp-client
+    core-classic
 )
 set(btstack_group_dependencies_classic_device_id_server
     classic-sdp-util
+    core-classic
 )
 set(btstack_group_dependencies_classic_goep_client
     classic-rfcomm
     classic-sdp-client
     classic-obex-message-builder
     classic-obex-iterator
+    core-classic
 )
 set(btstack_group_dependencies_classic_pbap_client
     classic-goep-client
@@ -142,6 +227,7 @@ set(btstack_group_dependencies_classic_pbap_client
     third-party-md5
     classic-obex-srm-client
     third-party-yxml
+    core-classic
 )
 set(btstack_group_dependencies_classic_hfp
     classic-rfcomm
@@ -156,13 +242,16 @@ set(btstack_group_dependencies_classic_hfp
     classic-btstack-sbc-plc
     third-party-bluedroid-sbc
     third-party-hxcmod
+    core-classic
 )
 set(btstack_group_dependencies_classic_hfp_ag
     classic-hfp
     classic-hfp-gsm-model
+    core-classic
 )
 set(btstack_group_dependencies_classic_hfp_hf
     classic-hfp
+    core-classic
 )
 set(btstack_group_dependencies_classic_hsp_ag
     classic-rfcomm
@@ -176,6 +265,7 @@ set(btstack_group_dependencies_classic_hsp_ag
     classic-btstack-sbc-plc
     third-party-bluedroid-sbc
     third-party-hxcmod
+    core-classic
 )
 set(btstack_group_dependencies_classic_hsp_hs
     classic-rfcomm
@@ -189,67 +279,83 @@ set(btstack_group_dependencies_classic_hsp_hs
     classic-btstack-sbc-plc
     third-party-bluedroid-sbc
     third-party-hxcmod
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp
     l2cap
     classic-sdp-client
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp_controller
     classic-avrcp
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp_browsing
     l2cap
     classic-sdp-client
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp_browsing_controller
     classic-avrcp-browsing
     classic-avrcp-controller
+    core-classic
 )
 set(btstack_group_dependencies_classic_avdtp
     l2cap
     classic-sdp-client
     classic-avdtp-util
+    core-classic
 )
 set(btstack_group_dependencies_classic_avdtp_acceptor
     classic-avdtp
+    core-classic
 )
 set(btstack_group_dependencies_classic_avdtp_initiator
     classic-avdtp
+    core-classic
 )
 set(btstack_group_dependencies_classic_avdtp_sink
     classic-avdtp-acceptor
     classic-avdtp-initiator
+    core-classic
 )
 set(btstack_group_dependencies_classic_a2dp
     classic-avdtp
+    core-classic
 )
 set(btstack_group_dependencies_classic_a2dp_sink
     classic-a2dp
     classic-avdtp-sink
     classic-btstack-sbc
     third-party-bluedroid-sbc
+    core-classic
 )
 set(btstack_group_dependencies_classic_avdtp_source
     classic-avdtp-initiator
     classic-avdtp-acceptor
+    core-classic
 )
 set(btstack_group_dependencies_classic_a2dp_source
     classic-a2dp
     classic-avdtp-source
     classic-btstack-sbc
     third-party-bluedroid-sbc
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp_cover_art_client
     classic-goep-client
     classic-obex-parser
     classic-obex-srm-client
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp_target
     classic-avrcp
+    core-classic
 )
 set(btstack_group_dependencies_classic_avrcp_browsing_target
     classic-avrcp-browsing
     classic-avrcp-target
+    core-classic
 )
 set(btstack_group_dependencies_le_audio
     ble
@@ -262,6 +368,7 @@ set(btstack_group_dependencies_le_audio
 set(btstack_group_dependencies_classic_spp_server
     classic-rfcomm
     classic-sdp-server
+    core-classic
 )
 
 # These embedded adapters use SEGGER RTT when ENABLE_SEGGER_RTT is selected
@@ -317,9 +424,8 @@ function(btstack_resolve_groups output_variable)
             list(APPEND closure "${group}")
             string(REPLACE "-" "_" group_suffix "${group}")
             set(dependency_variable "btstack_group_dependencies_${group_suffix}")
-            if(DEFINED ${dependency_variable})
-                list(APPEND pending ${${dependency_variable}})
-            endif()
+            set(dependencies ${${dependency_variable}})
+            list(APPEND pending ${dependencies})
         endif()
     endwhile()
 
@@ -332,6 +438,8 @@ function(btstack_resolve_groups output_variable)
             string(REPLACE "-" "_" group_suffix "${group}")
             set(dependency_variable "btstack_group_dependencies_${group_suffix}")
             set(dependencies ${${dependency_variable}})
+            # Marker groups express eligibility, not source ordering.
+            list(REMOVE_ITEM dependencies core-classic core-le)
             set(blocked FALSE)
             foreach(dependency IN LISTS dependencies)
                 list(FIND remaining "${dependency}" dependency_index)
@@ -353,6 +461,9 @@ function(btstack_resolve_groups output_variable)
         endif()
     endwhile()
 
+    # Marker groups only encode configuration prerequisites; they never own
+    # source files and must not reach source collection/object-target creation.
+    list(REMOVE_ITEM resolved core-classic core-le)
     set(${output_variable} "${resolved}" PARENT_SCOPE)
 endfunction()
 
@@ -544,10 +655,9 @@ endfunction()
 #   btstack_declare_example(gatt_counter
 #       SOURCES gatt_counter.c
 #       GATT_DB gatt_counter.gatt
-#       NEEDS ble ENABLE_LE_PERIPHERAL
-#       CONTROLLER_NEEDS le)
+#       NEEDS ble ENABLE_LE_PERIPHERAL)
 function(btstack_declare_example example)
-    cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS;CONTROLLER_NEEDS" ${ARGN})
+    cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS" ${ARGN})
 
     if(NOT ARG_SOURCES)
         message(FATAL_ERROR "btstack_declare_example(${example}) requires SOURCES")
@@ -563,19 +673,12 @@ function(btstack_declare_example example)
     set("btstack_example_${example}_sources" "${ARG_SOURCES}" PARENT_SCOPE)
     set("btstack_example_${example}_gatt_db" "${ARG_GATT_DB}" PARENT_SCOPE)
     set("btstack_example_${example}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
-    set("btstack_example_${example}_controller_needs" "${ARG_CONTROLLER_NEEDS}" PARENT_SCOPE)
 endfunction()
 
 # Register a port that can provide implementation groups for logical example
-# capabilities and controller features. A port declaration is metadata only;
-# it does not create a target or configure BTstack features.
-#
-# CONTROLLER_CAPABILITIES describes the Bluetooth controller attached to the
-# port, for example "le" or "le;classic". It is deliberately independent of
-# btstack_config.h; configuration validation is handled separately.
+# capabilities. A port declaration is metadata only; it does not create a
+# target or configure BTstack features.
 function(btstack_declare_port port)
-    cmake_parse_arguments(ARG "" "" "CONTROLLER_CAPABILITIES" ${ARGN})
-
     list(FIND btstack_declared_ports "${port}" port_index)
     if(NOT port_index EQUAL -1)
         message(FATAL_ERROR "BTstack port '${port}' is declared more than once")
@@ -584,9 +687,56 @@ function(btstack_declare_port port)
     list(APPEND btstack_declared_ports "${port}")
     set(btstack_declared_ports "${btstack_declared_ports}" PARENT_SCOPE)
 
+endfunction()
+
+# Attach the final macro set obtained by preprocessing a port's
+# btstack_config.h. The resolver uses these names to select groups whose
+# configuration prerequisites are met.
+function(btstack_set_port_configuration_macros port)
+    list(FIND btstack_declared_ports "${port}" port_index)
+    if(port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${port}' must be declared before its configuration macros")
+    endif()
     string(REPLACE "-" "_" port_suffix "${port}")
-    set("btstack_port_${port_suffix}_controller_capabilities"
-        "${ARG_CONTROLLER_CAPABILITIES}" PARENT_SCOPE)
+    set("btstack_port_${port_suffix}_configuration_macros" "${ARGN}" PARENT_SCOPE)
+endfunction()
+
+# Preprocess a port's btstack_config.h and return its final ENABLE_* and
+# HAVE_* macro names. This is deliberately configure-time work: callers use
+# the result to decide which targets to create.
+function(btstack_collect_port_configuration_macros output_variable)
+    cmake_parse_arguments(ARG "" "CONFIG" "DEFINITIONS;INCLUDE_DIRECTORIES" ${ARGN})
+    if(NOT ARG_CONFIG)
+        message(FATAL_ERROR "btstack_collect_port_configuration_macros requires CONFIG")
+    endif()
+
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        "${ARG_CONFIG}"
+        "${btstack_config_extractor}")
+    set(preprocessor_arguments)
+    foreach(definition IN LISTS ARG_DEFINITIONS)
+        list(APPEND preprocessor_arguments --define "${definition}")
+    endforeach()
+    foreach(include_directory IN LISTS ARG_INCLUDE_DIRECTORIES)
+        list(APPEND preprocessor_arguments --include-directory "${include_directory}")
+    endforeach()
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "${btstack_config_extractor}"
+            --compiler "${CMAKE_C_COMPILER}"
+            --config "${ARG_CONFIG}"
+            ${preprocessor_arguments}
+        RESULT_VARIABLE preprocess_result
+        OUTPUT_VARIABLE configuration_macros
+        ERROR_VARIABLE preprocess_error
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT preprocess_result EQUAL 0)
+        message(FATAL_ERROR "Could not preprocess ${ARG_CONFIG}:\n${preprocess_error}")
+    endif()
+    if(configuration_macros)
+        string(REPLACE "\n" ";" configuration_macros "${configuration_macros}")
+    endif()
+    set(${output_variable} "${configuration_macros}" PARENT_SCOPE)
 endfunction()
 
 # Register source groups, port-local sources, and public include directories
@@ -664,6 +814,9 @@ function(btstack_resolve_example_requirements example port groups_output_variabl
         list(FIND btstack_source_groups "${requirement}" group_index)
         if(NOT group_index EQUAL -1)
             list(APPEND source_groups "${requirement}")
+            string(REPLACE "-" "_" requirement_suffix "${requirement}")
+            list(APPEND configuration_requirements
+                ${btstack_group_configuration_requirements_${requirement_suffix}})
         elseif(requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
             list(APPEND configuration_requirements "${requirement}")
         elseif(NOT "${port}" STREQUAL "")
@@ -743,10 +896,10 @@ function(btstack_collect_example_port_sources output_variable port example)
     set(${output_variable} "${${output_variable}}" PARENT_SCOPE)
 endfunction()
 
-# Filter candidates to examples supported by a port's controller and declared
-# port providers. Controller requirements are metadata only and do not inspect
-# or alter btstack_config.h. An unavailable port provider, such as optional
-# audio support, also makes an example ineligible rather than an error.
+# Filter candidates to examples enabled by a port's preprocessed
+# btstack_config.h and declared port providers. An unavailable port provider,
+# such as optional audio support, also makes an example ineligible rather than
+# an error.
 #
 # Usage:
 #   btstack_filter_examples_for_port(EXAMPLES
@@ -764,8 +917,8 @@ function(btstack_filter_examples_for_port output_variable)
     endif()
 
     string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
-    set(controller_capabilities
-        ${btstack_port_${port_suffix}_controller_capabilities})
+    set(configuration_macros
+        ${btstack_port_${port_suffix}_configuration_macros})
     set(selected_examples)
     foreach(example IN LISTS ARG_CANDIDATES)
         list(FIND btstack_declared_examples "${example}" example_index)
@@ -774,25 +927,40 @@ function(btstack_filter_examples_for_port output_variable)
         endif()
 
         set(supported TRUE)
-        foreach(controller_need IN LISTS btstack_example_${example}_controller_needs)
-            list(FIND controller_capabilities "${controller_need}" capability_index)
-            if(capability_index EQUAL -1)
+        foreach(requirement IN LISTS btstack_example_${example}_needs)
+            list(FIND btstack_source_groups "${requirement}" group_index)
+            if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+                continue()
+            endif()
+
+            string(REPLACE "-" "_" capability_suffix "${requirement}")
+            set(provider_variable
+                "btstack_port_${port_suffix}_provider_${capability_suffix}")
+            if(NOT DEFINED ${provider_variable}_declared)
                 set(supported FALSE)
                 break()
             endif()
         endforeach()
 
         if(supported)
-            foreach(requirement IN LISTS btstack_example_${example}_needs)
-                list(FIND btstack_source_groups "${requirement}" group_index)
-                if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
-                    continue()
+            btstack_resolve_example_for_port(${ARG_PORT} ${example}
+                example_groups example_configuration_requirements)
+            foreach(group IN LISTS example_groups)
+                string(REPLACE "-" "_" group_suffix "${group}")
+                list(APPEND example_configuration_requirements
+                    ${btstack_group_configuration_requirements_${group_suffix}})
+                if(group MATCHES "^classic(-|$)")
+                    list(APPEND example_configuration_requirements
+                        ${btstack_group_configuration_requirements_core_classic})
+                elseif(group STREQUAL "ble")
+                    list(APPEND example_configuration_requirements
+                        ${btstack_group_configuration_requirements_core_le})
                 endif()
-
-                string(REPLACE "-" "_" capability_suffix "${requirement}")
-                set(provider_variable
-                    "btstack_port_${port_suffix}_provider_${capability_suffix}")
-                if(NOT DEFINED ${provider_variable}_declared)
+            endforeach()
+            list(REMOVE_DUPLICATES example_configuration_requirements)
+            foreach(configuration_requirement IN LISTS example_configuration_requirements)
+                list(FIND configuration_macros "${configuration_requirement}" configuration_index)
+                if(configuration_index EQUAL -1)
                     set(supported FALSE)
                     break()
                 endif()
@@ -860,6 +1028,11 @@ function(btstack_add_scoped_group_object_library)
         set(exclusion_variable "btstack_group_object_excluded_sources_${group_suffix}")
         if(DEFINED ${exclusion_variable})
             list(REMOVE_ITEM group_relative_sources ${${exclusion_variable}})
+        endif()
+
+        if(NOT group_relative_sources)
+            set(${ARG_OUTPUT_TARGET} "" PARENT_SCOPE)
+            return()
         endif()
 
         set(group_sources)

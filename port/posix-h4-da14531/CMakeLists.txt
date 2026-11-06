@@ -6,7 +6,7 @@ set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
-btstack_declare_port(posix-h4-da14531 CONTROLLER_CAPABILITIES le)
+btstack_declare_port(posix-h4-da14531)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
     ROOT "${BTSTACK_ROOT}")
 
@@ -29,6 +29,10 @@ btstack_declare_port_provider(posix-h4-da14531
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
 find_package(Threads)
+
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
+btstack_set_port_configuration_macros(posix-h4-da14531 ${BTSTACK_CONFIG_MACROS})
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
