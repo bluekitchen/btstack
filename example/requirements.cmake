@@ -262,12 +262,17 @@ btstack_declare_example(ublox_spp_le_counter
 btstack_declare_example(le_audio_broadcast_sink_lite
     SOURCES le_audio_broadcast_sink_lite.c ${le_audio_demo_util_sink_sources}
     NEEDS le-audio audio
+          ENABLE_LE_ISOCHRONOUS_STREAMS
+          ENABLE_LE_PERIODIC_ADVERTISING
 )
 btstack_declare_example(le_audio_broadcast_source_lite
     SOURCES le_audio_broadcast_source_lite.c
             ${audio_demo_util_sources}
             ${le_audio_demo_util_source_sources}
     NEEDS le-audio audio-demo third-party-hxcmod audio
+          ENABLE_LE_ISOCHRONOUS_STREAMS
+          ENABLE_LE_EXTENDED_ADVERTISING
+          ENABLE_LE_PERIODIC_ADVERTISING
 )
 btstack_declare_example(le_audio_unicast_gateway_lite
     SOURCES le_audio_unicast_gateway_lite.c
@@ -275,12 +280,15 @@ btstack_declare_example(le_audio_unicast_gateway_lite
             ${le_audio_demo_util_sink_sources}
             ${le_audio_demo_util_source_sources}
     NEEDS le-audio audio-demo third-party-hxcmod audio
+          ENABLE_LE_ISOCHRONOUS_STREAMS
+          ENABLE_LE_EXTENDED_ADVERTISING
 )
 btstack_declare_example(le_audio_unicast_headset_lite
     SOURCES le_audio_unicast_headset_lite.c
             ${le_audio_demo_util_sink_sources}
             ${le_audio_demo_util_source_sources}
     NEEDS le-audio audio-demo third-party-hxcmod audio
+          ENABLE_LE_ISOCHRONOUS_STREAMS
 )
 
 # Dual-mode examples compose the GATT server with the SPP server profile.
