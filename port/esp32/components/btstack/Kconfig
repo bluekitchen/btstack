@@ -7,10 +7,8 @@ config BTSTACK_AUDIO
         Select this option to enable BTstack's audio driver
 
 config BTSTACK_INTERNAL_BT
-    visible if BT_CONTROLLER_ONLY
-    bool "Support for SoC Bluetooth"
-    default y if BT_CONTROLLER_ONLY
-    default n
+    bool "Support for SoC Bluetooth" if BT_CONTROLLER_ONLY && !BTSTACK_EXTERNAL_UART_BT
+    default y if BT_CONTROLLER_ONLY && !BTSTACK_EXTERNAL_UART_BT
     help
         Select this option to enable the chips build in
         Bluetooth support
@@ -30,6 +28,24 @@ menuconfig BTSTACK_EXTERNAL_UART_BT
         to a dedicated external Bluetooth module
 
 if BTSTACK_EXTERNAL_UART_BT
+    choice BTSTACK_EXTERNAL_UART_BT_CONTROLLER_MODE
+        prompt "External Bluetooth controller mode"
+        default BTSTACK_EXTERNAL_UART_BT_DUAL_MODE
+        help
+            Select the Bluetooth transport capabilities of the externally
+            connected controller. BTstack uses this to enable only the
+            matching Classic and/or LE features and examples.
+
+        config BTSTACK_EXTERNAL_UART_BT_LE_ONLY
+            bool "LE only"
+
+        config BTSTACK_EXTERNAL_UART_BT_CLASSIC_ONLY
+            bool "Classic only"
+
+        config BTSTACK_EXTERNAL_UART_BT_DUAL_MODE
+            bool "Dual-mode (Classic and LE)"
+    endchoice
+
     config BTSTACK_UART_NUM
         int "UART to use"
         default 0

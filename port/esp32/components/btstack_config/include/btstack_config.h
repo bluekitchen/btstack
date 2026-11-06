@@ -29,10 +29,19 @@
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_MODPLAYER
 
-// Enable Classic/LE based on esp-idf sdkconfig
+// Enable Classic/LE based on the ESP-IDF target or selected external controller
 #include "sdkconfig.h"
 #include "esp_idf_version.h"
-#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S31)
+#if defined(CONFIG_BTSTACK_EXTERNAL_UART_BT)
+// An external controller's capabilities cannot be inferred from the ESP SoC.
+#if defined(CONFIG_BTSTACK_EXTERNAL_UART_BT_LE_ONLY) || defined(CONFIG_BTSTACK_EXTERNAL_UART_BT_DUAL_MODE)
+#define ENABLE_BLE
+#endif
+#if defined(CONFIG_BTSTACK_EXTERNAL_UART_BT_CLASSIC_ONLY) || defined(CONFIG_BTSTACK_EXTERNAL_UART_BT_DUAL_MODE)
+#define ENABLE_CLASSIC
+#endif
+
+#elif defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S31)
 // ESP32 or ESP32-S31 are dual-mode Controller
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
