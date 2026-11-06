@@ -56,6 +56,18 @@
 #include "hal_flash_bank_zephyr.h"
 #include "btstack_tlv_flash_bank.h"
 
+// Zephyr renamed the fixed-partition helpers. Prefer the replacement macros
+// to avoid deprecation warnings while retaining support for older Zephyr SDKs.
+#if defined(PARTITION_EXISTS)
+#define BTSTACK_PARTITION_EXISTS(label) PARTITION_EXISTS(label)
+#define BTSTACK_PARTITION_OFFSET(label) PARTITION_OFFSET(label)
+#define BTSTACK_PARTITION_SIZE(label)   PARTITION_SIZE(label)
+#else
+#define BTSTACK_PARTITION_EXISTS(label) FIXED_PARTITION_EXISTS(label)
+#define BTSTACK_PARTITION_OFFSET(label) FIXED_PARTITION_OFFSET(label)
+#define BTSTACK_PARTITION_SIZE(label)   FIXED_PARTITION_SIZE(label)
+#endif
+
 // Uncomment to wait during startup for USB CDC console to be ready
 // #define ENABLE_USB_CDC_WAIT
 
@@ -213,11 +225,11 @@ int main(void)
 
 #if defined(CONFIG_FLASH) && \
     DT_HAS_CHOSEN(zephyr_code_partition) && \
-    FIXED_PARTITION_EXISTS(storage_partition)
+    BTSTACK_PARTITION_EXISTS(storage_partition)
 
     // setup TLV
-    uint32_t bank_size = FIXED_PARTITION_SIZE(storage_partition)/2;
-    uint32_t bank_0_addr = FIXED_PARTITION_OFFSET(storage_partition);
+    uint32_t bank_size = BTSTACK_PARTITION_SIZE(storage_partition)/2;
+    uint32_t bank_0_addr = BTSTACK_PARTITION_OFFSET(storage_partition);
     uint32_t bank_1_addr = bank_0_addr+bank_size;
     printf("configure persistent TLV storage:\n");
     printf("    bank_size:   %8d\n", bank_size);

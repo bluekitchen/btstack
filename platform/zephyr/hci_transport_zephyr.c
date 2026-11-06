@@ -108,6 +108,7 @@ extern int bt_h4_vnd_setup(const struct device *dev, const struct bt_hci_setup_p
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
+    UNUSED(transport_config);
 
     btstack_data_source_t *ds = &hci_transport_zephyr_receive;
     btstack_run_loop_set_data_source_handle(ds, &rx_queue_handle);
@@ -147,6 +148,7 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
 }
 
 static void send_hardware_error(uint8_t error_code){
+    UNUSED(error_code);
     // hci_outgoing_event[0] = HCI_EVENT_HARDWARE_ERROR;
     // hci_outgoing_event[1] = 1;
     // hci_outgoing_event[2] = error_code;
@@ -236,6 +238,7 @@ struct net_buf *bt_hci_cmd_alloc(k_timeout_t timeout) {
   */
 #define xSYNC_SEND_PACKETLOG
 int bt_hci_cmd_send_sync(uint16_t opcode, struct net_buf *buf, struct net_buf **rsp){
+    UNUSED(rsp);
     // create packet if needed from opcode
     if (!buf) {
         struct bt_hci_cmd_hdr hdr = {
@@ -302,6 +305,7 @@ static const hci_transport_t transport = {
     /* int    (*send_packet)(...); */                               &transport_send_packet,
     /* int    (*set_baudrate)(uint32_t baudrate); */                NULL,
     /* void   (*reset_link)(void); */                               NULL,
+    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
 };
 
 const hci_transport_t * hci_transport_zephyr_get_instance(void){

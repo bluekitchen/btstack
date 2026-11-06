@@ -95,6 +95,8 @@ static K_MUTEX_DEFINE(btstack_run_loop_zephyr_callbacks_mutex);
 static void btstack_run_loop_zephyr_signal_handler(
         btstack_data_source_t * ds,
         btstack_data_source_callback_type_t callback_type ) {
+    UNUSED(ds);
+    UNUSED(callback_type);
     int signaled, result;
     k_poll_signal_check(&signal, &signaled, &result);
     k_poll_signal_reset(&signal);
