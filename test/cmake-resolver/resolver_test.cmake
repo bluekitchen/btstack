@@ -46,6 +46,7 @@ if(DEFINED TEST_MODE)
 else()
     macro(declare_test_audio_port)
         btstack_declare_port(test-audio)
+        btstack_set_port_configuration_macros(test-audio ENABLE_BLE)
         btstack_declare_port_provider(test-audio
             CAPABILITY audio
             GROUPS platform-posix-audio-portaudio)
@@ -101,6 +102,15 @@ else()
         message(FATAL_ERROR "Unexpected LE-only example selection: ${le_examples}")
     endif()
 
+    # LE Audio requires ISO support in addition to an otherwise available
+    # audio provider and BLE configuration.
+    btstack_filter_examples_for_port(le_audio_examples
+        PORT test-audio
+        CANDIDATES le_audio_broadcast_sink_lite)
+    if(le_audio_examples)
+        message(FATAL_ERROR "LE Audio was selected without ENABLE_LE_ISOCHRONOUS_STREAMS")
+    endif()
+
     btstack_resolve_groups(resolved GROUPS classic-rfcomm)
     if(NOT "${resolved}" STREQUAL "core;l2cap;classic-rfcomm")
         message(FATAL_ERROR "Unexpected resolver closure: ${resolved}")
@@ -153,6 +163,14 @@ else()
     if(NOT "${gatt_counter_configurations}" STREQUAL "ENABLE_LE_PERIPHERAL")
         message(FATAL_ERROR
             "Unexpected gatt_counter configuration requirements: ${gatt_counter_configurations}")
+    endif()
+
+    btstack_resolve_example_for_port(test-audio le_audio_broadcast_sink_lite
+        le_audio_groups le_audio_configurations)
+    if(NOT "${le_audio_configurations}" STREQUAL
+            "ENABLE_LE_ISOCHRONOUS_STREAMS;ENABLE_LE_PERIODIC_ADVERTISING")
+        message(FATAL_ERROR
+            "Unexpected LE Audio configuration requirements: ${le_audio_configurations}")
     endif()
 
     btstack_resolve_groups(gatt_service_client_groups GROUPS gatt-service-client)

@@ -39,11 +39,6 @@ set(EXAMPLES ${btstack_declared_examples})
 btstack_filter_examples_for_port(EXAMPLES
     PORT posix-h4-da14585
     CANDIDATES ${EXAMPLES})
-list(REMOVE_ITEM EXAMPLES
-    le_audio_broadcast_sink_lite
-    le_audio_broadcast_source_lite
-    le_audio_unicast_gateway_lite
-    le_audio_unicast_headset_lite)
 
 set(BTSTACK_POSIX_H4_LE_BASE_GROUPS
     ble le-device-db-tlv tlv-none transport-h4
