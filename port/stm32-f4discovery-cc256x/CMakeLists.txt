@@ -49,10 +49,24 @@ include(cmake/bsp.cmake)
 # Build information
 message("Build: ${CMAKE_BUILD_TYPE}\n")
 
-# Include BTstack and its scoped STM32F4 helper.
+# Include BTstack.
 set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
-include(${BTSTACK_ROOT}/tool/cmake/BTstackStm32F4.cmake)
+
+btstack_declare_port(stm32-f4discovery-cc256x)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+    ROOT "${BTSTACK_ROOT}")
+btstack_declare_port_provider(stm32-f4discovery-cc256x
+    CAPABILITY audio
+    GROUPS platform-embedded-audio
+    PUBLIC_INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}/port"
+        "${BTSTACK_ROOT}/platform/embedded")
+btstack_declare_port_provider(stm32-f4discovery-cc256x
+    CAPABILITY led
+    PUBLIC_INCLUDE_DIRECTORIES
+        "${CMAKE_CURRENT_SOURCE_DIR}/port"
+        "${BTSTACK_ROOT}/platform/embedded")
 
 # Add CC256x Support and specify init script
 set(CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
@@ -62,74 +76,47 @@ set(SOURCES_PORT
     ${CC256X_INIT_SCRIPT_SOURCES}
 )
 
-# .gatt files in src
-file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+list(REMOVE_ITEM EXAMPLES
+    avrcp_browsing_client
+    mesh_node_demo
+    le_audio_broadcast_sink_lite
+    le_audio_broadcast_source_lite
+    le_audio_unicast_gateway_lite
+    le_audio_unicast_headset_lite)
 
-# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
-# workaround: add lwip sources only to lwip_examples
-set (LWIP_EXAMPLES pan_lwip_http_server)
+set(BTSTACK_STM32_F4_BASE_GROUPS
+    core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-cc256x
+    third-party-micro-ecc third-party-rijndael third-party-hxcmod
+    third-party-segger-rtt platform-embedded-audio platform-embedded-run-loop
+    platform-embedded-stdin platform-embedded-tlv-flash-bank
+    platform-embedded-uart-block platform-embedded-hci-dump-segger-rtt)
 
-btstack_add_stm32f4_examples(
-    PORT stm32-f4discovery-cc256x ROOT "${BTSTACK_ROOT}"
-    BASE_GROUPS core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-cc256x third-party-micro-ecc third-party-rijndael third-party-hxcmod third-party-segger-rtt platform-embedded-audio platform-embedded-run-loop platform-embedded-stdin platform-embedded-tlv-flash-bank platform-embedded-uart-block platform-embedded-hci-dump-segger-rtt
-    PORT_SOURCES ${SOURCES_PORT}
-    PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
-    LINK_LIBRARIES stm32cubemx bsp
-    FIRMWARE_TARGETS ${CC256X_INIT_SCRIPT_TARGETS}
-    EXCLUDE_EXAMPLES avrcp_browsing_client mesh_node_demo le_audio_broadcast_sink_lite le_audio_broadcast_source_lite le_audio_unicast_gateway_lite le_audio_unicast_headset_lite
-)
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library
+        ROOT "${BTSTACK_ROOT}"
+        PORT stm32-f4discovery-cc256x
+        EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_stm32_f4discovery_cc256x
+        BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
+        PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}/port"
+        PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
+        LINK_LIBRARIES stm32cubemx bsp)
+    add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
 
-if(FALSE)
-foreach(EXAMPLE ${EXAMPLES})
     set(SOURCES_EXAMPLE)
     foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
         list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
     endforeach()
-
-    # add GATT DB creation
-    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
-    if (EXAMPLE_GATT_DB)
-        message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${GATT_FILES}
-            COMMAND ${Python3_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-        )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-    else()
-        message("example ${EXAMPLE}")
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    if(btstack_example_${EXAMPLE}_gatt_db)
+        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
     endif()
-
-    # Create Ozone Project
-    set(OZONE_PROJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug)
-    configure_file(${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE})
-    list(APPEND SOURCES_EXAMPLE ${OZONE_PROJECT_FILE})
-
-    # Create an executable target for the example
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
-
-    # Add project symbols (macros)
-    target_compile_definitions(${EXAMPLE} PRIVATE
-            # Add user-defined symbols
-    )
-
-    # Add include paths
-    target_include_directories(${EXAMPLE} PRIVATE
-        # Add user defined include paths
-        port
-    )
-
-    # Link directories and libraries
-    target_link_directories(${EXAMPLE} PRIVATE
-        # Add user-defined library search paths
-    )
-    target_link_libraries(${EXAMPLE}
-        stm32f4_discovery_cc256x_port
-        stm32cubemx
-        bsp
-        btstack
-    )
-
+    btstack_target_warnings(${EXAMPLE} STRICT)
+    target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
-endif()
