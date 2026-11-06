@@ -66,6 +66,11 @@ else()
             ENABLE_LE_PERIPHERAL)
     endmacro()
     declare_test_le_port()
+    macro(declare_test_classic_port)
+        btstack_declare_port(test-classic)
+        btstack_set_port_configuration_macros(test-classic ENABLE_CLASSIC)
+    endmacro()
+    declare_test_classic_port()
 
     btstack_collect_public_include_directories(public_include_directories
         ROOT "${BTSTACK_ROOT}")
@@ -100,6 +105,16 @@ else()
         CANDIDATES spp_counter gatt_counter audio_duplex led_counter)
     if(NOT "${le_examples}" STREQUAL "gatt_counter")
         message(FATAL_ERROR "Unexpected LE-only example selection: ${le_examples}")
+    endif()
+
+    # Baseline groups are pruned to the active port configuration. This keeps
+    # port CMakeLists.txt declarative while allowing main.c to guard optional
+    # feature setup with the same ENABLE_* macros.
+    btstack_filter_groups_for_port(classic_base_groups
+        PORT test-classic
+        GROUPS core ble le-device-db-tlv link-key-db-tlv)
+    if(NOT "${classic_base_groups}" STREQUAL "core;link-key-db-tlv")
+        message(FATAL_ERROR "Unexpected Classic baseline group selection: ${classic_base_groups}")
     endif()
 
     # LE Audio requires ISO support in addition to an otherwise available

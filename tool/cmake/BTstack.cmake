@@ -30,6 +30,12 @@ set(btstack_group_configuration_requirements_core_classic
 set(btstack_group_configuration_requirements_core_le
     ENABLE_BLE
 )
+set(btstack_group_configuration_requirements_le_device_db_tlv
+    ENABLE_BLE
+)
+set(btstack_group_configuration_requirements_link_key_db_tlv
+    ENABLE_CLASSIC
+)
 set(btstack_group_dependencies_classic
     core-classic
 )
@@ -466,6 +472,80 @@ function(btstack_resolve_groups output_variable)
     # source files and must not reach source collection/object-target creation.
     list(REMOVE_ITEM resolved core-classic core-le)
     set(${output_variable} "${resolved}" PARENT_SCOPE)
+endfunction()
+
+# Collect the ENABLE_* requirements implied by source groups and their
+# dependency closure. This is shared by example eligibility checks and port
+# baseline pruning. Configuration marker groups are intentionally removed by
+# btstack_resolve_groups, so Classic and LE requirements are derived from the
+# source groups that depend on them as well.
+function(btstack_collect_group_configuration_requirements output_variable)
+    cmake_parse_arguments(ARG "" "" "GROUPS" ${ARGN})
+    if(NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_collect_group_configuration_requirements requires at least one GROUP")
+    endif()
+
+    set(configuration_requirements)
+    foreach(group IN LISTS ARG_GROUPS)
+        string(REPLACE "-" "_" group_suffix "${group}")
+        list(APPEND configuration_requirements
+            ${btstack_group_configuration_requirements_${group_suffix}})
+    endforeach()
+
+    btstack_resolve_groups(resolved_groups GROUPS ${ARG_GROUPS})
+    foreach(group IN LISTS resolved_groups)
+        string(REPLACE "-" "_" group_suffix "${group}")
+        list(APPEND configuration_requirements
+            ${btstack_group_configuration_requirements_${group_suffix}})
+        if(group MATCHES "^classic(-|$)")
+            list(APPEND configuration_requirements
+                ${btstack_group_configuration_requirements_core_classic})
+        elseif(group STREQUAL "ble")
+            list(APPEND configuration_requirements
+                ${btstack_group_configuration_requirements_core_le})
+        endif()
+    endforeach()
+    list(REMOVE_DUPLICATES configuration_requirements)
+    set(${output_variable} "${configuration_requirements}" PARENT_SCOPE)
+endfunction()
+
+# Select the port baseline groups whose configuration requirements are active.
+# Unlike example requirements, unavailable baseline groups are omitted rather
+# than making a target ineligible: they describe optional support that the
+# port's main.c already guards with the corresponding feature macros.
+function(btstack_filter_groups_for_port output_variable)
+    cmake_parse_arguments(ARG "" "PORT" "GROUPS" ${ARGN})
+    if(NOT ARG_PORT)
+        message(FATAL_ERROR "btstack_filter_groups_for_port requires PORT")
+    endif()
+    if(NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_filter_groups_for_port requires at least one GROUP")
+    endif()
+    list(FIND btstack_declared_ports "${ARG_PORT}" port_index)
+    if(port_index EQUAL -1)
+        message(FATAL_ERROR "BTstack port '${ARG_PORT}' has not been declared")
+    endif()
+
+    string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
+    set(configuration_macros
+        ${btstack_port_${port_suffix}_configuration_macros})
+    set(selected_groups)
+    foreach(group IN LISTS ARG_GROUPS)
+        btstack_collect_group_configuration_requirements(group_configuration_requirements
+            GROUPS ${group})
+        set(group_enabled TRUE)
+        foreach(configuration_requirement IN LISTS group_configuration_requirements)
+            list(FIND configuration_macros "${configuration_requirement}" configuration_index)
+            if(configuration_index EQUAL -1)
+                set(group_enabled FALSE)
+                break()
+            endif()
+        endforeach()
+        if(group_enabled)
+            list(APPEND selected_groups "${group}")
+        endif()
+    endforeach()
+    set(${output_variable} "${selected_groups}" PARENT_SCOPE)
 endfunction()
 
 function(btstack_collect_group_paths output_variable)
@@ -958,18 +1038,10 @@ function(btstack_filter_examples_for_port output_variable)
         if(supported)
             btstack_resolve_example_for_port(${ARG_PORT} ${example}
                 example_groups example_configuration_requirements)
-            foreach(group IN LISTS example_groups)
-                string(REPLACE "-" "_" group_suffix "${group}")
-                list(APPEND example_configuration_requirements
-                    ${btstack_group_configuration_requirements_${group_suffix}})
-                if(group MATCHES "^classic(-|$)")
-                    list(APPEND example_configuration_requirements
-                        ${btstack_group_configuration_requirements_core_classic})
-                elseif(group STREQUAL "ble")
-                    list(APPEND example_configuration_requirements
-                        ${btstack_group_configuration_requirements_core_le})
-                endif()
-            endforeach()
+            btstack_collect_group_configuration_requirements(group_configuration_requirements
+                GROUPS ${example_groups})
+            list(APPEND example_configuration_requirements
+                ${group_configuration_requirements})
             list(REMOVE_DUPLICATES example_configuration_requirements)
             foreach(configuration_requirement IN LISTS example_configuration_requirements)
                 list(FIND configuration_macros "${configuration_requirement}" configuration_index)
@@ -1184,9 +1256,12 @@ function(btstack_add_scoped_example_library)
         example_port_public_include_directories ${ARG_PORT} ${ARG_EXAMPLE})
     btstack_collect_example_port_sources(example_port_sources
         ${ARG_PORT} ${ARG_EXAMPLE})
+    btstack_filter_groups_for_port(active_base_groups
+        PORT ${ARG_PORT}
+        GROUPS ${ARG_BASE_GROUPS})
     set(requested_library_groups
         ${example_groups}
-        ${ARG_BASE_GROUPS}
+        ${active_base_groups}
     )
     btstack_resolve_groups(library_groups GROUPS ${requested_library_groups})
     btstack_collect_include_directories(example_include_directories
