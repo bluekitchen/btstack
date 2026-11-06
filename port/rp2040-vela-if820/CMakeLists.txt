@@ -18,8 +18,14 @@ target_sources(pico_btstack_hci_transport_h4 INTERFACE
 
 # port specific source files
 pico_add_library(vela_port NOFLAG)
+target_include_directories(vela_port INTERFACE
+    ${PICO_BTSTACK_PATH}/3rd-party/hxcmod-player
+)
 target_sources(vela_port INTERFACE
     ${PICO_BTSTACK_PATH}/platform/embedded/btstack_audio_embedded.c
+    ${PICO_BTSTACK_PATH}/src/btstack_audio_generator.c
+    ${PICO_BTSTACK_PATH}/src/btstack_audio_player.c
+    ${PICO_BTSTACK_PATH}/src/btstack_audio_song.c
     btstack_chunk_buffer.c
     hal_audio_tinyusb.c
     hal_uart_dma_pico.c
@@ -33,8 +39,8 @@ target_sources(vela_port INTERFACE
 include(${PICO_BTSTACK_PATH}/example/CMakeLists.txt)
 set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
 list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "mesh_node_demo" "hsp_ag_demo" "hsp_hs_demo" "hfp_ag_demo" "hfp_hf_demo" "led_demo")
-set (EXAMPLES_MODPLAYER "a2dp_source_demo" "mod_player")
+list(REMOVE_ITEM EXAMPLES "mesh_node_demo" "hsp_ag_demo" "hsp_hs_demo" "hfp_ag_demo" "hfp_hf_demo" "led_counter")
+set (EXAMPLES_MODPLAYER "a2dp_source_demo" "audio_player" "mod_player")
 set (EXAMPLES_SBC "a2dp_source_demo" "a2dp_sink_demo")
 
 foreach(EXAMPLE ${EXAMPLES})
@@ -49,6 +55,12 @@ foreach(EXAMPLE ${EXAMPLES})
         ${PICO_BTSTACK_PATH}/example/${EXAMPLE}.c
     )
 
+    if ("audio_player" MATCHES ${EXAMPLE})
+        target_sources(${EXAMPLE} PUBLIC
+            ${PICO_BTSTACK_PATH}/example/audio_player_demo_util.c
+        )
+    endif()
+
     target_compile_definitions(${EXAMPLE} PRIVATE
         # Uncomment for HCI traces
         # WANT_HCI_DUMP=1
@@ -61,6 +73,9 @@ foreach(EXAMPLE ${EXAMPLES})
         PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_BOOTSEL=1
         PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_MS_OS_20_DESCRIPTOR=1
         PICO_STDIO_USB_RESET_BOOTSEL_INTERFACE_DISABLE_MASK=0
+        # pico-sdk >= 2.3 requires the reset interface number when custom
+        # TinyUSB descriptors are used. CDC occupies interfaces 0 and 1.
+        PICO_USB_RESET_MS_OS_20_DESCRIPTOR_ITF=2
     )
 
     # create .h file from .gatt if needed
