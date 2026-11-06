@@ -10,8 +10,6 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # Get main BTstack CMake helper
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-
 # Set up port
 btstack_declare_port(libusb)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
@@ -48,46 +46,27 @@ btstack_declare_port_provider(libusb
 )
 
 # Use the C preprocessor to obtain the effective BTstack configuration macros.
-# This lets future resolver work use the same conditional configuration that
+# This lets the resolver use the same conditional configuration that
 # compilation sees, without requiring btstack_config.h to be generated.
-set(BTSTACK_CONFIG_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-    "${BTSTACK_CONFIG_HEADER}"
-    "${BTSTACK_ROOT}/tool/extract_btstack_config.py"
-)
-set(BTSTACK_CONFIG_PREPROCESSOR_ARGS)
+set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     # Keep this invocation consistent with add_compile_definitions above.
-    list(APPEND BTSTACK_CONFIG_PREPROCESSOR_ARGS --define HAVE_PORTAUDIO)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-execute_process(
-    COMMAND "${Python3_EXECUTABLE}" "${BTSTACK_ROOT}/tool/extract_btstack_config.py"
-        --compiler "${CMAKE_C_COMPILER}"
-        --config "${BTSTACK_CONFIG_HEADER}"
-        ${BTSTACK_CONFIG_PREPROCESSOR_ARGS}
-    RESULT_VARIABLE BTSTACK_CONFIG_PREPROCESS_RESULT
-    OUTPUT_VARIABLE BTSTACK_CONFIG_MACROS
-    ERROR_VARIABLE BTSTACK_CONFIG_PREPROCESS_ERROR
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-if(NOT BTSTACK_CONFIG_PREPROCESS_RESULT EQUAL 0)
-    message(FATAL_ERROR
-        "Could not preprocess ${BTSTACK_CONFIG_HEADER}:\n${BTSTACK_CONFIG_PREPROCESS_ERROR}")
-endif()
-if(BTSTACK_CONFIG_MACROS)
-    string(REPLACE "\n" ";" BTSTACK_CONFIG_MACROS "${BTSTACK_CONFIG_MACROS}")
-    string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
-else()
-    set(BTSTACK_CONFIG_MACROS)
-    set(BTSTACK_CONFIG_MACROS_DISPLAY "(none)")
-endif()
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_set_port_configuration_macros(libusb ${BTSTACK_CONFIG_MACROS})
+string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
 message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_DISPLAY}")
 
 
-# Get the declared examples. Feature-based filtering will be provided by the
-# future resolver; for now this port builds every declared example.
+# Get the declared examples supported by this port configuration and providers.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT libusb
+    CANDIDATES ${EXAMPLES})
 
 # Common baseline selected by the libusb port's main.c and shared by every
 # example. This dual-mode port enables BLE in btstack_config.h. All Classic
