@@ -13,7 +13,7 @@ List of ports with reason for move to this archive:
     - [MSP-EXP430F5529LP LaunchPad](https://www.ti.com/ww/en/launchpad/launchpads-msp430-msp-exp430f5529lp.html#tabs) with [Bluetooth CC2564 Module Evaluation Board](https://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](https://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
 
 - Ports for Broadcom/Cypress Controllers using HCI Transport H5: The PatchRAM cannot be uploaded via H5. This requires to upload the PatchRAM
-  using H4 mode and then to start the stack using H5 transport. In addition, several bugs have been observed in H5 mode, e.g. LE Encrypt not wokring. Unless absolutely neccessary, it's better to use H4 mode.
+  using H4 mode and then to start the stack using H5 transport. In addition, several bugs have been observed in H5 mode, e.g. LE Encrypt not working. Unless absolutely necessary, it's better to use H4 mode.
     - Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port
     - Broadcom platforms that support the WICED SDK via H5 UART, see wiced-h4
 
@@ -23,9 +23,11 @@ List of ports with reason for move to this archive:
 - iOS port:
     - BTstack on iOS is not supported anymore.
 
+- MTK: Port for RugGear Anrdroid 4.x devices with MediaTek Chipsets has become obsolete
+
 - raspi: it tries to directly access the built-in Bluetooth Controller which is wired differently with each version.
   Please use the Linux port instead which accesses the Controller via the official kernel drivers.
-- 
+ 
 - POSIX-H4-Airoc: use POSIX-H4 with flag `--airoc-download-mode` instead
  
 - POSIX-H4-Zephyr: use POSIX-H4 with option `--baud 1000000' instead
