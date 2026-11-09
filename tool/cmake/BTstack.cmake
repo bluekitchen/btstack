@@ -5,6 +5,7 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 set(btstack_config_extractor "${CMAKE_CURRENT_LIST_DIR}/../extract_btstack_config.py")
+set(btstack_list_examples_script "${CMAKE_CURRENT_LIST_DIR}/BTstackListExamples.cmake")
 set(btstack_info_script "${CMAKE_CURRENT_LIST_DIR}/BTstackInfo.cmake")
 
 # Configuration marker groups are resolver-only metadata and deliberately
@@ -1106,6 +1107,12 @@ function(btstack_add_info_targets)
             "btstack_info_${port_suffix}_${example_suffix}_include_directories")
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_INCLUDE_DIRECTORIES [==[${include_directories}]==])\n")
     endforeach()
+
+    if(NOT TARGET list-examples)
+        add_custom_target(list-examples
+            COMMAND "${CMAKE_COMMAND}" -P "${btstack_list_examples_script}"
+            COMMENT "List BTstack examples grouped by radio requirements")
+    endif()
 
     add_custom_target(port-info
         COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=port -P "${btstack_info_script}"
