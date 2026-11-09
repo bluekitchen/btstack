@@ -41,8 +41,3 @@ else()
     message(${BUILD_MESSAGE})
 endif()
 message("===\n")
-
-# custom target to list all BTstack examples
-add_custom_target(list-examples
-    COMMAND ${CMAKE_COMMAND} -D BTSTACK_ROOT=${BTSTACK_ROOT} -P ${BTSTACK_ROOT}/tool/cmake/BTstackListExamples.cmake
-)
