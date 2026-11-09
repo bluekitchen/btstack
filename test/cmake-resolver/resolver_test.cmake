@@ -6,7 +6,7 @@
 get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
 
-# btstack_declare_example writes its declarations to the caller scope. A macro
+# btstack_declare_application writes its declarations to the caller scope. A macro
 # preserves this script's scope while loading the manifest.
 macro(load_example_requirements)
     include("${BTSTACK_ROOT}/example/requirements.cmake")
@@ -47,14 +47,14 @@ else()
     macro(declare_test_audio_port)
         btstack_declare_port(test-audio)
         btstack_set_port_configuration_macros(test-audio ENABLE_BLE)
-        btstack_declare_port_provider(test-audio
+        btstack_declare_port_capability(test-audio
             CAPABILITY audio
             GROUPS platform-posix-audio-portaudio)
     endmacro()
     declare_test_audio_port()
     macro(declare_test_led_port)
         btstack_declare_port(test-led)
-        btstack_declare_port_provider(test-led
+        btstack_declare_port_capability(test-led
             CAPABILITY led
             PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
     endmacro()

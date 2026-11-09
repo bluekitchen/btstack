@@ -20,9 +20,9 @@ btstack_add_firmware_download(
     SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}")
 
 add_compile_definitions(HAVE_SDL2)
-btstack_declare_port_provider(web-h4 CAPABILITY audio
+btstack_declare_port_capability(web-h4 CAPABILITY audio
     GROUPS platform-posix-audio-sdl2)
-btstack_declare_port_provider(web-h4 CAPABILITY led
+btstack_declare_port_capability(web-h4 CAPABILITY led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
 btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS

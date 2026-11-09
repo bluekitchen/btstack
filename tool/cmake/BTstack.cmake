@@ -730,22 +730,22 @@ function(btstack_target_warnings target)
     target_compile_options(${target} PRIVATE ${warnings})
 endfunction()
 
-# Register the declarative requirements for one BTstack example.
+# Register the declarative requirements for a BTstack application.
 #
 # The declaration does not configure features or create a target. Port build
 # configuration selects the source closure and validates configuration
 # requirements before it creates a target.
 #
 # Usage:
-#   btstack_declare_example(gatt_counter
+#   btstack_declare_application(gatt_counter
 #       SOURCES gatt_counter.c
 #       GATT_DB gatt_counter.gatt
 #       NEEDS ble ENABLE_LE_PERIPHERAL)
-function(btstack_declare_example example)
+function(btstack_declare_application example)
     cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS" ${ARGN})
 
     if(NOT ARG_SOURCES)
-        message(FATAL_ERROR "btstack_declare_example(${example}) requires SOURCES")
+        message(FATAL_ERROR "btstack_declare_application(${example}) requires SOURCES")
     endif()
 
     list(FIND btstack_declared_examples "${example}" example_index)
@@ -830,10 +830,10 @@ endfunction()
 # Header-only capabilities are supported as well.
 #
 # Usage:
-#   btstack_declare_port_provider(libusb
+#   btstack_declare_port_capability(libusb
 #       CAPABILITY audio
 #       GROUPS platform-posix-audio-portaudio)
-function(btstack_declare_port_provider port)
+function(btstack_declare_port_capability port)
     cmake_parse_arguments(ARG "" "CAPABILITY" "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES" ${ARGN})
 
     list(FIND btstack_declared_ports "${port}" port_index)
@@ -841,11 +841,11 @@ function(btstack_declare_port_provider port)
         message(FATAL_ERROR "BTstack port '${port}' must be declared before its providers")
     endif()
     if(NOT ARG_CAPABILITY)
-        message(FATAL_ERROR "btstack_declare_port_provider(${port}) requires CAPABILITY")
+        message(FATAL_ERROR "btstack_declare_port_capability(${port}) requires CAPABILITY")
     endif()
     if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES)
         message(FATAL_ERROR
-            "btstack_declare_port_provider(${port}) requires GROUPS, SOURCES, or PUBLIC_INCLUDE_DIRECTORIES")
+            "btstack_declare_port_capability(${port}) requires GROUPS, SOURCES, or PUBLIC_INCLUDE_DIRECTORIES")
     endif()
 
     foreach(group IN LISTS ARG_GROUPS)

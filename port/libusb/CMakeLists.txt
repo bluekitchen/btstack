@@ -34,16 +34,41 @@ pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
     message("HAVE_PORTAUDIO")
     add_compile_definitions(HAVE_PORTAUDIO)
-    btstack_declare_port_provider(libusb
+    btstack_declare_port_capability(libusb
         CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 endif()
-btstack_declare_port_provider(libusb
+btstack_declare_port_capability(libusb
     CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"
 )
+
+
+# Common baseline selected by the libusb port's main.c and shared by every
+# example. This dual-mode port enables BLE in btstack_config.h. All Classic
+# examples support pairing, and cross-transport key derivation requires SM.
+set(BTSTACK_LIBUSB_GROUPS
+        platform-posix-run-loop
+        platform-posix-signal
+        platform-posix-stdin
+        ble
+        le-device-db-tlv
+        link-key-db-tlv
+        tlv-none
+        platform-posix-tlv
+        platform-posix-hci-dump
+        platform-libusb-h2
+        chipset-realtek
+        chipset-zephyr
+        third-party-micro-ecc
+        third-party-rijndael
+)
+if(PORTAUDIO_FOUND)
+    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
+    list(APPEND BTSTACK_LIBUSB_GROUPS platform-posix-audio-portaudio)
+endif()
 
 # Use the C preprocessor to obtain the effective BTstack configuration macros.
 # This lets the resolver use the same conditional configuration that
@@ -62,35 +87,19 @@ message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_D
 
 
 # Get the declared examples supported by this port configuration and providers.
-include(${BTSTACK_ROOT}/example/requirements.cmake)
+# include(${BTSTACK_ROOT}/example/requirements.cmake)
+
+btstack_declare_application(gatt_counter
+        SOURCES gatt_counter.c
+        GATT_DB gatt_counter.gatt
+        NEEDS gatt-server ENABLE_LE_PERIPHERAL
+)
+
 set(EXAMPLES ${btstack_declared_examples})
 btstack_filter_examples_for_port(EXAMPLES
     PORT libusb
     CANDIDATES ${EXAMPLES})
 
-# Common baseline selected by the libusb port's main.c and shared by every
-# example. This dual-mode port enables BLE in btstack_config.h. All Classic
-# examples support pairing, and cross-transport key derivation requires SM.
-set(BTSTACK_LIBUSB_GROUPS
-    platform-posix-run-loop
-    platform-posix-signal
-    platform-posix-stdin
-    ble
-    le-device-db-tlv
-    link-key-db-tlv
-    tlv-none
-    platform-posix-tlv
-    platform-posix-hci-dump
-    platform-libusb-h2
-    chipset-realtek
-    chipset-zephyr
-    third-party-micro-ecc
-    third-party-rijndael
-)
-if(PORTAUDIO_FOUND)
-    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
-    list(APPEND BTSTACK_LIBUSB_GROUPS platform-posix-audio-portaudio)
-endif()
 # Every selected example is defined with its resolved source closure. EXAMPLES
 # is derived from the shared requirements manifest and any port exclusions.
 foreach(EXAMPLE IN LISTS EXAMPLES)

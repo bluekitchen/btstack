@@ -14,9 +14,9 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-h4)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
 add_compile_definitions(HAVE_PORTAUDIO)
-btstack_declare_port_provider(qt-h4 CAPABILITY audio
+btstack_declare_port_capability(qt-h4 CAPABILITY audio
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
-btstack_declare_port_provider(qt-h4 CAPABILITY led
+btstack_declare_port_capability(qt-h4 CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 

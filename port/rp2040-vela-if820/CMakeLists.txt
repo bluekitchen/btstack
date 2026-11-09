@@ -27,7 +27,7 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(rp2040-vela-if820)
 btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
     ROOT "${BTSTACK_ROOT}")
-btstack_declare_port_provider(rp2040-vela-if820
+btstack_declare_port_capability(rp2040-vela-if820
     CAPABILITY audio
     PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
 
