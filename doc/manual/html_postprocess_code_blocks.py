@@ -60,21 +60,10 @@ def main(argv):
             fout.write(postprocess_code_blocks(html, protect_arrow_operators=protect_arrow_operators))
         return
         
-    html_path = htmlfolder + "examples/"
-    html_tmppath = htmlfolder + "examples/tmp/"
-
-    html_in  = html_path + "examples/index.html"
-    html_tmp = html_tmppath + "index.html"
-    references = pickle.load(open( "references.p", "rb" ))
-
-    Path(html_tmppath).mkdir(parents=True, exist_ok=True)
-    
-    with open(html_in, 'r') as fin:
-        with open(html_tmp, 'w') as fout:
-            fout.write(postprocess_code_blocks(fin.read(), references=references))
-    
-    shutil.copyfile(html_tmp, html_in)
-    shutil.rmtree(html_tmppath)
+    references = pickle.load(open("references.p", "rb"))
+    for html_file in Path(htmlfolder, "examples").glob("*/index.html"):
+        html = html_file.read_text()
+        html_file.write_text(postprocess_code_blocks(html, references=references))
 
 if __name__ == "__main__":
    main(sys.argv[1:])

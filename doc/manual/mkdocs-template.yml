@@ -2,7 +2,9 @@ site_name: BTstack Manual VERSION
 site_dir: btstack
 site_description: 'MkDocs theme focused on navigation and usability.'
 
-theme: windmill
+theme:
+  name: windmill
+  custom_dir: theme
 
 # This should be renamed to nav for mkdocs 1.0+
 nav:

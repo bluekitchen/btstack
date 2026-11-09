@@ -158,6 +158,7 @@ def process_file(mk_file, markdownfolder, mkdocsfolder, githuburl):
                 mdout.write(line)
 
 def main(argv):
+    global gitbranchname
     markdownfolder = "docs-markdown/"
     mkdocsfolder = "docs/"
     
@@ -190,31 +191,20 @@ def main(argv):
     githuburl = githuburl + gitbranchname
     print('GITHUB URL:       %s\n' % githuburl)
 
-    yml_file = "mkdocs.yml"
-    
-    with open(yml_file, 'r') as yin:
-        doc = yaml.load(yin, Loader=yaml.SafeLoader)
-        
-        # page is either:
-        # - {title: filepath} dictionary for a direcr yml reference (e.g.  - 'Welcome': index.md), or
-        # - {navigation_group_title: [{title: filepath}, ...] } dictionary for a navigation group 
-        for page in doc["nav"]:    
-            
-            # navigation_group_filepath is either:
-            # - filepath string for a direcr yml reference (e.g.  - 'Welcome': index.md), or
-            # - list of [{title: filepath}, ...] dictionaries for each item in navigation group 
-            navigation_group_filepath = list(page.values())[0]
+    # Process both the split HTML pages and the combined PDF pages.
+    files = set()
+    for yml_file in ("mkdocs.yml", "mkdocs-latex.yml"):
+        with open(yml_file) as yin:
+            doc = yaml.safe_load(yin)
+        for page in doc["nav"]:
+            value = list(page.values())[0]
+            if isinstance(value, str):
+                files.add(value)
+            elif isinstance(value, list):
+                files.update(list(item.values())[0] for item in value)
+    for filepath in sorted(files):
+        process_file(filepath, markdownfolder, mkdocsfolder, githuburl)
 
-            if type(navigation_group_filepath) == str:
-                process_file(navigation_group_filepath, markdownfolder, mkdocsfolder, githuburl)
-                continue
-
-            if type(navigation_group_filepath) == list:
-                for file_description_dict in navigation_group_filepath:
-                    filepath = list(file_description_dict.values())[0]
-                    process_file(filepath, markdownfolder, mkdocsfolder, githuburl)
-                continue
-            
                 
 if __name__ == "__main__":
    main(sys.argv[1:])

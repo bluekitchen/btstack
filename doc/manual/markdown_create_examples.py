@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os, sys, getopt, re
 import subprocess
+import io
+from markdown_navigation import update_navigation
 
 
 
@@ -343,6 +345,10 @@ def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name
             aout.write("\n")
         aout.write("\n")
 
+        aout.flush()
+        with open(examples_ofile) as index_file:
+            index_text = index_file.read()
+        nav_entries = []
         emitted_examples = set()
         for group_title in list_of_groups:
             if not group_title in list_of_examples: continue
@@ -353,7 +359,19 @@ def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name
                     continue
                 emitted_examples.add(example[0])
                 file_name = examples_folder + example[0] + ".c"
-                writeListings(aout, file_name, example[0].replace("_",""), git_branch_name)
+                page = io.StringIO()
+                writeListings(page, file_name, example[0].replace("_", ""), git_branch_name)
+                content = page.getvalue()
+                aout.write(content)
+                with open(os.path.join(os.path.dirname(examples_ofile), example[0] + ".md"), "w") as output:
+                    output.write(content)
+                label = example[0].replace("_", "")
+                index_text = index_text.replace("(#sec:" + label + "Example)", "(" + example[0] + ".md#sec:" + label + "Example)")
+                nav_entries.append((example[0], "examples/" + example[0] + ".md"))
+
+    with open(os.path.join(os.path.dirname(examples_ofile), "examples.md"), "w") as index_file:
+        index_file.write(index_text)
+    update_navigation("Examples", "examples/examples.md", "examples/all.md", nav_entries)
 
 
 def main(argv):
@@ -381,7 +399,7 @@ def main(argv):
 
     examples_folder    = btstackfolder + "example/"
     examples_introfile = templatefolder + "examples_intro.md"
-    outputfile         = markdownfolder + "examples/examples.md"
+    outputfile         = markdownfolder + "examples/all.md"
 
     print ('Input folder: ', examples_folder)
     print ('Intro file:   ', examples_introfile)

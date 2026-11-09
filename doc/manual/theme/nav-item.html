@@ -1,0 +1,21 @@
+<li class="wm-toc-li wm-toc-lev{{ navlevel }} {% if nav_item.children %}wm-toc-opener{% endif %}">
+  {%- if nav_item.title in ['Examples', 'Existing Ports'] and nav_item.children -%}
+    <a href="{{ nav_item.children[0].url }}" class="wm-toc-text">{{ nav_item.title }}</a>
+  {%- elif nav_item.url or nav_item.is_page or nav_item.is_link or nav_item.url -%}
+    <a href="{{ nav_item.url }}" class="wm-article-link wm-toc-text">{{ nav_item.title }}</a>
+  {%- else -%}
+    <span class="wm-toc-text">{{ nav_item.title }}</span>
+  {%- endif %}
+</li>
+
+{%- if nav_item.children %}
+<li class="wm-toc-li-nested collapse">
+  <ul class="wm-toctree">
+    {%- set navlevel = navlevel + 1%}
+    {%- for nav_item in nav_item.children %}
+      {% include 'nav-item.html' %}
+    {%- endfor %}
+    {%- set navlevel = navlevel - 1%}
+  </ul>
+</li>
+{% endif %}

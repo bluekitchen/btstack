@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import sys, os, shutil, re,  getopt
+import io
+from markdown_navigation import update_navigation
 
 blacklist = []
 
@@ -58,7 +60,12 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
         fin.close()
         ports.write("\n\n")
 
+        ports.flush()
+        with open(ports_file) as index_file:
+            index_text = index_file.read()
+        nav_entries = []
         for readme_dir, readme_file in ordered_readmes:
+            page = io.StringIO()
             found_port_title = False
             with open(readme_file, 'r') as fin:
                 for line in fin:
@@ -71,12 +78,22 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                         # a port title as continuation text of the prior port.
                         # Only the README title receives the stable port anchor.
                         if level == 1 and not found_port_title:
-                            ports.write("\n## " + title + " {#sec:" + readme_dir + "Port}\n\n")
+                            page.write("\n## " + title + " {#sec:" + readme_dir + "Port}\n\n")
+                            nav_entries.append((title, "ports/" + readme_dir + ".md"))
                             found_port_title = True
                         else:
-                            ports.write("\n" + "#" * (level + 1) + " " + title + "\n\n")
+                            page.write("\n" + "#" * (level + 1) + " " + title + "\n\n")
                     else:
-                        ports.write(line)
+                        page.write(line)
+            content = page.getvalue()
+            ports.write(content)
+            with open(os.path.join(ports_folder, readme_dir + ".md"), "w") as output:
+                output.write(content)
+            index_text = index_text.replace("(#sec:" + readme_dir + "Port)", "(" + readme_dir + ".md#sec:" + readme_dir + "Port)")
+
+        with open(os.path.join(ports_folder, "existing_ports.md"), "w") as index_file:
+            index_file.write(index_text)
+        update_navigation("Existing Ports", "ports/existing_ports.md", "ports/all.md", nav_entries)
 
         # copy images
         for image_filename, image_path in images.items():
@@ -113,7 +130,7 @@ def main(argv):
     inputfolder = btstackfolder   + "port/"
     portsfolder = markdownfolder      + "ports/"
     introfile   = templatefolder + "ports_intro.md"
-    outputfile  = portsfolder     + "existing_ports.md"
+    outputfile  = portsfolder     + "all.md"
 
     print ('Input folder: ', inputfolder)
     print ('Intro file:   ', introfile)

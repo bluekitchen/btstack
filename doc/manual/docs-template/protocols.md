@@ -641,7 +641,7 @@ application such that it can manage its receive buffers explicitly, see
 Listing [below](#lst:explicitFlowControl).
 
 Manual credit management is recommended when received RFCOMM data cannot
-be processed immediately. In the [SPP flow control example](../examples/examples/#sec:sppflowcontrolExample), 
+be processed immediately. In the [SPP flow control example](examples/spp_flowcontrol.md#sec:sppflowcontrolExample),
 delayed processing of received data is
 simulated with the help of a periodic timer. To provide new credits, you
 call the *rfcomm_grant_credits* function with the RFCOMM channel ID
