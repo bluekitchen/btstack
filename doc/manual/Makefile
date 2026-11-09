@@ -96,9 +96,7 @@ pdf: docs
 	qpdf latex/btstack_generated.pdf --pages latex/btstack_gettingstarted.pdf 1 latex/btstack_generated.pdf -- btstack.pdf
 
 preview: docs
-	# race condition, open browser before starting MKdocs server
-	open http://127.0.0.1:8010
-	mkdocs serve -a localhost:8010
+	mkdocs serve --open -a localhost:8010
 
 clean:
 	rm -rf ${MARKDOWN_FOLDER} ${LATEX_FOLDER} ${HTML_FOLDER} ${MKDOCS_FOLDER}
