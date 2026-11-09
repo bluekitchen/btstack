@@ -9,6 +9,9 @@ blacklist = []
 port_item = """
 - [PORT_TITLE](#sec:PORT_LABELPort)"""
 
+def navigation_title(title):
+    return title.removeprefix("BTstack Port for ")
+
 def get_readme_title(example_path):
     title = ''
     with open(example_path, 'r') as fin:
@@ -55,7 +58,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                     title_parts = re.match(r'(#\s+)(.*)\n',line)
                     if title_parts:
                         title = title_parts.group(2)
-                        ports.write(port_item.replace("PORT_TITLE", title).replace("PORT_LABEL", readme_dir))
+                        ports.write(port_item.replace("PORT_TITLE", navigation_title(title)).replace("PORT_LABEL", readme_dir))
                         break
         fin.close()
         ports.write("\n\n")
@@ -79,14 +82,18 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                         # Only the README title receives the stable port anchor.
                         if level == 1 and not found_port_title:
                             page.write("\n## " + title + " {#sec:" + readme_dir + "Port}\n\n")
-                            nav_entries.append((title, "ports/" + readme_dir + ".md"))
+                            nav_entries.append((navigation_title(title), "ports/" + readme_dir + ".md"))
                             found_port_title = True
                         else:
                             page.write("\n" + "#" * (level + 1) + " " + title + "\n\n")
                     else:
                         page.write(line)
             content = page.getvalue()
-            ports.write(content)
+            # The combined PDF uses these headings for its table of contents.
+            pdf_content = re.sub(
+                r"(\n## )BTstack Port for ([^\n]* \{#sec:" + re.escape(readme_dir) + r"Port\})",
+                r"\1\2", content, count=1)
+            ports.write(pdf_content)
             with open(os.path.join(ports_folder, readme_dir + ".md"), "w") as output:
                 output.write(content)
             index_text = index_text.replace("(#sec:" + readme_dir + "Port)", "(" + readme_dir + ".md#sec:" + readme_dir + "Port)")
