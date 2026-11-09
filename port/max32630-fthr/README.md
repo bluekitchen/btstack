@@ -1,4 +1,4 @@
-# BTstack Port for the Maxim MAX32630FTHR ARM Cortex-M4F
+# BTstack Port for Maxim MAX32630FTHR ARM Cortex-M4F
 
 This port uses the [MAX32630FTHR ARM Cortex M4F Board](https://www.maximintegrated.com/en/products/microcontrollers/MAX32630FTHR.html) with the onboard TI CC2564B Bluetooth controller. It usually comes with the [DAPLINK Programming Adapter](https://developer.mbed.org/teams/MaximIntegrated/wiki/MAXREFDES100HDK). 
 The DAPLINK allows to upload firmware via a virtual mass storage device (like mbed), provides a virtual COM port for a console, and enables debugging via the SWD interface via OpenOCD.

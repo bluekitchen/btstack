@@ -1,4 +1,4 @@
-# BTstack on Web using WebSerial
+# BTstack Port for Web using WebSerial
 
 This ports compiles BTstack into WebAssembly and allows to run it in a Chrome-based Browser.
 It communicates to the Bluetooth Controller via the WebSerial API.

@@ -1,4 +1,4 @@
-# BTstack Port for the Espressif ESP32 Platform
+# BTstack Port for Espressif ESP32 Platform
 
 This port integrates BTstack with Espressif's ESP-IDF on supported ESP32 targets.
 
