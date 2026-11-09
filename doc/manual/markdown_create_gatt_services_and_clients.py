@@ -28,7 +28,7 @@ description_template = """
 
 description_api = """
 
-See [NAME API](appendix/apis.md#API_REFERENCE).
+See [NAME API](appendix/API_FILE.md#API_REFERENCE).
 
 """
 
@@ -92,7 +92,7 @@ def process_file(basename, inputfile_path, outputfile_path):
     name = handle_abrevations(basename)
     
     title = description_template.replace("NAME", name).replace("REFERENCE", reference)
-    api  = description_api.replace("NAME", name).replace("API_REFERENCE", api_reference)
+    api  = description_api.replace("NAME", name).replace("API_FILE", basename).replace("API_REFERENCE", api_reference)
     
     text_block = ""
     with open(inputfile_path, 'r') as fin:

@@ -467,7 +467,7 @@ If the run loop allows to trigger polling of data sources from interrupt context
 On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS,
 *btstack_run_loop_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
 
-The complete Run loop API is provided [here](appendix/apis.md#sec:btstack_run_loop_api).
+The complete Run loop API is provided [here](appendix/btstack_run_loop.md#sec:btstack_run_loop_api).
 
 
 ### Run Loop Embedded

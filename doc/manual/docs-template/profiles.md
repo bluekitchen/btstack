@@ -403,9 +403,9 @@ Typical HID hosts would be a personal computer, tablets, gaming console, industr
 
 Please refer to:
 
-- [HID Host API](appendix/apis.md#sec:hid_host_api) and [hid_host_demo](examples/hid_host_demo.md#sec:hidhostdemoExample) for the HID Host role
+- [HID Host API](appendix/hid_host.md#sec:hid_host_api) and [hid_host_demo](examples/hid_host_demo.md#sec:hidhostdemoExample) for the HID Host role
 
-- [HID Device API](appendix/apis.md#sec:hid_device_api), [hid_keyboard_demo](examples/hid_keyboard_demo.md#sec:hidkeyboarddemoExample) and [hid_mouse_demo](examples/hid_mouse_demo.md#sec:hidmousedemoExample)  for the HID Device role.
+- [HID Device API](appendix/hid_device.md#sec:hid_device_api), [hid_keyboard_demo](examples/hid_keyboard_demo.md#sec:hidkeyboarddemoExample) and [hid_mouse_demo](examples/hid_mouse_demo.md#sec:hidmousedemoExample)  for the HID Device role.
 
 
 ## GAP LE - Generic Access Profile for Low Energy
@@ -686,7 +686,7 @@ The following code snippet shows how to perform write without response.
 
 
 For more details on the available GATT queries, please consult
-[GATT Client API](appendix/apis.md#sec:gatt_client_api).
+[GATT Client API](appendix/gatt_client.md#sec:gatt_client_api).
 
 
 #### GATT Client Caching

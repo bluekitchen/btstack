@@ -67,9 +67,7 @@ def postprocess_file(markdown_filepath, fout, title):
             # remove path from section reference
             # e.g. [the SPP Counter example](examples/generated/#sec:sppcounterExample)
             # replace with [the SPP Counter example](#sec:sppcounterExample)
-            section_ref = re.match(r'.*\(((.*)(#sec:.*))\).*',line)
-            if section_ref:
-                line = line.replace(section_ref.group(2),"")
+            line = re.sub(r'\([^()\s#]*?(#sec:[^()\s]+)\)', r'(\1)', line)
             fout.write(line)
 
 def main(argv):

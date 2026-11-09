@@ -779,7 +779,7 @@ record.
 ### Query remote SDP service {#sec:querySDPProtocols}
 
 BTstack provides an SDP client to query SDP services of a remote device.
-The SDP Client API is shown [here](appendix/apis.md#sec:sdp_client_api). The
+The SDP Client API is shown [here](appendix/sdp_client.md#sec:sdp_client_api). The
 *sdp_client_query* function initiates an L2CAP connection to the
 remote SDP server. Upon connect, a *Service Search Attribute* request
 with a *Service Search Pattern* and a *Attribute ID List* is sent. The
