@@ -69,7 +69,7 @@ if(CONFIG_BTSTACK_AUDIO)
     # The audio implementation is part of the port baseline because
     # btstack_port_esp32.c installs it whenever this Kconfig option is set.
     # The provider declaration only describes example availability.
-    btstack_declare_port_provider(esp32
+    btstack_declare_port_capability(esp32
         CAPABILITY audio
         PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include")
 endif()

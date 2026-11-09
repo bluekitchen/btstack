@@ -23,13 +23,13 @@ if (PkgConfig_FOUND)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
         add_compile_definitions(HAVE_PORTAUDIO)
-        btstack_declare_port_provider(posix-h4-nxp
+        btstack_declare_port_capability(posix-h4-nxp
             CAPABILITY audio
             GROUPS platform-posix-audio-portaudio platform-posix-wav
         )
     endif()
 endif()
-btstack_declare_port_provider(posix-h4-nxp
+btstack_declare_port_capability(posix-h4-nxp
     CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"

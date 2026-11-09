@@ -22,19 +22,19 @@ find_package(ALSA)
 if(PORTAUDIO_FOUND)
     message("PortAudio audio port selected")
     add_compile_definitions(HAVE_PORTAUDIO)
-    btstack_declare_port_provider(linux
+    btstack_declare_port_capability(linux
         CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 elseif(ALSA_FOUND)
     message("ALSA audio port selected")
     add_compile_definitions(HAVE_ALSA)
-    btstack_declare_port_provider(linux
+    btstack_declare_port_capability(linux
         CAPABILITY audio
         GROUPS platform-linux-audio-alsa platform-posix-wav
     )
 endif()
-btstack_declare_port_provider(linux
+btstack_declare_port_capability(linux
     CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"

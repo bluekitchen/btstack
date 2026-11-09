@@ -15,10 +15,10 @@ pkg_check_modules(PORTAUDIO portaudio-2.0)
 set(SOURCES_PORT main.c)
 if(PORTAUDIO_FOUND)
     add_compile_definitions(HAVE_PORTAUDIO)
-    btstack_declare_port_provider(libusb-intel CAPABILITY audio
+    btstack_declare_port_capability(libusb-intel CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav)
 endif()
-btstack_declare_port_provider(libusb-intel CAPABILITY led
+btstack_declare_port_capability(libusb-intel CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
