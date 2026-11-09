@@ -7,6 +7,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 set(btstack_config_extractor "${CMAKE_CURRENT_LIST_DIR}/../extract_btstack_config.py")
 set(btstack_list_examples_script "${CMAKE_CURRENT_LIST_DIR}/BTstackListExamples.cmake")
 set(btstack_info_script "${CMAKE_CURRENT_LIST_DIR}/BTstackInfo.cmake")
+set(btstack_group_graph_script "${CMAKE_CURRENT_LIST_DIR}/BTstackGroupGraph.cmake")
 
 # Configuration marker groups are resolver-only metadata and deliberately
 # stay out of the generated source catalog.
@@ -1077,6 +1078,22 @@ function(btstack_add_info_targets)
     cmake_parse_arguments(ARG "" "PORT" "" ${ARGN})
     if(NOT ARG_PORT)
         message(FATAL_ERROR "btstack_add_info_targets requires PORT")
+    endif()
+    if(NOT TARGET group-graph)
+        find_program(BTSTACK_GRAPHVIZ_DOT dot)
+        set(graph_output "${CMAKE_CURRENT_BINARY_DIR}/btstack-groups.dot")
+        set(graph_arguments "-DOUTPUT_FILE=${graph_output}")
+        set(graph_byproducts "${graph_output}")
+        if(BTSTACK_GRAPHVIZ_DOT)
+            list(APPEND graph_arguments "-DSVG_FILE=${CMAKE_CURRENT_BINARY_DIR}/btstack-groups.svg"
+                "-DBTSTACK_GRAPHVIZ_DOT=${BTSTACK_GRAPHVIZ_DOT}")
+            list(APPEND graph_byproducts "${CMAKE_CURRENT_BINARY_DIR}/btstack-groups.svg")
+        endif()
+        add_custom_target(group-graph
+            COMMAND "${CMAKE_COMMAND}" ${graph_arguments} -P "${btstack_group_graph_script}"
+            BYPRODUCTS ${graph_byproducts}
+            COMMENT "Export all BTstack resolver group dependencies"
+            VERBATIM)
     endif()
     string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
     get_property(examples GLOBAL PROPERTY "btstack_info_${port_suffix}_examples")
