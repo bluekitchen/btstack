@@ -62,7 +62,6 @@
 #include "btstack_stdin_windows.h"
 #include "btstack_tlv_windows.h"
 #include "classic/btstack_link_key_db_tlv.h"
-#include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_dump_windows_fs.h"
@@ -123,12 +122,6 @@ static void trigger_shutdown(void){
     log_info("sigint_handler: shutting down");
     shutdown_triggered = true;
     hci_power_control(HCI_POWER_OFF);
-}
-
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
 }
 
 
