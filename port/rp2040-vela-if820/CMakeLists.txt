@@ -47,6 +47,13 @@ foreach(EXAMPLE ${EXAMPLES})
 
     add_executable(${EXAMPLE})
 
+    # provide Ozone project file
+    configure_file(
+        ${CMAKE_CURRENT_LIST_DIR}/rp2040-jdebug-template
+        ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug
+        @ONLY
+    )
+
     target_include_directories(${EXAMPLE} PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
     )
