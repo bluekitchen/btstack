@@ -19,6 +19,7 @@ C_SOURCES = \
   $(SDK_ROOT)/components/boards/boards.c \
   $(PROJ_DIR)/main.c \
   $(PROJ_DIR)/port/hal_timer_nrf5.c \
+  $(PROJ_DIR)/port/syscalls.c \
   $(PROJ_DIR)/port/ll_nrf5.c \
   $(PROJ_DIR)/port/radio_nrf5.c \
   ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
