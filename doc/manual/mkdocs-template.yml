@@ -21,6 +21,7 @@ nav:
   - 'Porting to Other Platforms': porting.md
   - 'Existing Ports': ports/existing_ports.md
   - 'Integrating with Existing Systems': integration.md
+  - 'CMake Integration': cmake.md
   - 'APIs':
   - 'Events and Errors': appendix/events_errors.md
   - 'Migration to v1.0': appendix/migration.md
