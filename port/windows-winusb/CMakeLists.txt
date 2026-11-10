@@ -1,122 +1,95 @@
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required(VERSION 3.18)
 
 project(BTstack-windows-winusb)
 
-SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
+set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
-# extra compiler warnings
-if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
-    # using Clang
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror")
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    # using GCC
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror")
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
-    # using Intel C++
-elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
-    # using Visual Studio C++
-endif()
+include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
+btstack_declare_port(windows-winusb)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
+    ROOT "${BTSTACK_ROOT}")
 
-# to generate .h from .gatt files
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+set(SOURCES_PORT main.c)
 
-# local dir for btstack_config.h after build dir to avoid using .h from Makefile
-include_directories(.)
-
-include_directories(../../3rd-party/bluedroid/decoder/include)
-include_directories(../../3rd-party/bluedroid/encoder/include)
-include_directories(../../3rd-party/micro-ecc)
-include_directories(../../3rd-party/lc3-google/include)
-include_directories(../../3rd-party/md5)
-include_directories(../../3rd-party/hxcmod-player)
-include_directories(../../3rd-party/hxcmod-player/mod)
-include_directories(../../3rd-party/rijndael)
-include_directories(../../3rd-party/yxml)
-include_directories(../../src)
-include_directories(../../chipset/zephyr)
-include_directories(../../platform/embedded)
-include_directories(../../platform/posix)
-include_directories(../../platform/windows)
-
-file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c" "../../platform/posix/wav_util.c")
-file(GLOB SOURCES_BLUEDROID "../../3rd-party/bluedroid/encoder/srce/*.c" "../../3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
-file(GLOB SOURCES_BLE       "../../src/ble/*.c")
-file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
-file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
-file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_WINDOWS   "../../platform/windows/*.c")
-file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
-file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
-file(GLOB SOURCES_PORT      "main.c" "../../platform/posix/btstack_audio_portaudio.c")
-file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
-
-file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
-list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
-
-set(SOURCES
- ${SOURCES_BLE}
- ${SOURCES_BLUEDROID}
- ${SOURCES_CLASSIC}
- ${SOURCES_GATT}
- ${SOURCES_HXCMOD}
- ${SOURCES_MD5}
- ${SOURCES_PORT}
- ${SOURCES_RIJNDAEL}
- ${SOURCES_SRC}
- ${SOURCES_UECC}
- ${SOURCES_WINDOWS}
- ${SOURCES_YXML}
- ${SOURCES_ZEPHYR}
-)
-list(SORT SOURCES)
-
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-
-# pkgconfig
 find_package(PkgConfig QUIET)
-
-# portaudio
-if (PkgConfig_FOUND)
+if(PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
-        target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
-        target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
-        target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
         add_compile_definitions(HAVE_PORTAUDIO)
+        btstack_declare_port_capability(windows-winusb
+            CAPABILITY audio
+            GROUPS platform-posix-audio-portaudio platform-posix-wav)
     endif()
 endif()
+btstack_declare_port_capability(windows-winusb
+    CAPABILITY led
+    GROUPS platform-posix-hal-led
+    PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-# get list of examples, skipping mesh_node_demo
-include(../../example/CMakeLists.txt)
-set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})
-list(REMOVE_DUPLICATES EXAMPLES)
-list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
+set(BTSTACK_CONFIG_DEFINITIONS)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
+endif()
+btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_set_port_configuration_macros(windows-winusb ${BTSTACK_CONFIG_MACROS})
 
-# create targets
-foreach(EXAMPLE ${EXAMPLES})
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+include(${BTSTACK_ROOT}/example/requirements.cmake)
+set(EXAMPLES ${btstack_declared_examples})
+btstack_filter_examples_for_port(EXAMPLES
+    PORT windows-winusb
+    CANDIDATES ${EXAMPLES})
+list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 
-    # add GATT DB creation
-    if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
+set(BTSTACK_WINDOWS_WINUSB_BASE_GROUPS
+    ble
+    le-device-db-tlv
+    link-key-db-tlv
+    tlv-none
+    platform-windows
+    platform-winusb-h2
+    chipset-zephyr
+    third-party-micro-ecc
+    third-party-rijndael)
+if(PORTAUDIO_FOUND)
+    list(APPEND BTSTACK_WINDOWS_WINUSB_BASE_GROUPS
+        platform-posix-audio-portaudio)
+endif()
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_scoped_example_library(
+        TARGET btstack_${EXAMPLE}_library
+        ROOT "${BTSTACK_ROOT}"
+        PORT windows-winusb
+        EXAMPLE ${EXAMPLE}
+        GROUP_OBJECT_TARGET_PREFIX btstack_windows_winusb
+        BASE_GROUPS ${BTSTACK_WINDOWS_WINUSB_BASE_GROUPS}
+        PORT_SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES
+            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+            ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES setupapi winusb ${PORTAUDIO_LIBRARIES})
+
+    set(SOURCES_EXAMPLE)
+    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
+        list(APPEND SOURCES_EXAMPLE "${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE}")
+    endforeach()
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+
+    if(btstack_example_${EXAMPLE}_gatt_db)
         message("example ${EXAMPLE} -- with GATT DB")
-        add_custom_command(
-      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-   DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
-   COMMAND ${Python3_EXECUTABLE}
-   ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-  )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+        btstack_target_gatt(${EXAMPLE}
+            "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
     else()
         message("example ${EXAMPLE}")
     endif()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    target_link_libraries(${EXAMPLE} btstack setupapi winusb)
-endforeach(EXAMPLE)
+    btstack_target_warnings(${EXAMPLE} STRICT)
+    target_link_libraries(${EXAMPLE} PRIVATE btstack_${EXAMPLE}_library)
+endforeach()
+
+btstack_add_info_targets(PORT windows-winusb)

@@ -66,7 +66,6 @@
 #include "btstack_util.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "gap.h"
-#include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_dump_windows_fs.h"
@@ -87,7 +86,6 @@ static hci_transport_config_uart_t config = {
 
 int is_bcm;
 
-static int led_state = 0;
 
 #define TLV_DB_PATH_PREFIX "btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
@@ -101,11 +99,6 @@ static bd_addr_t             custom_address;
 static bool                  airoc_download_mode;
 static char                  normalized_device_name[100];
 static bool shutdown_triggered;
-
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
-}
 
 static void trigger_shutdown(void){
     printf("CTRL-C - SIGINT received, shutting down..\n");
