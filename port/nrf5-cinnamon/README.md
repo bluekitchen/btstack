@@ -23,3 +23,14 @@ All nNRF5x SOCs. Built files are provided for PCA10040 (52832 DK), but others ca
 - run make
 - All supported examples are built in the `build` folder.
 - You can use Segger's OZONE with the provided `EXAMPLE.jdebug` project file to flash and run the examples.
+
+## CMake build (PCA10040)
+
+With `arm-none-eabi-gcc`, CMake, and Python 3 on `PATH`, configure and build:
+
+```sh
+cmake -S port/nrf5-cinnamon -B build/nrf5-cinnamon -DNRF5_SDK_ROOT=/path/to/nRF5_SDK
+cmake --build build/nrf5-cinnamon
+```
+
+`NRF5_SDK_ROOT` may instead be provided as an environment variable. The build produces ELF files for `gap_le_advertisements`, `gatt_counter`, and `gatt_streamer_server`. The existing Makefile workflow remains available.
