@@ -40,7 +40,7 @@
  */
 
 #ifndef HAL_TIMER_H
-#define HCI_TIMER_H
+#define HAL_TIMER_H
 
 #include "bluetooth.h"
 
