@@ -13,6 +13,42 @@ import sys
 
 
 CONFIG_DEFINE = re.compile(r"^#define\s+((?:ENABLE|HAVE)_[A-Z0-9_]+)(?:\s|$)")
+DEFINE = re.compile(r"^\s*#define\s+([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def extract_msvc_config(config: str, definitions: list[str]) -> set[str]:
+    """Extract simple configuration-header definitions when using MSVC.
+
+    MSVC has no equivalent of GCC's ``-dM`` option.  BTstack configuration
+    headers deliberately use only straightforward #ifdef guards, so retain a
+    small conditional parser for that compiler instead of requiring Clang just
+    to configure a native Visual Studio build.
+    """
+    defined = {definition.split("=", 1)[0] for definition in definitions}
+    active = [True]
+    macros = set()
+    for raw_line in open(config, encoding="utf-8"):
+        line = raw_line.strip()
+        if line.startswith("#ifdef "):
+            active.append(active[-1] and line[7:].strip() in defined)
+            continue
+        if line.startswith("#ifndef "):
+            active.append(active[-1] and line[8:].strip() not in defined)
+            continue
+        if line.startswith("#else") and len(active) > 1:
+            parent = active[-2]
+            active[-1] = parent and not active[-1]
+            continue
+        if line.startswith("#endif") and len(active) > 1:
+            active.pop()
+            continue
+        match = DEFINE.match(line)
+        if match and active[-1]:
+            name = match.group(1)
+            defined.add(name)
+            if name.startswith(("ENABLE_", "HAVE_")):
+                macros.add(name)
+    return macros
 
 
 def main() -> int:
@@ -26,6 +62,12 @@ def main() -> int:
     parser.add_argument("--include-directory", action="append", default=[],
                         help="include directory required by the configuration")
     args = parser.parse_args()
+
+    compiler_name = args.compiler.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    if compiler_name in {"cl", "cl.exe"}:
+        for macro in sorted(extract_msvc_config(args.config, args.define)):
+            print(macro)
+        return 0
 
     command = [args.compiler]
     command.extend(f"-D{definition}" for definition in args.define)
