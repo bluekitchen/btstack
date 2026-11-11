@@ -12,7 +12,7 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-h4)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 add_compile_definitions(HAVE_PORTAUDIO)
 btstack_declare_port_capability(qt-h4 CAPABILITY audio
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
@@ -41,7 +41,7 @@ set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        TARGET btstack_${EXAMPLE}_library
         PORT qt-h4 APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_QT_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}

@@ -5,8 +5,7 @@ get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(freebsd-netgraph)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
-    ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 # main.c supplies the LED implementation and uses PortAudio when available.
 btstack_declare_port_capability(freebsd-netgraph
@@ -59,7 +58,6 @@ list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        ROOT "${BTSTACK_ROOT}"
         PORT freebsd-netgraph
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_NETGRAPH_BASE_GROUPS}

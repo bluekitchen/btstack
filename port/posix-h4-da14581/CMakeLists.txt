@@ -7,8 +7,7 @@ set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(posix-h4-da14581)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
-    ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 set(SOURCES_PORT main.c)
 
@@ -54,7 +53,6 @@ endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        ROOT "${BTSTACK_ROOT}"
         PORT posix-h4-da14581
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_POSIX_H4_LE_BASE_GROUPS}

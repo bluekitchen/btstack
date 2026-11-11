@@ -10,7 +10,7 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
 btstack_declare_port(web-h4)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 set(PATCHRAM_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}")
 btstack_add_firmware_download(
@@ -62,7 +62,7 @@ string(JOIN "," EXPORTED_FUNCTIONS_STR ${EXPORTED_FUNCTIONS})
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        TARGET btstack_${EXAMPLE}_library
         PORT web-h4 APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_WEB_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}

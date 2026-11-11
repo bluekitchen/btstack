@@ -12,9 +12,7 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 # Set up port
 btstack_declare_port(libusb)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
- ROOT "${BTSTACK_ROOT}"
-)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 # Port specific files
 set(SOURCES_PORT
     main.c
@@ -105,7 +103,6 @@ btstack_filter_examples_for_port(EXAMPLES
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        ROOT "${BTSTACK_ROOT}"
         PORT libusb
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_LIBUSB_GROUPS}

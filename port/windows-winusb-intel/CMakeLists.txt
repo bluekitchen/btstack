@@ -3,7 +3,7 @@ project(BTstack-windows-winusb-intel)
 set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(windows-winusb-intel)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 set(SOURCES_PORT main.c)
 find_package(PkgConfig QUIET)
 if(PkgConfig_FOUND)
@@ -40,7 +40,7 @@ if(PORTAUDIO_FOUND)
 endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        TARGET btstack_${EXAMPLE}_library
         PORT windows-winusb-intel APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_WINDOWS_WINUSB_INTEL_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}

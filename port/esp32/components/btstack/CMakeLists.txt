@@ -113,13 +113,10 @@ btstack_filter_groups_for_port(BTSTACK_ESP32_ACTIVE_BASE_GROUPS
 btstack_resolve_groups(BTSTACK_ESP32_GROUPS
     GROUPS ${BTSTACK_ESP32_EXAMPLE_GROUPS} ${BTSTACK_ESP32_ACTIVE_BASE_GROUPS})
 btstack_collect_sources(BTSTACK_ESP32_SOURCES
-    ROOT "${BTSTACK_ROOT}"
     GROUPS ${BTSTACK_ESP32_GROUPS})
 btstack_collect_include_directories(BTSTACK_ESP32_GROUP_INCLUDE_DIRS
-    ROOT "${BTSTACK_ROOT}"
     GROUPS ${BTSTACK_ESP32_GROUPS})
-btstack_collect_public_include_directories(BTSTACK_ESP32_PUBLIC_INCLUDE_DIRS
-    ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_ESP32_PUBLIC_INCLUDE_DIRS)
 
 if (CMAKE_HOST_WIN32)
     string(REPLACE "\\" "/" IDF_PATH $ENV{IDF_PATH})
@@ -217,7 +214,7 @@ foreach(example IN LISTS BTSTACK_ESP32_EXAMPLES)
     btstack_resolve_example_for_port(esp32 "${example}" example_groups example_configuration)
     btstack_resolve_groups(example_all_groups
         GROUPS ${example_groups} ${BTSTACK_ESP32_ACTIVE_BASE_GROUPS})
-    btstack_collect_sources(example_sources ROOT "${BTSTACK_ROOT}" GROUPS ${example_all_groups})
+    btstack_collect_sources(example_sources GROUPS ${example_all_groups})
     foreach(source IN LISTS btstack_example_${example}_sources)
         list(APPEND example_sources "${BTSTACK_ROOT}/example/${source}")
     endforeach()

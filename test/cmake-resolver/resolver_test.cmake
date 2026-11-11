@@ -72,8 +72,7 @@ else()
     endmacro()
     declare_test_classic_port()
 
-    btstack_collect_public_include_directories(public_include_directories
-        ROOT "${BTSTACK_ROOT}")
+    btstack_collect_public_include_directories(public_include_directories)
     set(expected_public_include_directories
         "${BTSTACK_ROOT}/src"
         "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include"

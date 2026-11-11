@@ -15,9 +15,7 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 btstack_declare_port(posix-h5)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
-  ROOT "${BTSTACK_ROOT}"
-)
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 # Port specific files
 set(SOURCES_PORT
     main.c
@@ -120,7 +118,6 @@ set(BTSTACK_POSIX_H5_BLUETOOTH_BASE_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        ROOT "${BTSTACK_ROOT}"
         PORT posix-h5
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_POSIX_H5_BLUETOOTH_BASE_GROUPS}

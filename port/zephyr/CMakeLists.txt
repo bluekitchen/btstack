@@ -47,8 +47,7 @@ include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
 include("${BTSTACK_ROOT}/example/requirements.cmake")
 
 btstack_declare_port(zephyr)
-btstack_collect_public_include_directories(BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES
-    ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES)
 
 # Zephyr normally force-includes autoconf.h for compilation. Include it
 # explicitly while extracting btstack_config.h's ENABLE_*/HAVE_* macros so the
@@ -118,7 +117,6 @@ string(REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$]
 
 btstack_add_application_library(
     TARGET btstack_zephyr
-    ROOT "${BTSTACK_ROOT}"
     PORT zephyr
     APPLICATION ${BTSTACK_ZEPHYR_EXAMPLE}
     BASE_GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS}
@@ -164,7 +162,6 @@ foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
     btstack_resolve_groups(example_all_groups
         GROUPS ${example_groups} ${example_base_groups})
     btstack_collect_sources(example_sources
-        ROOT "${BTSTACK_ROOT}"
         GROUPS ${example_all_groups})
     list(APPEND example_sources
         ${BTSTACK_ZEPHYR_PORT_SOURCES}
@@ -178,7 +175,6 @@ foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
     set_property(GLOBAL PROPERTY "btstack_info_zephyr_${example_suffix}_sources" "${example_sources}")
 
     btstack_collect_include_directories(example_group_include_directories
-        ROOT "${BTSTACK_ROOT}"
         GROUPS ${example_all_groups})
     set(example_include_directories
         ${BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES}

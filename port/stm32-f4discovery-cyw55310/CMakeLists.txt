@@ -54,8 +54,7 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(stm32-f4discovery-cyw55310)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES
-    ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 btstack_declare_port_capability(stm32-f4discovery-cyw55310
     CAPABILITY audio
     GROUPS platform-embedded-audio
@@ -117,7 +116,6 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        ROOT "${BTSTACK_ROOT}"
         PORT stm32-f4discovery-cyw55310
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
