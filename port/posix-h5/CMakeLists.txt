@@ -15,7 +15,6 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 btstack_declare_port(posix-h5)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 # Port specific files
 set(SOURCES_PORT
     main.c
@@ -58,10 +57,10 @@ set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(posix-h5
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
-btstack_set_port_configuration_macros(posix-h5 ${BTSTACK_CONFIG_MACROS})
+
 
 # Get the declared examples supported by this port configuration and providers.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
@@ -116,8 +115,6 @@ set(BTSTACK_POSIX_H5_BLUETOOTH_BASE_GROUPS
 # Every selected example is defined with its resolved source closure. EXAMPLES
 # is derived from the shared requirements manifest and any port exclusions.
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT posix-h5
@@ -125,7 +122,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         BASE_GROUPS ${BTSTACK_POSIX_H5_BLUETOOTH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
-            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
             ${PORTAUDIO_INCLUDE_DIRS}
@@ -138,23 +134,8 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     )
     add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
 
-    # Get the example sources from its declaration.
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
 
-    # define example target
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-
-    # Compile GATT DB if needed
-    set(EXAMPLE_GATT_DB ${APPLICATION_GATT_DB})
-    if (EXAMPLE_GATT_DB)
-        message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${EXAMPLE_GATT_DB}")
-    else()
-        message("example ${EXAMPLE}")
-    endif()
     # configure warnings
     btstack_target_warnings(${EXAMPLE} STRICT)
 

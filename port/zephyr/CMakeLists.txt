@@ -52,14 +52,14 @@ btstack_collect_public_include_directories(BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTO
 # Zephyr normally force-includes autoconf.h for compilation. Include it
 # explicitly while extracting btstack_config.h's ENABLE_*/HAVE_* macros so the
 # resolver sees the same Kconfig values as the compiler.
-btstack_collect_port_configuration_macros(BTSTACK_ZEPHYR_CONFIGURATION_MACROS
+btstack_configure_port(zephyr OUTPUT BTSTACK_ZEPHYR_CONFIGURATION_MACROS
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/zephyr/include/generated")
 # Zephyr normally reconfigures after Kconfig changes; retain the generated
 # header explicitly because it directly controls resolver selection.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_BINARY_DIR}/zephyr/include/generated/zephyr/autoconf.h")
-btstack_set_port_configuration_macros(zephyr ${BTSTACK_ZEPHYR_CONFIGURATION_MACROS})
+
 string(JOIN ", " BTSTACK_ZEPHYR_CONFIGURATION_MACROS_DISPLAY ${BTSTACK_ZEPHYR_CONFIGURATION_MACROS})
 message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_ZEPHYR_CONFIGURATION_MACROS_DISPLAY}")
 

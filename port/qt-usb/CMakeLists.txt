@@ -13,7 +13,6 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-usb)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 add_compile_definitions(HAVE_PORTAUDIO)
 btstack_declare_port_capability(qt-usb CAPABILITY audio
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
@@ -21,10 +20,10 @@ btstack_declare_port_capability(qt-usb CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(qt-usb
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS HAVE_PORTAUDIO)
-btstack_set_port_configuration_macros(qt-usb ${BTSTACK_CONFIG_MACROS})
+
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
@@ -38,25 +37,17 @@ set(BTSTACK_QT_USB_GROUPS
     platform-libusb-h2 third-party-micro-ecc third-party-rijndael)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT qt-usb APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_QT_USB_GROUPS}
-        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+        PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS} ${PORTAUDIO_INCLUDE_DIRS}
         LINK_DIRECTORIES ${LIBUSB_LIBRARY_DIRS} ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES ${LIBUSB_LIBRARIES} ${PORTAUDIO_LIBRARIES} Qt5::Core)
-    set(SOURCES_EXAMPLE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-        ${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    endif()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE}
+        SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
+            "${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp")
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_include_directories(${EXAMPLE} PRIVATE
         "${BTSTACK_ROOT}/platform/embedded"

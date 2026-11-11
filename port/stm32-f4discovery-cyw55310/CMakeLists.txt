@@ -54,7 +54,6 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(stm32-f4discovery-cyw55310)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 btstack_declare_port_capability(stm32-f4discovery-cyw55310
     CAPABILITY audio
     GROUPS platform-embedded-audio
@@ -96,9 +95,9 @@ set(SOURCES_PORT port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/p
 add_custom_target(cyw55310_patchram_source DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
 add_dependencies(cyw55310_patchram_source cyw55310_patchram_download)
 
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(stm32-f4discovery-cyw55310
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
-btstack_set_port_configuration_macros(stm32-f4discovery-cyw55310 ${BTSTACK_CONFIG_MACROS})
+
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
@@ -114,8 +113,6 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
     platform-embedded-hci-dump-stdout)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT stm32-f4discovery-cyw55310
@@ -123,20 +120,12 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
-            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             "${CMAKE_CURRENT_SOURCE_DIR}/port"
         PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}"
         LINK_LIBRARIES stm32cubemx bsp)
     add_dependencies(btstack_${EXAMPLE}_library cyw55310_patchram_source)
 
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    endif()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()

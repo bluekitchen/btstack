@@ -5,7 +5,6 @@ get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(freebsd-netgraph)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 # main.c supplies the LED implementation and uses PortAudio when available.
 btstack_declare_port_capability(freebsd-netgraph
@@ -27,10 +26,10 @@ set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(freebsd-netgraph
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
-btstack_set_port_configuration_macros(freebsd-netgraph ${BTSTACK_CONFIG_MACROS})
+
 
 # main.c sets up both persistent key databases and the POSIX event loop.
 set(BTSTACK_NETGRAPH_BASE_GROUPS
@@ -56,8 +55,6 @@ btstack_filter_examples_for_port(EXAMPLES
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT freebsd-netgraph
@@ -65,21 +62,13 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         BASE_GROUPS ${BTSTACK_NETGRAPH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
-            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             "${CMAKE_CURRENT_SOURCE_DIR}"
             "${BTSTACK_ROOT}/platform/posix"
             ${PORTAUDIO_INCLUDE_DIRS}
         LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES Threads::Threads netgraph m ${PORTAUDIO_LIBRARIES})
 
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE "${EXAMPLE_SOURCE}")
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    endif()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()

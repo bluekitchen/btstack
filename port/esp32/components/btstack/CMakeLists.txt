@@ -53,7 +53,7 @@ endif()
 # it, together with ESP-IDF's version header, to the normal C preprocessor so
 # ENABLE_CLASSIC/ENABLE_BLE follow the selected target automatically.
 btstack_declare_port(esp32)
-btstack_collect_port_configuration_macros(BTSTACK_ESP32_CONFIGURATION_MACROS
+btstack_configure_port(esp32
     CONFIG "${CMAKE_CURRENT_LIST_DIR}/../btstack_config/include/btstack_config.h"
     INCLUDE_DIRECTORIES
         "${CMAKE_BINARY_DIR}/config"
@@ -63,7 +63,7 @@ btstack_collect_port_configuration_macros(BTSTACK_ESP32_CONFIGURATION_MACROS
 # preprocessor result consumed by the resolver.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${CMAKE_BINARY_DIR}/config/sdkconfig.h")
-btstack_set_port_configuration_macros(esp32 ${BTSTACK_ESP32_CONFIGURATION_MACROS})
+
 
 if(CONFIG_BTSTACK_AUDIO)
     # The audio implementation is part of the port baseline because

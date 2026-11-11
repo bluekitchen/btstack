@@ -8,7 +8,6 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 
 btstack_declare_port(posix-h4-atwilc3000)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 # main.c includes this controller firmware as a generated C header.
 btstack_add_firmware_download(
@@ -37,9 +36,9 @@ btstack_declare_port_capability(posix-h4-atwilc3000
 
 find_package(Threads)
 
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(posix-h4-atwilc3000
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
-btstack_set_port_configuration_macros(posix-h4-atwilc3000 ${BTSTACK_CONFIG_MACROS})
+
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
@@ -67,8 +66,6 @@ if(PORTAUDIO_FOUND)
 endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT posix-h4-atwilc3000
@@ -76,7 +73,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         BASE_GROUPS ${BTSTACK_POSIX_H4_LE_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
-            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             "${CMAKE_CURRENT_SOURCE_DIR}"
             ${PORTAUDIO_INCLUDE_DIRS}
         PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}"
@@ -84,15 +80,8 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} m ${PORTAUDIO_LIBRARIES})
     add_dependencies(btstack_${EXAMPLE}_library atwilc3000_ble_firmware)
 
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
 
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    endif()
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
 endforeach()

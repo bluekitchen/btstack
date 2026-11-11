@@ -5,7 +5,6 @@ project(BTstack-libusb-intel)
 set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(libusb-intel)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
@@ -26,10 +25,10 @@ set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(libusb-intel
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
-btstack_set_port_configuration_macros(libusb-intel ${BTSTACK_CONFIG_MACROS})
+
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
@@ -46,26 +45,17 @@ if(PORTAUDIO_FOUND)
 endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT libusb-intel APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_LIBUSB_INTEL_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
-        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+        PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS} ${PORTAUDIO_INCLUDE_DIRS}
         LINK_DIRECTORIES ${LIBUSB_LIBRARY_DIRS} ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES ${LIBUSB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} m ${PORTAUDIO_LIBRARIES})
 
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    endif()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()

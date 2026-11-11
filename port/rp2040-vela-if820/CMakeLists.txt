@@ -25,7 +25,6 @@ get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(rp2040-vela-if820)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 btstack_declare_port_capability(rp2040-vela-if820
     CAPABILITY audio
     PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -33,9 +32,9 @@ btstack_declare_port_capability(rp2040-vela-if820
 # The feature macros live in btstack_config.h. Keeping ENABLE_BLE and
 # ENABLE_CLASSIC in that file (rather than inheriting them from pico-sdk's
 # pico_btstack_ble/classic targets) makes it the single source of truth.
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(rp2040-vela-if820 OUTPUT BTSTACK_CONFIG_MACROS
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
-btstack_set_port_configuration_macros(rp2040-vela-if820 ${BTSTACK_CONFIG_MACROS})
+
 string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
 message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_DISPLAY}")
 
@@ -83,8 +82,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT rp2040-vela-if820
@@ -93,7 +90,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PORT_SOURCES ${SOURCES_PORT}
         PRIVATE_COMPILE_OPTIONS ${BTSTACK_RP2040_VELA_PRIVATE_COMPILE_OPTIONS}
         PUBLIC_INCLUDE_DIRECTORIES
-            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             "${CMAKE_CURRENT_SOURCE_DIR}"
             "${PICO_SDK_PATH}/src/rp2_common/pico_btstack/include"
         LINK_LIBRARIES
@@ -108,11 +104,7 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             tinyusb_device
             tinyusb_board)
 
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
 
     target_compile_definitions(${EXAMPLE} PRIVATE
         # Uncomment for HCI traces
@@ -131,13 +123,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PICO_USB_RESET_MS_OS_20_DESCRIPTOR_ITF=2
     )
 
-    # create .h file from .gatt if needed
-    if(APPLICATION_GATT_DB)
-        message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    else()
-        message("example ${EXAMPLE}")
-    endif()
 
     # Pico SDK and TinyUSB add implementation sources to executable targets,
     # so their warning policy must remain independent of BTstack's strict

@@ -163,17 +163,15 @@ do not enable a BTstack feature for a specifc target.
 ### Configuration and capabilities
 
 BTstack source selection must agree with the effective `btstack_config.h`.
-Ports obtain the preprocessed macro set with
-`btstack_collect_port_configuration_macros` and register it with
-`btstack_set_port_configuration_macros`. The resolver can then skip groups and
-examples that require disabled features.
+Ports use `btstack_configure_port` to collect and register the preprocessed
+macro set. The resolver can then skip groups and examples that require disabled
+features.
 
 ```cmake
 btstack_declare_port(my-port)
-btstack_collect_port_configuration_macros(MY_PORT_MACROS
+btstack_configure_port(my-port
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${MY_PORT_COMPILE_DEFINITIONS})
-btstack_set_port_configuration_macros(my-port ${MY_PORT_MACROS})
 ```
 
 Pass the same relevant definitions to `DEFINITIONS` that compilation receives;
@@ -205,27 +203,15 @@ btstack_filter_applications_for_port(EXAMPLES
     CANDIDATES ${EXAMPLES})
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT my-port
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${MY_PORT_BASE_GROUPS}
         PORT_SOURCES ${MY_PORT_SOURCES}
-        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDES}
         PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
 
-    set(SOURCES_EXAMPLE)
-    foreach(SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE "${SOURCE}")
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE}
-            "${APPLICATION_GATT_DB}")
-    endif()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} PRIVATE btstack_${EXAMPLE}_library)
 endforeach()
@@ -238,7 +224,10 @@ does not create their targets.
 
 `btstack_target_gatt` runs the GATT compiler, adds the generated header to the
 target include path, and tracks imported `.gatt` files through a depfile. A
-port should call it only for an application declaration that has `GATT_DB`.
+port can call it directly for an existing target. The executable helper handles
+the declared `GATT_DB` automatically and accepts additional port-owned `SOURCES`.
+The application library helper provides BTstack's standard public include paths;
+ports supply their configuration and SDK include paths as needed.
 
 
 ## Inspecting a port and an example
