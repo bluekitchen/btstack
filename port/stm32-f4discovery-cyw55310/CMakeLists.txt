@@ -54,14 +54,12 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(stm32-f4discovery-cyw55310)
-btstack_declare_port_capability(stm32-f4discovery-cyw55310
-    CAPABILITY audio
+btstack_declare_port_capability(CAPABILITY audio
     GROUPS platform-embedded-audio
     PUBLIC_INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_SOURCE_DIR}/port"
         "${BTSTACK_ROOT}/platform/embedded")
-btstack_declare_port_capability(stm32-f4discovery-cyw55310
-    CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     PUBLIC_INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_SOURCE_DIR}/port"
         "${BTSTACK_ROOT}/platform/embedded")
@@ -95,14 +93,12 @@ set(SOURCES_PORT port/hal_audio_f4discovery.c port/hal_flash_bank_stm32.c port/p
 add_custom_target(cyw55310_patchram_source DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${PATCHRAM}.c)
 add_dependencies(cyw55310_patchram_source cyw55310_patchram_download)
 
-btstack_configure_port(stm32-f4discovery-cyw55310
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT stm32-f4discovery-cyw55310
     CANDIDATES ${EXAMPLES})
 
 set(BTSTACK_STM32_F4_BASE_GROUPS
@@ -115,7 +111,6 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT stm32-f4discovery-cyw55310
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -130,4 +125,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
 
-btstack_add_info_targets(PORT stm32-f4discovery-cyw55310)
+btstack_add_info_targets()

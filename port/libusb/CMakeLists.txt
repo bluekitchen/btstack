@@ -31,13 +31,11 @@ pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
     message("HAVE_PORTAUDIO")
     add_compile_definitions(HAVE_PORTAUDIO)
-    btstack_declare_port_capability(libusb
-        CAPABILITY audio
+    btstack_declare_port_capability(CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 endif()
-btstack_declare_port_capability(libusb
-    CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"
 )
@@ -75,7 +73,7 @@ if(PORTAUDIO_FOUND)
     # Keep this invocation consistent with add_compile_definitions above.
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_configure_port(libusb OUTPUT BTSTACK_CONFIG_MACROS
+btstack_configure_port(OUTPUT BTSTACK_CONFIG_MACROS
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
 
@@ -88,7 +86,6 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT libusb
     CANDIDATES ${EXAMPLES})
 
 # Every selected example is defined with its resolved source closure. EXAMPLES
@@ -96,7 +93,6 @@ btstack_filter_examples_for_port(EXAMPLES
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT libusb
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_LIBUSB_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -125,4 +121,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
 
-btstack_add_info_targets(PORT libusb)
+btstack_add_info_targets()

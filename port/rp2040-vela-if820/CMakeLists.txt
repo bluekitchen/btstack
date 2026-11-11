@@ -25,14 +25,13 @@ get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(rp2040-vela-if820)
-btstack_declare_port_capability(rp2040-vela-if820
-    CAPABILITY audio
+btstack_declare_port_capability(CAPABILITY audio
     PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # The feature macros live in btstack_config.h. Keeping ENABLE_BLE and
 # ENABLE_CLASSIC in that file (rather than inheriting them from pico-sdk's
 # pico_btstack_ble/classic targets) makes it the single source of truth.
-btstack_configure_port(rp2040-vela-if820 OUTPUT BTSTACK_CONFIG_MACROS
+btstack_configure_port(OUTPUT BTSTACK_CONFIG_MACROS
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
@@ -55,7 +54,6 @@ set(SOURCES_PORT
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT rp2040-vela-if820
     CANDIDATES ${EXAMPLES})
 # The port does not configure the Mesh feature or its provisioning backend.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
@@ -84,7 +82,6 @@ endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT rp2040-vela-if820
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_RP2040_VELA_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -136,4 +133,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
 
 endforeach()
 
-btstack_add_info_targets(PORT rp2040-vela-if820)
+btstack_add_info_targets()

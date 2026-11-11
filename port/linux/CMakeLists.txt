@@ -19,20 +19,17 @@ find_package(ALSA)
 if(PORTAUDIO_FOUND)
     message("PortAudio audio port selected")
     add_compile_definitions(HAVE_PORTAUDIO)
-    btstack_declare_port_capability(linux
-        CAPABILITY audio
+    btstack_declare_port_capability(CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 elseif(ALSA_FOUND)
     message("ALSA audio port selected")
     add_compile_definitions(HAVE_ALSA)
-    btstack_declare_port_capability(linux
-        CAPABILITY audio
+    btstack_declare_port_capability(CAPABILITY audio
         GROUPS platform-linux-audio-alsa platform-posix-wav
     )
 endif()
-btstack_declare_port_capability(linux
-    CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"
 )
@@ -45,15 +42,13 @@ if(PORTAUDIO_FOUND)
 elseif(ALSA_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_ALSA)
 endif()
-btstack_configure_port(linux
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT linux
     CANDIDATES ${EXAMPLES})
 # Preserve the legacy port selection. Mesh is intentionally excluded.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
@@ -76,7 +71,6 @@ set(BTSTACK_LINUX_BASE_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT linux
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_LINUX_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -101,4 +95,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
 
-btstack_add_info_targets(PORT linux)
+btstack_add_info_targets()

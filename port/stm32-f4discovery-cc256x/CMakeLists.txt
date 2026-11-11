@@ -54,14 +54,12 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(stm32-f4discovery-cc256x)
-btstack_declare_port_capability(stm32-f4discovery-cc256x
-    CAPABILITY audio
+btstack_declare_port_capability(CAPABILITY audio
     GROUPS platform-embedded-audio
     PUBLIC_INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_SOURCE_DIR}/port"
         "${BTSTACK_ROOT}/platform/embedded")
-btstack_declare_port_capability(stm32-f4discovery-cc256x
-    CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     PUBLIC_INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_SOURCE_DIR}/port"
         "${BTSTACK_ROOT}/platform/embedded")
@@ -74,14 +72,12 @@ set(SOURCES_PORT
     ${CC256X_INIT_SCRIPT_SOURCES}
 )
 
-btstack_configure_port(stm32-f4discovery-cc256x
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT stm32-f4discovery-cc256x
     CANDIDATES ${EXAMPLES})
 list(REMOVE_ITEM EXAMPLES
     avrcp_browsing_client
@@ -97,7 +93,6 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT stm32-f4discovery-cc256x
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -112,4 +107,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
 
-btstack_add_info_targets(PORT stm32-f4discovery-cc256x)
+btstack_add_info_targets()

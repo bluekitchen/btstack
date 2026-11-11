@@ -13,21 +13,19 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-h4)
 add_compile_definitions(HAVE_PORTAUDIO)
-btstack_declare_port_capability(qt-h4 CAPABILITY audio
+btstack_declare_port_capability(CAPABILITY audio
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
-btstack_declare_port_capability(qt-h4 CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-btstack_configure_port(qt-h4
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS HAVE_PORTAUDIO)
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT qt-h4
     CANDIDATES ${EXAMPLES})
 set(BTSTACK_QT_H4_GROUPS
     ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
@@ -41,7 +39,7 @@ set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT qt-h4 APPLICATION ${EXAMPLE}
+ APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_QT_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${PORTAUDIO_INCLUDE_DIRS}
@@ -61,4 +59,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library Qt5::Core)
 endforeach()
 
-btstack_add_info_targets(PORT qt-h4)
+btstack_add_info_targets()
