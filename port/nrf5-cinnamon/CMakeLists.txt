@@ -31,10 +31,9 @@ add_link_options(-mcpu=cortex-m4 -mthumb -mabi=aapcs -mfloat-abi=hard
     "-T${CMAKE_CURRENT_SOURCE_DIR}/pca10040/armgcc/nrf52832_xxaa.ld")
 
 btstack_declare_port(nrf5-cinnamon)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(nrf5-cinnamon
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
-btstack_set_port_configuration_macros(nrf5-cinnamon ${BTSTACK_CONFIG_MACROS})
+
 
 set(PORT_INCLUDES
     "${BTSTACK_ROOT}/platform/embedded"
@@ -60,25 +59,16 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES gap_le_advertisements gatt_counter gatt_streamer_server)
 btstack_filter_examples_for_port(EXAMPLES PORT nrf5-cinnamon CANDIDATES ${EXAMPLES})
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT nrf5-cinnamon APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BASE_GROUPS} PORT_SOURCES ${PORT_SOURCES}
         # Match the legacy Makefile warning policy for the Cinnamon port.
         PRIVATE_COMPILE_OPTIONS -Wno-extra -Wno-switch-default
-        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES} ${PORT_INCLUDES})
-    set(EXAMPLE_SOURCES)
-    foreach(SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND EXAMPLE_SOURCES "${SOURCE}")
-    endforeach()
-    add_executable(${EXAMPLE} ${EXAMPLE_SOURCES} port/syscalls.c
-        "${NRF5_SDK_ROOT}/modules/nrfx/mdk/gcc_startup_nrf52.S")
+        PUBLIC_INCLUDE_DIRECTORIES ${PORT_INCLUDES})
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE}
+        SOURCES port/syscalls.c "${NRF5_SDK_ROOT}/modules/nrfx/mdk/gcc_startup_nrf52.S")
     set_target_properties(${EXAMPLE} PROPERTIES SUFFIX .elf LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/pca10040/armgcc/nrf52832_xxaa.ld")
-    if(APPLICATION_GATT_DB)
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    endif()
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library c nosys m)
 endforeach()

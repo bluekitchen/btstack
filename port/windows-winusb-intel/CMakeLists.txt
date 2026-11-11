@@ -3,7 +3,6 @@ project(BTstack-windows-winusb-intel)
 set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(windows-winusb-intel)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 set(SOURCES_PORT main.c)
 find_package(PkgConfig QUIET)
 if(PkgConfig_FOUND)
@@ -22,10 +21,10 @@ set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(windows-winusb-intel
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
-btstack_set_port_configuration_macros(windows-winusb-intel ${BTSTACK_CONFIG_MACROS})
+
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES PORT windows-winusb-intel CANDIDATES ${EXAMPLES})
@@ -39,28 +38,16 @@ if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_WINDOWS_WINUSB_INTEL_BASE_GROUPS platform-posix-audio-portaudio)
 endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT windows-winusb-intel APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_WINDOWS_WINUSB_INTEL_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
-        PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
+        PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${PORTAUDIO_INCLUDE_DIRS}
         LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES setupapi winusb ${PORTAUDIO_LIBRARIES})
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE "${EXAMPLE_SOURCE}")
-    endforeach()
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if(APPLICATION_GATT_DB)
-        message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
-    else()
-        message("example ${EXAMPLE}")
-    endif()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} PRIVATE btstack_${EXAMPLE}_library)
 endforeach()

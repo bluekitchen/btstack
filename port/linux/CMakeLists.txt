@@ -6,7 +6,6 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(linux)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 set(SOURCES_PORT main.c)
 
@@ -46,10 +45,10 @@ if(PORTAUDIO_FOUND)
 elseif(ALSA_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_ALSA)
 endif()
-btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
+btstack_configure_port(linux
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
-btstack_set_port_configuration_macros(linux ${BTSTACK_CONFIG_MACROS})
+
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
@@ -75,8 +74,6 @@ set(BTSTACK_LINUX_BASE_GROUPS
 )
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
-    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT linux
@@ -84,7 +81,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         BASE_GROUPS ${BTSTACK_LINUX_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
-            ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
             "${CMAKE_CURRENT_SOURCE_DIR}"
             ${PORTAUDIO_INCLUDE_DIRS}
             ${ALSA_INCLUDE_DIRS}
@@ -98,20 +94,8 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             ${ALSA_LIBRARIES}
     )
 
-    set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
-        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
-    endforeach()
+    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
 
-    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-
-    set(EXAMPLE_GATT_DB ${APPLICATION_GATT_DB})
-    if(EXAMPLE_GATT_DB)
-        message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${EXAMPLE_GATT_DB}")
-    else()
-        message("example ${EXAMPLE}")
-    endif()
 
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)

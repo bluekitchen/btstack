@@ -89,6 +89,44 @@ class ExternalProjectTest(unittest.TestCase):
         self.assertIn("ENABLE_BLE", result.stdout + result.stderr)
         self.assertIn("required by the selected groups", result.stdout + result.stderr)
 
+    def test_port_and_application_helpers(self):
+        source = self.directory / "port-helpers"
+        source.mkdir()
+        (source / "btstack_config.h").write_text(
+            "#ifdef PROJECT_BLE\n#define ENABLE_BLE\n#endif\n", encoding="utf-8")
+        (source / "main.c").write_text(
+            "int extra(void); int main(void) { return extra(); }\n", encoding="utf-8")
+        (source / "extra.c").write_text("int extra(void) { return 0; }\n", encoding="utf-8")
+        (source / "CMakeLists.txt").write_text(
+            'cmake_minimum_required(VERSION 3.18)\n'
+            'project(port_helpers C)\n'
+            'include("${BTSTACK_MODULE}")\n'
+            'btstack_declare_port(test-port)\n'
+            'btstack_configure_port(test-port CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h" '
+            'DEFINITIONS PROJECT_BLE OUTPUT macros)\n'
+            'if(NOT "ENABLE_BLE" IN_LIST macros OR NOT "ENABLE_BLE" IN_LIST btstack_port_test_port_configuration_macros)\n'
+            '  message(FATAL_ERROR "Port configuration was not registered in the caller")\n'
+            'endif()\n'
+            'btstack_declare_application(with_gatt SOURCES main.c GATT_DB "${BTSTACK_GATT}" NEEDS core)\n'
+            'btstack_declare_application(without_gatt SOURCES main.c NEEDS core)\n'
+            'btstack_add_application_library(TARGET test_library PORT test-port APPLICATION with_gatt BASE_GROUPS core)\n'
+            'get_target_property(includes test_library INTERFACE_INCLUDE_DIRECTORIES)\n'
+            'if(NOT "${BTSTACK_ROOT}/src" IN_LIST includes)\n'
+            '  message(FATAL_ERROR "Standard public includes were not propagated: ${includes}")\n'
+            'endif()\n'
+            'btstack_add_application_executable(with_gatt APPLICATION with_gatt SOURCES extra.c)\n'
+            'btstack_add_application_executable(without_gatt APPLICATION without_gatt SOURCES extra.c)\n',
+            encoding="utf-8")
+        build = self.directory / "port-helpers-build"
+        result = self.cmake("-S", source, "-B", build,
+                            f"-DBTSTACK_ROOT={ROOT}",
+                            f"-DBTSTACK_MODULE={ROOT / 'tool' / 'cmake' / 'BTstack.cmake'}",
+                            f"-DBTSTACK_GATT={ROOT / 'example' / 'gatt_counter.gatt'}")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.cmake("--build", build, "--target", "with_gatt", "without_gatt", "--parallel", "2")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue((build / "btstack-gatt" / "with_gatt" / "gatt_counter.h").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

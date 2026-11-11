@@ -771,6 +771,22 @@ function(btstack_get_application_property output_variable application property)
     set(${output_variable} "${btstack_application_${application}_${property_name}}" PARENT_SCOPE)
 endfunction()
 
+# Create an executable from a declaration and generate its optional GATT DB.
+# SOURCES adds port-owned executable sources; linking and warning policy remain
+# the caller's responsibility.
+function(btstack_add_application_executable target)
+    cmake_parse_arguments(ARG "" "APPLICATION" "SOURCES" ${ARGN})
+    if(ARG_UNPARSED_ARGUMENTS OR NOT ARG_APPLICATION)
+        message(FATAL_ERROR "btstack_add_application_executable requires APPLICATION and optional SOURCES")
+    endif()
+    btstack_get_application_property(application_sources "${ARG_APPLICATION}" SOURCES)
+    btstack_get_application_property(application_gatt "${ARG_APPLICATION}" GATT_DB)
+    add_executable(${target} ${application_sources} ${ARG_SOURCES})
+    if(application_gatt)
+        btstack_target_gatt(${target} "${application_gatt}")
+    endif()
+endfunction()
+
 # Register a port that can provide implementation groups for logical example
 # capabilities. A port declaration is metadata only; it does not create a
 # target or configure BTstack features.
@@ -833,6 +849,24 @@ function(btstack_collect_port_configuration_macros output_variable)
         string(REPLACE "\n" ";" configuration_macros "${configuration_macros}")
     endif()
     set(${output_variable} "${configuration_macros}" PARENT_SCOPE)
+endfunction()
+
+# Collect and register a port's effective configuration in the caller's scope.
+# OUTPUT is optional when the caller also needs the macro list.
+function(btstack_configure_port port)
+    cmake_parse_arguments(ARG "" "CONFIG;OUTPUT" "DEFINITIONS;INCLUDE_DIRECTORIES" ${ARGN})
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "btstack_configure_port: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+    btstack_collect_port_configuration_macros(configuration
+        CONFIG "${ARG_CONFIG}" DEFINITIONS ${ARG_DEFINITIONS}
+        INCLUDE_DIRECTORIES ${ARG_INCLUDE_DIRECTORIES})
+    btstack_set_port_configuration_macros("${port}" ${configuration})
+    string(REPLACE "-" "_" port_suffix "${port}")
+    set("btstack_port_${port_suffix}_configuration_macros" "${configuration}" PARENT_SCOPE)
+    if(ARG_OUTPUT)
+        set(${ARG_OUTPUT} "${configuration}" PARENT_SCOPE)
+    endif()
 endfunction()
 
 # Create a BTstack library for an existing application or project.
@@ -1351,7 +1385,6 @@ endfunction()
 #       APPLICATION gatt_counter
 #       BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
 #       PORT_SOURCES ${SOURCES_PORT}
-#       PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
 #       PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
 #       LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} m
 #   )
@@ -1371,6 +1404,10 @@ function(btstack_add_application_library)
             message(FATAL_ERROR "btstack_add_application_library requires ${required}")
         endif()
     endforeach()
+
+    btstack_collect_public_include_directories(public_include_directories)
+    list(APPEND public_include_directories ${ARG_PUBLIC_INCLUDE_DIRECTORIES})
+    list(REMOVE_DUPLICATES public_include_directories)
 
     # Shared group targets must not silently reuse a different configuration.
     # Directory properties also affect object compilation independently of the
@@ -1430,7 +1467,7 @@ function(btstack_add_application_library)
             OUTPUT_TARGET group_object_target
             TARGET_PREFIX "btstack_${ARG_PORT}"
             GROUP "${group}"
-            PUBLIC_INCLUDE_DIRECTORIES ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
+            PUBLIC_INCLUDE_DIRECTORIES ${public_include_directories}
             PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
             PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
         )
@@ -1464,10 +1501,10 @@ function(btstack_add_application_library)
     add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)
     target_compile_options(${ARG_TARGET} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
-    if(ARG_PUBLIC_INCLUDE_DIRECTORIES OR example_port_public_include_directories
+    if(public_include_directories OR example_port_public_include_directories
             OR example_consumer_include_directories)
         target_include_directories(${ARG_TARGET} PUBLIC
-            ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
+            ${public_include_directories}
             ${example_port_public_include_directories}
             ${example_consumer_include_directories})
     endif()
