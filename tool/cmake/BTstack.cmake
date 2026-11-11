@@ -9,6 +9,7 @@ set(btstack_config_extractor "${CMAKE_CURRENT_LIST_DIR}/../extract_btstack_confi
 set(btstack_list_examples_script "${CMAKE_CURRENT_LIST_DIR}/BTstackListExamples.cmake")
 set(btstack_info_script "${CMAKE_CURRENT_LIST_DIR}/BTstackInfo.cmake")
 set(btstack_group_graph_script "${CMAKE_CURRENT_LIST_DIR}/BTstackGroupGraph.cmake")
+set(btstack_library_info_script "${CMAKE_CURRENT_LIST_DIR}/BTstackLibraryInfo.cmake")
 
 # Configuration marker groups are resolver-only metadata and deliberately
 # stay out of the generated source catalog.
@@ -871,6 +872,37 @@ function(btstack_add_library target)
         PUBLIC "${config_directory}" ${ARG_CONFIG_INCLUDE_DIRECTORIES} ${public_includes} ${consumer_includes}
         PRIVATE ${private_includes})
     target_compile_definitions(${target} PUBLIC ${ARG_CONFIG_DEFINITIONS})
+
+    # Generate per-configuration target properties after callers have had a
+    # chance to extend the library with their own sources and include paths.
+    set(info_directory "${CMAKE_BINARY_DIR}/btstack-library-info")
+    file(MAKE_DIRECTORY "${info_directory}")
+    string(SHA256 info_key "${target}")
+    set(info_content "set(BTSTACK_LIBRARY_NAME [==[${target}]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_CONFIG [==[${config}]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_REQUESTED_GROUPS [==[${ARG_GROUPS}]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_RESOLVED_GROUPS [==[${groups}]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_REQUIREMENTS [==[${required_macros}]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_CONFIG_MACROS [==[${config_macros}]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_SOURCES [==[$<TARGET_PROPERTY:${target},SOURCES>]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_INCLUDES [==[$<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>]==])\n")
+    string(APPEND info_content "set(BTSTACK_LIBRARY_CONSUMER_INCLUDES [==[$<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>]==])\n")
+    file(GENERATE OUTPUT "${info_directory}/$<CONFIG>/${info_key}.cmake" CONTENT "${info_content}")
+
+    get_property(info_registered GLOBAL PROPERTY BTSTACK_LIBRARY_INFO_TARGETS SET)
+    get_property(info_targets GLOBAL PROPERTY BTSTACK_LIBRARY_INFO_TARGETS)
+    if(NOT info_registered)
+        if(TARGET library-info)
+            message(FATAL_ERROR "btstack_add_library cannot create library-info: target already exists")
+        endif()
+        add_custom_target(library-info
+            COMMAND "${CMAKE_COMMAND}" "-DINFO_DIRECTORY=${info_directory}/$<CONFIG>"
+                "-DINFO_REGISTRY=${info_directory}/libraries.cmake" -P "${btstack_library_info_script}"
+            COMMENT "Display a BTstack library's build inputs" VERBATIM)
+    endif()
+    list(APPEND info_targets "${target}")
+    set_property(GLOBAL PROPERTY BTSTACK_LIBRARY_INFO_TARGETS "${info_targets}")
+    file(WRITE "${info_directory}/libraries.cmake" "set(BTSTACK_INFO_LIBRARIES [==[${info_targets}]==])\n")
 endfunction()
 
 # Register source groups, port-local sources, and public include directories
