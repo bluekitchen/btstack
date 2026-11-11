@@ -39,6 +39,21 @@ using the C compiler; target-specific compiler flags and generator expressions
 are not applied to that check. Use the lower-level helpers if your SDK requires
 such settings to preprocess the configuration correctly.
 
+After configuration, inspect the library without building the application:
+
+```sh
+cmake --build build --target library-info
+```
+
+The output lists the requested and resolved groups, required and detected
+configuration macros, and the library target's sources and include paths.
+When a project creates more than one library with `btstack_add_library`, select
+one with `LIBRARY=my_btstack cmake --build build --target library-info`.
+The target properties reflect configuration-time changes made after the helper
+call. They do not include application sources or all transitive usage
+requirements from linked targets. With a multi-configuration generator, pass
+`--config` to inspect the desired configuration.
+
 For more control, `btstack_resolve_groups` and the `btstack_collect_sources`,
 `btstack_collect_include_directories`, `btstack_collect_consumer_include_directories`,
 and `btstack_collect_public_include_directories` helpers can be used to compose
