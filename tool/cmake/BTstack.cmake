@@ -1257,18 +1257,47 @@ endfunction()
 #
 # CONFIGURATION_REQUIREMENTS_OUTPUT is optional. If set, it receives the
 # example's unresolved ENABLE_* requirements for future port validation.
-# GROUP_OBJECT_TARGET_PREFIX is optional. When provided, each selected source
-# group is compiled once into a reusable object target named from that prefix;
-# the example library is then assembled from only the objects in its closure.
+# Each source group is compiled once per port and shared between applications.
+# Calls for the same port must use the same compilation settings.
 function(btstack_add_application_library)
     cmake_parse_arguments(ARG ""
-        "TARGET;ROOT;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT;GROUP_OBJECT_TARGET_PREFIX"
+        "TARGET;ROOT;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT"
         "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;LINK_LIBRARIES;LINK_DIRECTORIES"
         ${ARGN})
 
     foreach(required TARGET ROOT PORT APPLICATION)
         if(NOT ARG_${required})
             message(FATAL_ERROR "btstack_add_application_library requires ${required}")
+        endif()
+    endforeach()
+
+    # Shared group targets must not silently reuse a different configuration.
+    # Directory properties also affect object compilation independently of the
+    # explicit arguments, so include them in the per-port comparison.
+    get_filename_component(configuration_root "${ARG_ROOT}" ABSOLUTE)
+    get_directory_property(configuration_directory_includes INCLUDE_DIRECTORIES)
+    get_directory_property(configuration_directory_definitions COMPILE_DEFINITIONS)
+    get_directory_property(configuration_directory_options COMPILE_OPTIONS)
+    string(SHA256 port_key "${ARG_PORT}")
+    foreach(setting IN ITEMS root public_includes private_includes compile_options
+            directory_includes directory_definitions directory_options)
+        if(setting STREQUAL "public_includes")
+            set(configuration_${setting} "${ARG_PUBLIC_INCLUDE_DIRECTORIES}")
+        elseif(setting STREQUAL "private_includes")
+            set(configuration_${setting} "${ARG_PRIVATE_INCLUDE_DIRECTORIES}")
+        elseif(setting STREQUAL "compile_options")
+            set(configuration_${setting} "${ARG_PRIVATE_COMPILE_OPTIONS}")
+        endif()
+        set(property "btstack_application_${port_key}_${setting}")
+        get_property(configured GLOBAL PROPERTY "${property}" SET)
+        if(configured)
+            get_property(previous GLOBAL PROPERTY "${property}")
+            if(NOT "${previous}" STREQUAL "${configuration_${setting}}")
+                message(FATAL_ERROR
+                    "btstack_add_application_library: conflicting ${setting} for port '${ARG_PORT}'")
+            endif()
+        else()
+            set_property(GLOBAL PROPERTY "${property}" "${configuration_${setting}}")
         endif()
     endforeach()
 
@@ -1298,26 +1327,20 @@ function(btstack_add_application_library)
     )
 
     set(example_library_sources ${ARG_PORT_SOURCES} ${example_port_sources})
-    if(ARG_GROUP_OBJECT_TARGET_PREFIX)
-        foreach(group IN LISTS library_groups)
-            btstack_add_scoped_group_object_library(
-                OUTPUT_TARGET group_object_target
-                TARGET_PREFIX "${ARG_GROUP_OBJECT_TARGET_PREFIX}"
-                ROOT "${ARG_ROOT}"
-                GROUP "${group}"
-                PUBLIC_INCLUDE_DIRECTORIES ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
-                PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
-                PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
-            )
-            list(APPEND example_library_sources "$<TARGET_OBJECTS:${group_object_target}>")
-        endforeach()
-    else()
-        btstack_collect_sources(example_sources
+    foreach(group IN LISTS library_groups)
+        btstack_add_scoped_group_object_library(
+            OUTPUT_TARGET group_object_target
+            TARGET_PREFIX "btstack_${ARG_PORT}"
             ROOT "${ARG_ROOT}"
-            GROUPS ${library_groups}
+            GROUP "${group}"
+            PUBLIC_INCLUDE_DIRECTORIES ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
+            PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+            PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
         )
-        list(APPEND example_library_sources ${example_sources})
-    endif()
+        if(group_object_target)
+            list(APPEND example_library_sources "$<TARGET_OBJECTS:${group_object_target}>")
+        endif()
+    endforeach()
 
     # Retain the resolved source list for the example-info target. Include the
     # application sources as well as all port and BTstack implementation files.

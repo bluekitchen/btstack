@@ -63,7 +63,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
         PORT nrf5-cinnamon APPLICATION ${EXAMPLE}
-        GROUP_OBJECT_TARGET_PREFIX btstack_nrf5_cinnamon
         BASE_GROUPS ${BASE_GROUPS} PORT_SOURCES ${PORT_SOURCES}
         # Match the legacy Makefile warning policy for the Cinnamon port.
         PRIVATE_COMPILE_OPTIONS -Wno-extra -Wno-switch-default
