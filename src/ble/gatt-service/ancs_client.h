@@ -52,7 +52,7 @@ extern "C" {
 
 /**
  * @text The ANCS Client implements Notification Consumer (NC) of the [Apple Notification Center Service
- * (ANCS)](developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleNotificationCenterServiceSpecification/Introduction/Introduction.html).
+ * (ANCS)](https:&#47;&#47;developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleNotificationCenterServiceSpecification/Introduction/Introduction.html).
  */
 
 /* API_START */
