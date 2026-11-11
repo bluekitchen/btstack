@@ -73,9 +73,9 @@ endif()
 
 btstack_filter_examples_for_port(BTSTACK_ZEPHYR_EXAMPLES
     PORT zephyr
-    CANDIDATES ${btstack_declared_examples})
+    CANDIDATES ${btstack_declared_applications})
 
-list(FIND btstack_declared_examples "${BTSTACK_ZEPHYR_EXAMPLE}" BTSTACK_ZEPHYR_EXAMPLE_INDEX)
+list(FIND btstack_declared_applications "${BTSTACK_ZEPHYR_EXAMPLE}" BTSTACK_ZEPHYR_EXAMPLE_INDEX)
 if(BTSTACK_ZEPHYR_EXAMPLE_INDEX EQUAL -1)
     message(FATAL_ERROR "Unknown Zephyr example '${BTSTACK_ZEPHYR_EXAMPLE}'")
 endif()
@@ -136,16 +136,18 @@ add_dependencies(btstack_zephyr zephyr_interface zephyr_generated_headers)
 
 set(BTSTACK_ZEPHYR_APPLICATION_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
-foreach(source IN LISTS btstack_example_${BTSTACK_ZEPHYR_EXAMPLE}_sources)
-    list(APPEND BTSTACK_ZEPHYR_APPLICATION_SOURCES "${BTSTACK_ROOT}/example/${source}")
+btstack_get_application_property(application_sources "${BTSTACK_ZEPHYR_EXAMPLE}" SOURCES)
+btstack_get_application_property(application_gatt "${BTSTACK_ZEPHYR_EXAMPLE}" GATT_DB)
+foreach(source IN LISTS application_sources)
+    list(APPEND BTSTACK_ZEPHYR_APPLICATION_SOURCES "${source}")
 endforeach()
 target_sources(app PRIVATE ${BTSTACK_ZEPHYR_APPLICATION_SOURCES})
 target_include_directories(app PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
-if(btstack_example_${BTSTACK_ZEPHYR_EXAMPLE}_gatt_db)
+if(application_gatt)
     message(STATUS "Zephyr example ${BTSTACK_ZEPHYR_EXAMPLE} -- with GATT DB")
     btstack_target_gatt(app
-        "${BTSTACK_ROOT}/example/${btstack_example_${BTSTACK_ZEPHYR_EXAMPLE}_gatt_db}")
+        "${application_gatt}")
 else()
     message(STATUS "Zephyr example ${BTSTACK_ZEPHYR_EXAMPLE}")
 endif()
@@ -166,8 +168,9 @@ foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
     list(APPEND example_sources
         ${BTSTACK_ZEPHYR_PORT_SOURCES}
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
-    foreach(source IN LISTS btstack_example_${example}_sources)
-        list(APPEND example_sources "${BTSTACK_ROOT}/example/${source}")
+    btstack_get_application_property(application_sources "${example}" SOURCES)
+    foreach(source IN LISTS application_sources)
+        list(APPEND example_sources "${source}")
     endforeach()
     list(REMOVE_DUPLICATES example_sources)
     list(SORT example_sources)

@@ -76,9 +76,9 @@ endif()
 
 btstack_filter_examples_for_port(BTSTACK_ESP32_EXAMPLES
     PORT esp32
-    CANDIDATES ${btstack_declared_examples})
+    CANDIDATES ${btstack_declared_applications})
 
-list(FIND btstack_declared_examples "${BTSTACK_EXAMPLE}" BTSTACK_ESP32_EXAMPLE_INDEX)
+list(FIND btstack_declared_applications "${BTSTACK_EXAMPLE}" BTSTACK_ESP32_EXAMPLE_INDEX)
 if(BTSTACK_ESP32_EXAMPLE_INDEX EQUAL -1)
     message(STATUS "Building custom ESP32 application '${BTSTACK_EXAMPLE}' with the port baseline")
     set(BTSTACK_ESP32_EXAMPLE_GROUPS core)
@@ -215,8 +215,9 @@ foreach(example IN LISTS BTSTACK_ESP32_EXAMPLES)
     btstack_resolve_groups(example_all_groups
         GROUPS ${example_groups} ${BTSTACK_ESP32_ACTIVE_BASE_GROUPS})
     btstack_collect_sources(example_sources GROUPS ${example_all_groups})
-    foreach(source IN LISTS btstack_example_${example}_sources)
-        list(APPEND example_sources "${BTSTACK_ROOT}/example/${source}")
+    btstack_get_application_property(application_sources "${example}" SOURCES)
+    foreach(source IN LISTS application_sources)
+        list(APPEND example_sources "${source}")
     endforeach()
     list(APPEND example_sources
         "${BTSTACK_ROOT}/platform/freertos/btstack_run_loop_freertos.c"
