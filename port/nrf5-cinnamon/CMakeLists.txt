@@ -60,6 +60,8 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES gap_le_advertisements gatt_counter gatt_streamer_server)
 btstack_filter_examples_for_port(EXAMPLES PORT nrf5-cinnamon CANDIDATES ${EXAMPLES})
 foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
+    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT nrf5-cinnamon APPLICATION ${EXAMPLE}
@@ -68,14 +70,14 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PRIVATE_COMPILE_OPTIONS -Wno-extra -Wno-switch-default
         PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES} ${PORT_INCLUDES})
     set(EXAMPLE_SOURCES)
-    foreach(SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
-        list(APPEND EXAMPLE_SOURCES "${BTSTACK_ROOT}/example/${SOURCE}")
+    foreach(SOURCE IN LISTS APPLICATION_SOURCES)
+        list(APPEND EXAMPLE_SOURCES "${SOURCE}")
     endforeach()
     add_executable(${EXAMPLE} ${EXAMPLE_SOURCES} port/syscalls.c
         "${NRF5_SDK_ROOT}/modules/nrfx/mdk/gcc_startup_nrf52.S")
     set_target_properties(${EXAMPLE} PROPERTIES SUFFIX .elf LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/pca10040/armgcc/nrf52832_xxaa.ld")
-    if(btstack_example_${EXAMPLE}_gatt_db)
-        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
+    if(APPLICATION_GATT_DB)
+        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
     endif()
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library c nosys m)

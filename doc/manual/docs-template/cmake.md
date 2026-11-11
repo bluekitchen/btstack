@@ -74,7 +74,12 @@ btstack_declare_application(gatt_counter
 `btstack_config.h`, or port-provided capabilities. By listing relevant 
 source groups, which often correspond to Bluetooth Profiles or Protocols,
 the required sources are marked as needed for this particular application.
-The same style can describe an application owned by another project. 
+The same style can describe an application owned by another project. Relative
+`SOURCES` and `GATT_DB` paths are resolved against the directory containing the
+declaration; absolute paths are preserved. Access the resolved paths with
+`btstack_get_application_property(output application SOURCES)` or `GATT_DB`.
+See `port/posix-h4/standalone` for a complete project-owned declaration and
+build.
 
 Requirements are documentation and validation input; they
 do not enable a BTstack feature for a specifc target.
@@ -157,12 +162,14 @@ The port still owns the final executable and its board policy:
 
 ```cmake
 include("${BTSTACK_ROOT}/example/requirements.cmake")
-set(EXAMPLES ${btstack_declared_examples})
-btstack_filter_examples_for_port(EXAMPLES
+set(EXAMPLES ${btstack_declared_applications})
+btstack_filter_applications_for_port(EXAMPLES
     PORT my-port
     CANDIDATES ${EXAMPLES})
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
+    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT my-port
@@ -173,14 +180,14 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
 
     set(SOURCES_EXAMPLE)
-    foreach(SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
-        list(APPEND SOURCES_EXAMPLE "${BTSTACK_ROOT}/example/${SOURCE}")
+    foreach(SOURCE IN LISTS APPLICATION_SOURCES)
+        list(APPEND SOURCES_EXAMPLE "${SOURCE}")
     endforeach()
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
 
-    if(btstack_example_${EXAMPLE}_gatt_db)
+    if(APPLICATION_GATT_DB)
         btstack_target_gatt(${EXAMPLE}
-            "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
+            "${APPLICATION_GATT_DB}")
     endif()
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} PRIVATE btstack_${EXAMPLE}_library)
@@ -210,15 +217,19 @@ the resolved build:
 
 ```sh
 cmake --build build --target port-info
+cmake --build build --target list-applications
+APPLICATION=gatt_counter cmake --build build --target application-info
 cmake --build build --target list-examples
 EXAMPLE=gatt_counter cmake --build build --target example-info
 cmake --build build --target group-graph
 ```
 
 `port-info` prints the effective BTstack configuration macros and declared
-port capabilities. `list-examples` groups declared applications by their radio
-requirements. `example-info` reports whether the named application is included
-for this port. If it is excluded, it reports missing configuration macros or
+port capabilities. `list-applications` lists the candidates for the port,
+and `application-info` reports whether a named application is included.
+The existing `list-examples` and `example-info` targets remain available for
+BTstack's example workflows; `list-examples` groups the built-in examples by
+radio requirements. If an application is excluded, `application-info` reports missing configuration macros or
 port capabilities. If it is included, it prints the complete source-file and
 include-directory lists used to build it.
 

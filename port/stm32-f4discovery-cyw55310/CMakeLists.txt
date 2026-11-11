@@ -101,7 +101,7 @@ btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
 btstack_set_port_configuration_macros(stm32-f4discovery-cyw55310 ${BTSTACK_CONFIG_MACROS})
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
-set(EXAMPLES ${btstack_declared_examples})
+set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
     PORT stm32-f4discovery-cyw55310
     CANDIDATES ${EXAMPLES})
@@ -114,6 +114,8 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
     platform-embedded-hci-dump-stdout)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
+    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT stm32-f4discovery-cyw55310
@@ -128,12 +130,12 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     add_dependencies(btstack_${EXAMPLE}_library cyw55310_patchram_source)
 
     set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
+        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
     endforeach()
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-    if(btstack_example_${EXAMPLE}_gatt_db)
-        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
+    if(APPLICATION_GATT_DB)
+        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
     endif()
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)

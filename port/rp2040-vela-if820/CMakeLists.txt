@@ -54,7 +54,7 @@ set(SOURCES_PORT
 
 # This port has an RP2040 USB audio implementation, but no LED backend.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
-set(EXAMPLES ${btstack_declared_examples})
+set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
     PORT rp2040-vela-if820
     CANDIDATES ${EXAMPLES})
@@ -83,6 +83,8 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
+    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT rp2040-vela-if820
@@ -107,8 +109,8 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             tinyusb_board)
 
     set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
+        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
     endforeach()
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
 
@@ -130,9 +132,9 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     )
 
     # create .h file from .gatt if needed
-    if(btstack_example_${EXAMPLE}_gatt_db)
+    if(APPLICATION_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${btstack_example_${EXAMPLE}_gatt_db}")
+        btstack_target_gatt(${EXAMPLE} "${APPLICATION_GATT_DB}")
     else()
         message("example ${EXAMPLE}")
     endif()

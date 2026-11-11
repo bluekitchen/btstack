@@ -52,7 +52,7 @@ btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
 btstack_set_port_configuration_macros(linux ${BTSTACK_CONFIG_MACROS})
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
-set(EXAMPLES ${btstack_declared_examples})
+set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
     PORT linux
     CANDIDATES ${EXAMPLES})
@@ -75,6 +75,8 @@ set(BTSTACK_LINUX_BASE_GROUPS
 )
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_get_application_property(APPLICATION_SOURCES "${EXAMPLE}" SOURCES)
+    btstack_get_application_property(APPLICATION_GATT_DB "${EXAMPLE}" GATT_DB)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         PORT linux
@@ -97,16 +99,16 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     )
 
     set(SOURCES_EXAMPLE)
-    foreach(EXAMPLE_SOURCE IN LISTS btstack_example_${EXAMPLE}_sources)
-        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE_SOURCE})
+    foreach(EXAMPLE_SOURCE IN LISTS APPLICATION_SOURCES)
+        list(APPEND SOURCES_EXAMPLE ${EXAMPLE_SOURCE})
     endforeach()
 
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
 
-    set(EXAMPLE_GATT_DB ${btstack_example_${EXAMPLE}_gatt_db})
+    set(EXAMPLE_GATT_DB ${APPLICATION_GATT_DB})
     if(EXAMPLE_GATT_DB)
         message("example ${EXAMPLE} -- with GATT DB")
-        btstack_target_gatt(${EXAMPLE} "${BTSTACK_ROOT}/example/${EXAMPLE_GATT_DB}")
+        btstack_target_gatt(${EXAMPLE} "${EXAMPLE_GATT_DB}")
     else()
         message("example ${EXAMPLE}")
     endif()

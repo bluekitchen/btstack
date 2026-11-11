@@ -729,23 +729,45 @@ endfunction()
 #       SOURCES gatt_counter.c
 #       GATT_DB gatt_counter.gatt
 #       NEEDS ble ENABLE_LE_PERIPHERAL)
-function(btstack_declare_application example)
+function(btstack_declare_application application)
     cmake_parse_arguments(ARG "" "GATT_DB" "SOURCES;NEEDS" ${ARGN})
-
     if(NOT ARG_SOURCES)
-        message(FATAL_ERROR "btstack_declare_application(${example}) requires SOURCES")
+        message(FATAL_ERROR "btstack_declare_application(${application}) requires SOURCES")
     endif()
-
-    list(FIND btstack_declared_examples "${example}" example_index)
-    if(NOT example_index EQUAL -1)
-        message(FATAL_ERROR "BTstack example '${example}' is declared more than once")
+    if(application IN_LIST btstack_declared_applications)
+        message(FATAL_ERROR "BTstack application '${application}' is declared more than once")
     endif()
+    set(application_sources)
+    foreach(source IN LISTS ARG_SOURCES)
+        get_filename_component(source "${source}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+        list(APPEND application_sources "${source}")
+    endforeach()
+    set(application_gatt_db "")
+    if(ARG_GATT_DB)
+        get_filename_component(application_gatt_db "${ARG_GATT_DB}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+    endif()
+    list(APPEND btstack_declared_applications "${application}")
+    set(btstack_declared_applications "${btstack_declared_applications}" PARENT_SCOPE)
+    set("btstack_application_${application}_sources" "${application_sources}" PARENT_SCOPE)
+    set("btstack_application_${application}_gatt_db" "${application_gatt_db}" PARENT_SCOPE)
+    set("btstack_application_${application}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
+    # Preserve the legacy example metadata and its original relative paths.
+    set(btstack_declared_examples "${btstack_declared_applications}" PARENT_SCOPE)
+    set("btstack_example_${application}_sources" "${ARG_SOURCES}" PARENT_SCOPE)
+    set("btstack_example_${application}_gatt_db" "${ARG_GATT_DB}" PARENT_SCOPE)
+    set("btstack_example_${application}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
+endfunction()
 
-    list(APPEND btstack_declared_examples "${example}")
-    set(btstack_declared_examples "${btstack_declared_examples}" PARENT_SCOPE)
-    set("btstack_example_${example}_sources" "${ARG_SOURCES}" PARENT_SCOPE)
-    set("btstack_example_${example}_gatt_db" "${ARG_GATT_DB}" PARENT_SCOPE)
-    set("btstack_example_${example}_needs" "${ARG_NEEDS}" PARENT_SCOPE)
+# Read a declaration without depending on the metadata variable names.
+function(btstack_get_application_property output_variable application property)
+    if(NOT application IN_LIST btstack_declared_applications)
+        message(FATAL_ERROR "BTstack application '${application}' has not been declared")
+    endif()
+    if(NOT property MATCHES "^(SOURCES|GATT_DB|NEEDS)$")
+        message(FATAL_ERROR "Unknown BTstack application property '${property}'")
+    endif()
+    string(TOLOWER "${property}" property_name)
+    set(${output_variable} "${btstack_application_${application}_${property_name}}" PARENT_SCOPE)
 endfunction()
 
 # Register a port that can provide implementation groups for logical example
@@ -919,14 +941,14 @@ endfunction()
 # Usage:
 #   btstack_resolve_example(gatt_counter BTSTACK_GROUPS BTSTACK_CONFIG_NEEDS)
 function(btstack_resolve_example_requirements example port groups_output_variable configuration_output_variable)
-    list(FIND btstack_declared_examples "${example}" example_index)
+    list(FIND btstack_declared_applications "${example}" example_index)
     if(example_index EQUAL -1)
-        message(FATAL_ERROR "BTstack example '${example}' has not been declared")
+        message(FATAL_ERROR "BTstack application '${example}' has not been declared")
     endif()
 
     set(source_groups)
     set(configuration_requirements)
-    foreach(requirement IN LISTS btstack_example_${example}_needs)
+    foreach(requirement IN LISTS btstack_application_${example}_needs)
         list(FIND btstack_source_groups "${requirement}" group_index)
         if(NOT group_index EQUAL -1)
             list(APPEND source_groups "${requirement}")
@@ -943,12 +965,12 @@ function(btstack_resolve_example_requirements example port groups_output_variabl
                 list(APPEND source_groups ${${provider_variable}})
             else()
                 message(FATAL_ERROR
-                    "BTstack example '${example}' needs capability '${requirement}', "
+                    "BTstack application '${example}' needs capability '${requirement}', "
                     "but port '${port}' does not provide it")
             endif()
         else()
             message(FATAL_ERROR
-                "BTstack example '${example}' has unknown requirement '${requirement}'. "
+                "BTstack application '${example}' has unknown requirement '${requirement}'. "
                 "Requirements must be source groups or ENABLE_* configuration symbols")
         endif()
     endforeach()
@@ -970,14 +992,14 @@ function(btstack_collect_example_port_provider_property output_variable port exa
     if(port_index EQUAL -1)
         message(FATAL_ERROR "BTstack port '${port}' has not been declared")
     endif()
-    list(FIND btstack_declared_examples "${example}" example_index)
+    list(FIND btstack_declared_applications "${example}" example_index)
     if(example_index EQUAL -1)
-        message(FATAL_ERROR "BTstack example '${example}' has not been declared")
+        message(FATAL_ERROR "BTstack application '${example}' has not been declared")
     endif()
 
     string(REPLACE "-" "_" port_suffix "${port}")
     set(values)
-    foreach(requirement IN LISTS btstack_example_${example}_needs)
+    foreach(requirement IN LISTS btstack_application_${example}_needs)
         list(FIND btstack_source_groups "${requirement}" group_index)
         if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
             continue()
@@ -987,7 +1009,7 @@ function(btstack_collect_example_port_provider_property output_variable port exa
         set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
         if(NOT DEFINED ${provider_variable}_declared)
             message(FATAL_ERROR
-                "BTstack example '${example}' needs capability '${requirement}', "
+                "BTstack application '${example}' needs capability '${requirement}', "
                 "but port '${port}' does not provide it")
         endif()
         list(APPEND values ${${provider_variable}_${property}})
@@ -1038,15 +1060,15 @@ function(btstack_filter_examples_for_port output_variable)
     set(selected_examples)
     set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_examples" "${ARG_CANDIDATES}")
     foreach(example IN LISTS ARG_CANDIDATES)
-        list(FIND btstack_declared_examples "${example}" example_index)
+        list(FIND btstack_declared_applications "${example}" example_index)
         if(example_index EQUAL -1)
-            message(FATAL_ERROR "BTstack example '${example}' has not been declared")
+            message(FATAL_ERROR "BTstack application '${example}' has not been declared")
         endif()
 
         set(supported TRUE)
         set(missing_capabilities)
         set(missing_configuration)
-        foreach(requirement IN LISTS btstack_example_${example}_needs)
+        foreach(requirement IN LISTS btstack_application_${example}_needs)
             list(FIND btstack_source_groups "${requirement}" group_index)
             if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
                 continue()
@@ -1092,6 +1114,24 @@ function(btstack_filter_examples_for_port output_variable)
     endforeach()
 
     set(${output_variable} "${selected_examples}" PARENT_SCOPE)
+endfunction()
+
+# Application terminology for external projects; example names remain supported.
+function(btstack_filter_applications_for_port output_variable)
+    btstack_filter_examples_for_port(result ${ARGN})
+    set(${output_variable} "${result}" PARENT_SCOPE)
+endfunction()
+
+function(btstack_resolve_application application groups_output_variable configuration_output_variable)
+    btstack_resolve_example("${application}" groups configuration)
+    set(${groups_output_variable} "${groups}" PARENT_SCOPE)
+    set(${configuration_output_variable} "${configuration}" PARENT_SCOPE)
+endfunction()
+
+function(btstack_resolve_application_for_port port application groups_output_variable configuration_output_variable)
+    btstack_resolve_example_for_port("${port}" "${application}" groups configuration)
+    set(${groups_output_variable} "${groups}" PARENT_SCOPE)
+    set(${configuration_output_variable} "${configuration}" PARENT_SCOPE)
 endfunction()
 
 # Add configure-time introspection targets for one port. Invoke this after the
@@ -1162,6 +1202,12 @@ function(btstack_add_info_targets)
     add_custom_target(example-info
         COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=example -P "${btstack_info_script}"
         COMMENT "Display BTstack example information")
+    add_custom_target(list-applications
+        COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=list-applications -P "${btstack_info_script}"
+        COMMENT "List declared BTstack applications for this port")
+    add_custom_target(application-info
+        COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=application -P "${btstack_info_script}"
+        COMMENT "Display BTstack application information")
 endfunction()
 
 function(btstack_resolve_example example groups_output_variable configuration_output_variable)
@@ -1374,9 +1420,8 @@ function(btstack_add_application_library)
         endif()
     endforeach()
     set(info_sources ${info_port_sources} ${info_library_sources})
-    foreach(source IN LISTS btstack_example_${ARG_APPLICATION}_sources)
-        list(APPEND info_sources "${btstack_cmake_root}/example/${source}")
-    endforeach()
+    btstack_get_application_property(application_sources "${ARG_APPLICATION}" SOURCES)
+    list(APPEND info_sources ${application_sources})
     list(REMOVE_DUPLICATES info_sources)
     list(SORT info_sources)
     string(REPLACE "-" "_" info_port_suffix "${ARG_PORT}")
