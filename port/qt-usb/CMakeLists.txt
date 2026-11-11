@@ -14,21 +14,19 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-usb)
 add_compile_definitions(HAVE_PORTAUDIO)
-btstack_declare_port_capability(qt-usb CAPABILITY audio
+btstack_declare_port_capability(CAPABILITY audio
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
-btstack_declare_port_capability(qt-usb CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-btstack_configure_port(qt-usb
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS HAVE_PORTAUDIO)
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT qt-usb
     CANDIDATES ${EXAMPLES})
 set(BTSTACK_QT_USB_GROUPS
     ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
@@ -39,7 +37,7 @@ set(BTSTACK_QT_USB_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT qt-usb APPLICATION ${EXAMPLE}
+ APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_QT_USB_GROUPS}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS} ${PORTAUDIO_INCLUDE_DIRS}
@@ -56,4 +54,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library Qt5::Core)
 endforeach()
 
-btstack_add_info_targets(PORT qt-usb)
+btstack_add_info_targets()

@@ -52,7 +52,7 @@ btstack_collect_public_include_directories(BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTO
 # Zephyr normally force-includes autoconf.h for compilation. Include it
 # explicitly while extracting btstack_config.h's ENABLE_*/HAVE_* macros so the
 # resolver sees the same Kconfig values as the compiler.
-btstack_configure_port(zephyr OUTPUT BTSTACK_ZEPHYR_CONFIGURATION_MACROS
+btstack_configure_port(OUTPUT BTSTACK_ZEPHYR_CONFIGURATION_MACROS
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/zephyr/include/generated")
 # Zephyr normally reconfigures after Kconfig changes; retain the generated
@@ -72,7 +72,6 @@ else()
 endif()
 
 btstack_filter_examples_for_port(BTSTACK_ZEPHYR_EXAMPLES
-    PORT zephyr
     CANDIDATES ${btstack_declared_applications})
 
 list(FIND btstack_declared_applications "${BTSTACK_ZEPHYR_EXAMPLE}" BTSTACK_ZEPHYR_EXAMPLE_INDEX)
@@ -117,7 +116,6 @@ string(REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$]
 
 btstack_add_application_library(
     TARGET btstack_zephyr
-    PORT zephyr
     APPLICATION ${BTSTACK_ZEPHYR_EXAMPLE}
     BASE_GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS}
     PORT_SOURCES ${BTSTACK_ZEPHYR_PORT_SOURCES}
@@ -159,7 +157,6 @@ target_link_libraries(app PRIVATE btstack_zephyr)
 foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
     btstack_resolve_example_for_port(zephyr "${example}" example_groups example_configuration)
     btstack_filter_groups_for_port(example_base_groups
-        PORT zephyr
         GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS})
     btstack_resolve_groups(example_all_groups
         GROUPS ${example_groups} ${example_base_groups})
@@ -194,4 +191,4 @@ foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
         "${example_include_directories}")
 endforeach()
 
-btstack_add_info_targets(PORT zephyr)
+btstack_add_info_targets()

@@ -169,13 +169,17 @@ features.
 
 ```cmake
 btstack_declare_port(my-port)
-btstack_configure_port(my-port
+btstack_configure_port(
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${MY_PORT_COMPILE_DEFINITIONS})
 ```
 
 Pass the same relevant definitions to `DEFINITIONS` that compilation receives;
 this is important when a configuration header conditionally enables a feature.
+`btstack_declare_port` also selects the current port for subsequent helpers in
+the same CMake scope and its child scopes. If several ports are declared, the
+most recently declared one is current; pass `PORT <name>` to a helper to select
+a different declared port. Helpers report an error when no port is available.
 
 A *capability* is different from a BTstack feature. It describes something a
 port provides, such as `audio` or `led`. A port declares the concrete groups,
@@ -199,13 +203,11 @@ The port still owns the final executable and its board policy:
 include("${BTSTACK_ROOT}/example/requirements.cmake")
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_applications_for_port(EXAMPLES
-    PORT my-port
     CANDIDATES ${EXAMPLES})
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT my-port
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${MY_PORT_BASE_GROUPS}
         PORT_SOURCES ${MY_PORT_SOURCES}
@@ -235,7 +237,7 @@ ports supply their configuration and SDK include paths as needed.
 A port can add inspection targets after its normal application loop:
 
 ```cmake
-btstack_add_info_targets(PORT my-port)
+btstack_add_info_targets()
 ```
 
 After configuring the port, the following targets provide a concise view of

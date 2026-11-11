@@ -30,14 +30,12 @@ if (PkgConfig_FOUND)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
         add_compile_definitions(HAVE_PORTAUDIO)
-        btstack_declare_port_capability(posix-h5
-            CAPABILITY audio
+        btstack_declare_port_capability(CAPABILITY audio
             GROUPS platform-posix-audio-portaudio platform-posix-wav
         )
     endif()
 endif()
-btstack_declare_port_capability(posix-h5
-    CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded"
 )
@@ -57,8 +55,7 @@ set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_configure_port(posix-h5
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
 
 
@@ -66,7 +63,6 @@ btstack_configure_port(posix-h5
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT posix-h5
     CANDIDATES ${EXAMPLES})
 list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
@@ -117,7 +113,6 @@ set(BTSTACK_POSIX_H5_BLUETOOTH_BASE_GROUPS
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT posix-h5
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_POSIX_H5_BLUETOOTH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -142,4 +137,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library pthread)
 endforeach()
 
-btstack_add_info_targets(PORT posix-h5)
+btstack_add_info_targets()

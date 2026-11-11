@@ -7,8 +7,7 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(freebsd-netgraph)
 
 # main.c supplies the LED implementation and uses PortAudio when available.
-btstack_declare_port_capability(freebsd-netgraph
-    CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 find_package(PkgConfig QUIET)
 if(PkgConfig_FOUND)
@@ -16,8 +15,7 @@ if(PkgConfig_FOUND)
 endif()
 if(PORTAUDIO_FOUND)
     add_compile_definitions(HAVE_PORTAUDIO)
-    btstack_declare_port_capability(freebsd-netgraph
-        CAPABILITY audio
+    btstack_declare_port_capability(CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav)
 endif()
 find_package(Threads REQUIRED)
@@ -26,8 +24,7 @@ set(BTSTACK_CONFIG_DEFINITIONS)
 if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
 endif()
-btstack_configure_port(freebsd-netgraph
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
     DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
 
 
@@ -49,7 +46,6 @@ endif()
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT freebsd-netgraph
     CANDIDATES ${EXAMPLES})
 # Preserve the existing port's Mesh exclusion.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
@@ -57,7 +53,6 @@ list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT freebsd-netgraph
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_NETGRAPH_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
@@ -73,4 +68,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
 
-btstack_add_info_targets(PORT freebsd-netgraph)
+btstack_add_info_targets()

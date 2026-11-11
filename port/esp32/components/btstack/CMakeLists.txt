@@ -53,8 +53,7 @@ endif()
 # it, together with ESP-IDF's version header, to the normal C preprocessor so
 # ENABLE_CLASSIC/ENABLE_BLE follow the selected target automatically.
 btstack_declare_port(esp32)
-btstack_configure_port(esp32
-    CONFIG "${CMAKE_CURRENT_LIST_DIR}/../btstack_config/include/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_LIST_DIR}/../btstack_config/include/btstack_config.h"
     INCLUDE_DIRECTORIES
         "${CMAKE_BINARY_DIR}/config"
         "${IDF_PATH}/components/esp_common/include")
@@ -69,13 +68,11 @@ if(CONFIG_BTSTACK_AUDIO)
     # The audio implementation is part of the port baseline because
     # btstack_port_esp32.c installs it whenever this Kconfig option is set.
     # The provider declaration only describes example availability.
-    btstack_declare_port_capability(esp32
-        CAPABILITY audio
+    btstack_declare_port_capability(CAPABILITY audio
         PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include")
 endif()
 
 btstack_filter_examples_for_port(BTSTACK_ESP32_EXAMPLES
-    PORT esp32
     CANDIDATES ${btstack_declared_applications})
 
 list(FIND btstack_declared_applications "${BTSTACK_EXAMPLE}" BTSTACK_ESP32_EXAMPLE_INDEX)
@@ -108,7 +105,6 @@ if(CONFIG_BTSTACK_EXTERNAL_UART_BT)
     list(APPEND BTSTACK_ESP32_BASE_GROUPS ble)
 endif()
 btstack_filter_groups_for_port(BTSTACK_ESP32_ACTIVE_BASE_GROUPS
-    PORT esp32
     GROUPS ${BTSTACK_ESP32_BASE_GROUPS})
 btstack_resolve_groups(BTSTACK_ESP32_GROUPS
     GROUPS ${BTSTACK_ESP32_EXAMPLE_GROUPS} ${BTSTACK_ESP32_ACTIVE_BASE_GROUPS})
@@ -233,4 +229,4 @@ foreach(example IN LISTS BTSTACK_ESP32_EXAMPLES)
     list(SORT example_include_dirs)
     set_property(GLOBAL PROPERTY "btstack_info_esp32_${example_suffix}_include_directories" "${example_include_dirs}")
 endforeach()
-btstack_add_info_targets(PORT esp32)
+btstack_add_info_targets()

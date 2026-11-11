@@ -31,8 +31,7 @@ add_link_options(-mcpu=cortex-m4 -mthumb -mabi=aapcs -mfloat-abi=hard
     "-T${CMAKE_CURRENT_SOURCE_DIR}/pca10040/armgcc/nrf52832_xxaa.ld")
 
 btstack_declare_port(nrf5-cinnamon)
-btstack_configure_port(nrf5-cinnamon
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
 
 
 set(PORT_INCLUDES
@@ -57,11 +56,11 @@ set(BASE_GROUPS core ble le-device-db-tlv tlv-none chipset-cinnamon
 # encryption and central connections are not implemented by its controller.
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES gap_le_advertisements gatt_counter gatt_streamer_server)
-btstack_filter_examples_for_port(EXAMPLES PORT nrf5-cinnamon CANDIDATES ${EXAMPLES})
+btstack_filter_examples_for_port(EXAMPLES CANDIDATES ${EXAMPLES})
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT nrf5-cinnamon APPLICATION ${EXAMPLE}
+ APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BASE_GROUPS} PORT_SOURCES ${PORT_SOURCES}
         # Match the legacy Makefile warning policy for the Cinnamon port.
         PRIVATE_COMPILE_OPTIONS -Wno-extra -Wno-switch-default
@@ -72,4 +71,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_target_warnings(${EXAMPLE} STRICT)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library c nosys m)
 endforeach()
-btstack_add_info_targets(PORT nrf5-cinnamon)
+btstack_add_info_targets()

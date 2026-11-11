@@ -19,20 +19,18 @@ btstack_add_firmware_download(
     SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}")
 
 add_compile_definitions(HAVE_SDL2)
-btstack_declare_port_capability(web-h4 CAPABILITY audio
+btstack_declare_port_capability(CAPABILITY audio
     GROUPS platform-posix-audio-sdl2)
-btstack_declare_port_capability(web-h4 CAPABILITY led
+btstack_declare_port_capability(CAPABILITY led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-btstack_configure_port(web-h4
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/src/btstack_config.h"
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/src/btstack_config.h"
     DEFINITIONS HAVE_SDL2)
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
-    PORT web-h4
     CANDIDATES ${EXAMPLES})
 # The browser H4 bridge does not implement the Mesh advertising bearer.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
@@ -62,7 +60,7 @@ string(JOIN "," EXPORTED_FUNCTIONS_STR ${EXPORTED_FUNCTIONS})
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        PORT web-h4 APPLICATION ${EXAMPLE}
+ APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_WEB_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -87,4 +85,4 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
 
-btstack_add_info_targets(PORT web-h4)
+btstack_add_info_targets()
