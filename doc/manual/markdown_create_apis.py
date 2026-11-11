@@ -340,7 +340,7 @@ def main(argv):
                 identation = getSecondLevelIdentation(line)
                
                 for header_filepath in sorted(header_files.keys()):
-                    header_title = os.path.basename(header_filepath)
+                    header_title = header_files[header_filepath][0].replace("'", "''")
                     markdown_reference = "appendix/" + filename_stem(header_filepath) + ".md"
                     
                     fout.write(identation + "'" + header_title + "': " + markdown_reference + "\n")
