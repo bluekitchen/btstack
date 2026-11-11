@@ -341,6 +341,8 @@ GROUP_INCLUDE_DIRECTORIES = {
 # directory. wav_util.h is used by the LE Audio demo utilities when a desktop
 # audio backend provides the audio capability.
 GROUP_CONSUMER_INCLUDE_DIRECTORIES = {
+    "platform-embedded-run-loop": ["platform/embedded"],
+    "platform-posix-run-loop": ["platform/posix"],
     "platform-posix-wav": ["platform/posix"],
     "transport-linux": ["platform/linux"],
 }

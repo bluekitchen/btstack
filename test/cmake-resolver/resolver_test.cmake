@@ -100,6 +100,13 @@ else()
             "Unexpected public include directories: ${public_include_directories}")
     endif()
 
+    btstack_collect_consumer_include_directories(run_loop_includes
+        GROUPS platform-embedded-run-loop platform-posix-run-loop)
+    set(expected_run_loop_includes "${BTSTACK_ROOT}/platform/embedded;${BTSTACK_ROOT}/platform/posix")
+    if(NOT "${run_loop_includes}" STREQUAL "${expected_run_loop_includes}")
+        message(FATAL_ERROR "Unexpected run loop consumer includes: ${run_loop_includes}")
+    endif()
+
     btstack_resolve_example_for_port(test-led led_counter
         led_counter_groups led_counter_configurations)
     if(NOT "${led_counter_groups}" STREQUAL "core")
