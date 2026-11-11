@@ -85,13 +85,7 @@ message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_D
 
 
 # Get the declared examples supported by this port configuration and providers.
-# include(${BTSTACK_ROOT}/example/requirements.cmake)
-
-btstack_declare_application(gatt_counter
-        SOURCES gatt_counter.c
-        GATT_DB gatt_counter.gatt
-        NEEDS gatt-server ENABLE_LE_PERIPHERAL
-)
+include(${BTSTACK_ROOT}/example/requirements.cmake)
 
 set(EXAMPLES ${btstack_declared_applications})
 btstack_filter_examples_for_port(EXAMPLES
