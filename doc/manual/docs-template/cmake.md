@@ -119,6 +119,7 @@ groups with the appropriate choices for its board.
 ```cmake
 set(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/third_party/btstack")
 include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
+# The helpers derive their source root from the included module.
 
 set(BTSTACK_REQUESTED_GROUPS
     gatt-server
@@ -132,16 +133,12 @@ set(BTSTACK_REQUESTED_GROUPS
 btstack_resolve_groups(BTSTACK_GROUPS
     GROUPS ${BTSTACK_REQUESTED_GROUPS})
 btstack_collect_sources(BTSTACK_SOURCES
-    ROOT "${BTSTACK_ROOT}"
     GROUPS ${BTSTACK_GROUPS})
 btstack_collect_include_directories(BTSTACK_PRIVATE_INCLUDES
-    ROOT "${BTSTACK_ROOT}"
     GROUPS ${BTSTACK_GROUPS})
 btstack_collect_consumer_include_directories(BTSTACK_CONSUMER_INCLUDES
-    ROOT "${BTSTACK_ROOT}"
     GROUPS ${BTSTACK_GROUPS})
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDES
-    ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDES)
 
 add_library(my_btstack STATIC ${BTSTACK_SOURCES}
     src/my_hci_transport.c
@@ -193,7 +190,6 @@ btstack_filter_examples_for_port(EXAMPLES
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
-        ROOT "${BTSTACK_ROOT}"
         PORT my-port
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${MY_PORT_BASE_GROUPS}

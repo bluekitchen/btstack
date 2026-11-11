@@ -3,6 +3,7 @@
 # This file deliberately has no project(), target, or platform policy. A port
 # keeps those responsibilities in its own CMakeLists.txt.
 
+get_filename_component(btstack_cmake_root "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include("${CMAKE_CURRENT_LIST_DIR}/BTstackSources.cmake")
 set(btstack_config_extractor "${CMAKE_CURRENT_LIST_DIR}/../extract_btstack_config.py")
 set(btstack_list_examples_script "${CMAKE_CURRENT_LIST_DIR}/BTstackListExamples.cmake")
@@ -551,11 +552,7 @@ function(btstack_filter_groups_for_port output_variable)
 endfunction()
 
 function(btstack_collect_group_paths output_variable)
-    cmake_parse_arguments(ARG "ALLOW_UNDEFINED" "ROOT;VARIABLE_PREFIX" "GROUPS" ${ARGN})
-
-    if(NOT ARG_ROOT)
-        message(FATAL_ERROR "btstack_collect_group_paths requires ROOT")
-    endif()
+    cmake_parse_arguments(ARG "ALLOW_UNDEFINED" "VARIABLE_PREFIX" "GROUPS" ${ARGN})
 
     if(NOT ARG_GROUPS)
         message(FATAL_ERROR "btstack_collect_group_paths requires at least one GROUP")
@@ -564,10 +561,6 @@ function(btstack_collect_group_paths output_variable)
     if(NOT ARG_VARIABLE_PREFIX)
         message(FATAL_ERROR "btstack_collect_group_paths requires VARIABLE_PREFIX")
     endif()
-
-    # Ports commonly set BTSTACK_ROOT relative to their CMakeLists.txt.
-    # Normalize it once so source and include lists never retain ../ segments.
-    get_filename_component(root "${ARG_ROOT}" ABSOLUTE)
 
     set(sources)
     foreach(group IN LISTS ARG_GROUPS)
@@ -590,7 +583,7 @@ function(btstack_collect_group_paths output_variable)
         endif()
 
         foreach(source IN LISTS ${group_variable})
-            list(APPEND sources "${root}/${source}")
+            list(APPEND sources "${btstack_cmake_root}/${source}")
         endforeach()
     endforeach()
 
@@ -603,7 +596,6 @@ endfunction()
 # Usage:
 #   include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
 #   btstack_collect_sources(BTSTACK_SOURCES
-#       ROOT "${BTSTACK_ROOT}"
 #       GROUPS core ble le-audio lc3 transport-h5)
 #
 # The requested group IDs must be listed in btstack_source_groups. Group IDs
@@ -640,15 +632,9 @@ endfunction()
 # headers. Apply these with PUBLIC visibility so applications can include
 # btstack.h without also selecting optional third-party implementation sources.
 function(btstack_collect_public_include_directories output_variable)
-    cmake_parse_arguments(ARG "" "ROOT" "" ${ARGN})
-
-    if(NOT ARG_ROOT)
-        message(FATAL_ERROR "btstack_collect_public_include_directories requires ROOT")
-    endif()
-
     set(include_directories)
     foreach(directory IN LISTS btstack_public_include_directories)
-        list(APPEND include_directories "${ARG_ROOT}/${directory}")
+        list(APPEND include_directories "${btstack_cmake_root}/${directory}")
     endforeach()
     list(REMOVE_DUPLICATES include_directories)
     set(${output_variable} "${include_directories}" PARENT_SCOPE)
@@ -663,7 +649,6 @@ endfunction()
 # DEPENDS is optional and is intended for imported .gatt service definitions.
 # The generator itself is always a dependency, so changes to compile_gatt.py
 # regenerate every affected header.
-# BTSTACK_ROOT must be set by the calling project.
 function(btstack_target_gatt target gatt_file)
     cmake_parse_arguments(ARG "" "" "DEPENDS" ${ARGN})
 
@@ -680,9 +665,9 @@ function(btstack_target_gatt target gatt_file)
     add_custom_command(
         OUTPUT "${output_header}"
         DEPFILE "${depfile}"
-        DEPENDS "${gatt_file}" "${BTSTACK_ROOT}/tool/compile_gatt.py" ${ARG_DEPENDS}
+        DEPENDS "${gatt_file}" "${btstack_cmake_root}/tool/compile_gatt.py" ${ARG_DEPENDS}
         COMMAND "${Python3_EXECUTABLE}"
-        ARGS "${BTSTACK_ROOT}/tool/compile_gatt.py" --depfile "${depfile}"
+        ARGS "${btstack_cmake_root}/tool/compile_gatt.py" --depfile "${depfile}"
              "${gatt_file}" "${output_header}"
     )
 
@@ -1169,11 +1154,11 @@ endfunction()
 # so groups shared by multiple example closures compile only once per port.
 function(btstack_add_scoped_group_object_library)
     cmake_parse_arguments(ARG ""
-        "OUTPUT_TARGET;TARGET_PREFIX;ROOT;GROUP"
+        "OUTPUT_TARGET;TARGET_PREFIX;GROUP"
         "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS"
         ${ARGN})
 
-    foreach(required OUTPUT_TARGET TARGET_PREFIX ROOT GROUP)
+    foreach(required OUTPUT_TARGET TARGET_PREFIX GROUP)
         if(NOT ARG_${required})
             message(FATAL_ERROR "btstack_add_scoped_group_object_library requires ${required}")
         endif()
@@ -1202,7 +1187,7 @@ function(btstack_add_scoped_group_object_library)
         set(group_sources)
         set(group_is_third_party TRUE)
         foreach(source IN LISTS group_relative_sources)
-            list(APPEND group_sources "${ARG_ROOT}/${source}")
+            list(APPEND group_sources "${btstack_cmake_root}/${source}")
             if(NOT source MATCHES "^3rd-party/")
                 set(group_is_third_party FALSE)
             endif()
@@ -1211,7 +1196,6 @@ function(btstack_add_scoped_group_object_library)
         # files may include headers owned by its declared dependencies.
         btstack_resolve_groups(group_include_groups GROUPS ${ARG_GROUP})
         btstack_collect_include_directories(group_include_directories
-            ROOT "${ARG_ROOT}"
             GROUPS ${group_include_groups}
         )
 
@@ -1245,7 +1229,6 @@ endfunction()
 # Usage:
 #   btstack_add_application_library(
 #       TARGET btstack_gatt_counter
-#       ROOT "${BTSTACK_ROOT}"
 #       PORT libusb
 #       APPLICATION gatt_counter
 #       BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
@@ -1261,11 +1244,11 @@ endfunction()
 # Calls for the same port must use the same compilation settings.
 function(btstack_add_application_library)
     cmake_parse_arguments(ARG ""
-        "TARGET;ROOT;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT"
+        "TARGET;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT"
         "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;LINK_LIBRARIES;LINK_DIRECTORIES"
         ${ARGN})
 
-    foreach(required TARGET ROOT PORT APPLICATION)
+    foreach(required TARGET PORT APPLICATION)
         if(NOT ARG_${required})
             message(FATAL_ERROR "btstack_add_application_library requires ${required}")
         endif()
@@ -1274,12 +1257,11 @@ function(btstack_add_application_library)
     # Shared group targets must not silently reuse a different configuration.
     # Directory properties also affect object compilation independently of the
     # explicit arguments, so include them in the per-port comparison.
-    get_filename_component(configuration_root "${ARG_ROOT}" ABSOLUTE)
     get_directory_property(configuration_directory_includes INCLUDE_DIRECTORIES)
     get_directory_property(configuration_directory_definitions COMPILE_DEFINITIONS)
     get_directory_property(configuration_directory_options COMPILE_OPTIONS)
     string(SHA256 port_key "${ARG_PORT}")
-    foreach(setting IN ITEMS root public_includes private_includes compile_options
+    foreach(setting IN ITEMS public_includes private_includes compile_options
             directory_includes directory_definitions directory_options)
         if(setting STREQUAL "public_includes")
             set(configuration_${setting} "${ARG_PUBLIC_INCLUDE_DIRECTORIES}")
@@ -1318,11 +1300,9 @@ function(btstack_add_application_library)
     )
     btstack_resolve_groups(library_groups GROUPS ${requested_library_groups})
     btstack_collect_include_directories(example_include_directories
-        ROOT "${ARG_ROOT}"
         GROUPS ${library_groups}
     )
     btstack_collect_consumer_include_directories(example_consumer_include_directories
-        ROOT "${ARG_ROOT}"
         GROUPS ${library_groups}
     )
 
@@ -1331,7 +1311,6 @@ function(btstack_add_application_library)
         btstack_add_scoped_group_object_library(
             OUTPUT_TARGET group_object_target
             TARGET_PREFIX "btstack_${ARG_PORT}"
-            ROOT "${ARG_ROOT}"
             GROUP "${group}"
             PUBLIC_INCLUDE_DIRECTORIES ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
             PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
@@ -1345,7 +1324,6 @@ function(btstack_add_application_library)
     # Retain the resolved source list for the example-info target. Include the
     # application sources as well as all port and BTstack implementation files.
     btstack_collect_sources(info_library_sources
-        ROOT "${ARG_ROOT}"
         GROUPS ${library_groups})
     set(info_port_sources)
     foreach(source IN LISTS ARG_PORT_SOURCES example_port_sources)
@@ -1356,9 +1334,8 @@ function(btstack_add_application_library)
         endif()
     endforeach()
     set(info_sources ${info_port_sources} ${info_library_sources})
-    get_filename_component(info_root "${ARG_ROOT}" ABSOLUTE)
     foreach(source IN LISTS btstack_example_${ARG_APPLICATION}_sources)
-        list(APPEND info_sources "${info_root}/example/${source}")
+        list(APPEND info_sources "${btstack_cmake_root}/example/${source}")
     endforeach()
     list(REMOVE_DUPLICATES info_sources)
     list(SORT info_sources)

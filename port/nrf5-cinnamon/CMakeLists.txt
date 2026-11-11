@@ -31,7 +31,7 @@ add_link_options(-mcpu=cortex-m4 -mthumb -mabi=aapcs -mfloat-abi=hard
     "-T${CMAKE_CURRENT_SOURCE_DIR}/pca10040/armgcc/nrf52832_xxaa.ld")
 
 btstack_declare_port(nrf5-cinnamon)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 btstack_collect_port_configuration_macros(BTSTACK_CONFIG_MACROS
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h")
 btstack_set_port_configuration_macros(nrf5-cinnamon ${BTSTACK_CONFIG_MACROS})
@@ -61,7 +61,7 @@ set(EXAMPLES gap_le_advertisements gatt_counter gatt_streamer_server)
 btstack_filter_examples_for_port(EXAMPLES PORT nrf5-cinnamon CANDIDATES ${EXAMPLES})
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        TARGET btstack_${EXAMPLE}_library
         PORT nrf5-cinnamon APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BASE_GROUPS} PORT_SOURCES ${PORT_SOURCES}
         # Match the legacy Makefile warning policy for the Cinnamon port.

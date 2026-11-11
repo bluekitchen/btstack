@@ -5,7 +5,7 @@ project(BTstack-libusb-intel)
 set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(libusb-intel)
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES ROOT "${BTSTACK_ROOT}")
+btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDE_DIRECTORIES)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
@@ -47,7 +47,7 @@ endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
+        TARGET btstack_${EXAMPLE}_library
         PORT libusb-intel APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_LIBUSB_INTEL_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
