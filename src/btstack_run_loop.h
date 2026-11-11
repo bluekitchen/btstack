@@ -220,37 +220,49 @@ void btstack_run_loop_base_execute_callbacks(void);
 /**
  * @brief Init main run loop. Must be called before any other run loop call.
  *  
- * Use btstack_run_loop_$(btstack_run_loop_TYPE)_get_instance() from btstack_run_loop_$(btstack_run_loop_TYPE).h to get instance 
+ * Use btstack_run_loop_TYPE_get_instance() from btstack_run_loop_TYPE.h to get instance
+ * @param run_loop Platform-specific run loop implementation
  */
 void btstack_run_loop_init(const btstack_run_loop_t * run_loop);
 
 /**
- * @brief Set timer based on current time in milliseconds.
+ * @brief Set timer based on current time.
+ * @param timer Timer source to configure
+ * @param timeout_in_ms Delay in milliseconds from the current time
  */
 void btstack_run_loop_set_timer(btstack_timer_source_t * timer, uint32_t timeout_in_ms);
 
 /**
  * @brief Set callback that will be executed when timer expires.
+ * @param timer Timer source to configure
+ * @param handler Callback invoked with the timer source when it expires
  */
-void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*process)(btstack_timer_source_t * _timer));
+void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*handler)(btstack_timer_source_t * timer_source));
 
 /**
  * @brief Set context for this timer
+ * @param timer Timer source to configure
+ * @param context User-provided context pointer
  */
 void btstack_run_loop_set_timer_context(btstack_timer_source_t * timer, void * context);
 
 /**
  * @brief Get context for this timer
+ * @param timer Timer source to query
+ * @return User-provided context pointer
  */
 void * btstack_run_loop_get_timer_context(btstack_timer_source_t * timer);
 
 /**
  * @brief Add timer source.
+ * @param timer Timer source to add, with its timeout and handler already set
  */
 void btstack_run_loop_add_timer(btstack_timer_source_t * timer);
 
 /**
  * @brief Remove timer source.
+ * @param timer Timer source to remove
+ * @return Nonzero if the timer was removed, zero otherwise
  */
 int  btstack_run_loop_remove_timer(btstack_timer_source_t * timer);
 
@@ -268,60 +280,65 @@ void btstack_run_loop_timer_dump(void);
 
 /**
  * @brief Set data source callback.
+ * @param data_source Data source to configure
+ * @param process Callback invoked with the data source and the callback type
  */
 void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t * _data_source, btstack_data_source_callback_type_t callback_type));
 
 /**
  * @brief Set data source file descriptor. 
- * @param data_source
- * @param fd file descriptor
+ * @param data_source Data source to configure
+ * @param fd File descriptor to associate with the data source
  * @note No effect if port doesn't have file descriptors
  */
 void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, int fd);
 
 /**
  * @brief Get data source file descriptor. 
- * @param data_source
+ * @param data_source Data source to query
+ * @return Associated file descriptor
  */
 int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
 
 /**
- * @brief Set data source file descriptor. 
- * @param data_source
- * @param handle
+ * @brief Set data source handle.
+ * @param data_source Data source to configure
+ * @param handle Handle to associate with the data source
  * @note No effect if port doesn't have file descriptors
  */
 void btstack_run_loop_set_data_source_handle(btstack_data_source_t * data_source, void * handle);
 
 /**
- * @brief Get data source file descriptor. 
- * @param data_source
+ * @brief Get data source handle.
+ * @param data_source Data source to query
+ * @return Associated handle
  */
 void * btstack_run_loop_get_data_source_handle(btstack_data_source_t * data_source);
 
 /**
  * @brief Enable callbacks for a data source
- * @param data_source to remove
- * @param callback types to enable
+ * @param data_source Data source to configure
+ * @param callbacks Bitmask of btstack_data_source_callback_type_t values to enable
  */
 void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
 
 /**
- * @brief Enable callbacks for a data source
- * @param data_source to remove
- * @param callback types to disable
+ * @brief Disable callbacks for a data source
+ * @param data_source Data source to configure
+ * @param callbacks Bitmask of btstack_data_source_callback_type_t values to disable
  */
 void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
 
 /**
  * @brief Add data source to run loop
- * @param data_source to add
+ * @param data_source Data source to add, with its handler already set
  */
 void btstack_run_loop_add_data_source(btstack_data_source_t * data_source);
 
 /**
  * @brief Remove data source from run loop
- * @param data_source to remove
+ * @param data_source Data source to remove
+ * @return Nonzero if the data source was removed, zero otherwise
  */
 int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source);
 
@@ -352,7 +369,7 @@ void btstack_run_loop_execute(void);
  *       please register a data source and enable DATA_SOURCE_CALLBACK_POLL. You can then call
  *       btstack_run_loop_poll_data_sources_from_irq() to trigger the main thread.
  *
- * @param callback_registration
+ * @param callback_registration Registration containing the callback and its context
  */
 void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);
 
