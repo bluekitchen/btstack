@@ -6,6 +6,8 @@ MKDOCS_FOLDER = docs/
 HTML_FOLDER = btstack/
 LATEX_FOLDER = latex/
 
+.PHONY: all docs-markdown docs html pdf pdf_old preview clean
+
 all: html pdf
 
 docs-markdown:

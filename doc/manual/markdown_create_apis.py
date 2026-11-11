@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys, getopt, re, pickle
 import subprocess
+import api_reference
 
 class State:
     SearchTitle = 0
@@ -283,9 +284,16 @@ def main(argv):
 
             if header_title:
                 header_files[header_filepath] = [header_title, header_desc]
+            elif "API_START" in open(header_filepath, 'rt').read():
+                title = os.path.splitext(f)[0].replace('_', ' ')
+                header_files[header_filepath] = [title, ""]
             else:
-                print("No @title flag found. Skip %s" % header_filepath)
-    
+                print("No @title or API_START flag found. Skip %s" % header_filepath)
+
+    # The generated event getter header has no @title.
+    event_header = btstack_srcfolder + "btstack_event.h"
+    header_files[event_header] = ["Event Getters", "Generated accessors for event packets."]
+
     # create an >md file, for each header file in header_files dictionary
     for header_filepath in sorted(header_files.keys()):
         filename = str(header_filepath)
@@ -307,7 +315,11 @@ def main(argv):
             with open(markdown_filepath, 'wt') as fout:
                 fout.write(header_title)
                 fout.write(header_description)
-                writeAPI(fout, fin, mk_codeidentation)
+                api_reference.render_header(fout, header_filepath, githuburl + "/" + filename, 2,
+                                                group_events=filename_without_extension == "btstack_event")
+
+        if filename_without_extension == 'btstack_event':
+            continue
 
         with open(header_filepath, 'rt') as fin:
             linenr = 0
@@ -351,6 +363,8 @@ def main(argv):
         for header_filepath in sorted(header_files.keys()):
             filename = os.path.basename(header_filepath)
             filename_without_extension = filename_stem(header_filepath) # file name without 
+            if filename_without_extension == "btstack_event":
+                continue
             filetitle = header_files[header_filepath][0]
 
             description = header_files[header_filepath][1]
@@ -364,7 +378,8 @@ def main(argv):
             with open(header_filepath, 'rt') as fin:
                     fout.write(subheader_title)
                     fout.write(header_description)
-                    writeAPI(fout, fin, mk_codeidentation)
+                    relative_path = os.path.relpath(header_filepath, btstackfolder)
+                    api_reference.render_header(fout, header_filepath, githuburl + "/" + relative_path, 3)
                 
 
     references = functions.copy()
