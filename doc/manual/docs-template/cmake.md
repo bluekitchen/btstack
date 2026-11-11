@@ -178,8 +178,8 @@ embedded project can apply its own policy to vendored sources.
 Ports that build multiple examples normally use a small per-application static
 library. `btstack_add_application_library` resolves an application's
 requirements, combines them with the port baseline, and compiles only that
-closure. With a group-object target prefix, common groups are compiled once and
-reused by all selected applications.
+closure. Common groups are compiled once per port and reused by all selected
+applications, which must use the same compilation settings.
 
 The port still owns the final executable and its board policy:
 
@@ -196,7 +196,6 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         ROOT "${BTSTACK_ROOT}"
         PORT my-port
         APPLICATION ${EXAMPLE}
-        GROUP_OBJECT_TARGET_PREFIX btstack_my_port
         BASE_GROUPS ${MY_PORT_BASE_GROUPS}
         PORT_SOURCES ${MY_PORT_SOURCES}
         PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDES}
