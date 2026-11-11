@@ -116,11 +116,11 @@ string(REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$]
     "\$<1:SHELL:-imacros \\1>"
     BTSTACK_ZEPHYR_COMPILE_OPTIONS "${external_project_cflags}")
 
-btstack_add_scoped_example_library(
+btstack_add_application_library(
     TARGET btstack_zephyr
     ROOT "${BTSTACK_ROOT}"
     PORT zephyr
-    EXAMPLE ${BTSTACK_ZEPHYR_EXAMPLE}
+    APPLICATION ${BTSTACK_ZEPHYR_EXAMPLE}
     BASE_GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS}
     PORT_SOURCES ${BTSTACK_ZEPHYR_PORT_SOURCES}
     PUBLIC_INCLUDE_DIRECTORIES

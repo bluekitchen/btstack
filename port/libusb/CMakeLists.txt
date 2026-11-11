@@ -103,11 +103,11 @@ btstack_filter_examples_for_port(EXAMPLES
 # Every selected example is defined with its resolved source closure. EXAMPLES
 # is derived from the shared requirements manifest and any port exclusions.
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         ROOT "${BTSTACK_ROOT}"
         PORT libusb
-        EXAMPLE ${EXAMPLE}
+        APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_libusb
         BASE_GROUPS ${BTSTACK_LIBUSB_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}

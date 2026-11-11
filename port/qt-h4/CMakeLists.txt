@@ -40,9 +40,9 @@ set(BTSTACK_QT_H4_GROUPS
 set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
-        PORT qt-h4 EXAMPLE ${EXAMPLE}
+        PORT qt-h4 APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_qt_h4
         BASE_GROUPS ${BTSTACK_QT_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}

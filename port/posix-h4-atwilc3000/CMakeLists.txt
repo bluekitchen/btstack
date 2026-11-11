@@ -68,11 +68,11 @@ if(PORTAUDIO_FOUND)
 endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         ROOT "${BTSTACK_ROOT}"
         PORT posix-h4-atwilc3000
-        EXAMPLE ${EXAMPLE}
+        APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_posix_h4_atwilc3000
         BASE_GROUPS ${BTSTACK_POSIX_H4_LE_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}

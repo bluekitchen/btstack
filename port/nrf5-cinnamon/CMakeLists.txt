@@ -60,9 +60,9 @@ include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES gap_le_advertisements gatt_counter gatt_streamer_server)
 btstack_filter_examples_for_port(EXAMPLES PORT nrf5-cinnamon CANDIDATES ${EXAMPLES})
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
-        PORT nrf5-cinnamon EXAMPLE ${EXAMPLE}
+        PORT nrf5-cinnamon APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_nrf5_cinnamon
         BASE_GROUPS ${BASE_GROUPS} PORT_SOURCES ${PORT_SOURCES}
         # Match the legacy Makefile warning policy for the Cinnamon port.

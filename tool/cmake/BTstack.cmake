@@ -1165,7 +1165,7 @@ function(btstack_resolve_example_for_port port example groups_output_variable co
 endfunction()
 
 # Create a reusable object target for one source group. This is an internal
-# building block for btstack_add_scoped_example_library, but remains separate
+# building block for btstack_add_application_library, but remains separate
 # so groups shared by multiple example closures compile only once per port.
 function(btstack_add_scoped_group_object_library)
     cmake_parse_arguments(ARG ""
@@ -1243,11 +1243,11 @@ endfunction()
 # port-local sources, and all target include/link settings.
 #
 # Usage:
-#   btstack_add_scoped_example_library(
+#   btstack_add_application_library(
 #       TARGET btstack_gatt_counter
 #       ROOT "${BTSTACK_ROOT}"
 #       PORT libusb
-#       EXAMPLE gatt_counter
+#       APPLICATION gatt_counter
 #       BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
 #       PORT_SOURCES ${SOURCES_PORT}
 #       PUBLIC_INCLUDE_DIRECTORIES ${BTSTACK_PUBLIC_INCLUDE_DIRECTORIES}
@@ -1260,26 +1260,26 @@ endfunction()
 # GROUP_OBJECT_TARGET_PREFIX is optional. When provided, each selected source
 # group is compiled once into a reusable object target named from that prefix;
 # the example library is then assembled from only the objects in its closure.
-function(btstack_add_scoped_example_library)
+function(btstack_add_application_library)
     cmake_parse_arguments(ARG ""
-        "TARGET;ROOT;PORT;EXAMPLE;CONFIGURATION_REQUIREMENTS_OUTPUT;GROUP_OBJECT_TARGET_PREFIX"
+        "TARGET;ROOT;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT;GROUP_OBJECT_TARGET_PREFIX"
         "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;LINK_LIBRARIES;LINK_DIRECTORIES"
         ${ARGN})
 
-    foreach(required TARGET ROOT PORT EXAMPLE)
+    foreach(required TARGET ROOT PORT APPLICATION)
         if(NOT ARG_${required})
-            message(FATAL_ERROR "btstack_add_scoped_example_library requires ${required}")
+            message(FATAL_ERROR "btstack_add_application_library requires ${required}")
         endif()
     endforeach()
 
-    btstack_resolve_example_for_port(${ARG_PORT} ${ARG_EXAMPLE}
+    btstack_resolve_example_for_port(${ARG_PORT} ${ARG_APPLICATION}
         example_groups
         example_configuration_requirements
     )
     btstack_collect_example_port_public_include_directories(
-        example_port_public_include_directories ${ARG_PORT} ${ARG_EXAMPLE})
+        example_port_public_include_directories ${ARG_PORT} ${ARG_APPLICATION})
     btstack_collect_example_port_sources(example_port_sources
-        ${ARG_PORT} ${ARG_EXAMPLE})
+        ${ARG_PORT} ${ARG_APPLICATION})
     btstack_filter_groups_for_port(active_base_groups
         PORT ${ARG_PORT}
         GROUPS ${ARG_BASE_GROUPS})
@@ -1334,13 +1334,13 @@ function(btstack_add_scoped_example_library)
     endforeach()
     set(info_sources ${info_port_sources} ${info_library_sources})
     get_filename_component(info_root "${ARG_ROOT}" ABSOLUTE)
-    foreach(source IN LISTS btstack_example_${ARG_EXAMPLE}_sources)
+    foreach(source IN LISTS btstack_example_${ARG_APPLICATION}_sources)
         list(APPEND info_sources "${info_root}/example/${source}")
     endforeach()
     list(REMOVE_DUPLICATES info_sources)
     list(SORT info_sources)
     string(REPLACE "-" "_" info_port_suffix "${ARG_PORT}")
-    string(REPLACE "-" "_" info_example_suffix "${ARG_EXAMPLE}")
+    string(REPLACE "-" "_" info_example_suffix "${ARG_APPLICATION}")
     set_property(GLOBAL PROPERTY
         "btstack_info_${info_port_suffix}_${info_example_suffix}_sources" "${info_sources}")
 

@@ -176,7 +176,7 @@ embedded project can apply its own policy to vendored sources.
 ## Building declared applications in a port
 
 Ports that build multiple examples normally use a small per-application static
-library. `btstack_add_scoped_example_library` resolves an application's
+library. `btstack_add_application_library` resolves an application's
 requirements, combines them with the port baseline, and compiles only that
 closure. With a group-object target prefix, common groups are compiled once and
 reused by all selected applications.
@@ -191,11 +191,11 @@ btstack_filter_examples_for_port(EXAMPLES
     CANDIDATES ${EXAMPLES})
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         ROOT "${BTSTACK_ROOT}"
         PORT my-port
-        EXAMPLE ${EXAMPLE}
+        APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_my_port
         BASE_GROUPS ${MY_PORT_BASE_GROUPS}
         PORT_SOURCES ${MY_PORT_SOURCES}
