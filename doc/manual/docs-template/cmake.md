@@ -78,8 +78,8 @@ The same style can describe an application owned by another project. Relative
 `SOURCES` and `GATT_DB` paths are resolved against the directory containing the
 declaration; absolute paths are preserved. Access the resolved paths with
 `btstack_get_application_property(output application SOURCES)` or `GATT_DB`.
-See `port/posix-h4/standalone` for a complete project-owned declaration and
-build.
+The standalone project in `port/posix-h4/gatt-counter-standalone` shows the simpler
+`btstack_add_library` approach for a single application.
 
 Requirements are documentation and validation input; they
 do not enable a BTstack feature for a specifc target.
