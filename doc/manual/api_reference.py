@@ -70,7 +70,7 @@ def render_function(out, name, signature, line_number, lines, source_url, level,
     return_type = re.sub(r'^(?:(?:static|inline|extern)\s+)+', '', return_type)
     if return_type != 'void':
         returns = [text for tag, text in sections if tag in ('return', 'result') and text]
-        out.write('**Returns**\n\n- `' + return_type + '`')
+        out.write('**Returns**\n\n- ' + return_type)
         if returns:
             out.write(': ' + ' '.join(' '.join(text.split()) for text in returns))
         out.write('\n\n')
