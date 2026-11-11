@@ -39,9 +39,9 @@ if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_WINDOWS_WINUSB_INTEL_BASE_GROUPS platform-posix-audio-portaudio)
 endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
-        PORT windows-winusb-intel EXAMPLE ${EXAMPLE}
+        PORT windows-winusb-intel APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_windows_winusb_intel
         BASE_GROUPS ${BTSTACK_WINDOWS_WINUSB_INTEL_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}

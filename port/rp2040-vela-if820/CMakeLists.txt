@@ -84,11 +84,11 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
         ROOT "${BTSTACK_ROOT}"
         PORT rp2040-vela-if820
-        EXAMPLE ${EXAMPLE}
+        APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_rp2040_vela_if820
         BASE_GROUPS ${BTSTACK_RP2040_VELA_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}

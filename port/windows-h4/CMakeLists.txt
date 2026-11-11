@@ -50,9 +50,9 @@ if(PORTAUDIO_FOUND)
     list(APPEND BTSTACK_WINDOWS_H4_BASE_GROUPS platform-posix-audio-portaudio)
 endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_scoped_example_library(
+    btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library ROOT "${BTSTACK_ROOT}"
-        PORT windows-h4 EXAMPLE ${EXAMPLE}
+        PORT windows-h4 APPLICATION ${EXAMPLE}
         GROUP_OBJECT_TARGET_PREFIX btstack_windows_h4
         BASE_GROUPS ${BTSTACK_WINDOWS_H4_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
