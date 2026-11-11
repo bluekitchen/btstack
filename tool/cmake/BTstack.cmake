@@ -640,7 +640,7 @@ function(btstack_collect_public_include_directories output_variable)
     set(${output_variable} "${include_directories}" PARENT_SCOPE)
 endfunction()
 
-# Generate a GATT database header and make a target depend on it.
+# Generate a GATT database header for a target.
 #
 # Usage:
 #   btstack_target_gatt(my_example "${BTSTACK_ROOT}/example/gatt_counter.gatt"
@@ -659,21 +659,22 @@ function(btstack_target_gatt target gatt_file)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
     get_filename_component(gatt_file_name "${gatt_file}" NAME_WLE)
-    set(output_header "${CMAKE_CURRENT_BINARY_DIR}/${gatt_file_name}.h")
+    set(output_directory "${CMAKE_CURRENT_BINARY_DIR}/btstack-gatt/${target}")
+    set(output_header "${output_directory}/${gatt_file_name}.h")
     set(depfile "${output_header}.d")
 
     add_custom_command(
         OUTPUT "${output_header}"
         DEPFILE "${depfile}"
         DEPENDS "${gatt_file}" "${btstack_cmake_root}/tool/compile_gatt.py" ${ARG_DEPENDS}
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${output_directory}"
         COMMAND "${Python3_EXECUTABLE}"
         ARGS "${btstack_cmake_root}/tool/compile_gatt.py" --depfile "${depfile}"
              "${gatt_file}" "${output_header}"
     )
 
-    add_custom_target("MAKE_${gatt_file_name}" ALL DEPENDS "${output_header}")
-    add_dependencies(${target} "MAKE_${gatt_file_name}")
-    target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_sources(${target} PRIVATE "${output_header}")
+    target_include_directories(${target} PRIVATE "${output_directory}")
 endfunction()
 
 # Apply BTstack's baseline warning policy to a target.
