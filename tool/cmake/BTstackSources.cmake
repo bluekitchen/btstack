@@ -1451,6 +1451,10 @@ set(btstack_include_directories_platform_embedded_run_loop
     platform/embedded
 )
 
+set(btstack_consumer_include_directories_platform_embedded_run_loop
+    platform/embedded
+)
+
 set(btstack_sources_platform_embedded_stdin
     platform/embedded/btstack_stdin_embedded.c
 )
@@ -1599,6 +1603,10 @@ set(btstack_sources_platform_posix_run_loop
 
 set(btstack_include_directories_platform_posix_run_loop
     src
+    platform/posix
+)
+
+set(btstack_consumer_include_directories_platform_posix_run_loop
     platform/posix
 )
 
