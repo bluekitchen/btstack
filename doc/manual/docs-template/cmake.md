@@ -109,63 +109,40 @@ An application that needs audio is then not selected on a port without it.
 
 ## Adding BTstack to an existing CMake project
 
-The lower-level source collection helpers are the simplest integration when an
-application already owns its targets. This example creates a static library
-for an LE GATT server; the project must replace the transport and platform
-groups with the appropriate choices for its board.
+Use `btstack_add_library` when your project already owns its application target.
+For example, an LE GATT server can select the required implementation groups:
 
 ```cmake
 set(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/third_party/btstack")
 include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
-# The helpers derive their source root from the included module.
 
-set(BTSTACK_REQUESTED_GROUPS
-    gatt-server
-    le-device-db-tlv
-    tlv-none
-    transport-h4
-    platform-posix-run-loop
-    platform-posix-uart
-    platform-posix-tlv)
-
-btstack_resolve_groups(BTSTACK_GROUPS
-    GROUPS ${BTSTACK_REQUESTED_GROUPS})
-btstack_collect_sources(BTSTACK_SOURCES
-    GROUPS ${BTSTACK_GROUPS})
-btstack_collect_include_directories(BTSTACK_PRIVATE_INCLUDES
-    GROUPS ${BTSTACK_GROUPS})
-btstack_collect_consumer_include_directories(BTSTACK_CONSUMER_INCLUDES
-    GROUPS ${BTSTACK_GROUPS})
-btstack_collect_public_include_directories(BTSTACK_PUBLIC_INCLUDES)
-
-add_library(my_btstack STATIC ${BTSTACK_SOURCES}
-    src/my_hci_transport.c
-    src/my_board_main.c)
-target_include_directories(my_btstack
-    PRIVATE
-        ${BTSTACK_PRIVATE_INCLUDES}
-        "${CMAKE_CURRENT_LIST_DIR}/config"
-    PUBLIC
-        ${BTSTACK_PUBLIC_INCLUDES}
-        ${BTSTACK_CONSUMER_INCLUDES})
+btstack_add_library(my_btstack
+    CONFIG "${CMAKE_CURRENT_LIST_DIR}/config/btstack_config.h"
+    GROUPS gatt-server transport-h4 platform-posix-run-loop)
 target_link_libraries(my_application PRIVATE my_btstack)
 ```
 
-The project supplies its own `btstack_config.h` in the `config` directory.
-Its `ENABLE_*` definitions must match the requested groups. For example, the
-GATT server above requires BLE support. A Classic profile also requires
-`ENABLE_CLASSIC`; merely omitting Classic source files does not remove Classic
-code from shared BTstack files.
+The helper resolves group dependencies, creates a static library, and supplies
+BTstack's public and group-specific include directories. The configuration
+header directory is propagated to consumers. Select the transport, run loop,
+storage, chipset, and any other groups appropriate for your board; provide
+board-local and SDK sources in your own targets.
 
-Apply warning policy only to the targets that compile BTstack-owned code:
+The helper checks that the effective configuration defines the `ENABLE_*`
+macros required by the selected groups. If the header depends on extra
+preprocessor definitions or include paths, provide `CONFIG_DEFINITIONS` and
+`CONFIG_INCLUDE_DIRECTORIES`. These are used both for the check and for the
+library and its consumers. Configuration extraction runs at configure time
+using the C compiler; target-specific compiler flags and generator expressions
+are not applied to that check. Use the lower-level helpers if your SDK requires
+such settings to preprocess the configuration correctly.
 
-```cmake
-btstack_target_warnings(my_btstack STRICT)
-```
-
-Third-party group sources are compiled with their warning diagnostics
-suppressed by the scoped helper. When using the lower-level API above, an
-embedded project can apply its own policy to vendored sources.
+For more control, `btstack_resolve_groups` and the `btstack_collect_sources`,
+`btstack_collect_include_directories`, `btstack_collect_consumer_include_directories`,
+and `btstack_collect_public_include_directories` helpers can be used to compose
+your own target. `btstack_target_warnings` can optionally apply BTstack's
+warning policy to that target. The convenience library does not impose a
+warning policy on the project or suppress warnings in third-party sources.
 
 
 ## Building declared applications in a port

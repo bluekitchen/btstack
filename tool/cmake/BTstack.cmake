@@ -812,6 +812,45 @@ function(btstack_collect_port_configuration_macros output_variable)
     set(${output_variable} "${configuration_macros}" PARENT_SCOPE)
 endfunction()
 
+# Create a BTstack library for an existing application or project.
+# CONFIG must name the btstack_config.h used to compile the library and its
+# consumers. CONFIG_DEFINITIONS and CONFIG_INCLUDE_DIRECTORIES are also used
+# when preprocessing it to validate the selected groups.
+function(btstack_add_library target)
+    cmake_parse_arguments(ARG "" "CONFIG" "GROUPS;CONFIG_DEFINITIONS;CONFIG_INCLUDE_DIRECTORIES" ${ARGN})
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "btstack_add_library: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+    if(NOT ARG_CONFIG OR NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_add_library requires CONFIG and GROUPS")
+    endif()
+    get_filename_component(config "${ARG_CONFIG}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    get_filename_component(config_name "${config}" NAME)
+    if(NOT config_name STREQUAL "btstack_config.h" OR NOT EXISTS "${config}")
+        message(FATAL_ERROR "btstack_add_library CONFIG must name an existing btstack_config.h: ${config}")
+    endif()
+    get_filename_component(config_directory "${config}" DIRECTORY)
+    btstack_collect_port_configuration_macros(config_macros CONFIG "${config}"
+        DEFINITIONS ${ARG_CONFIG_DEFINITIONS}
+        INCLUDE_DIRECTORIES "${config_directory}" ${ARG_CONFIG_INCLUDE_DIRECTORIES})
+    btstack_collect_group_configuration_requirements(required_macros GROUPS ${ARG_GROUPS})
+    foreach(required IN LISTS required_macros)
+        if(NOT required IN_LIST config_macros)
+            message(FATAL_ERROR "btstack_add_library(${target}): ${config} does not define ${required}, required by the selected groups")
+        endif()
+    endforeach()
+    btstack_resolve_groups(groups GROUPS ${ARG_GROUPS})
+    btstack_collect_sources(sources GROUPS ${groups})
+    btstack_collect_include_directories(private_includes GROUPS ${groups})
+    btstack_collect_consumer_include_directories(consumer_includes GROUPS ${groups})
+    btstack_collect_public_include_directories(public_includes)
+    add_library(${target} STATIC ${sources})
+    target_include_directories(${target}
+        PUBLIC "${config_directory}" ${ARG_CONFIG_INCLUDE_DIRECTORIES} ${public_includes} ${consumer_includes}
+        PRIVATE ${private_includes})
+    target_compile_definitions(${target} PUBLIC ${ARG_CONFIG_DEFINITIONS})
+endfunction()
+
 # Register source groups, port-local sources, and public include directories
 # that provide one port-neutral capability. A port may provide multiple groups
 # for a capability, for example multiple runtime-selectable audio backends.
