@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Genral Access Profile (GAP)
+ * @title Generic Access Profile (GAP)
  *
  */
 

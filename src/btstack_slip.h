@@ -36,7 +36,7 @@
  */
 
 /**
- * @title SLIP encoder/decoder
+ * @title SLIP Encoder and Decoder
  *
  */
 

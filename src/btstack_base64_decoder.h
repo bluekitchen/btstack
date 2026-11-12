@@ -36,7 +36,7 @@
  */
 
 /**
- * @title base64 Decoder
+ * @title Base64 Decoder
  *
  */
 

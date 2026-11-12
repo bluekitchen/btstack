@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Immediate Alert Service Client
+ * @title TX Power Service Client
  * 
  */
 

@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Lienar Resampling
+ * @title Linear Resampling
  *
  * Linear resampling for 16-bit audio code samples using 16 bit/16 bit fixed point math.
  *

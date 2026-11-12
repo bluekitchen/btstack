@@ -30,7 +30,7 @@
  */
 
 /**
- * @title Tag-Value-Length Persistent Storage (TLV)
+ * @title Tag-Length-Value Persistent Storage (TLV)
  *
  * Inteface for BTstack's Tag Value Length Persistent Storage implementations
  * used to store pairing/bonding data.

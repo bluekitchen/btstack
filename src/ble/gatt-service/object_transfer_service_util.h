@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Media Control Service Server
+ * @title Object Transfer Service Utilities
  * 
  */
 

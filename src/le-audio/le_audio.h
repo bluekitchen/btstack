@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Volume Offset Control Service Server
+ * @title LE Audio Definitions
  * 
  */
 

@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Runtine ATT Database Setup
+ * @title Runtime ATT Database Setup
  * 
  * Helper to construct ATT DB at runtime (BTstack GATT Compiler is not used).
  *

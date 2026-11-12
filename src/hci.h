@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Host Controler Interface (HCI)
+ * @title Host Controller Interface (HCI)
  *
  */
 

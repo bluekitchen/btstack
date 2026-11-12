@@ -66,7 +66,7 @@ typedef struct {
 /* API_START */
 
 /**
- * @title ATT Server
+ * ATT Server
  *
  * @TLV 'BTC' x
  */

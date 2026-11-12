@@ -30,7 +30,7 @@
  */
 
 /**
- * @title Adapter for Fraunhofer LC3plus Coddec
+ * @title Fraunhofer LC3plus Codec Adapter
  * only uses suitable subset for lc3 testing
  */
 

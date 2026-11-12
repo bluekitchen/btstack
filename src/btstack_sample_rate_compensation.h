@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Sample rate compensation
+ * @title Sample Rate Compensation
  *
  * Prevents buffer over/under-run at the audio receiver by compensating for varying/different playback/receiving sample rates.
  *
