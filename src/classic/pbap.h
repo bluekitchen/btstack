@@ -36,7 +36,7 @@
  */
 
 /**
- * @title PBAP Client
+ * @title PBAP Constants
  *
  */
 
