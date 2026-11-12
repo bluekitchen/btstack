@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 
 import sys, yaml
-import os, re, getopt
-
-pandoc_cmd_template = """
-pandoc -f markdown -t latex --wrap=auto --columns=34 --listings LATEX_FOLDERbtstack_generated.md -o LATEX_FOLDERbtstack_generated.tex
-
-"""
+import re, getopt, subprocess
 
 figures = {
     'btstack-architecture'     : '1',
@@ -74,11 +69,12 @@ def main(argv):
     yml_file = "mkdocs.yml"
     latexfolder = "latex/"
     mkdocsfolder = "docs/"
+    markdown_only = False
     
-    cmd = 'markdown2tex.py [-i <mkdocsfolder>] [-o <latexfolder>] '
+    cmd = 'markdown2tex.py [-i <mkdocsfolder>] [-o <latexfolder>] [--markdown-only]'
 
     try:
-        opts, args = getopt.getopt(argv,"i:o:",["ifolder=","ofolder="])
+        opts, args = getopt.getopt(argv,"i:o:",["ifolder=","ofolder=", "markdown-only"])
     except getopt.GetoptError:
         print (cmd)
         sys.exit(2)
@@ -90,6 +86,8 @@ def main(argv):
             mkdocsfolder = arg
         elif opt in ("-o", "--ofolder"):
             latexfolder = arg
+        elif opt == "--markdown-only":
+            markdown_only = True
 
     latex_filepath = latexfolder + "btstack_generated.md"
     
@@ -105,18 +103,15 @@ def main(argv):
                 markdown_filepath = mkdocsfolder + navigation_group_filepath
                 postprocess_file(markdown_filepath, fout, navigation_group_title)
 
-    pandoc_cmd = pandoc_cmd_template.replace("LATEX_FOLDER", latexfolder)
-
-    p = os.popen(pandoc_cmd,"r")
-    while 1:
-        line = p.readline()
-        if not line: break
-        print (line)
-
+    if markdown_only:
+        return
 
     # btstatck_root_file = "latex/btstack_gettingstarted.tex"
     btstack_generated_file = latexfolder + "btstack_generated.tex"
     btstack_final_file = latexfolder + "btstack_final.tex"
+
+    subprocess.run(['pandoc', '-f', 'markdown', '-t', 'latex', '--wrap=auto',
+                    '--columns=34', '--listings', latex_filepath, '-o', btstack_generated_file], check=True)
 
     with open(btstack_final_file, 'w') as aout:
         aout.write("% !TEX root = btstack_gettingstarted.tex\n\n")

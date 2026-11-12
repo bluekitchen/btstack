@@ -82,8 +82,8 @@ pdf: docs
 	# create latex/btstack_gettingstartec.tex with version
 	./update_getting_started.sh ${LATEX_FOLDER}
 
-	# create latex/btstack_generated.md -> latex/btstack_final.tex
-	./markdown2tex.py  -i ${MKDOCS_FOLDER} -o ${LATEX_FOLDER}
+	# Collect Markdown for the HTML-based PDF body
+	./markdown2tex.py --markdown-only -i ${MKDOCS_FOLDER} -o ${LATEX_FOLDER}
 
 	cp ${MKDOCS_FOLDER}/ports/*.jpg ${MKDOCS_FOLDER}/ports/*.png ${LATEX_FOLDER}
 	cd ${LATEX_FOLDER} && pandoc -f markdown -t html --standalone --listings btstack_generated.md -o btstack_generated.html
