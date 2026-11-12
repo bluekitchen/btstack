@@ -32,7 +32,9 @@ api_subheader = """
 """
 
 api_description = """
-**FILENAME** DESCRIPTION
+\#include \"**FILENAME**\"
+
+DESCRIPTION
 
 """
 
@@ -410,9 +412,6 @@ def main(argv):
         filename_without_extension = filename_stem(header_filepath) # file name without .h
         filetitle = header_files[header_filepath][0]
         description = header_files[header_filepath][1]
-
-        if len(description) > 1:
-            description = ": " + description
 
         header_description = api_description.replace("FILENAME", filename).replace("DESCRIPTION", description)
         
