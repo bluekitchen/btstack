@@ -32,8 +32,12 @@ full rebuild.
 `markdown_create_apis.py` discovers headers under `src/` with an `@title`
 comment or an `API_START` marker and renders the declarations between
 `API_START` and `API_END`. Headers without a title use their filename.
-The generated `btstack_event.h` getter header is included separately. The
-header title and overview introduce each API page; documented functions are
+The generated `btstack_event.h` getter header is included explicitly. API pages
+are grouped by area in the HTML sidebar and PDF appendix, and sorted by title
+within each group. The group assignments live in `markdown_create_apis.py`;
+new unclassified root headers appear under Other APIs. Comment out a group in
+`API_GROUPS` to omit its pages from HTML and PDF, then rebuild the manual.
+The header title and overview introduce each API page; documented functions are
 rendered with their signatures, descriptions, parameters, return values, and
 source links. Other declarations, including types, macros, and preprocessor
 conditions, remain as C excerpts in their original order.

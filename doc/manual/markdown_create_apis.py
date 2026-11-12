@@ -222,6 +222,109 @@ def findTitle(fin):
                 desc = desc + parts.group(2)
     return [title, desc]
 
+# Groups are ordered for the navigation. Comment out a group to omit its APIs.
+API_GROUPS = (
+    'Core',
+    'Bluetooth Low Energy',
+    'Bluetooth Classic',
+    'Audio and codecs',
+    'Platform and diagnostics',
+    'Other APIs',
+    # 'Mesh',
+    # 'LE Audio',
+)
+CORE_HEADERS = frozenset("""ad_parser btstack_base64_decoder btstack_base64_encoder
+btstack_chunk_buffer btstack_crypto btstack_event btstack_fsm btstack_hid
+btstack_hid_parser btstack_hsm btstack_linked_list btstack_linked_queue
+btstack_ltv_builder btstack_memory btstack_memory_pool btstack_ring_buffer
+btstack_run_loop btstack_run_loop_base btstack_tlv btstack_tlv_builder
+btstack_tlv_none btstack_util btstack_version gap hci hci_cmd hci_event_builder
+l2cap""".split())
+AUDIO_HEADERS = frozenset("""btstack_audio btstack_audio_generator btstack_audio_player
+btstack_audio_song btstack_lc3 btstack_lc3_google btstack_lc3plus_fraunhofer
+btstack_resample btstack_sample_rate_compensation""".split())
+CLASSIC_AUDIO_HEADERS = frozenset("""btstack_cvsd_plc btstack_sbc
+btstack_sbc_bluedroid btstack_sbc_plc hfp_codec hfp_msbc""".split())
+PLATFORM_HEADERS = frozenset("""btstack_chipset btstack_control btstack_debug
+btstack_em9304_spi btstack_network btstack_sco_transport btstack_slip
+btstack_stdin btstack_uart btstack_uart_block btstack_uart_slip_wrapper
+hci_dump hci_dump_buffered hci_dump_dispatch hci_transport
+hci_transport_em9304_spi hci_transport_h4 hci_transport_h5 hci_transport_usb""".split())
+MESH_PROVISIONING = frozenset("""pb_adv pb_gatt provisioning provisioning_device
+provisioning_provisioner mesh_provisioning_service_server""".split())
+MESH_MODELS = frozenset("""mesh_configuration_client mesh_configuration_server
+mesh_foundation mesh_generic_model mesh_generic_default_transition_time_client
+mesh_generic_default_transition_time_server mesh_generic_level_client
+mesh_generic_level_server mesh_generic_on_off_client mesh_generic_on_off_server
+mesh_health_server""".split())
+MESH_NETWORK = frozenset("""adv_bearer beacon gatt_bearer mesh_access mesh_crypto
+mesh_iv_index_seq_number mesh_keys mesh_lower_transport mesh_network mesh_peer
+mesh_proxy mesh_proxy_service_server mesh_upper_transport mesh_virtual_addresses""".split())
+MESH_SUBGROUPS = ('Provisioning', 'Models', 'Network and transport')
+
+
+def api_group(relative_path):
+    """Return the navigation group and optional subgroup for a src-relative path."""
+    path = relative_path.replace('\\', '/')
+    stem = filename_stem(path)
+    directory = path.split('/')[0] if '/' in path else ''
+    if directory == 'ble':
+        return ('Bluetooth Low Energy', 'GATT services and clients' if path.startswith('ble/gatt-service/') else None)
+    if directory == 'classic':
+        return ('Audio and codecs' if stem in CLASSIC_AUDIO_HEADERS else 'Bluetooth Classic', None)
+    if directory == 'le-audio':
+        return ('LE Audio', None)
+    if directory == 'mesh':
+        for subgroup, names in (('Provisioning', MESH_PROVISIONING), ('Models', MESH_MODELS),
+                                ('Network and transport', MESH_NETWORK)):
+            if stem in names:
+                return ('Mesh', subgroup)
+        return ('Mesh', None)
+    if not directory:
+        for group, names in (('Core', CORE_HEADERS), ('Audio and codecs', AUDIO_HEADERS),
+                             ('Platform and diagnostics', PLATFORM_HEADERS)):
+            if stem in names:
+                return (group, None)
+    return ('Other APIs', None)
+
+
+def grouped_api_headers(headers, srcfolder):
+    """Group and sort (path, title, description) entries by displayed title."""
+    groups = {group: {} for group in API_GROUPS}
+    for path, (title, description) in headers.items():
+        group, subgroup = api_group(os.path.relpath(path, srcfolder))
+        if group in groups:
+            groups[group].setdefault(subgroup, []).append((path, title, description))
+    for subgroups in groups.values():
+        for entries in subgroups.values():
+            entries.sort(key=lambda item: (item[1].casefold(), item[0]))
+    return groups
+
+
+def ordered_subgroups(group, subgroups):
+    names = [None]
+    if group == 'Mesh':
+        names += list(MESH_SUBGROUPS)
+    elif group == 'Bluetooth Low Energy':
+        names += ['GATT services and clients']
+    return [name for name in names if name in subgroups]
+
+
+def write_api_navigation(fout, groups, indentation):
+    """Write grouped MkDocs navigation using the indentation of the APIs entry."""
+    for group, subgroups in groups.items():
+        if not subgroups:
+            continue
+        fout.write(indentation + "- '" + group.replace("'", "''") + "':\n")
+        for subgroup in ordered_subgroups(group, subgroups):
+            entry_indent = indentation + '  '
+            if subgroup:
+                fout.write(entry_indent + "- '" + subgroup.replace("'", "''") + "':\n")
+                entry_indent += '  '
+            for path, title, _ in subgroups[subgroup]:
+                fout.write(entry_indent + "- '" + title.replace("'", "''") + "': appendix/" + filename_stem(path) + ".md\n")
+
+
 def main(argv):
     global linenr, multiline_function_def, typedefFound, state
     
@@ -281,21 +384,26 @@ def main(argv):
             
             with open(header_filepath, 'rt') as fin:
                 [header_title, header_desc] = findTitle(fin)
+                fin.seek(0)
+                has_api = "API_START" in fin.read()
 
             if header_title:
                 header_files[header_filepath] = [header_title, header_desc]
-            elif "API_START" in open(header_filepath, 'rt').read():
+            elif has_api:
                 title = os.path.splitext(f)[0].replace('_', ' ')
                 header_files[header_filepath] = [title, ""]
             else:
                 print("No @title or API_START flag found. Skip %s" % header_filepath)
 
-    # The generated event getter header has no @title.
+    # Include the generated event getter even if an older header has no title.
     event_header = btstack_srcfolder + "btstack_event.h"
-    header_files[event_header] = ["Event Getters", "Generated accessors for event packets."]
+    header_files.setdefault(event_header, ["Event Getters", "Generated accessors for event packets."])
+    groups = grouped_api_headers(header_files, btstack_srcfolder)
 
-    # create an >md file, for each header file in header_files dictionary
-    for header_filepath in sorted(header_files.keys()):
+    # Generate pages and references only for enabled groups.
+    enabled_paths = sorted(path for subgroups in groups.values()
+                           for entries in subgroups.values() for path, _, _ in entries)
+    for header_filepath in enabled_paths:
         filename = str(header_filepath)
         filename = filename.split("../../")[1]
 
@@ -337,13 +445,8 @@ def main(argv):
                 if not isTagAPI(line):
                     continue
 
-                identation = getSecondLevelIdentation(line)
-               
-                for header_filepath in sorted(header_files.keys()):
-                    header_title = header_files[header_filepath][0].replace("'", "''")
-                    markdown_reference = "appendix/" + filename_stem(header_filepath) + ".md"
-                    
-                    fout.write(identation + "'" + header_title + "': " + markdown_reference + "\n")
+                indentation = re.match(r'^(\s*)', line).group(1) + '  '
+                write_api_navigation(fout, groups, indentation)
 
     
     # create mkdocs-latex.yml with single appendix/apis.md reference for pdf generation
@@ -360,26 +463,32 @@ def main(argv):
     markdown_filepath = markdownfolder + "appendix/apis.md"
     with open(markdown_filepath, 'wt') as fout:
         fout.write("\n# APIs\n\n")
-        for header_filepath in sorted(header_files.keys()):
-            filename = os.path.basename(header_filepath)
-            filename_without_extension = filename_stem(header_filepath) # file name without 
-            if filename_without_extension == "btstack_event":
+        for group, subgroups in groups.items():
+            if not subgroups:
                 continue
-            filetitle = header_files[header_filepath][0]
-
-            description = header_files[header_filepath][1]
-
-            if len(description) > 1:
-                description = ": " + description
-
-            header_description = api_description.replace("FILENAME", filename).replace("DESCRIPTION", description)
-
-            subheader_title = api_subheader.replace("API_TITLE", filetitle).replace("API_LABEL", filename_without_extension)            
-            with open(header_filepath, 'rt') as fin:
-                    fout.write(subheader_title)
+            # The event getter reference is available only in HTML.
+            if not any(filename_stem(path) != 'btstack_event'
+                       for entries in subgroups.values() for path, _, _ in entries):
+                continue
+            fout.write("\n## " + group + "\n\n")
+            for subgroup in ordered_subgroups(group, subgroups):
+                entries = [entry for entry in subgroups[subgroup]
+                           if filename_stem(entry[0]) != 'btstack_event']
+                if not entries:
+                    continue
+                if subgroup:
+                    fout.write("\n### " + subgroup + "\n\n")
+                level = 4 if subgroup else 3
+                for header_filepath, filetitle, description in entries:
+                    filename = os.path.basename(header_filepath)
+                    stem = filename_stem(header_filepath)
+                    header_description = api_description.replace("FILENAME", filename).replace(
+                        "DESCRIPTION", ": " + description if len(description) > 1 else "")
+                    fout.write("#" * level + " " + filetitle + " API {#sec:" + stem + "_api}\n\n")
                     fout.write(header_description)
                     relative_path = os.path.relpath(header_filepath, btstackfolder)
-                    api_reference.render_header(fout, header_filepath, githuburl + "/" + relative_path, 3)
+                    api_reference.render_header(fout, header_filepath, githuburl + "/" + relative_path, level + 1)
+
                 
 
     references = functions.copy()
@@ -392,7 +501,8 @@ def main(argv):
     #     for function, reference in references.items():
     #         fout.write("[" + function + "](" + reference + ")\n")
             
-    pickle.dump(references, open("references.p", "wb" ) )
+    with open("references.p", "wb") as references_file:
+        pickle.dump(references, references_file)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

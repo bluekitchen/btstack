@@ -157,6 +157,18 @@ def process_file(mk_file, markdownfolder, mkdocsfolder, githuburl):
                     continue
                 mdout.write(line)
 
+def navigation_page_paths(node):
+    """Yield page paths from an arbitrarily nested MkDocs navigation tree."""
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, list):
+        for child in node:
+            yield from navigation_page_paths(child)
+    elif isinstance(node, dict):
+        for child in node.values():
+            yield from navigation_page_paths(child)
+
+
 def main(argv):
     global gitbranchname
     markdownfolder = "docs-markdown/"
@@ -196,12 +208,7 @@ def main(argv):
     for yml_file in ("mkdocs.yml", "mkdocs-latex.yml"):
         with open(yml_file) as yin:
             doc = yaml.safe_load(yin)
-        for page in doc["nav"]:
-            value = list(page.values())[0]
-            if isinstance(value, str):
-                files.add(value)
-            elif isinstance(value, list):
-                files.update(list(item.values())[0] for item in value)
+        files.update(navigation_page_paths(doc["nav"]))
     for filepath in sorted(files):
         process_file(filepath, markdownfolder, mkdocsfolder, githuburl)
 
