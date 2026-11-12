@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Configuration Server
+ *
+ * Handle configuration operations for a mesh node.
+ */
+
 #ifndef MESH_CONFIGURATION_SERVER_H
 #define MESH_CONFIGURATION_SERVER_H
 
@@ -46,6 +52,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 // typedefs
 
@@ -84,14 +92,28 @@ typedef struct {
 
 // API
 
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
+/**
+ * @brief Notify the Configuration Server that a feature has changed.
+ */
 void mesh_configuration_server_feature_changed(void);
 
+/**
+ * @brief Process a received heartbeat message.
+ */
 void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, uint16_t src, uint16_t dest, uint8_t hops, uint16_t features);
 
 // PTS Testing
+/**
+ * @brief Set the configured maximum number of network keys.
+ */
 void config_nekey_list_set_max(uint16_t max);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

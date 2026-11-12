@@ -39,6 +39,12 @@
  *  provisioning_device.h
  */
 
+/**
+ * @title Mesh Provisioning Device
+ *
+ * Handle provisioning from the unprovisioned device side.
+ */
+
 #ifndef PROVISIONING_DEVICE_H
 #define PROVISIONING_DEVICE_H
 
@@ -52,6 +58,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 /**
  * @brief Init Provisioning in Device Role with device UUID
@@ -114,6 +122,8 @@ void provisioning_device_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, co
  * @param provisioning_data 
  */
 void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

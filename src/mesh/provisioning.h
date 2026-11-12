@@ -39,6 +39,12 @@
  *  provisioning.h
  */
 
+/**
+ * @title Mesh Provisioning
+ *
+ * Define the common Bluetooth Mesh provisioning protocol.
+ */
+
 #ifndef PROVISIONING_H
 #define PROVISIONING_H
 
@@ -53,6 +59,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 #define PROVISIONING_PROTOCOL_TIMEOUT_MS  60000
 #define MESH_PROV_MAX_PROXY_PDU              66 
@@ -144,6 +152,8 @@ typedef struct {
     mesh_network_key_t * network_key;
 
 } mesh_provisioning_data_t;
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

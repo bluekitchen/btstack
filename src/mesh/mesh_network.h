@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Network Layer
+ *
+ * Manage network PDUs and their transmission and reception.
+ */
+
 #ifndef MESH_NETWORK_H
 #define MESH_NETWORK_H
 
@@ -47,6 +53,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 #define MESH_DEVICE_KEY_INDEX     0xffff
 
@@ -311,6 +319,9 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu);
  * @param transport_pdu_data
  * @param transport_pdu_len
  */
+/**
+ * @brief Set up a network PDU for transmission.
+ */
 void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dst, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
 
 /**
@@ -443,31 +454,90 @@ void mesh_subnet_setup_for_netkey_index(uint16_t netkey_index);
 mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet);
 
 // buffer pool
+/**
+ * @brief Allocate a network PDU.
+ */
 mesh_network_pdu_t * mesh_network_pdu_get(void);
+/**
+ * @brief Release a network PDU.
+ */
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Register for notification when a network PDU is freed.
+ */
 void mesh_network_notify_on_freed_pdu(void (*callback)(void));
 
 // Mesh Network PDU Getter
+/**
+ * @brief Get the control flag from a network PDU.
+ */
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the network identifier from a network PDU.
+ */
 uint8_t   mesh_network_nid(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the time to live from a network PDU.
+ */
 uint8_t   mesh_network_ttl(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the sequence number from a network PDU.
+ */
 uint32_t  mesh_network_seq(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the source address from a network PDU.
+ */
 uint16_t  mesh_network_src(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the destination address from a network PDU.
+ */
 uint16_t  mesh_network_dst(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the segmentation flag from a network PDU.
+ */
 int       mesh_network_segmented(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the control opcode from a network PDU.
+ */
 uint8_t   mesh_network_control_opcode(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the payload data from a network PDU.
+ */
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Get the payload length from a network PDU.
+ */
 uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 
 // Mesh Network PDU Setter
+/**
+ * @brief Set the sequence number in a network PDU.
+ */
 void mesh_network_pdu_set_seq(mesh_network_pdu_t * network_pdu, uint32_t seq);
 
 // Testing only
+/**
+ * @brief Process a received network message.
+ */
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);
+/**
+ * @brief Process a received proxy configuration message.
+ */
 void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len);
+/**
+ * @brief Encrypt a proxy configuration message.
+ */
 void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu);
+/**
+ * @brief Log network layer state.
+ */
 void mesh_network_dump(void);
+/**
+ * @brief Reset network layer state.
+ */
 void mesh_network_reset(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Generic Default Transition Time Client
+ *
+ * Control and query the default transition time of a remote model.
+ */
+
 #ifndef MESH_GENERIC_DEFAULT_TRANSITION_TIME_CLIENT_H
 #define MESH_GENERIC_DEFAULT_TRANSITION_TIME_CLIENT_H
 
@@ -47,6 +53,11 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_generic_default_transition_time_client_get_operations(void);
 
 /**
@@ -92,6 +103,8 @@ uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_mode
  */
 uint8_t mesh_generic_default_transition_time_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

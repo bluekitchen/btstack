@@ -36,6 +36,12 @@
  */
 
 
+/**
+ * @title Mesh Advertising Bearer
+ *
+ * Send and receive mesh network, beacon, and provisioning messages over advertising.
+ */
+
 #ifndef ADV_BEARER_H
 #define ADV_BEARER_H
 
@@ -47,6 +53,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 typedef struct {
 	void * next;
@@ -104,14 +112,26 @@ void adv_bearer_advertisements_enable(int enabled);
  * Register listener for particular message types: Mesh Message, Mesh Beacon, PB-ADV
  */
 void adv_bearer_register_for_network_pdu(btstack_packet_handler_t packet_handler);
+/**
+ * @brief Register a handler for received beacons.
+ */
 void adv_bearer_register_for_beacon(btstack_packet_handler_t packet_handler);
+/**
+ * @brief Register a handler for received provisioning PDUs.
+ */
 void adv_bearer_register_for_provisioning_pdu(btstack_packet_handler_t packet_handler);
 
 /**
  * Request can send now event for particular message type: Mesh Message, Mesh Beacon, PB-ADV
  */
 void adv_bearer_request_can_send_now_for_network_pdu(void);
+/**
+ * @brief Request a can-send-now event for a beacon.
+ */
 void adv_bearer_request_can_send_now_for_beacon(void);
+/**
+ * @brief Request a can-send-now event for a provisioning PDU.
+ */
 void adv_bearer_request_can_send_now_for_provisioning_pdu(void);
 
 /**
@@ -129,8 +149,13 @@ void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size, uin
  * @param data_len max 29 bytes
  */
 void adv_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size);
+/**
+ * @brief Send a provisioning PDU.
+ */
 void adv_bearer_send_provisioning_pdu(const uint8_t * pb_adv_pdu, uint16_t size); 
  
+
+/* API_END */
 
 #if defined __cplusplus
 }

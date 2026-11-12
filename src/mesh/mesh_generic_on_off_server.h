@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Generic OnOff Server
+ *
+ * Provide a generic on/off state for a mesh node.
+ */
+
 #ifndef MESH_GENERIC_ON_OFF_SERVER_H
 #define MESH_GENERIC_ON_OFF_SERVER_H
 
@@ -47,6 +53,11 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
 /**
  * @brief Register packet handler
@@ -78,6 +89,8 @@ void mesh_generic_on_off_server_set(mesh_model_t *generic_on_off_server_model, u
  */
 uint8_t mesh_generic_on_off_server_get(mesh_model_t *generic_on_off_server_model);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

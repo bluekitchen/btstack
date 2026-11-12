@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Upper Transport
+ *
+ * Send, receive, encrypt, and decrypt upper transport messages.
+ */
+
 #ifndef MESH_UPPER_TRANSPORT_H
 #define MESH_UPPER_TRANSPORT_H
 
@@ -48,6 +54,8 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
 // upper transport message builder
 typedef struct {
     mesh_upper_transport_pdu_t  * pdu;
@@ -58,11 +66,17 @@ typedef struct {
  * @brief reserve 1 x mesh_upper_transport_pdu_t and 14 x mesh_network_pdu_t to allow composition of max access/control message
  * @return true if enough buffer allocated
  */
+/**
+ * @brief Reserve resources for an upper transport message.
+ */
 bool mesh_upper_transport_message_reserve(void);
 
 /*
  * @brief init message builder for unsegmented access, segmented access, and segmented control messages
  * @note uses buffers reserved by mesh_upper_transport_message_reserve
+ */
+/**
+ * @brief Initialize an upper transport message.
  */
 void mesh_upper_transport_message_init(mesh_upper_transport_builder_t * builder, mesh_pdu_type_t pdu_type);
 
@@ -199,8 +213,16 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 
 
 // test
+/**
+ * @brief Log upper transport state.
+ */
 void mesh_upper_transport_dump(void);
+/**
+ * @brief Reset upper transport state.
+ */
 void mesh_upper_transport_reset(void);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

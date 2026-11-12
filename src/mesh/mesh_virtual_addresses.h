@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Virtual Addresses
+ *
+ * Manage label UUIDs and their associated virtual addresses.
+ */
+
 #ifndef MESH_VIRTUAL_ADDRESSES_H
 #define MESH_VIRTUAL_ADDRESSES_H
 
@@ -46,6 +52,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 typedef struct {
 	btstack_linked_item_t item;
@@ -63,26 +71,55 @@ typedef struct {
 
 // virtual address management
 
+/**
+ * @brief Get an unused pseudo destination for a virtual address.
+ */
 uint16_t mesh_virtual_addresses_get_free_pseudo_dst(void);
 
+/**
+ * @brief Add a virtual address to the node.
+ */
 void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address);
 
+/**
+ * @brief Remove a virtual address from the node.
+ */
 void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address);
 
+/**
+ * @brief Register a label UUID and its virtual address hash.
+ */
 mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
 
+/**
+ * @brief Find a virtual address by pseudo destination.
+ */
 mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst);
 
+/**
+ * @brief Find a virtual address by label UUID.
+ */
 mesh_virtual_address_t * mesh_virtual_address_for_label_uuid(uint8_t * label_uuid);
 
 // virtual address iterator
 
+/**
+ * @brief Initialize an iterator over virtual addresses.
+ */
 void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, uint16_t hash);
 
+/**
+ * @brief Check whether another virtual address is available.
+ */
 int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it);
 
+/**
+ * @brief Get the next virtual address from the iterator.
+ */
 const mesh_virtual_address_t * mesh_virtual_address_iterator_get_next(mesh_virtual_address_iterator_t * it);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

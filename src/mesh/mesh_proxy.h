@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Proxy
+ *
+ * Manage mesh proxy connections and proxy configuration messages.
+ */
+
 #ifndef MESH_PROXY_H
 #define MESH_PROXY_H
 
@@ -47,6 +53,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 /**
  * @brief Init Mesh Proxy
@@ -99,6 +107,8 @@ void mesh_proxy_start_advertising_with_network_id(void);
  * @brief Stop Advertising with Network ID (on all subnets)
  */
 void mesh_proxy_stop_advertising_with_network_id(void);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

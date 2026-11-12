@@ -39,6 +39,12 @@
  *  provisioning_device.h
  */
 
+/**
+ * @title Mesh Provisioner
+ *
+ * Provision devices into a Bluetooth Mesh network.
+ */
+
 #ifndef PROVISIONING_PROVISIONER_H
 #define PROVISIONING_PROVISIONER_H
 
@@ -50,6 +56,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 /**
  * @brief Init Provisioning in Provisioner Role 
@@ -111,6 +119,8 @@ void provisioning_provisioner_input_oob_complete_numeric(uint16_t pb_adv_cid, ui
  */
 void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, const uint8_t * input_oob_data, uint16_t input_oob_len);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

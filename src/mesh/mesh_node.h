@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Node and Models
+ *
+ * Manage node elements, models, subscriptions, and model identifiers.
+ */
+
 #ifndef MESH_NODE_H
 #define MESH_NODE_H
 
@@ -46,6 +52,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 #define MESH_APPKEY_INVALID                     0xffffu
 
@@ -178,6 +186,9 @@ typedef struct {
 } mesh_element_iterator_t;
 
 
+/**
+ * @brief Initialize the mesh node.
+ */
 void mesh_node_init(void);
 
 /**
@@ -254,43 +265,94 @@ uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model);
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
 
 // Mesh Element Iterator
+/**
+ * @brief Initialize an iterator over node elements.
+ */
 void mesh_element_iterator_init(mesh_element_iterator_t * iterator);
 
+/**
+ * @brief Check whether another element is available.
+ */
 int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator);
 
+/**
+ * @brief Get the next element from the iterator.
+ */
 mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator);
 
 // Mesh Model Iterator
 
+/**
+ * @brief Initialize an iterator over the models in an element.
+ */
 void mesh_model_iterator_init(mesh_model_iterator_t * iterator, mesh_element_t * element);
 
+/**
+ * @brief Check whether another model is available.
+ */
 int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator);
 
+/**
+ * @brief Get the next model from the iterator.
+ */
 mesh_model_t * mesh_model_iterator_next(mesh_model_iterator_t * iterator);
 
 // Mesh Model Utility
 
+/**
+ * @brief Find a model by identifier in an element.
+ */
 mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier);
 
+/**
+ * @brief Construct a Bluetooth SIG model identifier from a model ID.
+ */
 uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id);
 
+/**
+ * @brief Check whether a model identifier belongs to a Bluetooth SIG model.
+ */
 int mesh_model_is_bluetooth_sig(uint32_t model_identifier);
 
+/**
+ * @brief Get the model ID from a model identifier.
+ */
 uint16_t mesh_model_get_model_id(uint32_t model_identifier);
 
+/**
+ * @brief Construct a model identifier from a vendor ID and model ID.
+ */
 uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
 
+/**
+ * @brief Get the vendor ID from a model identifier.
+ */
 uint16_t mesh_model_get_vendor_id(uint32_t model_identifier);
 
+/**
+ * @brief Get the node's Configuration Server model.
+ */
 mesh_model_t * mesh_node_get_configuration_server(void);
 
+/**
+ * @brief Get the node's Health Server model.
+ */
 mesh_model_t * mesh_node_get_health_server(void);
 
+/**
+ * @brief Find a model by element address and model identifier.
+ */
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
 
+/**
+ * @brief Clear a model's application key bindings.
+ */
 void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
 
 // Mesh Model Subscriptions
+/**
+ * @brief Check whether a model is subscribed to an address.
+ */
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 
 /**
@@ -333,9 +395,20 @@ uint16_t mesh_node_get_product_version_id(void);
 
 
 // Heartbeat (helper)
+/**
+ * @brief Convert a heartbeat logarithmic value to its corresponding power of two.
+ */
 uint16_t mesh_heartbeat_pwr2(uint8_t value);
+/**
+ * @brief Encode a heartbeat count as a logarithmic value.
+ */
 uint8_t mesh_heartbeat_count_log(uint16_t value);
+/**
+ * @brief Encode a heartbeat period as a logarithmic value.
+ */
 uint8_t mesh_heartbeat_period_log(uint16_t value);
+
+/* API_END */
 
 #if defined __cplusplus
 }

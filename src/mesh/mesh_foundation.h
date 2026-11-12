@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Foundation Models
+ *
+ * Define Bluetooth Mesh foundation model types and operations.
+ */
+
 #ifndef MESH_FOUNDATION_H
 #define MESH_FOUNDATION_H
 
@@ -46,6 +52,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 #define MESH_TTL_MAX 0x7f
 #define MESH_FOUNDATION_STATE_NOT_SUPPORTED 2
@@ -267,6 +275,8 @@ uint8_t mesh_foundation_relay_retransmit_get(void);
  * @brief Get Features map (Relay, Proxy, Friend, Low Power)
  */
 uint16_t mesh_foundation_get_features(void);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

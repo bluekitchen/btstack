@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Health Server
+ *
+ * Expose health faults and attention state for a mesh node.
+ */
+
 #ifndef MESH_HEALTH_SERVER_H
 #define MESH_HEALTH_SERVER_H
 
@@ -47,6 +53,11 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_health_server_get_operations(void);
 
 /**
@@ -88,6 +99,9 @@ void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t compa
  * @param company_id
  * @param fault_code
  */
+/**
+ * @brief Set a health fault for a company.
+ */
 void mesh_health_server_set_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code);
 
 /*
@@ -96,8 +110,13 @@ void mesh_health_server_set_fault(mesh_model_t *mesh_model, uint16_t company_id,
  * @param company_id
  * @param fault_code
  */
+/**
+ * @brief Clear a health fault for a company.
+ */
 void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

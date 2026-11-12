@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Generic Models
+ *
+ * Define common types and operations for generic mesh models.
+ */
+
 #ifndef MESH_GENERIC_MODEL_H
 #define MESH_GENERIC_MODEL_H
 
@@ -44,6 +50,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 
 #define MESH_GENERIC_ON_OFF_GET                                     0x8201u    
@@ -92,6 +100,8 @@ typedef struct {
 typedef struct {
     mesh_transition_int16_t transition_data;       
 } mesh_generic_level_state_t;
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

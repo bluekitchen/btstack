@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Generic Level Client
+ *
+ * Control and query the level state of a remote model.
+ */
+
 #ifndef MESH_GENERIC_LEVEL_CLIENT_H
 #define MESH_GENERIC_LEVEL_CLIENT_H
 
@@ -47,6 +53,11 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_generic_level_client_get_operations(void);
 /**
  * @brief Register packet handler
@@ -163,6 +174,8 @@ uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t d
  */
 uint8_t mesh_generic_level_client_move_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
     int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

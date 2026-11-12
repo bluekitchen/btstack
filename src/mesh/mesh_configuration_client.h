@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Configuration Client
+ *
+ * Configure remote mesh nodes using the Configuration Client model.
+ */
+
 #ifndef MESH_CONFIGURATION_CLIENT_H
 #define MESH_CONFIGURATION_CLIENT_H
 
@@ -46,6 +52,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 
 typedef struct {
@@ -78,6 +86,9 @@ typedef struct {
     uint8_t  publish_retransmit_interval_steps;
 } mesh_publication_model_config_t;
 
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_configuration_client_get_operations(void);
 
 /**
@@ -354,6 +365,9 @@ uint8_t mesh_configuration_client_send_model_publication_virtual_address_set(mes
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_model_subscription_add(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+/**
+ * @brief Send a model subscription virtual address add request.
+ */
 uint8_t mesh_configuration_client_send_model_subscription_virtual_address_add(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
 
 /**
@@ -367,6 +381,9 @@ uint8_t mesh_configuration_client_send_model_subscription_virtual_address_add(me
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_model_subscription_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+/**
+ * @brief Send a model subscription virtual address delete request.
+ */
 uint8_t mesh_configuration_client_send_model_subscription_virtual_address_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
 
 /**
@@ -380,6 +397,9 @@ uint8_t mesh_configuration_client_send_model_subscription_virtual_address_delete
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_model_subscription_overwrite(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+/**
+ * @brief Send a model subscription virtual address overwrite request.
+ */
 uint8_t mesh_configuration_client_send_model_subscription_virtual_address_overwrite(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
 
 /**
@@ -688,6 +708,8 @@ uint8_t mesh_configuration_client_send_network_transmit_get(mesh_model_t * mesh_
  */
 uint8_t mesh_configuration_client_send_network_transmit_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t transmit_count, uint16_t transmit_interval_steps_ms);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

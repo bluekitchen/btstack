@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Generic Level Server
+ *
+ * Provide a generic level state for a mesh node.
+ */
+
 #ifndef MESH_GENERIC_LEVEL_SERVER_H
 #define MESH_GENERIC_LEVEL_SERVER_H
 
@@ -47,6 +53,11 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_generic_level_server_get_operations(void);
 /**
  * @brief Register packet handler
@@ -62,6 +73,8 @@ void mesh_generic_level_server_register_packet_handler(mesh_model_t *generic_lev
  */
 void mesh_generic_level_server_set_publication_model(mesh_model_t *generic_level_server_model, mesh_publication_model_t * publication_model);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

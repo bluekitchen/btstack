@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Keys
+ *
+ * Manage network, application, and device keys for Bluetooth Mesh.
+ */
+
 #ifndef MESH_KEYS_H
 #define MESH_KEYS_H
 
@@ -48,6 +54,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 #define MESH_KEYS_INVALID_INDEX 0xffff
 
@@ -292,6 +300,8 @@ int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it);
  * @return transport key
  */
 mesh_transport_key_t * mesh_transport_key_aid_iterator_get_next(mesh_transport_key_iterator_t *it);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

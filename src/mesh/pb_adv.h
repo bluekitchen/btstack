@@ -36,6 +36,12 @@
  */
 
 
+/**
+ * @title Mesh Provisioning over Advertising
+ *
+ * Exchange provisioning messages over the advertising bearer.
+ */
+
 #ifndef PB_ADV_H
 #define PB_ADV_H
 
@@ -47,6 +53,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 /**
  * Initialize Provisioning Bearer using Advertisement Bearer
@@ -86,6 +94,8 @@ void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason);
  */
 uint16_t pb_adv_create_link(const uint8_t * device_uuid);
 #endif
+
+/* API_END */
 
 #if defined __cplusplus
 }

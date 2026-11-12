@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Generic OnOff Client
+ *
+ * Control and query the on/off state of a remote model.
+ */
+
 #ifndef MESH_GENERIC_ON_OFF_CLIENT_H
 #define MESH_GENERIC_ON_OFF_CLIENT_H
 
@@ -47,6 +53,11 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
+/**
+ * @brief Get the supported model operations.
+ */
 const mesh_operation_t * mesh_generic_on_off_client_get_operations(void);
 /**
  * @brief Register packet handler
@@ -103,6 +114,8 @@ uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, 
  * @return status    0 if successful 
  */
 uint8_t mesh_generic_on_off_client_publish(mesh_model_t * mesh_model, uint8_t on_off_value, uint8_t transaction_id);
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

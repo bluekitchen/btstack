@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh IV Index and Sequence Number
+ *
+ * Maintain the IV index and sequence numbers used by the mesh network.
+ */
+
 #ifndef MESH_IV_INDEX_SEQ_NUMBER_H
 #define MESH_IV_INDEX_SEQ_NUMBER_H
 
@@ -45,13 +51,21 @@ extern "C"
 {
 #endif
 
+/* API_START */
+
 /**
  * IV Index
  */
 
 void     mesh_set_iv_index(uint32_t iv_index);
+/**
+ * @brief Get the current IV index.
+ */
 uint32_t mesh_get_iv_index(void);
 
+/**
+ * @brief Get the IV index used for transmission.
+ */
 uint32_t mesh_get_iv_index_for_tx(void);
 
 /**
@@ -65,7 +79,7 @@ int mesh_iv_update_active(void);
 void mesh_trigger_iv_update(void);
 
 /**
- * @breif IV update was completed
+ * @brief IV update was completed
  */
 void mesh_iv_update_completed(void);
 
@@ -85,9 +99,17 @@ void mesh_sequence_number_set_update_callback(void (*callback)(void));
  * Sequence Number
  */
 void     mesh_sequence_number_set(uint32_t seq);
+/**
+ * @brief Get the current sequence number without advancing it.
+ */
 uint32_t mesh_sequence_number_peek(void);
+/**
+ * @brief Get and advance the sequence number.
+ */
 uint32_t mesh_sequence_number_next(void);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */

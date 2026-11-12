@@ -36,6 +36,12 @@
  */
 
 
+/**
+ * @title Mesh GATT Bearer
+ *
+ * Send and receive mesh messages over GATT connections.
+ */
+
 #ifndef GATT_BEARER_H
 #define GATT_BEARER_H
 
@@ -47,6 +53,8 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 /**
  * Initialize GATT Bearer
  */
@@ -56,14 +64,26 @@ void gatt_bearer_init(void);
  * Register listener for particular message types: Mesh Message, Mesh Beacon, proxy configuration
  */
 void gatt_bearer_register_for_network_pdu(btstack_packet_handler_t packet_handler);
+/**
+ * @brief Register a handler for received beacons.
+ */
 void gatt_bearer_register_for_beacon(btstack_packet_handler_t packet_handler);
+/**
+ * @brief Register a handler for received mesh proxy configuration messages.
+ */
 void gatt_bearer_register_for_mesh_proxy_configuration(btstack_packet_handler_t _packet_handler);
 
 /**
  * Request can send now event for particular message type: Mesh Message, Mesh Beacon, proxy configuration
  */
 void gatt_bearer_request_can_send_now_for_network_pdu(void);
+/**
+ * @brief Request a can-send-now event for a beacon.
+ */
 void gatt_bearer_request_can_send_now_for_beacon(void);
+/**
+ * @brief Request a can-send-now event for a mesh proxy configuration message.
+ */
 void gatt_bearer_request_can_send_now_for_mesh_proxy_configuration(void);
 
 /**
@@ -72,8 +92,16 @@ void gatt_bearer_request_can_send_now_for_mesh_proxy_configuration(void);
  * @param data_len max 29 bytes
  */
 void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size); 
+/**
+ * @brief Send a beacon.
+ */
 void gatt_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size); 
+/**
+ * @brief Send a mesh proxy configuration message.
+ */
 void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * proxy_configuration, uint16_t size); 
+
+/* API_END */
 
 #if defined __cplusplus
 }

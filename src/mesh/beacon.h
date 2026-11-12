@@ -36,6 +36,12 @@
  */
 
 
+/**
+ * @title Mesh Beacons
+ *
+ * Create, transmit, and process Bluetooth Mesh beacons.
+ */
+
 #ifndef BEACON_H
 #define BEACON_H
 
@@ -49,6 +55,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 
 /**
@@ -81,6 +89,8 @@ void beacon_register_for_unprovisioned_device_beacons(btstack_packet_handler_t p
  * Register Beacon handler for secure network beacons
  */
 void beacon_register_for_secure_network_beacons(btstack_packet_handler_t packet_handler);
+
+/* API_END */
 
 #if defined __cplusplus
 }

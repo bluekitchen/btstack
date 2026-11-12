@@ -36,6 +36,12 @@
  */
 
 
+/**
+ * @title Mesh Provisioning over GATT
+ *
+ * Exchange provisioning messages over the GATT bearer.
+ */
+
 #ifndef PB_GATT_H
 #define PB_GATT_H
 
@@ -48,6 +54,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 /**
  * Setup mesh provisioning service
@@ -82,6 +90,8 @@ hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
  */
 void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
 
+
+/* API_END */
 
 #if defined __cplusplus
 }

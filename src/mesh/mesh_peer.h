@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Mesh Peers
+ *
+ * Track peer state used for replay protection.
+ */
+
 #ifndef MESH_PEER_H
 #define MESH_PEER_H
 
@@ -43,6 +49,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 // mesh seq auth validation
 typedef struct {
@@ -62,10 +70,18 @@ typedef struct {
 } mesh_peer_t;
 
 // get peer info for address
+/**
+ * @brief Find or create peer state for a source address.
+ */
 mesh_peer_t * mesh_peer_for_addr(uint16_t address);
 
 // reset seq auth == replay protection
+/**
+ * @brief Reset peer sequence authentication state.
+ */
 void mesh_seq_auth_reset(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

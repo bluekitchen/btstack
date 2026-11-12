@@ -39,6 +39,12 @@
  *  provisioning.h
  */
 
+/**
+ * @title Mesh Cryptography
+ *
+ * Perform cryptographic operations used by Bluetooth Mesh.
+ */
+
 #ifndef MESH_CRYPTO_H
 #define MESH_CRYPTO_H
 
@@ -53,6 +59,8 @@
 extern "C"
 {
 #endif
+
+/* API_START */
 
 /**
  * Calculate mesh k1 function
@@ -104,6 +112,8 @@ void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_networ
  */
 void mesh_transport_key_calc_aid(btstack_crypto_aes128_cmac_t * request, mesh_transport_key_t * app_key, void (* callback)(void * arg), void * callback_arg);
 
+
+/* API_END */
 
 #ifdef __cplusplus
 } /* end of extern "C" */
