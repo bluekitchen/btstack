@@ -45,11 +45,10 @@ copyright = """/*
 
 hfile_header_begin = """
 
-/*
- * btstack_memory.h
+/**
+ * @title BTstack Memory Management
  *
- * @brief BTstack memory management using configurable memory pools
- *
+ * Manage BTstack objects using configurable pools or dynamic allocation.
  */
 
 #ifndef BTSTACK_MEMORY_H
@@ -113,6 +112,9 @@ void btstack_memory_deinit(void);
 hfile_header_end = """
 
 #ifdef ENABLE_MALLOC_TEST
+/**
+ * @brief Enable or disable simulated allocation failures for testing.
+ */
 void btstack_memory_simulate_malloc_failure(bool out_of_memory);
 #endif
 
@@ -214,7 +216,13 @@ void btstack_memory_deinit(void){
 }
 """
 
-header_template = """STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void);
+header_template = """/**
+ * @brief Allocate a STRUCT_NAME_t object, or return NULL if unavailable.
+ */
+STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void);
+/**
+ * @brief Release a STRUCT_NAME_t object.
+ */
 void   btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME);"""
 
 code_template = """
