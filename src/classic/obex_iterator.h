@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title OBEX Header Iterator
+ *
+ * Iterate over the headers in OBEX requests and responses.
+ */
+
 #ifndef OBEX_ITERATOR_H
 #define OBEX_ITERATOR_H
 
@@ -63,22 +69,52 @@ typedef struct obex_iterator {
 } obex_iterator_t;
 
 // OBEX packet header iterator
+/**
+ * @brief Initialize an iterator over the headers in an OBEX request.
+ */
 void obex_iterator_init_with_request_packet(obex_iterator_t *context, const uint8_t * packet_data, uint16_t packet_len);
+/**
+ * @brief Initialize an iterator over an OBEX response, given the request opcode.
+ */
 void obex_iterator_init_with_response_packet(obex_iterator_t *context, uint8_t request_opcode, const uint8_t * packet_data, uint16_t packet_len);
+/**
+ * @brief Check whether the iterator points to another valid header.
+ */
 int  obex_iterator_has_more(const obex_iterator_t * context);
+/**
+ * @brief Advance to the next OBEX header.
+ */
 void obex_iterator_next(obex_iterator_t * context);
 
 // OBEX packet header access functions
 // @note BODY/END-OF-BODY headers might be incomplete
+/**
+ * @brief Get the current header identifier.
+ */
 uint8_t         obex_iterator_get_hi(const obex_iterator_t * context);
+/**
+ * @brief Get the current header’s one-byte value.
+ */
 uint8_t         obex_iterator_get_data_8(const obex_iterator_t * context);
+/**
+ * @brief Get the current header’s four-byte value.
+ */
 uint32_t        obex_iterator_get_data_32(const obex_iterator_t * context);
+/**
+ * @brief Get the available length of the current header data.
+ */
 uint32_t        obex_iterator_get_data_len(const obex_iterator_t * context);
+/**
+ * @brief Get a pointer to the current header data.
+ */
 const uint8_t * obex_iterator_get_data(const obex_iterator_t * context);
 
 /* API_END */
 
 // debug
+/**
+ * @brief Log the contents of an OBEX packet.
+ */
 void            obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size);
 
 #if defined __cplusplus

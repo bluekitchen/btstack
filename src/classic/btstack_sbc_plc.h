@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title SBC Packet Loss Concealment
+ *
+ * Conceal lost SBC audio frames using previously received samples.
+ */
+
 #ifndef BTSTACK_SBC_PLC_H
 #define BTSTACK_SBC_PLC_H
 
@@ -48,6 +54,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 #define SBC_FS 120          /* SBC Frame Size */
 #define SBC_N 512           /* 32ms - Window Length for pattern matching */ 
@@ -70,15 +78,35 @@ typedef struct sbc_plc_state {
 } btstack_sbc_plc_state_t;
 
 // All int16 audio samples are in host endiness
+/**
+ * @brief Initialize SBC packet loss concealment state.
+ */
 void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state);
+/**
+ * @brief Generate replacement samples for a lost SBC frame.
+ */
 void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
+/**
+ * @brief Process a received SBC frame and update concealment history.
+ */
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
+/**
+ * @brief Return the encoded zero-signal SBC frame.
+ */
 uint8_t * btstack_sbc_plc_zero_signal_frame(void);
+/**
+ * @brief Log SBC packet loss concealment statistics.
+ */
 void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state);
 
 #ifdef OCTAVE_OUTPUT
+/**
+ * @brief Set the base name for Octave diagnostic output.
+ */
 void btstack_sbc_plc_octave_set_base_name(const char * name);
 #endif
+
+/* API_END */
 
 #if defined __cplusplus
 }

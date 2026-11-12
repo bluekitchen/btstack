@@ -39,6 +39,12 @@
  *  @brief TODO
  */
 
+/**
+ * @title Broadcast Audio URI Builder
+ *
+ * Build a broadcast audio URI from broadcast and subgroup parameters.
+ */
+
 #ifndef BROADCAST_AUDIO_URI_BUILDER_H
 #define BROADCAST_AUDIO_URI_BUILDER_H
 
@@ -50,6 +56,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 typedef struct {
     char * buffer;
@@ -257,6 +265,8 @@ bool broadcast_audio_uri_builder_sg_metadata_end(broadcast_audio_uri_builder_t *
  * @return
  */
 bool broadcast_audio_uri_builder_append_public_broadcast_announcement_metadata(broadcast_audio_uri_builder_t * builder, const uint8_t * metadata, uint16_t metadata_len);
+
+/* API_END */
 
 #if defined __cplusplus
 }

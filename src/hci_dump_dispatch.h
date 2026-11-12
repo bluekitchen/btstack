@@ -39,6 +39,12 @@
  *  @brief HCI Dump Implementation that allows to use a set of HCI Dump Implementations
  */
 
+/**
+ * @title HCI Dump Dispatcher
+ *
+ * Dispatch HCI dump output to registered destinations.
+ */
+
 #ifndef HCI_DUMP_DISPATCH_H
 #define HCI_DUMP_DISPATCH_H
 
@@ -48,6 +54,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 // memory provided by caller to keep hci_dump_t implementation in a list
 typedef struct {
@@ -83,6 +91,8 @@ void hci_dump_dispatch_deinit(void);
  * @return
  */
 const hci_dump_t * hci_dump_dispatch_instance(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

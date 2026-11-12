@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Generic Object Exchange Profile Server
+ *
+ * Provide server connections and responses for object exchange over Bluetooth.
+ */
+
 #ifndef GOEP_SERVER_H
 #define GOEP_SERVER_H
 

@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title HCI Command Builder
+ *
+ * Build HCI commands from templates and declare supported commands.
+ */
+
 #ifndef HCI_CMDS_H
 #define HCI_CMDS_H
 
@@ -52,6 +58,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 // calculate hci opcode for ogf/ocf value
 #define HCI_OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
@@ -757,6 +765,8 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
  * @returns size of command
  */
 uint16_t hci_cmd_create_from_template_with_vargs(uint8_t * hci_cmd_buffer, const hci_cmd_t * cmd, ...);
+
+/* API_END */
 
 #if defined __cplusplus
 }

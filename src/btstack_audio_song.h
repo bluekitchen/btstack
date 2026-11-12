@@ -36,7 +36,9 @@
  */
 
 /**
- *  @brief TODO
+ * @title BTstack Audio Songs
+ *
+ * Represent silence, sine waves, and supported music files as audio songs.
  */
 
 #ifndef BTSTACK_AUDIO_SONG_H
@@ -54,6 +56,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 /**
  * Supported Song types
@@ -138,6 +142,9 @@ void btstack_audio_song_sine_init(btstack_audio_song_sine_t * song, uint16_t fre
  * @param mod_title
  */
 #ifdef ENABLE_MODPLAYER
+/**
+ * @brief Initialize a song from a MOD title.
+ */
 void btstack_audio_song_mod_init(btstack_audio_song_mod_t * song, const mod_title_t * mod_title);
 #endif
 
@@ -148,8 +155,13 @@ void btstack_audio_song_mod_init(btstack_audio_song_mod_t * song, const mod_titl
  * @param path
  */
 #ifdef ENABLE_VORBIS
+/**
+ * @brief Initialize a song from an Ogg Vorbis file path.
+ */
 void btstack_audio_song_vorbis_init(btstack_audio_song_vorbis_t * song, const char * path);
 #endif
+
+/* API_END */
 
 #if defined __cplusplus
 }

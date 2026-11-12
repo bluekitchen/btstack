@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title CVSD Packet Loss Concealment
+ *
+ * Conceal lost CVSD audio frames using previously received samples.
+ */
+
 #ifndef BTSTACK_CVSD_PLC_H
 #define BTSTACK_CVSD_PLC_H
 
@@ -49,6 +55,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 #define BTSTACK_CVSD_PLC_SAMPLE_FORMAT int16_t
 
@@ -77,21 +85,53 @@ typedef struct cvsd_plc_state {
 } btstack_cvsd_plc_state_t;
 
 // All int16 audio samples are in host endiness. num_samples must be in [0, CVSD_FS].
+/**
+ * @brief Initialize CVSD packet loss concealment state.
+ */
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state);
+/**
+ * @brief Generate replacement samples for a lost CVSD frame.
+ */
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *out); 
+/**
+ * @brief Process a received CVSD frame and update concealment history.
+ */
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *in, int16_t *out);
+/**
+ * @brief Process received samples or conceal a bad CVSD frame.
+ */
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, bool bad_frame, int16_t * in, uint16_t num_samples, int16_t * out);
+/**
+ * @brief Log CVSD packet loss concealment statistics.
+ */
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);
 
 // testing only
+/**
+ * @brief Find a matching pattern in the sample history for testing.
+ */
 int   btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y);
+/**
+ * @brief Compute an amplitude match for the selected history pattern.
+ */
 float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch);
+/**
+ * @brief Clamp a sample to the supported sample range.
+ */
 BTSTACK_CVSD_PLC_SAMPLE_FORMAT btstack_cvsd_plc_crop_sample(float val);
+/**
+ * @brief Compute the raised-cosine window value at the given index.
+ */
 float btstack_cvsd_plc_rcos(int index);
 
 #ifdef OCTAVE_OUTPUT
+/**
+ * @brief Set the base name for Octave diagnostic output.
+ */
 void btstack_cvsd_plc_octave_set_base_name(const char * name);
 #endif
+
+/* API_END */
 
 #if defined __cplusplus
 }

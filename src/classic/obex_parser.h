@@ -40,6 +40,12 @@
  * Parser incoming arbitrarily chunked OBEX object
  */
 
+/**
+ * @title OBEX Parser
+ *
+ * Parse OBEX messages and application parameters incrementally.
+ */
+
 #ifndef OBEX_PARSER_H
 #define OBEX_PARSER_H
 

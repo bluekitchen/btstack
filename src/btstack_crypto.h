@@ -36,10 +36,11 @@
  */
 
 /**
- * Crypto-related functions
+ * @title BTstack Cryptography
  *
- * Central place for all crypto-related functions with completion callbacks to allow
- * using of MCU crypto peripherals or the Bluetooth controller
+ * Provide asynchronous cryptographic operations and supporting AES and ECC functions.
+ *
+ * Completion callbacks allow use of MCU crypto peripherals or the Bluetooth controller
  */
 
 #ifndef BTSTACK_CTRYPTO_H
@@ -51,6 +52,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 #define CMAC_TEMP_API
 
@@ -222,6 +225,9 @@ void btstack_crypto_ecc_p256_calculate_dhkey(btstack_crypto_ecc_p256_t * request
  * @param public_key (64 bytes)
  * @result 0 == valid
  */
+/**
+ * @brief Validate a P-256 public key.
+ */
 int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
 
 /** 
@@ -291,11 +297,22 @@ void btstack_aes128_calc(const uint8_t * key, const uint8_t * plaintext, uint8_t
 void btstack_crypto_deinit(void);
 
 // PTS testing only - not possible when using Buetooth Controller for ECC operations
+/**
+ * @brief Set the P-256 key pair for testing with software ECC.
+ */
 void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key);
 
 // Unit testing
+/**
+ * @brief Check whether the crypto engine is idle.
+ */
 int btstack_crypto_idle(void);
+/**
+ * @brief Reset the crypto engine for testing.
+ */
 void btstack_crypto_reset(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

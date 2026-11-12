@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title OBEX Single Response Mode Server
+ *
+ * Manage single response mode for an OBEX server.
+ */
+
 #ifndef OBEX_SRM_H
 #define OBEX_SRM_H
 
@@ -43,6 +49,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 typedef enum {
     OBEX_SRM_STATE_DISABLED,
@@ -107,6 +115,8 @@ void obex_srm_server_add_srm_headers (obex_srm_server_t   *obex_srm,
  * @param obex_srm
  */
 bool obex_srm_server_is_srm_active (obex_srm_server_t   *obex_srm);
+
+/* API_END */
 
 #if defined __cplusplus
 }

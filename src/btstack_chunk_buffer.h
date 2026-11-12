@@ -36,7 +36,7 @@
  */
 
 /**
- * @brief Chunk buffer
+ * @title Chunk Buffer
  *
  * A chunk buffer allows for sequential reading of a buffer in chunks
  *
@@ -82,6 +82,8 @@ uint32_t btstack_chunk_buffer_bytes_available(btstack_chunk_buffer_t * context);
  * @return number of bytes read
  */
 uint32_t btstack_chunk_buffer_read(btstack_chunk_buffer_t * context, uint8_t * buffer, uint32_t buffer_size);
+
+/* API_END */
 
 #if defined __cplusplus
 }

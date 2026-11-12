@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title SBC Encoder and Decoder
+ *
+ * Encode and decode SBC audio frames.
+ */
+
 #ifndef BTSTACK_SBC_H
 #define BTSTACK_SBC_H
 
@@ -245,7 +251,13 @@ int  btstack_sbc_encoder_num_audio_frames(void);
 /* API_END */
 
 // testing only
+/**
+ * @brief Enable or disable packet loss concealment for testing.
+ */
 void btstack_sbc_decoder_test_set_plc_enabled(int plc_enabled);
+/**
+ * @brief Set the period for simulating corrupt frames in tests.
+ */
 void btstack_sbc_decoder_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus

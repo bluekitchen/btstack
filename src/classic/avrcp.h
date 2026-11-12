@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title Audio/Video Remote Control Profile
+ *
+ * Manage audio/video remote control connections and protocol operations.
+ */
+
 #ifndef AVRCP_H
 #define AVRCP_H
 
@@ -829,48 +835,150 @@ typedef struct {
 } avrcp_context_t; 
 
 
+/**
+ * @brief Get a string describing the AVRCP subunit.
+ */
 const char * avrcp_subunit2str(uint16_t index);
+/**
+ * @brief Get a string describing the AVRCP event.
+ */
 const char * avrcp_event2str(uint16_t index);
+/**
+ * @brief Get a string describing the AVRCP operation.
+ */
 const char * avrcp_operation2str(uint8_t index);
+/**
+ * @brief Get a string describing the AVRCP attribute.
+ */
 const char * avrcp_attribute2str(uint8_t index);
+/**
+ * @brief Get a string describing the AVRCP play status.
+ */
 const char * avrcp_play_status2str(uint8_t index);
+/**
+ * @brief Get a string describing the AVRCP ctype.
+ */
 const char * avrcp_ctype2str(uint8_t index);
+/**
+ * @brief Get a string describing the AVRCP repeat.
+ */
 const char * avrcp_repeat2str(uint8_t index);
+/**
+ * @brief Get a string describing the AVRCP shuffle.
+ */
 const char * avrcp_shuffle2str(uint8_t index);
+/**
+ * @brief Get a string describing the AVRCP notification.
+ */
 const char * avrcp_notification2str(avrcp_notification_event_id_t index);
 
+/**
+ * @brief Determine the AVCTP packet type and maximum payload size.
+ */
 avctp_packet_type_t avctp_get_packet_type(avrcp_connection_t * connection, uint16_t * max_payload_size);
+/**
+ * @brief Prepare a single-packet AVRCP fragment.
+ */
 void avrcp_prepare_single_packet_fragment(avrcp_connection_t * connection);
+/**
+ * @brief Get the AVCTP header size for a packet type.
+ */
 uint16_t avctp_get_num_bytes_for_header(avctp_packet_type_t avctp_packet_type);
+/**
+ * @brief Get the AVRCP header size for an opcode and packet type.
+ */
 uint16_t avrcp_get_num_bytes_for_header(avrcp_command_opcode_t command_opcode, avctp_packet_type_t avctp_packet_type);
 
+/**
+ * @brief Register the callback for controller packet handler.
+ */
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
+/**
+ * @brief Register the callback for target packet handler.
+ */
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
+/**
+ * @brief Register the callback for browsing sdp query complete handler.
+ */
 void avrcp_register_browsing_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status));
+/**
+ * @brief Register the callback for cover art sdp query complete handler.
+ */
 void avrcp_register_cover_art_sdp_query_complete_handler(void (*callback)(avrcp_connection_t * connection, uint8_t status));
 
+/**
+ * @brief Extract the AVRCP command opcode from a packet.
+ */
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * avrcp_get_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * avrcp_get_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr);
 
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * avrcp_get_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * avrcp_get_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
 
+/**
+ * @brief Request a can-send-now event for an AVRCP connection.
+ */
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
+/**
+ * @brief Allocate the next AVRCP connection identifier for a role.
+ */
 uint16_t avrcp_get_next_cid(avrcp_role_t role);
+/**
+ * @brief Get the list of AVRCP connections.
+ */
 btstack_linked_list_t avrcp_get_connections(void);
 
+/**
+ * @brief Get the browsing L2CAP PSM found by the SDP query.
+ */
 uint16_t avrcp_sdp_query_browsing_l2cap_psm(void);
+/**
+ * @brief Process an SDP query attribute value event.
+ */
 void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
+/**
+ * @brief Find the connection matching the given role and identifier.
+ */
 avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
 // SDP query
+/**
+ * @brief Create an AVRCP controller or target SDP record.
+ */
 void    avrcp_create_sdp_record(bool controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+/**
+ * @brief Start an SDP query for the AVRCP connections.
+ */
 void avrcp_trigger_sdp_query(avrcp_connection_t *connection_controller, avrcp_connection_t *connection_target);
 
 
@@ -910,11 +1018,20 @@ void avrcp_deinit(void);
 /* API_END */
 
 #ifdef ENABLE_TESTING_SUPPORT
+/**
+ * @brief Limit the MTU for an AVRCP connection.
+ */
 void avrcp_limit_mtu(uint16_t avrcp_cid, uint16_t mtu);
 #endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+/**
+ * @brief Initialize AVRCP for fuzz testing.
+ */
 void avrcp_init_fuzz(void);
+/**
+ * @brief Process a packet for fuzz testing.
+ */
 void avrcp_packet_handler_fuzz(uint8_t *packet, uint16_t size);
 #endif
 

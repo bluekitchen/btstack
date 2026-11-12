@@ -46,6 +46,12 @@
  *  @Note minimal implementation, no error checking/handling
  */
 
+/**
+ * @title BTstack Memory Pools
+ *
+ * Allocate fixed-size blocks from caller-provided storage.
+ */
+
 #ifndef btstack_memory_pool_H
 #define btstack_memory_pool_H
 
@@ -53,16 +59,29 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 typedef void * btstack_memory_pool_t;
 
 // initialize memory pool with with given storage, block size and count
+/**
+ * @brief Initialize a fixed-size memory pool using the supplied storage.
+ */
 void   btstack_memory_pool_create(btstack_memory_pool_t *pool, void * storage, int count, int block_size);
 
 // get free block from pool, @return NULL or pointer to block
+/**
+ * @brief Allocate a block from the pool, or return NULL if none is available.
+ */
 void * btstack_memory_pool_get(btstack_memory_pool_t *pool);
 
 // return previously reserved block to memory pool
+/**
+ * @brief Return a block to the pool.
+ */
 void   btstack_memory_pool_free(btstack_memory_pool_t *pool, void * block);
+
+/* API_END */
 
 #if defined __cplusplus
 }

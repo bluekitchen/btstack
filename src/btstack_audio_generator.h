@@ -36,7 +36,17 @@
  */
 
 /**
- *  @brief TODO
+ * @title BTstack Audio Generator Interface and Implementations
+ *
+ * The btstack_audio_generator_t interface allows to pass different
+ * types of audio sources to an audio sink.
+ *
+ * Current implementations:
+ *    - Silence
+ *    - Sine
+ *    - Mod Player
+ *    - Vorbis Player
+ *    - Bridge: allows to push audio samples from produces to consumer
  */
 
 #ifndef BTSTACK_AUDIO_GENERATOR_H

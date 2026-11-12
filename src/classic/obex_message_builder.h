@@ -40,6 +40,12 @@
  *
  */
 
+/**
+ * @title OBEX Message Builder
+ *
+ * Build OBEX requests, responses, and headers in a buffer.
+ */
+
 #ifndef OBEX_MESSAGE_BUILDER_H
 #define OBEX_MESSAGE_BUILDER_H
 

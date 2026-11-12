@@ -36,7 +36,9 @@
  */
 
 /**
- *  @brief TODO
+ * @title BTstack Audio Player
+ *
+ * Play songs from a playlist through an audio generator.
  */
 
 #ifndef BTSTACK_AUDIO_PLAYER_H
@@ -49,6 +51,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 typedef struct btstack_audio_player btstack_audio_player_t;
 
@@ -113,7 +117,7 @@ void btstack_audio_player_stop(btstack_audio_player_t * audio_player);
 void btstack_audio_player_next_song(btstack_audio_player_t * audio_player);
 
 /**
- * @breif Go to previous song incl. warp around
+ * @brief Go to previous song incl. warp around
  * @param audio_player
  */
 void btstack_audio_player_previous_song(btstack_audio_player_t * audio_player);
@@ -142,10 +146,12 @@ uint16_t btstack_audio_player_get_number_songs(btstack_audio_player_t * audio_pl
 
 
 /**
- * @breif Free resources used by audio player
+ * @brief Free resources used by audio player
  * @param audio_player
  */
 void btstack_audio_player_deinit(btstack_audio_player_t * audio_player);
+
+/* API_END */
 
 #if defined __cplusplus
 }

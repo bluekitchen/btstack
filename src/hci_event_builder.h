@@ -39,6 +39,12 @@
  *  @brief Builder for HCI Events
  */
 
+/**
+ * @title HCI Event Builder
+ *
+ * Build HCI events in a caller-provided buffer.
+ */
+
 #ifndef HCI_EVENT_BUILDER_H
 #define HCI_EVENT_BUILDER_H
 
@@ -85,70 +91,70 @@ uint16_t hci_event_builder_remaining_space(hci_event_builder_context_t * context
 uint16_t hci_event_builder_get_length(hci_event_builder_context_t * context);
 
 /**
- * @bbrief Add uint8_t to event
+ * @brief Add uint8_t to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_08(hci_event_builder_context_t * context, uint8_t value);
 
 /**
- * @bbrief Add uint16_t value to event
+ * @brief Add uint16_t value to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_16(hci_event_builder_context_t * context, uint16_t value);
 
 /**
- * @bbrief Add 24 bit from uint32_t byte to event
+ * @brief Add 24 bit from uint32_t byte to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_24(hci_event_builder_context_t * context, uint32_t value);
 
 /**
- * @bbrief Add uint32_t to event
+ * @brief Add uint32_t to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_32(hci_event_builder_context_t * context, uint32_t value);
 
 /**
- * @bbrief Add uint8_t[8] in big_endian to event
+ * @brief Add uint8_t[8] in big_endian to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_64(hci_event_builder_context_t * context, const uint8_t * value);
 
 /**
- * @bbrief Add uint8_t[16] in big_endian to event
+ * @brief Add uint8_t[16] in big_endian to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_128(hci_event_builder_context_t * context, const uint8_t * value);
 
 /**
- * @bbrief Add Bluetooth address to event
+ * @brief Add Bluetooth address to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_bd_addr(hci_event_builder_context_t * context, bd_addr_t addr);
 
 /**
- * @bbrief Add HCI Connection Handle to event
+ * @brief Add HCI Connection Handle to event
  * @param context
  * @param value
  */
 void hci_event_builder_add_con_handle(hci_event_builder_context_t * context, hci_con_handle_t con_handle);
 
 /**
- * @bbrief Add string to event using JV format: len, string, trailing zero
+ * @brief Add string to event using JV format: len, string, trailing zero
  * @param context
  * @param value
  */
 void hci_event_builder_add_string(hci_event_builder_context_t * context, const char * text);
 
 /**
- * @bbrief Add byte sequence to event
+ * @brief Add byte sequence to event
  * @param context
  * @param value
  */

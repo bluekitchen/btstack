@@ -39,6 +39,12 @@
  *  @brief Adapter for Bluedroid SBC implementation
  */
 
+/**
+ * @title Bluedroid SBC Encoder and Decoder
+ *
+ * Provide SBC encoder and decoder instances backed by Bluedroid.
+ */
+
 #ifndef BTSTACK_SBC_BLUEDROID_H
 #define BTSTACK_SBC_BLUEDROID_H
 
@@ -102,7 +108,13 @@ const btstack_sbc_decoder_t * btstack_sbc_decoder_bluedroid_init_instance(btstac
 /* API_END */
 
 // testing only
+/**
+ * @brief Enable or disable packet loss concealment for testing.
+ */
 void btstack_sbc_decoder_bluedroid_test_set_plc_enabled(int plc_enabled);
+/**
+ * @brief Set the period for simulating corrupt frames in tests.
+ */
 void btstack_sbc_decoder_bluedroid_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus

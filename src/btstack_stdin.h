@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title Standard Input
+ *
+ * Register a handler for characters read from standard input.
+ */
+
 #ifndef BTSTACK_STDIN_H
 #define BTSTACK_STDIN_H
 
@@ -44,11 +50,21 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 // setup handler for command line interface
+/**
+ * @brief Register a handler for characters read from standard input.
+ */
 void btstack_stdin_setup(void (*stdin_handler)(char c));
 
 // gets called by main.c
+/**
+ * @brief Stop handling standard input and restore its state.
+ */
 void btstack_stdin_reset(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

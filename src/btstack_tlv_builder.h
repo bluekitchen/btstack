@@ -36,7 +36,9 @@
  */
 
 /**
- *  @brief TODO
+ * @title Tag-Length-Value Builder
+ *
+ * Build tag-length-value fields in a caller-provided buffer.
  */
 
 #ifndef BTSTACK_TLV_BUILDER_H
@@ -76,60 +78,63 @@ void btstack_tlv_builder_init(btstack_tlv_builder_context_t * context, uint8_t *
 uint16_t btstack_tlv_builder_remaining_space(const btstack_tlv_builder_context_t* context);
 
 /**
- * @brief Get constructed event length
+ * @brief Get the constructed data length
  * @param context
- * @return number of bytes in event
+ * @return number of bytes in the constructed data
  */
 uint16_t btstack_tlv_builder_get_length(const btstack_tlv_builder_context_t* context);
 
 /**
  * @brief Add tag
  * @param context
- * @return number of bytes in event
+ * @param tag
  */
 void btstack_tlv_builder_add_tag(btstack_tlv_builder_context_t * context, uint8_t tag);
 
 /**
- * @bbrief Add uint8_t to current tag
+ * @brief Add uint8_t to current tag
  * @param context
  * @param value
  */
 void btstack_tlv_builder_add_08(btstack_tlv_builder_context_t * context, uint8_t value);
 
 /**
- * @bbrief Add uint16_t value to current tag
+ * @brief Add uint16_t value to current tag
  * @param context
  * @param value
  */
 void btstack_tlv_builder_add_big_endian_16(btstack_tlv_builder_context_t * context, uint16_t value);
 
 /**
- * @bbrief Add 24 bit from uint32_t byte to current tag
+ * @brief Add 24 bit from uint32_t byte to current tag
  * @param context
  * @param value
  */
 void btstack_tlv_builder_add_big_endian_24(btstack_tlv_builder_context_t * context, uint32_t value);
 
 /**
- * @bbrief Add uint32_t to current tag
+ * @brief Add uint32_t to current tag
  * @param context
  * @param value
  */
 void btstack_tlv_builder_add_big_endian_32(btstack_tlv_builder_context_t * context, uint32_t value);
 
 /**
- * @bbrief Add byte sequence to current tag
+ * @brief Add byte sequence to current tag
  * @param context
- * @param value
+ * @param data
+ * @param length
  */
 void btstack_tlv_builder_add_bytes(btstack_tlv_builder_context_t * context, const uint8_t * data, uint16_t length);
 
 /**
- * @bbrief Add string to current tag
+ * @brief Add string to current tag
  * @param context
- * @param value
+ * @param text
  */
 void btstack_tlv_builder_add_string(btstack_tlv_builder_context_t * context, const char * text);
+
+/* API_END */
 
 #if defined __cplusplus
 }

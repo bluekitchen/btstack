@@ -35,6 +35,12 @@
  *
  */
 
+/**
+ * @title OBEX Single Response Mode Client
+ *
+ * Manage single response mode for an OBEX client.
+ */
+
 #ifndef OBEX_SRM_CLIENT_H
 #define OBEX_SRM_CLIENT_H
 
@@ -44,6 +50,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 typedef enum {
     OBEX_SRM_CLIENT_STATE_DISABLED,
@@ -101,6 +109,8 @@ bool obex_srm_client_is_srm_active(obex_srm_client_t *obex_srm);
  * @param goep_cid
  */
 void obex_srm_client_prepare_header(obex_srm_client_t *obex_srm, uint16_t goep_cid);
+
+/* API_END */
 
 #if defined __cplusplus
 }
