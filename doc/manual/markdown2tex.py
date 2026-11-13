@@ -53,9 +53,16 @@ def fix_tightlist(line):
     else:
         return line
 
-def postprocess_file(markdown_filepath, fout, title):
+def postprocess_file(markdown_filepath, fout, title, pdf_html=False):
     with open(markdown_filepath, 'r') as fin:
         for line in fin:
+            if pdf_html:
+                if line.strip() == '<!-- pdf-config-table -->':
+                    fout.write('::: {.pdf-config-table}\n')
+                    continue
+                if line.strip() == '<!-- /pdf-config-table -->':
+                    fout.write(':::\n')
+                    continue
             if line == "#\n":
                 fout.write("\n\n# "+ title +"\n\n")
                 continue
@@ -64,7 +71,6 @@ def postprocess_file(markdown_filepath, fout, title):
             # replace with [the SPP Counter example](#sec:sppcounterExample)
             line = re.sub(r'\([^()\s#]*?(#sec:[^()\s]+)\)', r'(\1)', line)
             fout.write(line)
-
 def main(argv):
     yml_file = "mkdocs.yml"
     latexfolder = "latex/"
@@ -94,14 +100,18 @@ def main(argv):
     with open(latex_filepath, 'wt') as fout:
         # The WeasyPrint PDF renders code blocks at 12 pt. 
         # Reduce them without requiring a separate stylesheet.
-        fout.write("<style>pre > code { font-size: 9pt; } .code-operator { white-space: nowrap; }</style>\n\n")
+        fout.write("<style>pre > code { font-size: 9pt; } .code-operator { white-space: nowrap; } "
+                   ".pdf-config-table table { width: 100%; table-layout: fixed; } "
+                   ".pdf-config-table th:first-child, .pdf-config-table td:first-child { width: 42%; } "
+                   ".pdf-config-table td:first-child { font-family: monospace; font-size: 0.85em; } "
+                   ".pdf-config-table th, .pdf-config-table td { overflow-wrap: anywhere; }</style>\n\n")
         with open(yml_file, 'rt') as yin:
             doc = yaml.load(yin, Loader=yaml.SafeLoader)
             for page in doc["nav"]:
                 navigation_group_filepath = list(page.values())[0]
                 navigation_group_title = list(page.keys())[0]
                 markdown_filepath = mkdocsfolder + navigation_group_filepath
-                postprocess_file(markdown_filepath, fout, navigation_group_title)
+                postprocess_file(markdown_filepath, fout, navigation_group_title, pdf_html=markdown_only)
 
     if markdown_only:
         return

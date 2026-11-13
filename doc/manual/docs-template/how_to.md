@@ -88,7 +88,8 @@ Chipset properties:
 ### ENABLE_* directives {#sec:enableDirectives}
 BTstack properties:
 
-::: {.pdf-config-table}
+<!-- pdf-config-table -->
+
 | \#define                                                                       | Description                                                                                                                 |
 |--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
 | ENABLE_A2DP_EXPLICIT_CONFIG                                                    | Let application configure stream endpoint (skip auto-config of SBC endpoint)                                                |
@@ -115,7 +116,7 @@ BTstack properties:
 | ENABLE_GATT_CLIENT_<br>PAIRING                                                 | Enable GATT Client to start pairing and retry operation on security error                                                   |
 | ENABLE_GATT_CLIENT_<br>CACHING                                                 | Enable GATT Service Client to cache Characteristics in TLV                                                                  |
 | ENABLE_H5                                                                      | Enable support for SLIP mode in `btstack_uart.h` drivers for HCI H5 ('Three-Wire Mode')                                     |
-| ENABLE_HCI_ACL_PACKET_<br>RESERVATION                                              | Allow to reserve ACL packets independent from the stack                                                                     |                                                                    |
+| ENABLE_HCI_ACL_PACKET_<br>RESERVATION                                         | Allow to reserve ACL packets independent from the stack                                                                     |
 | ENABLE_HCI_COMMAND_STATUS_<br>DISCARDED_FOR_FAILED_<br>CONNECTIONS WORKAROUND  | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received        |
 | ENABLE_HCI_CONTROLLER_<br>TO_HOST_FLOW_CONTROL                                 | Enable HCI Controller to Host Flow Control, see below                                                                       |
 | ENABLE_HCI_SERIALIZED_<br>CONTROLLER_OPERATIONS                                | Serialize Inquiry, Remote Name Request, and Create Connection operations                                                    |
@@ -154,11 +155,12 @@ BTstack properties:
 | ENABLE_TLV_FLASH_<br>EXPLICIT_DELETE_FIELD                                     | Enable use of explicit delete field in TLV Flash implementation - required when flash value cannot be overwritten with zero |
 | ENABLE_TLV_FLASH_<br>WRITE_ONCE                                                | Enable storing of emtpy tag instead of overwriting existing tag - required when flash value cannot be overwritten at all    |
 | ENABLE_VORBIS                                                                  | Enable OGG-Vorbis support in btstack_audio_genrator and examples                                                            |
-:::
+
+<!-- /pdf-config-table -->
 
 Notes:
 
-- ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
+- ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED), or if the ECC HCI Commands are unreliable.
 
 ### HCI Controller to Host Flow Control
 In general, BTstack relies on flow control of the HCI transport, either via Hardware CTS/RTS flow control for UART or regular USB flow control. If this is not possible, e.g on an SoC, BTstack can use HCI Controller to Host Flow Control by defining ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL. If enabled, the HCI Transport implementation must be able to buffer the specified packets. In addition, it also need to be able to buffer a few HCI Events. Using a low number of host buffers might result in less throughput.
