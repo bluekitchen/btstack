@@ -2397,7 +2397,7 @@ static bool sm_run_oob(void){
 }
 
 static void sm_send_connectionless(sm_connection_t * sm_connection, const uint8_t * buffer, uint16_t size){
-    l2cap_send_connectionless(sm_connection->sm_handle, sm_connection->sm_cid, (uint8_t*) buffer, size);
+    l2cap_send_connectionless(sm_connection->sm_handle, sm_connection->sm_cid, buffer, size);
 }
 
 // handle basic actions that don't requires the full context
@@ -3017,7 +3017,7 @@ static void sm_run(void){
 			case SM_RESPONDER_SEND_SECURITY_REQUEST: {
 				const uint8_t buffer[2] = {SM_CODE_SECURITY_REQUEST, sm_auth_req};
 				connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
-				sm_send_connectionless(connection,  (uint8_t *) buffer, sizeof(buffer));
+				sm_send_connectionless(connection, buffer, sizeof(buffer));
 				sm_timeout_start(connection);
 				break;
 			}
