@@ -304,7 +304,7 @@ const char * hfp_ag_feature(int index){
 int send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(cid)) return BTSTACK_ACL_BUFFERS_FULL;
     log_info("HFP_TX %s", command);
-    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
+    int err = rfcomm_send(cid, (const uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_error("rfcomm_send -> error 0x%02x \n", err);
     } 
@@ -746,7 +746,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
     // 0x0100 "Service Name"
     if (strlen(name) > 0){
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (const uint8_t *) name);
     }
 }
 
@@ -1457,10 +1457,10 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             // store command id for custom command and just store rest of line
             if (hfp_connection->command == HFP_CMD_CUSTOM_MESSAGE){
                 const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup(isHandsFree, (const char *) hfp_connection->line_buffer);
-                hfp_connection->custom_at_command_id = at_command->command_id;
-                hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
-                return processed;
-            }
+                    hfp_connection->custom_at_command_id = at_command->command_id;
+                    hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
+                    return processed;
+                }
 
             // next state
             hfp_parser_reset_line_buffer(hfp_connection);
