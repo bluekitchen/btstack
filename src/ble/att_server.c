@@ -209,10 +209,10 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     (*packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_event_to_all(const uint8_t * event, uint16_t size){
+static void att_emit_event_to_all(uint8_t * event, uint16_t size){
     // dispatch to app level handler
     if (att_client_packet_handler != NULL){
-        (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
+        (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, event, size);
     }
 
     // dispatch to service handlers
@@ -221,7 +221,7 @@ static void att_emit_event_to_all(const uint8_t * event, uint16_t size){
     while (btstack_linked_list_iterator_has_next(&it)){
         att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
         if (!handler->packet_handler) continue;
-        (*handler->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
+        (*handler->packet_handler)(HCI_EVENT_PACKET, 0, event, size);
     }
 }
 
