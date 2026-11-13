@@ -147,13 +147,13 @@ void a2dp_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, 
     // 0x0100 "Service Name"
     if (strlen(service_name) > 0){
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (uint8_t *) service_name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (const uint8_t *) service_name);
     }
 
     // 0x0100 "Provider Name"
     if (strlen(service_provider_name) > 0) {
         de_add_number(service, DE_UINT, DE_SIZE_16, 0x0102);
-        de_add_data(service, DE_STRING, (uint16_t) strlen(service_provider_name), (uint8_t *) service_provider_name);
+        de_add_data(service, DE_STRING, (uint16_t) strlen(service_provider_name), (const uint8_t *) service_provider_name);
     }
 
     // 0x0311 "Supported Features"
@@ -1020,9 +1020,9 @@ uint8_t a2dp_config_process_set_sbc(avdtp_role_t role, uint16_t a2dp_cid, uint8_
     }
 
     // set config in reserved buffer
-    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) config_process->local_stream_endpoint->media_codec_info;
+    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = config_process->local_stream_endpoint->media_codec_info;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    status = avdtp_config_sbc_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    status = avdtp_config_sbc_store(config_process->local_stream_endpoint->media_codec_info, configuration);
     if (status != ERROR_CODE_SUCCESS) {
         return status;
     }
@@ -1046,9 +1046,9 @@ uint8_t a2dp_config_process_set_mpeg_audio(avdtp_role_t role, uint16_t a2dp_cid,
     }
 
     // set config in reserved buffer
-    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *)config_process->local_stream_endpoint->media_codec_info;
+    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = config_process->local_stream_endpoint->media_codec_info;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    status = avdtp_config_mpeg_audio_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    status = avdtp_config_mpeg_audio_store(config_process->local_stream_endpoint->media_codec_info, configuration);
     if (status != ERROR_CODE_SUCCESS) {
         return status;
     }
@@ -1071,9 +1071,9 @@ uint8_t a2dp_config_process_set_mpeg_aac(avdtp_role_t role, uint16_t a2dp_cid,  
     if (status != ERROR_CODE_SUCCESS) {
         return status;
     }
-    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) config_process->local_stream_endpoint->media_codec_info;
+    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = config_process->local_stream_endpoint->media_codec_info;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
-    status = avdtp_config_mpeg_aac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    status = avdtp_config_mpeg_aac_store(config_process->local_stream_endpoint->media_codec_info, configuration);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -1096,9 +1096,9 @@ uint8_t a2dp_config_process_set_mpegd_usac(avdtp_role_t role, uint16_t a2dp_cid,
     if (status != ERROR_CODE_SUCCESS) {
         return status;
     }
-    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) config_process->local_stream_endpoint->media_codec_info;
+    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = config_process->local_stream_endpoint->media_codec_info;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
-    status = avdtp_config_mpegd_usac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    status = avdtp_config_mpegd_usac_store(config_process->local_stream_endpoint->media_codec_info, configuration);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
@@ -1122,9 +1122,9 @@ uint8_t a2dp_config_process_set_atrac(avdtp_role_t role, uint16_t a2dp_cid, uint
         return status;
     }
 
-    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) config_process->local_stream_endpoint->media_codec_info;
+    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = config_process->local_stream_endpoint->media_codec_info;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
-    status = avdtp_config_atrac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    status = avdtp_config_atrac_store(config_process->local_stream_endpoint->media_codec_info, configuration);
     if (status != ERROR_CODE_SUCCESS) {
         return status;
     }
@@ -1148,7 +1148,7 @@ uint8_t a2dp_config_process_set_other(avdtp_role_t role, uint16_t a2dp_cid,  uin
         return status;
     }
 
-    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
+    config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = media_codec_information;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
 
 #ifdef ENABLE_A2DP_EXPLICIT_CONFIG
