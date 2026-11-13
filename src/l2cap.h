@@ -904,7 +904,7 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid);
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
 bool l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id);
-uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, const uint8_t *data, uint16_t len);
 uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
 
 // PTS Testing

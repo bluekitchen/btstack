@@ -991,14 +991,14 @@ static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channe
 }
 
 // @assumption size <= l2cap_channel->local_mps (checked in l2cap_acl_classic_handler)
-static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, const uint8_t * payload, uint16_t size){
+static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * payload, uint16_t size){
     uint16_t reassembly_sdu_length;
     switch (sar){
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
             // assert total packet size <= our mtu
             if (size > l2cap_channel->local_mtu) break;
             // packet complete -> disapatch
-            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, (uint8_t*) payload, size);
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, payload, size);
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
             if (size < 2) break;
@@ -1263,7 +1263,7 @@ uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t
 }
 
 // assumption - only on LE connections
-uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len){
+uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, const uint8_t *data, uint16_t len){
 
     if (data == NULL){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
@@ -3166,7 +3166,7 @@ struct channel_and_security_level {
 static bool l2cap_outgoing_channel_with_insufficient_security(const btstack_linked_item_t * item, void * context) {
     struct channel_and_security_level * info = (struct channel_and_security_level *) context;
     hci_con_handle_t con_handle = info->handle;
-    l2cap_channel_t *channel = (l2cap_channel_t *) item;
+    const l2cap_channel_t *channel = (const l2cap_channel_t *) item;
     if (!l2cap_is_dynamic_channel_type(channel->channel_type)) return false;
     if (channel->con_handle != con_handle) return false;
     if (channel->state != L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE) return false;
@@ -3235,7 +3235,7 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
 #ifdef L2CAP_USES_CHANNELS
 static bool l2cap_channel_matches_con_handle(const btstack_linked_item_t * item, void * context) {
     hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t) context;
-    l2cap_channel_t *channel = (l2cap_channel_t *) item;
+    const l2cap_channel_t *channel = (const l2cap_channel_t *) item;
     if (!l2cap_is_dynamic_channel_type(channel->channel_type)) return false;
     return channel->con_handle == con_handle;
 }
@@ -5145,7 +5145,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
             }
 
             // get SDU
-            const uint8_t * payload_data = &packet[COMPLETE_L2CAP_HEADER+2];
+            uint8_t * payload_data = &packet[COMPLETE_L2CAP_HEADER+2];
             uint16_t        payload_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
 
             // assert SDU size is smaller or equal to our buffers
