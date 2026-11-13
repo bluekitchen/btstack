@@ -319,15 +319,14 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
 }
 
 static uint8_t a2dp_source_media_config_validator_callback(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size){
-    uint8_t error = 0;
+    uint8_t error = ERROR_CODE_SUCCESS;
     if (a2dp_source_media_config_validator != NULL) {
-        // update subevent id and call validator
-        uint8_t avdtp_subevent_id = event[2];
-        uint8_t a2dp_subevent_id = a2dp_subevent_id_for_avdtp_subevent_id(avdtp_subevent_id);
-        uint8_t * subevent_field = (uint8_t *) &event[2];
-        *subevent_field = a2dp_subevent_id;
-        error = (*a2dp_source_media_config_validator)(stream_endpoint, event, size);
-        *subevent_field = avdtp_subevent_id;
+        btstack_assert ((size >= 3u) && (size <= AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN));
+        // clone event with updated subevent id and call validator
+        uint8_t a2dp_event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
+        (void)memcpy(a2dp_event, event, size);
+        a2dp_event[2] = a2dp_subevent_id_for_avdtp_subevent_id(event[2]);
+        error = (*a2dp_source_media_config_validator)(stream_endpoint, a2dp_event, size);
     }
     return error;
 }
