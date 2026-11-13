@@ -1934,7 +1934,7 @@ static void hci_run_gap_tasks_classic(void){
 
 static uint32_t hci_transport_uart_get_main_baud_rate(void){
     if (!hci_stack->config) return 0;
-    uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
+    uint32_t baud_rate = ((const hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
     return baud_rate;
 }
 
@@ -2013,7 +2013,7 @@ static void hci_initializing_run(void){
             && hci_stack->chipset
             && hci_stack->chipset->set_baudrate_command
             && hci_stack->hci_transport->set_baudrate
-            && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
+            && ((const hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
 #endif
 
     switch (hci_stack->substate){
@@ -2190,7 +2190,7 @@ static void hci_initializing_run(void){
                     } else
 #endif
                     if (need_baud_change) {
-                        uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
+                        uint32_t baud_rate = ((const hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
                         log_info("Local baud rate change to %" PRIu32 " after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
@@ -2740,7 +2740,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
                         && hci_stack->chipset
                         && hci_stack->chipset->set_baudrate_command
                         && hci_stack->hci_transport->set_baudrate
-                        && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
+                        && ((const hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
 
     need_addr_change = hci_stack->custom_bd_addr_set
                         && hci_stack->chipset
