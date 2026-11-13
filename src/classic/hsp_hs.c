@@ -217,7 +217,7 @@ static void emit_event_audio_disconnected(uint16_t sco_handle){
 
 static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
     if (!rfcomm_can_send_packet_now(hsp_hs_rfcomm_cid)) return 1;
-    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
+    int err = rfcomm_send(cid, (const uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_info("rfcomm_send_internal -> error 0X%02x", err);
     }
@@ -296,9 +296,9 @@ void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
     if (name){
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (const uint8_t *) name);
     } else {
-        de_add_data(service, DE_STRING, (uint16_t) strlen(hsp_hs_default_service_name), (uint8_t *) hsp_hs_default_service_name);
+        de_add_data(service, DE_STRING, (uint16_t) strlen(hsp_hs_default_service_name), (const uint8_t *) hsp_hs_default_service_name);
     }
     
     // Remote audio volume control
