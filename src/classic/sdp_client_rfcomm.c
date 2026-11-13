@@ -390,7 +390,7 @@ void sdp_client_query_rfcomm_init(void){
 static uint8_t sdp_client_query_rfcomm(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * service_search_pattern){
     sdp_client_rfcomm_app_callback = callback;
     sdp_client_query_rfcomm_init();
-    return sdp_client_query(&sdp_client_query_rfcomm_handle_sdp_parser_event, remote, service_search_pattern, (uint8_t*)&des_attribute_id_list[0]);
+    return sdp_client_query(&sdp_client_query_rfcomm_handle_sdp_parser_event, remote, service_search_pattern, &des_attribute_id_list[0]);
 }
 
 // Public API
