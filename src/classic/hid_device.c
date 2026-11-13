@@ -236,7 +236,7 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
     // 0x0100 "ServiceName"
     if (params->device_name != NULL){
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(params->device_name), (uint8_t *) params->device_name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(params->device_name), (const uint8_t *) params->device_name);
     }
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
@@ -276,7 +276,7 @@ void hid_create_sdp_record(uint8_t *service, uint32_t service_record_handle, con
         uint8_t* hidDescriptor = de_push_sequence(attribute);
         {
             de_add_number(hidDescriptor,  DE_UINT, DE_SIZE_8, 0x22);    // Report Descriptor
-            de_add_data(hidDescriptor,  DE_STRING, params->hid_descriptor_size, (uint8_t *) params->hid_descriptor);
+            de_add_data(hidDescriptor,  DE_STRING, params->hid_descriptor_size, (const uint8_t *) params->hid_descriptor);
         }
         de_pop_sequence(attribute, hidDescriptor);
     }        
@@ -925,7 +925,7 @@ void hid_device_request_can_send_now_event(uint16_t hid_cid){
 void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len){
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
     if (!hid_device || !hid_device->interrupt_cid) return;
-    l2cap_send(hid_device->interrupt_cid, (uint8_t*) message, message_len);
+    l2cap_send(hid_device->interrupt_cid, message, message_len);
     if (hid_device->user_request_can_send_now){
         l2cap_request_can_send_now_event((hid_device->interrupt_cid));
     }
@@ -938,7 +938,7 @@ void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message
 void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len){
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
     if (!hid_device || !hid_device->control_cid) return;
-    l2cap_send(hid_device->control_cid, (uint8_t*) message, message_len);
+    l2cap_send(hid_device->control_cid, message, message_len);
     hid_device_trigger_user_request_if_pending(hid_device);
 }
 
