@@ -1274,12 +1274,6 @@ hfp_custom_command_lookup(bool isHandsFree, const char *text) {
 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 
-    // check for custom commands, AG only
-    const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(isHandsFree, line_buffer);
-    if (custom_at_command != NULL){
-        return HFP_CMD_CUSTOM_MESSAGE;
-    }
-
     // table lookup based on role
     uint16_t num_entries;
     hfp_command_entry_t * table;
@@ -1434,37 +1428,37 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             // ignore empty tokens
             if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
 
-            // parse
-            hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
+            // check for custom commands, AG only
+            const hfp_custom_at_command_t * custom_at_command = hfp_custom_command_lookup(isHandsFree, (const char *)hfp_connection->line_buffer);
+            if (custom_at_command != NULL){
+                // store command id for custom command and just store rest of line
+                hfp_connection->command = HFP_CMD_CUSTOM_MESSAGE;
+                hfp_connection->custom_at_command_id = custom_at_command->command_id;
+                hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
+            } else {
+                // parse
+                hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
 
-            // pick +CIND version based on connection state: descriptions during SLC vs. states later
-            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC){
-                switch(hfp_connection->state){
-                    case HFP_W4_RETRIEVE_AG_INDICATORS_STATUS:
-                        hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
-                        break;
-                    case HFP_W4_RETRIEVE_AG_INDICATORS:
-                        hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
-                        break;
-                    default:
-                        hfp_connection->command = HFP_CMD_UNKNOWN;
-                        break;
+                // pick +CIND version based on connection state: descriptions during SLC vs. states later
+                if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC){
+                    switch(hfp_connection->state){
+                        case HFP_W4_RETRIEVE_AG_INDICATORS_STATUS:
+                            hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+                            break;
+                        case HFP_W4_RETRIEVE_AG_INDICATORS:
+                            hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+                            break;
+                        default:
+                            hfp_connection->command = HFP_CMD_UNKNOWN;
+                            break;
+                    }
                 }
+                // next state
+                hfp_parser_reset_line_buffer(hfp_connection);
+                hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
             }
 
             log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
-
-            // store command id for custom command and just store rest of line
-            if (hfp_connection->command == HFP_CMD_CUSTOM_MESSAGE){
-                const hfp_custom_at_command_t * at_command = hfp_custom_command_lookup(isHandsFree, (const char *) hfp_connection->line_buffer);
-                    hfp_connection->custom_at_command_id = at_command->command_id;
-                    hfp_connection->parser_state = HFP_PARSER_CUSTOM_COMMAND;
-                    return processed;
-                }
-
-            // next state
-            hfp_parser_reset_line_buffer(hfp_connection);
-            hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
 
             return processed;
 
