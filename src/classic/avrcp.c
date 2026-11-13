@@ -123,9 +123,9 @@ static const char * avrcp_operation_name[] = {
 };
 
 const char * avrcp_operation2str(uint8_t operation_id){
-    char * name = NULL;
+    const char * name = NULL;
     if ((operation_id >= AVRCP_OPERATION_ID_SKIP) && (operation_id <= AVRCP_OPERATION_ID_BACKWARD)){
-        name = (char *)avrcp_operation_name[operation_id - AVRCP_OPERATION_ID_SKIP];
+        name = avrcp_operation_name[operation_id - AVRCP_OPERATION_ID_SKIP];
     } 
     if (name == NULL){
         static char buffer[13];
@@ -336,13 +336,13 @@ void avrcp_create_sdp_record(bool controller, uint8_t * service, uint32_t servic
     // 0x0100 "Service Name"
     if (strlen(service_name) > 0){
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (uint8_t *) service_name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (const uint8_t *) service_name);
     }
 
     // 0x0100 "Provider Name"
     if (strlen(service_provider_name) > 0){
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_provider_name), (uint8_t *) service_provider_name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(service_provider_name), (const uint8_t *) service_provider_name);
     }
 
     // 0x0311 "Supported Features"
