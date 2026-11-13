@@ -109,7 +109,7 @@ extern "C" void de_create_sequence(uint8_t * sequence){ UNUSED(sequence); }
 extern "C" uint8_t * de_push_sequence(uint8_t * sequence){ return sequence; }
 extern "C" void de_pop_sequence(uint8_t * parent, uint8_t * child){ UNUSED(parent); UNUSED(child); }
 extern "C" void de_add_number(uint8_t * sequence, de_type_t type, de_size_t size, uint32_t value){ UNUSED(sequence); UNUSED(type); UNUSED(size); UNUSED(value); }
-extern "C" void de_add_data(uint8_t * sequence, de_type_t type, uint16_t size, uint8_t * data){ UNUSED(sequence); UNUSED(type); UNUSED(size); UNUSED(data); }
+extern "C" void de_add_data(uint8_t * sequence, de_type_t type, uint16_t size, const uint8_t * data){ UNUSED(sequence); UNUSED(type); UNUSED(size); UNUSED(data); }
 
 TEST_GROUP(A2dp){
     void setup(){
