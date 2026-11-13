@@ -128,6 +128,12 @@ static void hci_dump_embedded_stdout_log_packet(uint8_t packet_type, uint8_t in,
     hci_dump_embedded_stdout_packet(packet_type, in, packet, len);
 }
 
+static void hci_dump_embedded_stdout_log_message(int log_level, const char * format, va_list argptr)
+#ifdef __GNUC__
+    __attribute__ ((format (__printf__, 2, 0)))
+#endif
+    ;
+
 static void hci_dump_embedded_stdout_log_message(int log_level, const char * format, va_list argptr){
     UNUSED(log_level);
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
