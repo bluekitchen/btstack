@@ -193,7 +193,9 @@ static gatt_service_client_t * gatt_service_client_get_service_client_for_id(uin
 
 static gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_service_index(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint8_t service_index){
     btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    // "copy" linked list to avoid -Wcast-qual warning for dropped const of client->connection
+    btstack_linked_list_t connections = client->connections;
+    btstack_linked_list_iterator_init(&it, &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->con_handle != con_handle) continue;
@@ -205,7 +207,9 @@ static gatt_service_client_connection_t * gatt_service_client_get_connection_for
 
 static gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_attribute_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t attribute_handle){
     btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    // "copy" linked list to avoid -Wcast-qual warning for dropped const of client->connection
+    btstack_linked_list_t connections = client->connections;
+    btstack_linked_list_iterator_init(&it, &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->con_handle != con_handle) continue;
@@ -218,8 +222,10 @@ static gatt_service_client_connection_t * gatt_service_client_get_connection_for
 
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
         const gatt_service_client_t *client, uint16_t connection_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    btstack_linked_list_iterator_t it;
+    // "copy" linked list to avoid -Wcast-qual warning for dropped const of client->connection
+    btstack_linked_list_t connections = client->connections;
+    btstack_linked_list_iterator_init(&it, &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->cid != connection_cid) continue;
