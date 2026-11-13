@@ -71,7 +71,7 @@ static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_re
 		if (service_uuid128 == NULL){
 			de_add_number(attribute,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_SERIAL_PORT );
 		} else {
-			de_add_uuid128(attribute, (uint8_t *) service_uuid128);
+			de_add_uuid128(attribute, service_uuid128);
 		}
 	}
 	de_pop_sequence(service, attribute);
@@ -132,7 +132,7 @@ static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_re
     }
     if (strlen(name) > 0){
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (const uint8_t *) name);
     }
 }
 
