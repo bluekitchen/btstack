@@ -275,14 +275,14 @@ void hsp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     // 0x0100 "Service Name"
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
     if (name){
-        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (const uint8_t *) name);
     } else {
-        de_add_data(service, DE_STRING, (uint16_t) strlen(hsp_ag_default_service_name), (uint8_t *) hsp_ag_default_service_name);
+        de_add_data(service, DE_STRING, (uint16_t) strlen(hsp_ag_default_service_name), (const uint8_t *) hsp_ag_default_service_name);
     }
 }
 
 static int hsp_ag_send_str_over_rfcomm(const uint16_t cid, const char * command){
-    int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
+    int err = rfcomm_send(cid, (const uint8_t*) command, (uint16_t) strlen(command));
     if (err){
         log_error("rfcomm_send_internal -> error 0X%02x", err);
         return err;
