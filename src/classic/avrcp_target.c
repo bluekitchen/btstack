@@ -239,7 +239,7 @@ static uint8_t * avrcp_get_attribute_value_from_u32(avrcp_connection_t * connect
     return connection->attribute_value + connection->attribute_value_offset;
 }
 
-static uint8_t * avrcp_get_next_value_fragment_for_attribute_id(avrcp_connection_t * connection, avrcp_media_attribute_id_t attr_id, uint16_t * num_bytes_to_copy){
+static const uint8_t * avrcp_get_next_value_fragment_for_attribute_id(avrcp_connection_t * connection, avrcp_media_attribute_id_t attr_id, uint16_t * num_bytes_to_copy){
     switch (attr_id){
         case AVRCP_MEDIA_ATTR_TRACK:
             return avrcp_get_attribute_value_from_u32(connection, connection->target_track_nr, num_bytes_to_copy);
@@ -256,7 +256,7 @@ static uint8_t * avrcp_get_next_value_fragment_for_attribute_id(avrcp_connection
         connection->attribute_value_offset = 0;
     }
     *num_bytes_to_copy = connection->target_now_playing_info[attr_index].len - connection->attribute_value_offset;
-    return (uint8_t *) (connection->target_now_playing_info[attr_index].value + connection->attribute_value_offset);
+    return connection->target_now_playing_info[attr_index].value + connection->attribute_value_offset;
 }
 
 // TODO Review
@@ -273,7 +273,7 @@ static uint16_t avrcp_store_avctp_now_playing_info_fragment(avrcp_connection_t *
 
         // prepare attribute value
         uint16_t num_bytes_to_copy;
-        uint8_t * attr_value_with_offset = avrcp_get_next_value_fragment_for_attribute_id(connection,
+        const uint8_t * attr_value_with_offset = avrcp_get_next_value_fragment_for_attribute_id(connection,
                                                                                           connection->next_attr_id,
                                                                                           &num_bytes_to_copy);
 
@@ -795,7 +795,7 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
     int index = attr_id - 1;
     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
 	uint16_t value_len = (uint16_t)strlen(value);
-	connection->target_now_playing_info[index].value = (uint8_t*)value;
+	connection->target_now_playing_info[index].value = (const uint8_t*)value;
     connection->target_now_playing_info[index].len   = value_len;
     return ERROR_CODE_SUCCESS;
 }   

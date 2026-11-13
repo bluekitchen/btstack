@@ -415,7 +415,7 @@ typedef enum {
 
 typedef struct {
     uint16_t len;
-    uint8_t  * value;
+    const uint8_t * value;
 } avrcp_now_playing_info_item_t;
 
 typedef enum {
