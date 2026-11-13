@@ -264,7 +264,7 @@ static uint16_t btstack_util_hexdump(const uint8_t * data, uint16_t size, bool c
     }
     uint16_t pos = 0;
     for (uint16_t i=0; i<size;i++) {
-        uint8_t byte = ((uint8_t *)data)[i];
+        uint8_t byte = data[i];
         if (c_style) {
             buffer[pos++] = '0';
             buffer[pos++] = 'x';
@@ -284,7 +284,7 @@ static uint16_t btstack_util_hexdump(const uint8_t * data, uint16_t size, bool c
 #ifdef ENABLE_PRINTF_HEXDUMP
 #define ITEMS_PER_LINE_PRINTF_HEXDUMP 32
 void printf_hexdump(const void * input, int size) {
-    uint8_t * data = (uint8_t *) input;
+    const uint8_t * data = (const uint8_t *) input;
     char buffer[ITEMS_PER_LINE_PRINTF_HEXDUMP * 3 + 1];
     while (size > 0) {
         uint16_t chunk_len = btstack_min(size, ITEMS_PER_LINE_PRINTF_HEXDUMP);
@@ -299,7 +299,7 @@ void printf_hexdump(const void * input, int size) {
 #if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
 #define ITEMS_PER_LINE_LOG_HEXDUMP 16
 static void log_hexdump(int level, const void * input, int size) {
-    uint8_t * data = (uint8_t *) input;
+    const uint8_t * data = (const uint8_t *) input;
     char buffer[ITEMS_PER_LINE_LOG_HEXDUMP * 6 + 1];
     while (size > 0) {
         uint16_t chunk_len = btstack_min(size, ITEMS_PER_LINE_LOG_HEXDUMP);
