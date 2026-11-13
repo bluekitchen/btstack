@@ -126,8 +126,8 @@ void      de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size
 uint8_t * de_push_sequence(uint8_t *sequence);
 void      de_pop_sequence(uint8_t * parent, uint8_t * child);
 void      de_add_number(uint8_t *sequence, de_type_t type, de_size_t size, uint32_t value);
-void      de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, uint8_t *data);
-void      de_add_uuid128(uint8_t * sequence, uint8_t * uuid);
+void      de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, const uint8_t *data);
+void      de_add_uuid128(uint8_t * sequence, const uint8_t * uuid);
 
 // returns data element  len if date element is smaller than size
 uint32_t de_get_len_safe(const uint8_t * header, uint32_t size);

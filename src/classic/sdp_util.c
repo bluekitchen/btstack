@@ -253,7 +253,7 @@ void de_add_number(uint8_t *sequence, de_type_t type, de_size_t size, uint32_t v
 }
 
 /* add a single block of data, e.g. as DE_STRING, DE_URL */
-void de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, uint8_t *data){
+void de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, const uint8_t *data){
     de_assert_des_16bit(sequence);
     int data_size   = big_endian_read_16(sequence, 1);
     if (size > 0xff) {
@@ -272,7 +272,7 @@ void de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, uint8_t *data
     big_endian_store_16(sequence, 1, data_size);
 }
 
-void de_add_uuid128(uint8_t * sequence, uint8_t * uuid){
+void de_add_uuid128(uint8_t * sequence, const uint8_t * uuid){
     de_assert_des_16bit(sequence);
     int data_size   = big_endian_read_16(sequence, 1);
     de_store_descriptor(sequence + 3 + data_size, DE_UUID, DE_SIZE_128);
