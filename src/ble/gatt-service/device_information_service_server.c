@@ -79,7 +79,7 @@ typedef enum {
 } device_information_field_id_t;
 
 typedef struct {
-	uint8_t * data;
+	const uint8_t * data;
 	uint16_t  len;
 	uint16_t  value_handle;
 } device_information_field_t;
@@ -94,7 +94,7 @@ static uint8_t device_information_udi_for_medical_devices[1 + 4 * DEVICE_INFORMA
 static att_service_handler_t       device_information_service;
 
 static void set_string(device_information_field_id_t field_id, const char * text){
-	device_information_fields[field_id].data = (uint8_t*) text;
+	device_information_fields[field_id].data = (const uint8_t*) text;
 	device_information_fields[field_id].len  = text != NULL ? (uint8_t) strlen(text) : 0;
 }
 
@@ -238,7 +238,7 @@ void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint
 void device_information_service_server_set_udi_for_medical_devices(const char * label, const char * device_id, const char * issuer, const char * authority){
 
     // suppress CppCheck warnings below. Buffer has size 1 + 4 * DEVICE_INFORMATION_MAX_STRING_LEN
-	uint8_t * data = device_information_fields[UDI_FOR_MEDICAL_DEVICES].data;
+	uint8_t * data = device_information_udi_for_medical_devices;
 
 	uint16_t bytes_copied;
 	uint16_t pos = 0;
