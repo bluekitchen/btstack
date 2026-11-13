@@ -228,7 +228,7 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    return l2cap_send(stream_endpoint->l2cap_media_cid, (uint8_t*) packet, size);
+    return l2cap_send(stream_endpoint->l2cap_media_cid, packet, size);
 }
 
 
