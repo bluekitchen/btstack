@@ -1140,7 +1140,7 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
     }
 
-    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    const uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
     uint8_t sampling_frequency_capabilities_bitmap = codec_capabilities[0] >> 4;
     if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
         return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
@@ -1278,7 +1278,7 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     if (count_set_bits_uint32(layer_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_LAYER;
     }
-    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    const uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
     uint8_t layer_capabilities_bitmap = codec_capabilities[0] >> 5;
     if ((layer_capabilities_bitmap & layer_bitmap) == 0u){
         return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_LAYER;
@@ -1423,7 +1423,7 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
     }
 
-    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    const uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
 
     uint8_t object_type_capabilities_bitmap = codec_capabilities[0] >> 1;
     if ( (object_type_capabilities_bitmap & object_type_bitmap) == 0u){
@@ -1541,7 +1541,7 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
     if (object_type_bitmap == 0){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
     }
-    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    const uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
 
     uint8_t object_type_capabilities_bitmap = codec_capabilities[0] >> 6;
     if ( (object_type_capabilities_bitmap & object_type_bitmap) == 0u){
@@ -1630,7 +1630,7 @@ static codec_specific_error_code_t avdtp_signaling_setup_media_codec_atrac_confi
     uint16_t bit_rate_index_bitmap     = ((media_codec_information[1]) & 0x07) << 16 | (media_codec_information[2] << 8) | media_codec_information[3];
     uint16_t maximum_sul               = (media_codec_information[4] << 8) | media_codec_information[5];
 
-    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    const uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
 
     if (version >= AVDTP_ATRAC_VERSION_RFU){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_VERSION;

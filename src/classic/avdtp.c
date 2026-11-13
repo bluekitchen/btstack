@@ -474,8 +474,7 @@ void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoi
     stream_endpoint->sep.registered_service_categories = bitmap;
     stream_endpoint->sep.capabilities.media_codec.media_type = media_type;
     stream_endpoint->sep.capabilities.media_codec.media_codec_type = media_codec_type;
-    // @todo should be stored in struct as const
-    stream_endpoint->sep.capabilities.media_codec.media_codec_information = (uint8_t*) media_codec_info;
+    stream_endpoint->sep.capabilities.media_codec.media_codec_information = media_codec_info;
     stream_endpoint->sep.capabilities.media_codec.media_codec_information_len = media_codec_info_len;
 }
 
@@ -1565,7 +1564,7 @@ void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoi
 
 
 avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t channel_mode_bitmap = (media_codec[0] & 0x0F) & remote_channel_mode_bitmap;
 
     // use preferred channel mode if possible
@@ -1596,7 +1595,7 @@ avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * str
 }
 
 avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
 
     avdtp_sbc_allocation_method_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
@@ -1615,7 +1614,7 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint){
 
 avdtp_sbc_subbands_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap){
     if (!stream_endpoint) return 0;
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t subbands_bitmap = ((media_codec[1] >> 2) & 0x03) & remote_subbands_bitmap;
 
     avdtp_sbc_subbands_t subbands = AVDTP_SBC_SUBBANDS_8;
@@ -1629,7 +1628,7 @@ avdtp_sbc_subbands_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_
 
 avdtp_sbc_block_length_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap){
     if (!stream_endpoint) return 0;
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t block_length_bitmap = (media_codec[1] >> 4) & remote_block_length_bitmap;
 
     avdtp_sbc_block_length_t block_length = AVDTP_SBC_BLOCK_LENGTH_16;
@@ -1663,7 +1662,7 @@ uint16_t avdtp_get_highest_sampling_frequency(uint8_t sampling_frequency_bitmap)
 
 uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
     if (!stream_endpoint) return 0;
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t supported_sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
 
     // use preferred sampling frequency if possible
@@ -1691,13 +1690,13 @@ uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_en
 
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value){
     if (!stream_endpoint) return 0;
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     return btstack_min(media_codec[3], remote_max_bitpool_value);
 }
 
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value){
     if (!stream_endpoint) return 0;
-    uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
+    const uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     return btstack_max(media_codec[2], remote_min_bitpool_value);
 }
 

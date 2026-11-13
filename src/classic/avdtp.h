@@ -240,7 +240,7 @@ typedef struct {
     avdtp_media_type_t       media_type;                     
     avdtp_media_codec_type_t media_codec_type; 
     uint16_t  media_codec_information_len;
-    uint8_t * media_codec_information;
+    const uint8_t * media_codec_information;
 } adtvp_media_codec_capabilities_t;
 
 
