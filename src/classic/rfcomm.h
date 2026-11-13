@@ -379,7 +379,7 @@ uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
  * @param len number of payload bytes
  * @return status
  */
-uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
+uint8_t rfcomm_send(uint16_t rfcomm_cid, const uint8_t *data, uint16_t len);
 
 /** 
  * @brief Sends Local Line Status, see LINE_STATUS_..

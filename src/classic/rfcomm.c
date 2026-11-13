@@ -345,7 +345,7 @@ static void rfcomm_rpn_data_set_defaults(rfcomm_rpn_data_t * rpn_data){
         rpn_data->parameter_mask_1 = 0x3f;    /* parameter mask, all values set */
 }    
 
-static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, rfcomm_rpn_data_t * src){
+static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, const rfcomm_rpn_data_t * src){
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_BAUD){
         dest->baud_rate = src->baud_rate;        
     }
@@ -1001,7 +1001,7 @@ static void rfcomm_multiplexer_set_state_and_request_can_send_now_event(rfcomm_m
  */
 
 static bool rfcomm_uses_multiplexer(const btstack_linked_item_t * item, void * context) {
-    rfcomm_channel_t * channel = (rfcomm_channel_t *) item;
+    const rfcomm_channel_t * channel = (const rfcomm_channel_t *) item;
     rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) context;
     return channel->multiplexer == multiplexer;
 }
@@ -1472,7 +1472,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
 }
 
-static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_event_pn_t *event){
+static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, const rfcomm_channel_event_pn_t *event){
     // priority of client request
     channel->pn_priority = event->priority;
     
@@ -1902,7 +1902,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_CMD){
         // control port parameters
-        rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
+        const rfcomm_channel_event_rpn_t *event_rpn = (const rfcomm_channel_event_rpn_t*) event;
         rfcomm_rpn_data_update(&channel->local_rpn_data, &event_rpn->data);
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE);
         // notify client about new settings
@@ -1920,7 +1920,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     }
     
     if (event->type == CH_EVT_RCVD_RLS_CMD){ 
-        rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
+        const rfcomm_channel_event_rls_t * event_rls = (const rfcomm_channel_event_rls_t*) event;
         channel->remote_line_status = event_rls->line_status & 0x0f;
         log_info("CH_EVT_RCVD_RLS_CMD remote line status 0x%0x", channel->remote_line_status);
         rfcomm_emit_remote_line_status(channel, channel->remote_line_status);
@@ -1980,7 +1980,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     // emit MSC status to app
     if (event->type == CH_EVT_RCVD_MSC_CMD){
         // notify client about new settings
-        rfcomm_channel_event_msc_t *event_msc = (rfcomm_channel_event_msc_t*) event;
+        const rfcomm_channel_event_msc_t *event_msc = (const rfcomm_channel_event_msc_t*) event;
         uint8_t modem_status_event[5];
         modem_status_event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
         modem_status_event[1] = sizeof(event) - 2;
@@ -1990,7 +1990,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         // no return, MSC_CMD will be handled by state machine below
     }
 
-    rfcomm_channel_event_pn_t * event_pn = (rfcomm_channel_event_pn_t*) event;
+    const rfcomm_channel_event_pn_t * event_pn = (const rfcomm_channel_event_pn_t*) event;
     
     switch (channel->state) {
         case RFCOMM_CHANNEL_CLOSED:
@@ -2118,7 +2118,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_DLC_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
-                    channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
+                    channel->remote_modem_status = ((const rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_CMD);
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
@@ -2153,13 +2153,13 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_OPEN:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
-                    channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
+                    channel->remote_modem_status = ((const rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
                 case CH_EVT_RCVD_RPN_RSP:
                     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE) == 0) break;
                     rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE);
-                    memcpy(&channel->remote_rpn_data, &((rfcomm_channel_event_rpn_t*) event)->data, sizeof(rfcomm_rpn_data_t));
+                    memcpy(&channel->remote_rpn_data, &((const rfcomm_channel_event_rpn_t*) event)->data, sizeof(rfcomm_rpn_data_t));
                     rfcomm_emit_port_configuration(channel, true);
                     break;
                 case CH_EVT_READY_TO_SEND:
@@ -2399,7 +2399,7 @@ uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     return status;
 }
 
-uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+uint8_t rfcomm_send(uint16_t rfcomm_cid, const uint8_t *data, uint16_t len){
     btstack_assert((data != NULL) || (len == 0));
 
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);

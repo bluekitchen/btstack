@@ -137,7 +137,7 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
     registered_hci_packet_handler = callback_handler->callback;
 }
 
-uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+uint8_t rfcomm_send(uint16_t rfcomm_cid, const uint8_t *data, uint16_t len){
     UNUSED(rfcomm_cid);
 
     // printf("mock: rfcomm send: ");
