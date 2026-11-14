@@ -395,19 +395,19 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
                 if (service->manufacturer_name == NULL){
                     return 0;
                 }
-                return att_read_callback_handle_blob((uint8_t *)service->manufacturer_name, strlen(service->manufacturer_name), offset, buffer, buffer_size);
+                return att_read_callback_handle_blob((const uint8_t *)service->manufacturer_name, strlen(service->manufacturer_name), offset, buffer, buffer_size);
     
             case BAS_CHARACTERISTIC_INDEX_MODEL_NUMBER_STRING:
                 if (service->model_number == NULL){
                     return 0;
                 }
-                return att_read_callback_handle_blob((uint8_t *)service->model_number, strlen(service->model_number), offset, buffer, buffer_size);
+                return att_read_callback_handle_blob((const uint8_t *)service->model_number, strlen(service->model_number), offset, buffer, buffer_size);
     
             case BAS_CHARACTERISTIC_INDEX_SERIAL_NUMBER_STRING:
                 if (service->serial_number == NULL){
                     return 0;
                 }
-                return att_read_callback_handle_blob((uint8_t *)service->serial_number, strlen(service->serial_number), offset, buffer, buffer_size);
+                return att_read_callback_handle_blob((const uint8_t *)service->serial_number, strlen(service->serial_number), offset, buffer, buffer_size);
     
             default:
                 pos = bas_serialize_characteristic(service, index, event, sizeof(event));
