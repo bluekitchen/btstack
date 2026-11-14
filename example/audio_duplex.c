@@ -80,7 +80,7 @@ static int count_playback;
 static void audio_recording(const int16_t * pcm_buffer, uint16_t num_samples_to_write, const btstack_audio_context_t * context){
     UNUSED(context);
     count_recording += num_samples_to_write;
-    int err = btstack_ring_buffer_write(&audio_buffer, (uint8_t *) pcm_buffer, num_samples_to_write * BYTES_PER_SAMPLE);
+    int err = btstack_ring_buffer_write(&audio_buffer, (const uint8_t *) pcm_buffer, num_samples_to_write * BYTES_PER_SAMPLE);
     if (err){
         printf("Failed to store %u samples\n", num_samples_to_write);
     }
