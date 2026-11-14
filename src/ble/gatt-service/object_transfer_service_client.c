@@ -399,13 +399,13 @@ static void ots_client_emit_data_chunk(ots_client_connection_t * connection, uin
     (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_connection_t * connection, uint8_t ** out_value){
+static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_connection_t * connection, const uint8_t ** out_value){
     uint8_t value_length = 0;
 
     switch (connection->characteristic_index){
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME:
             value_length = connection->data_length;
-            *out_value   = (uint8_t *)connection->data.data_string;
+            *out_value   = (const uint8_t *)connection->data.data_string;
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_FIRST_CREATED:
@@ -907,7 +907,7 @@ static void ots_client_run_for_connection(void * context){
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
-    uint8_t * value = NULL;
+    const uint8_t * value = NULL;
 
     switch (connection->state){
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_QUERY_OTS_FEATURES:
