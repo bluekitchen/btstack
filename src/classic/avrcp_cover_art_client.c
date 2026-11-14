@@ -397,7 +397,7 @@ static void avrcp_cover_art_packet_handler(uint8_t packet_type, uint16_t channel
 static uint8_t avrcp_cover_art_client_setup_connection(avrcp_cover_art_client_t * cover_art_client, uint16_t l2cap_psm){
     cover_art_client->state = AVRCP_COVER_ART_W4_GOEP_CONNECTION;
     return goep_client_connect_l2cap(&cover_art_client->goep_client,
-                                     (l2cap_ertm_config_t *) cover_art_client->ertm_config,
+                                     cover_art_client->ertm_config,
                                      cover_art_client->ertm_buffer,
                                      cover_art_client->ertm_buffer_size,
                                      &avrcp_cover_art_packet_handler,
