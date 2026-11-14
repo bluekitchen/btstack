@@ -1413,15 +1413,15 @@ static void usb_transport_response_ds(btstack_data_source_t *ds, btstack_data_so
     UNUSED(ds);
     UNUSED(callback_type);
     for(; acknowledge_count>0; --acknowledge_count) {
-        static const uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0 };
-        packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
+        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0 };
+        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 
 #ifdef ENABLE_SCO_OVER_HCI
     if (sco_can_send_now_pending) {
-        static const uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
+        uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
         sco_can_send_now_pending = false;
-        packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
+        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 #endif
     
