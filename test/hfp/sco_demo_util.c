@@ -232,7 +232,7 @@ static void playback_callback(int16_t * buffer, uint16_t num_samples){
 
 #ifdef USE_AUDIO_INPUT
 static void recording_callback(const int16_t * buffer, uint16_t num_samples){
-    btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)buffer, num_samples * 2);
+    btstack_ring_buffer_write(&audio_input_ring_buffer, (const uint8_t *)buffer, num_samples * 2);
 }
 #endif
 
