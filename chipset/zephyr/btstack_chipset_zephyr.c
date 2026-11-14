@@ -85,11 +85,11 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         }
 
         // copy command header
-        memcpy(&hci_cmd_buffer[0], (uint8_t *) &init_script[init_script_offset], 3); 
+        memcpy(&hci_cmd_buffer[0], &init_script[init_script_offset], 3);
         init_script_offset += 3;
         int payload_len = hci_cmd_buffer[2];
         // copy command payload
-        memcpy(&hci_cmd_buffer[3], (uint8_t *) &init_script[init_script_offset], payload_len);
+        memcpy(&hci_cmd_buffer[3], &init_script[init_script_offset], payload_len);
         init_script_offset += payload_len;
 
         return BTSTACK_CHIPSET_VALID_COMMAND;         
