@@ -83,7 +83,7 @@ uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
 }
 
 // add byte block to ring buffer, 
-int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * data, uint32_t data_length){
+int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, const uint8_t* data, uint32_t data_length){
     if (btstack_ring_buffer_bytes_free(ring_buffer) < data_length){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
