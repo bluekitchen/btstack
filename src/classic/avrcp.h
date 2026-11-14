@@ -717,7 +717,7 @@ typedef struct {
     uint8_t   message_body[AVRCP_MAX_COMMAND_PARAMETER_LENGTH];
 
     // command or response parameter data and its total length
-    uint8_t * data;
+    const uint8_t * data;
     uint16_t  data_len;
 
     // offset in complete command/response parameter data, advanced by the PDU producer

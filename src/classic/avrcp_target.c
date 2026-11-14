@@ -558,7 +558,7 @@ static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * con
 static uint8_t avrcp_target_vendor_dependent_response_accept(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint8_t status){
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, pdu_id);
     connection->data_len = 1;
-    connection->data[0] = status;
+    connection->message_body[0] = status;
 
     connection->target_accept_response = true;
     connection->state = AVCTP_W2_SEND_RESPONSE;
@@ -569,7 +569,7 @@ static uint8_t avrcp_target_vendor_dependent_response_accept(avrcp_connection_t 
 static uint8_t avrcp_target_response_vendor_dependent_reject(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, avrcp_status_code_t status){
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_REJECTED, pdu_id);
     connection->data_len = 1;
-    connection->data[0] = status;
+    connection->message_body[0] = status;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -579,7 +579,7 @@ static uint8_t avrcp_target_response_vendor_dependent_reject(avrcp_connection_t 
 static uint8_t avrcp_target_response_vendor_dependent_not_implemented(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint8_t event_id){
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_NOT_IMPLEMENTED, pdu_id);
     connection->data_len = 1;
-    connection->data[0] = event_id;
+    connection->message_body[0] = event_id;
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -590,10 +590,10 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
     btstack_assert(value_len + 1 < AVRCP_MAX_COMMAND_PARAMETER_LENGTH);
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_INTERIM, pdu_id);
     connection->data_len = 1 + value_len;
-    connection->data[0] = event_id;
+    connection->message_body[0] = event_id;
 
     if (value && (value_len > 0)){
-        (void)memcpy(connection->data + 1, value, value_len);
+        (void)memcpy(connection->message_body + 1, value, value_len);
     }
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
@@ -605,9 +605,9 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_INTERIM, pdu_id);
 
     connection->data_len = 5;
-    connection->data[0] = event_id;
-    big_endian_store_16(connection->data, 1, connection->target_addressed_player_id);
-    big_endian_store_16(connection->data, 3, connection->target_uid_counter);
+    connection->message_body[0] = event_id;
+    big_endian_store_16(connection->message_body, 1, connection->target_addressed_player_id);
+    big_endian_store_16(connection->message_body, 3, connection->target_uid_counter);
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -666,10 +666,10 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
     uint8_t unit = 0;
     connection->data = connection->message_body;
     connection->data_len = 5;
-    connection->data[0] = 0x07;
-    connection->data[1] = (connection->target_unit_type << 3) | unit;
+    connection->message_body[0] = 0x07;
+    connection->message_body[1] = (connection->target_unit_type << 3) | unit;
     // company id is 3 bytes long
-    big_endian_store_24(connection->data, 2, connection->company_id);
+    big_endian_store_24(connection->message_body, 2, connection->company_id);
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -689,13 +689,13 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     uint8_t extension_code = 7;
     connection->data = connection->message_body;
     connection->data_len = 5;
-    connection->data[0] = (page << 4) | extension_code;
+    connection->message_body[0] = (page << 4) | extension_code;
 
     // mark non-existent entries with 0xff
     memset(&connection->message_body[1], 0xFF, 4);
     if ((connection->data != NULL) && (offset < connection->target_subunit_info_data_size)){
         uint8_t bytes_to_copy = btstack_min(connection->target_subunit_info_data_size - offset, 4);
-        memcpy(&connection->data[1], &connection->target_subunit_info_data[offset], bytes_to_copy);
+        memcpy(&connection->message_body[1], &connection->target_subunit_info_data[offset], bytes_to_copy);
     }
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
@@ -715,8 +715,8 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_events(avrcp_con
         num_events++;
     }
     
-    connection->data[0] = AVRCP_CAPABILITY_ID_EVENT;
-    connection->data[1] = num_events;
+    connection->message_body[0] = AVRCP_CAPABILITY_ID_EVENT;
+    connection->message_body[1] = num_events;
     connection->data_len = 2 + num_events;
     
     // fill the data later directly to the L2CAP outgoing buffer
@@ -728,13 +728,13 @@ static uint8_t avrcp_target_response_vendor_dependent_supported_events(avrcp_con
 static uint8_t avrcp_target_response_vendor_dependent_supported_companies(avrcp_connection_t * connection){
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_CAPABILITIES);
 
-    connection->data[0] = AVRCP_CAPABILITY_ID_COMPANY;
+    connection->message_body[0] = AVRCP_CAPABILITY_ID_COMPANY;
     if (connection->target_supported_companies_num == 0){
         connection->target_supported_companies_num = 1;
         connection->target_supported_companies = default_companies;
     }
     
-    connection->data[1] = connection->target_supported_companies_num;
+    connection->message_body[1] = connection->target_supported_companies_num;
     connection->data_len = 2 + connection->data[1] * 3;
 
     // fill the data later directly to the L2CAP outgoing buffer and
@@ -782,9 +782,9 @@ uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, ui
 
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE, AVRCP_PDU_ID_GET_PLAY_STATUS);
     connection->data_len = 9;
-    big_endian_store_32(connection->data, 0, song_length_ms);
-    big_endian_store_32(connection->data, 4, song_position_ms);
-    connection->data[8] = play_status;
+    big_endian_store_32(connection->message_body, 0, song_length_ms);
+    big_endian_store_32(connection->message_body, 4, song_position_ms);
+    connection->message_body[8] = play_status;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -1458,9 +1458,9 @@ static void avrcp_target_notification_init(avrcp_connection_t * connection, avrc
     connection->transaction_id = avrcp_target_get_transaction_label_for_notification(connection, notification_id);
 
     connection->data_len = 1 + value_len;
-    connection->data[0] = notification_id;
+    connection->message_body[0] = notification_id;
     if (value != NULL){
-        (void)memcpy(connection->data + 1, value, value_len);
+        (void)memcpy(connection->message_body + 1, value, value_len);
     }
 }
 
@@ -1469,9 +1469,9 @@ static void avrcp_target_notification_addressed_player_changed_init(avrcp_connec
     connection->transaction_id = avrcp_target_get_transaction_label_for_notification(connection, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
 
     connection->data_len = 5;
-    connection->data[0] = AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED;
-    big_endian_store_16(connection->data, 1, connection->target_addressed_player_id);
-    big_endian_store_16(connection->data, 3, connection->target_uid_counter);
+    connection->message_body[0] = AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED;
+    big_endian_store_16(connection->message_body, 1, connection->target_addressed_player_id);
+    big_endian_store_16(connection->message_body, 3, connection->target_uid_counter);
 }
 
 

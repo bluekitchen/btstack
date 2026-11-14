@@ -821,7 +821,7 @@ static void avrcp_controller_get_capabilities_for_connection(avrcp_connection_t 
 
     // Parameter Length
     connection->data_len = 1;
-    connection->data[0] = capability_id;  // capability ID
+    connection->message_body[0] = capability_id;  // capability ID
     
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
 }
@@ -859,7 +859,7 @@ static uint8_t avrcp_controller_request_continuation(avrcp_connection_t * connec
 
     // Parameter Length
     connection->data_len = 1;
-    connection->data[0] = AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES;
+    connection->message_body[0] = AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -1543,19 +1543,19 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             connection->data = get_element_attributes_command;
             // write identifier
             pos = 0;
-            memset(connection->data, 0, 8);
+            memset(get_element_attributes_command, 0, 8);
             pos += 8;
             num_attributes_index = pos;
             // If num_attributes is set to zero, all attribute information shall be returned,
             // and the AttributeID field is omitted
-            connection->data[num_attributes_index] = 0;
+            get_element_attributes_command[num_attributes_index] = 0;
             pos++;
             for (i = 0; i < (uint8_t)AVRCP_MEDIA_ATTR_NUM - (uint8_t)AVRCP_MEDIA_ATTR_TITLE; i++){
                 if ((connection->controller_element_attributes & (1<<i)) != 0){
                     // every attribute is 4 bytes long
-                    big_endian_store_32(connection->data, pos, AVRCP_MEDIA_ATTR_TITLE + i);
+                    big_endian_store_32(get_element_attributes_command, pos, AVRCP_MEDIA_ATTR_TITLE + i);
                     pos += 4;
-                    connection->data[num_attributes_index]++;
+                    get_element_attributes_command[num_attributes_index]++;
                 }
             }
 
@@ -1879,8 +1879,8 @@ static uint8_t avrcp_controller_request_group_pass_through_press_control_cmd(uin
     avrcp_controller_pass_through_command_data_init(connection, AVRCP_OPERATION_ID_VENDOR_UNIQUE);
     connection->company_id = BT_SIG_COMPANY_ID;
     connection->data_len = 5;
-    big_endian_store_24(connection->data, 0, BT_SIG_COMPANY_ID);
-    big_endian_store_16(connection->data, 3, opid);
+    big_endian_store_24(connection->message_body, 0, BT_SIG_COMPANY_ID);
+    big_endian_store_16(connection->message_body, 3, opid);
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -1969,7 +1969,7 @@ uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
                                               0);
 
     connection->data = connection->message_body;
-    memset(connection->data, 0xFF, 5);
+    memset(connection->message_body, 0xFF, 5);
     connection->data_len = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -1988,8 +1988,8 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
                                               0);
 
     connection->data = connection->message_body;
-    memset(connection->data, 0xFF, 5);
-    connection->data[0] = 7; // page: 0, extension_code: 7
+    memset(connection->message_body, 0xFF, 5);
+    connection->message_body[0] = 7; // page: 0, extension_code: 7
     connection->data_len = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2056,7 +2056,7 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_SET_ADDRESSED_PLAYER, true);
 
     connection->data_len = 2;
-    big_endian_store_16(connection->data, 0, addressed_player_id);
+    big_endian_store_16(connection->message_body, 0, addressed_player_id);
     
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2141,7 +2141,7 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
 
     // Parameter Length
     connection->data_len = 1;
-    connection->data[0] = volume;
+    connection->message_body[0] = volume;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2174,7 +2174,7 @@ uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_VALUES, true);
 
     connection->data_len = 1;
-    connection->data[0] = attribute_id;
+    connection->message_body[0] = attribute_id;
     
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2191,12 +2191,12 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE, true);
 
     connection->data_len = 5;
-    connection->data[0] = 4;                     // NumPlayerApplicationSettingAttributeID
+    connection->message_body[0] = 4;                     // NumPlayerApplicationSettingAttributeID
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
-    connection->data[1] = 0x01;   // equalizer  (1-OFF, 2-ON)
-    connection->data[2] = 0x02;   // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
-    connection->data[3] = 0x03;   // shuffle    (1-off, 2-all tracks, 3-group shuffle)
-    connection->data[4] = 0x04;   // scan       (1-off, 2-all tracks, 3-group scan)
+    connection->message_body[1] = 0x01;   // equalizer  (1-OFF, 2-ON)
+    connection->message_body[2] = 0x02;   // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
+    connection->message_body[3] = 0x03;   // shuffle    (1-off, 2-all tracks, 3-group shuffle)
+    connection->message_body[4] = 0x04;   // scan       (1-off, 2-all tracks, 3-group scan)
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2214,9 +2214,9 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
 
     // Parameter Length
     connection->data_len = 3;
-    connection->data[0]  = 1;                       // NumPlayerApplicationSettingAttributes
-    connection->data[1]  = (uint8_t) attr_id;       // PlayerApplicationSettingAttributelD
-    connection->data[2]  = attr_value;              // PlayerApplicationSettingValue
+    connection->message_body[0]  = 1;                       // NumPlayerApplicationSettingAttributes
+    connection->message_body[1]  = (uint8_t) attr_id;       // PlayerApplicationSettingAttributelD
+    connection->message_body[2]  = attr_value;              // PlayerApplicationSettingValue
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2237,10 +2237,10 @@ uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_ATTRIBUTE_TEXT, true);
 
     connection->data_len = 1 + attr_ids_num;
-    connection->data[0] = attr_ids_num;                     // NumPlayerApplicationSettingAttributeID
+    connection->message_body[0] = attr_ids_num;                     // NumPlayerApplicationSettingAttributeID
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
     if (attr_ids_num > 0u){
-        memcpy(&connection->data[2], (uint8_t *) attr_ids, attr_ids_num);
+        memcpy(&connection->message_body[2], (uint8_t *) attr_ids, attr_ids_num);
     }
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -2269,10 +2269,10 @@ uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t av
 
     connection->data_len = 2 + attr_id_values_num;
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
-    connection->data[0] = (uint8_t) attr_id;
-    connection->data[1] = (uint8_t) attr_id_values_num;
+    connection->message_body[0] = (uint8_t) attr_id;
+    connection->message_body[1] = (uint8_t) attr_id_values_num;
     if (attr_id_values_num > 0u){
-        memcpy(&connection->data[2], attr_id_values, attr_id_values_num);
+        memcpy(&connection->message_body[2], attr_id_values, attr_id_values_num);
     }
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2295,10 +2295,10 @@ uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uin
     connection->data_len = 1u + (uint16_t)character_set_num * 2u;
     uint8_t pos = 0;
 
-    connection->data[pos++] = character_set_num;
+    connection->message_body[pos++] = character_set_num;
     uint8_t i;
     for (i = 0; i < character_set_num; i++){
-        little_endian_store_16(connection->data, pos, character_set[i]);
+        little_endian_store_16(connection->message_body, pos, character_set[i]);
         pos += 2;
     }
 
@@ -2318,7 +2318,7 @@ uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery
 
     // Parameter Length
     connection->data_len = 1;
-    connection->data[0]  = battery_status;
+    connection->message_body[0]  = battery_status;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2348,12 +2348,12 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
 
     // Parameter Length
     connection->data_len = 11;
-    connection->data[0]  = scope;
-    memset(&connection->data[1], 0, 8);
+    connection->message_body[0]  = scope;
+    memset(&connection->message_body[1], 0, 8);
     if (uid){
-        (void)memcpy(&connection->data[1], uid, 8);
+        (void)memcpy(&connection->message_body[1], uid, 8);
     }
-    big_endian_store_16(connection->data, 9, uid_counter);
+    big_endian_store_16(connection->message_body, 9, uid_counter);
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2374,12 +2374,12 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
 
     // Parameter Length
     connection->data_len = 11;
-    connection->data[0]  = scope;
-    memset(&connection->data[1], 0, 8);
+    connection->message_body[0]  = scope;
+    memset(&connection->message_body[1], 0, 8);
     if (uid){
-        (void)memcpy(&connection->data[1], uid, 8);
+        (void)memcpy(&connection->message_body[1], uid, 8);
     }
-    big_endian_store_16(connection->data, 9, uid_counter);
+    big_endian_store_16(connection->message_body, 9, uid_counter);
     
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2413,7 +2413,7 @@ uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid,
     avrcp_controller_custom_command_data_init(connection, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT, command_type, subunit_type,
                                               subunit_id, pdu_id, company_id);
 
-    connection->data = (uint8_t *)data;
+    connection->data = data;
     connection->data_len = data_len;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
