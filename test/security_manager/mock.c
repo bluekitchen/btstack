@@ -310,7 +310,7 @@ uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16
 	return 0;
 }
 
-uint8_t l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, uint16_t len){
+uint8_t l2cap_send_connectionless(uint16_t handle, uint16_t cid, const uint8_t * buffer, uint16_t len){
 	// printf("l2cap_send_connectionless\n");
 
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
