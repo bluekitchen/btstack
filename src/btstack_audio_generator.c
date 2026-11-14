@@ -286,7 +286,7 @@ bool btstack_audio_generator_bridge_push(btstack_audio_generator_bridge_t * self
     uint32_t bytes_now = frames_can_write * frame_size_bytes;
     if (bytes_now){
         // write interleaved PCM as-is
-        (void) btstack_ring_buffer_write(&self->ring_buffer, (uint8_t *) samples, bytes_now);
+        (void) btstack_ring_buffer_write(&self->ring_buffer, (const uint8_t *) samples, bytes_now);
     }
 
     // unpause if enough buffered
