@@ -92,7 +92,7 @@ uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_pack
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     UNUSED(con_handle);
     UNUSED(value_handle);
     UNUSED(value_length);
@@ -101,7 +101,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     UNUSED(callback);
     UNUSED(con_handle);
     UNUSED(value_handle);

@@ -254,7 +254,7 @@ typedef struct gatt_client{
     uint16_t attribute_handle;
     uint16_t attribute_offset;
     uint16_t attribute_length;
-    uint8_t* attribute_value;
+    const uint8_t* attribute_value;
     
     // read multiple characteristic values
     uint16_t    read_multiple_handle_count;
@@ -852,7 +852,7 @@ uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_
  *                BTSTACK_ACL_BUFFERS_FULL   , if L2CAP cannot send, there are no free ACL slots
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value);
 
 /** 
  * @brief Writes the authenticated characteristic value using the characteristic's value handle 
@@ -888,7 +888,7 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value);
 
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle.
@@ -908,7 +908,7 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
 uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
-                                                               uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
+                                                               uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id);
 
 /**
  * @brief Writes the characteristic value using the characteristic's value handle. 
@@ -924,7 +924,7 @@ uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_ha
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
+uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value);
 
 /**
  * @brief Writes the characteristic value using the characteristic's value handle.
@@ -943,7 +943,7 @@ uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t 
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
 uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
-                                                                    uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
+                                                                    uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id);
 
 /**
  * @brief Writes the characteristic value using the characteristic's value handle. 
@@ -960,7 +960,7 @@ uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_pack
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value);
+uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, const uint8_t * value);
 
 /** 
  * @brief Writes of the long characteristic value using the characteristic's value handle. 

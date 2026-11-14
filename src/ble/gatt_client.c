@@ -96,7 +96,7 @@ static void gatt_client_read_value_of_characteristics_by_uuid16_internal(gatt_cl
     btstack_packet_handler_t callback, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code);
 static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
-    uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
+    uint16_t value_handle, uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id);
 static uint8_t gatt_client_write_client_characteristic_configuration_internal(gatt_client_t * gatt_client,
     btstack_packet_handler_t callback, gatt_client_characteristic_t * characteristic, uint16_t configuration,
     uint16_t service_id, uint16_t connection_id);
@@ -512,7 +512,7 @@ att_read_multiple_variable_request(gatt_client_t *gatt_client, uint16_t num_valu
 #ifdef ENABLE_LE_SIGNED_WRITE
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t request_type, uint16_t attribute_handle,
-                                        uint16_t value_length, uint8_t *value, uint32_t sign_counter, uint8_t sgn[8]) {
+                                        uint16_t value_length, const uint8_t *value, uint32_t sign_counter, uint8_t sgn[8]) {
     uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
@@ -530,7 +530,7 @@ static uint8_t att_signed_write_request(gatt_client_t *gatt_client, uint16_t req
 // precondition: can_send_packet_now == TRUE
 static uint8_t
 att_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle, uint16_t value_length,
-                  uint8_t *value) {
+                  const uint8_t *value) {
     uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
@@ -554,7 +554,7 @@ static uint8_t att_execute_write_request(gatt_client_t *gatt_client, uint8_t req
 
 // precondition: can_send_packet_now == TRUE
 static uint8_t att_prepare_write_request(gatt_client_t *gatt_client, uint8_t request_type, uint16_t attribute_handle,
-                                         uint16_t value_offset, uint16_t blob_length, uint8_t *value) {
+                                         uint16_t value_offset, uint16_t blob_length, const uint8_t *value) {
     uint8_t *request = gatt_client_reserve_request_buffer(gatt_client);
 
     request[0] = request_type;
@@ -3312,7 +3312,7 @@ static uint8_t gatt_client_validate_write_value(uint16_t value_length, const uin
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3334,7 +3334,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 }
 
 static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t * gatt_client, btstack_packet_handler_t callback,
-    uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id) {
+    uint16_t value_handle, uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id) {
 
     uint8_t status = gatt_client_validate_write_value(value_length, value);
     if (status != ERROR_CODE_SUCCESS){
@@ -3353,7 +3353,7 @@ static uint8_t gatt_client_write_value_of_characteristic_internal(gatt_client_t 
 }
 
 uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
-                                                               uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id){
+                                                               uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3361,11 +3361,11 @@ uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_ha
     }
     return gatt_client_write_value_of_characteristic_internal(gatt_client, callback, value_handle, value_length, value, service_id, connection_id);
 }
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value) {
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value) {
     return gatt_client_write_value_of_characteristic_with_context(callback, con_handle, value_handle, value_length, value, 0, 0);
 }
 
-uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, const uint8_t * value){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -3386,7 +3386,7 @@ uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packe
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id){
+uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id){
     // TODO: move into gatt_client_write_long_value_of_characteristic_with_offset once gatt_client_write_long_value_of_characteristic_with_offset_with_context exists
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
@@ -3398,7 +3398,7 @@ uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_pack
     return gatt_client_write_long_value_of_characteristic_with_offset(callback, con_handle, value_handle, 0, value_length, value);
 }
 
-uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     return gatt_client_write_long_value_of_characteristic_with_context(callback, con_handle, value_handle, value_length, value, 0, 0);
 }
 

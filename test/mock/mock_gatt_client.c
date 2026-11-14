@@ -531,7 +531,7 @@ uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registra
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     UNUSED(value_length);
     UNUSED(value);
     mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(value_handle);

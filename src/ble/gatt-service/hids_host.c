@@ -932,7 +932,7 @@ static void hids_host_send_next_query(void * context){
             att_status = gatt_client_write_value_of_characteristic(
                 &handle_gatt_client_event, client->con_handle,
                 client->reports[client->report_index].value_handle,
-                client->report_len, (uint8_t *)client->report);
+                client->report_len, client->report);
             UNUSED(att_status);
             break;
 

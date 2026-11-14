@@ -34,7 +34,7 @@ uint8_t gatt_client_remove_gatt_query(btstack_context_callback_registration_t * 
     return ERROR_CODE_SUCCESS;
 }
 uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t handle,
-        uint16_t value_handle, uint16_t length, uint8_t * value, uint16_t service_id, uint16_t connection_id){
+        uint16_t value_handle, uint16_t length, const uint8_t * value, uint16_t service_id, uint16_t connection_id){
     UNUSED(callback); UNUSED(handle); UNUSED(value_handle); UNUSED(service_id); UNUSED(connection_id);
     assert(length > 0);
     assert(value[0] == connection.pending_control_point_opcode);
@@ -336,7 +336,7 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_co
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, const uint8_t * value){
     UNUSED(con_handle);
     UNUSED(value_handle);
     UNUSED(value_length);
@@ -346,7 +346,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 }
 
 uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
-                                                                    uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id){
+                                                                    uint16_t value_length, const uint8_t * value, uint16_t service_id, uint16_t connection_id){
     UNUSED(callback);
     UNUSED(con_handle);
     UNUSED(value_handle);
