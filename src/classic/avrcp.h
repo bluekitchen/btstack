@@ -573,10 +573,10 @@ typedef struct {
 typedef struct {
     uint8_t track_id[8];
     uint16_t track_nr;
-    char * title;
-    char * artist;
-    char * album;
-    char * genre;
+    const char * title;
+    const char * artist;
+    const char * album;
+    const char * genre;
     uint32_t song_length_ms;
     uint32_t song_position_ms;
 } avrcp_track_t;
