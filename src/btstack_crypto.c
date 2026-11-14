@@ -643,16 +643,16 @@ static int btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_p
     int res = 0;
 
 #ifdef USE_ESP_IDF_TINYCRYPT_ECC_P256
-    res = uECC_shared_secret(btstack_crypto_ec_p192->public_key, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey, uECC_secp256r1()) != 1;
+    res = uECC_shared_secret(btstack_crypto_ec_p192->public_key.input, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey, uECC_secp256r1()) != 1;
 #endif
 
 #ifdef USE_MICRO_ECC_P256
 #if uECC_SUPPORTS_secp256r1
     // standard version
-    uECC_shared_secret(btstack_crypto_ec_p192->public_key, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey, uECC_secp256r1());
+    uECC_shared_secret(btstack_crypto_ec_p192->public_key.input, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey, uECC_secp256r1());
 #else
     // static version
-    uECC_shared_secret(btstack_crypto_ec_p192->public_key, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey);
+    uECC_shared_secret(btstack_crypto_ec_p192->public_key.input, btstack_crypto_ecc_p256_d, btstack_crypto_ec_p192->dhkey);
 #endif
 #endif
 
@@ -665,7 +665,7 @@ static int btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_p
     mbedtls_ecp_point_init(&Q);
     mbedtls_ecp_point_init(&DH);
     mbedtls_mpi_read_binary(&d, btstack_crypto_ecc_p256_d, 32);
-    res = btstack_crypto_mbedtls_read_public_key(&Q, btstack_crypto_ec_p192->public_key);
+    res = btstack_crypto_mbedtls_read_public_key(&Q, btstack_crypto_ec_p192->public_key.input);
     if (res == 0){
         res = mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, &sm_generate_f_rng_mbedtls, NULL);
     }
@@ -1028,7 +1028,7 @@ static void btstack_crypto_run(void){
                     case ECC_P256_KEY_GENERATION_DONE:
                         // done
                         btstack_crypto_log_ec_publickey(btstack_crypto_ecc_p256_public_key);
-                        (void)memcpy(btstack_crypto_ec_p192->public_key,
+                        (void)memcpy(btstack_crypto_ec_p192->public_key.output,
                                      btstack_crypto_ecc_p256_public_key, 64);
                         btstack_linked_list_pop(&btstack_crypto_operations);
                         (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);
@@ -1071,7 +1071,7 @@ static void btstack_crypto_run(void){
                 (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);
 #else
                 btstack_crypto_wait_for_hci_result = 1;
-                hci_send_cmd(&hci_le_generate_dhkey, &btstack_crypto_ec_p192->public_key[0], &btstack_crypto_ec_p192->public_key[32]);
+                hci_send_cmd(&hci_le_generate_dhkey, &btstack_crypto_ec_p192->public_key.input[0], &btstack_crypto_ec_p192->public_key.input[32]);
 #endif
                 break;
 
@@ -1344,7 +1344,7 @@ void btstack_crypto_ecc_p256_generate_key(btstack_crypto_ecc_p256_t * request, u
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY;
-    request->public_key                                = public_key;
+    request->public_key.output                         = public_key;
     btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
     btstack_crypto_run();
 }
@@ -1353,7 +1353,7 @@ void btstack_crypto_ecc_p256_calculate_dhkey(btstack_crypto_ecc_p256_t * request
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_ECC_P256_CALCULATE_DHKEY;
-    request->public_key                                = (uint8_t *) public_key;
+    request->public_key.input                          = public_key;
     request->dhkey                                     = dhkey;
     btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
     btstack_crypto_run();

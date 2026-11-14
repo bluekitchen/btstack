@@ -100,7 +100,10 @@ typedef struct {
 
 typedef struct {
 	btstack_crypto_t btstack_crypto;
-	uint8_t * public_key;
+    union {
+        const uint8_t * input;
+        uint8_t * output;
+    } public_key;
     uint8_t * dhkey;
 } btstack_crypto_ecc_p256_t;
 
