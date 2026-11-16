@@ -10,20 +10,40 @@ theme:
 nav:
   - 'Welcome': index.md
   - 'Quick Start': quick_start.md
+    # inlcude running examples on deskopt / example hardware, like esp32
+    # link to commong ports: windows-, libus, posix, esp32
+    # come back to examples her
+  - 'Examples': examples/examples.md
+  
+  # theory + overview
   - 'BTstack Architecture': architecture.md
-  - 'How to configure BTstack': how_to.md
   - 'Protocols': protocols.md
   - 'Profiles':  profiles.md
-  - 'Implemented GATT Services': gatt_services.md
-  - 'Implemented GATT Clients':  gatt_clients.md
-  - 'Examples': examples/examples.md
-  - 'Chipsets': chipsets.md
-  - 'Porting to Other Platforms': porting.md
+  - 'GATT Services': gatt_services.md
+  - 'GATT Clients':  gatt_clients.md
+
   - 'Existing Ports': ports/existing_ports.md
+  - 'Chipsets': chipsets.md
+
+  # your own app
+  - 'One application multiple ports': 'portable_app.md'
+    # minimal CMake - just enable all features
+    # 1x desktop
+    # 1x esp32
+
+  - 'How to configure BTstack': how_to.md
+    # explain esp32 config
+    # explain malloc on desktop
+  - 'CMake build system' : cmake.md
+  - 'Porting to Other Platforms': porting.md
   - 'Integrating with Existing Systems': integration.md
-  - 'CMake Integration': cmake.md
+
+  # appendix
+
   - 'APIs':
   - 'Events and Errors': appendix/events_errors.md
+
+  # remove
   - 'Migration to v1.0': appendix/migration.md
 
 markdown_extensions:
