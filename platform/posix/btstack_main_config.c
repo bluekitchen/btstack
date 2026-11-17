@@ -139,7 +139,7 @@ static const char *get_file_ext(const char *filename) {
     return dot + 1;
 }
 
-int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t *transport_config,
+int btstack_main_config(int argc, char * argv[], hci_transport_config_uart_t *transport_config,
     bd_addr_t address, bool *tlv_reset, bool *airoc_download_mode){
     btstack_assert(transport_config != NULL);
     const char * log_file_path = NULL;
@@ -148,7 +148,7 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     opterr = 0;
     // parse command line parameters
     while(true){
-        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        int c = getopt_long( argc, argv, short_options, long_options, NULL );
         if (c < 0) {
             break;
         }
