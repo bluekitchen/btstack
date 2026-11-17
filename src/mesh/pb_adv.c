@@ -624,7 +624,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             pb_adv_msg_out_seg = 0;
                             buffer[5] = seg_n << 2 | MESH_GPCF_TRANSACTION_START;
                             big_endian_store_16(buffer, 6, pb_adv_msg_out_len);
-                            buffer[8] = btstack_crc8_calc((uint8_t*)pb_adv_msg_out_buffer, pb_adv_msg_out_len);
+                            buffer[8] = btstack_crc8_calc(pb_adv_msg_out_buffer, pb_adv_msg_out_len);
                             pos = 9;
                             bytes_left = 24 - 4;
                             printf("PB-ADV: %02x Sending Start: ", pb_adv_msg_out_transaction_nr);
