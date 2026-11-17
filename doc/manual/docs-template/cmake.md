@@ -45,11 +45,28 @@ Requested groups are only the starting point. `tool/cmake/BTstack.cmake` resolve
 
 `btstack_resolve_groups` returns this complete group set and identifies the `ENABLE_*` configuration macros it requires, such as `ENABLE_BLE` or `ENABLE_CLASSIC`.
 
-### Configuration and port capabilities
+### Port baseline
 
-`btstack_config.h` is the configuration header compiled with BTstack. It is the source of truth for platform properties (`HAVE_*`), enabled protocols and features (`ENABLE_*`), and options such as static-memory and persistent-storage configuration. CMake does not generate or modify this header; the project or port owns it.
+A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files—such as `main.c`, UART glue, generated controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
 
-To keep CMake selection aligned with compilation, source groups must match the effective `btstack_config.h`. When authoring a port, call `btstack_configure_port` after declaring the port so CMake can evaluate its preprocessed macro set. It can then reject or omit groups and applications whose required features are disabled.
+#### Typical port structure
+
+A port's `CMakeLists.txt` usually follows this order:
+
+1. Set up the project, toolchain, and board SDK, then include `BTstack.cmake`.
+2. Declare the port with `btstack_declare_port`.
+3. Define its baseline groups and board-local sources.
+4. Register the effective `btstack_config.h` and any optional capabilities.
+5. Include application declarations, filter them for the port, and create the selected application libraries and executables.
+6. Optionally add diagnostic targets for inspecting the resolved port.
+
+The SDK setup, board sources, and final executable policy remain port-specific. This section introduces the baseline and configuration in steps 2–4. The [Port authoring](#port-authoring) section covers application declarations and building in step 5, while [Inspect a configured port](#inspect-a-configured-port) covers the optional diagnostics in step 6.
+
+#### Configuration and port capabilities
+
+`btstack_config.h` is the configuration header compiled with BTstack. It is the source of truth for platform properties (`HAVE_*`), enabled protocols and features (`ENABLE_*`), and options such as static-memory and persistent-storage configuration. CMake does not generate or modify this header; the project or port owns it. A port does not need to repeat its configuration macros manually in CMake: `btstack_configure_port` preprocesses the header and registers its effective macro set.
+
+To keep CMake selection aligned with compilation, source groups must match the effective `btstack_config.h`. Call `btstack_configure_port` after declaring the port so CMake can reject or omit groups and applications whose required features are disabled.
 
 A minimal port setup looks like this:
 
@@ -105,10 +122,6 @@ If `btstack_add_library` does not fit your target layout, compose your own targe
 ## Port authoring
 
 Use port authoring when one board configuration should build multiple BTstack examples or applications. A port combines a common board baseline with each application's declared requirements, then filters out applications unsupported by its configuration or capabilities. If your project builds only one application, use `btstack_add_library` instead.
-
-### Port baseline
-
-A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files—such as `main.c`, UART glue, generated controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
 
 ### Applications and requirements
 
