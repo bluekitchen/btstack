@@ -345,7 +345,7 @@ static void trigger_shutdown(void){
     btstack_stdin_reset();
 }
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     int status = btstack_main_config( argc, argv, &config, custom_address, &tlv_reset, &airoc_download_mode );
     if (status != 0){
@@ -384,7 +384,11 @@ int main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
 
     // setup app
-    btstack_main(argc, argv);
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    btstack_main(argc, example_argv);
 
     // go
     btstack_run_loop_execute();    

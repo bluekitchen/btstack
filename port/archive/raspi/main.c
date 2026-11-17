@@ -303,7 +303,7 @@ static uart_type_t raspi_get_bluetooth_uart_type(void){
 }
 
 static void phase2(int status);
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
@@ -410,7 +410,11 @@ int main(int argc, const char * argv[]){
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     main_argc = argc;
-    main_argv = argv;
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    main_argv = example_argv;
 
     // power cycle Bluetooth controller on older models without flowcontrol
     if (power_cycle){

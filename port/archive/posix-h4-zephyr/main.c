@@ -155,7 +155,7 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     btstack_main_config( argc, argv, &config, NULL, NULL );
     // init HCI
@@ -172,7 +172,11 @@ int main(int argc, const char * argv[]){
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // setup app
-    btstack_main(argc, argv);
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    btstack_main(argc, example_argv);
 
     // sm required to setup static random Bluetooth address
     sm_init();

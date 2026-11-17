@@ -159,13 +159,18 @@ static void intel_firmware_done(int result){
 }
 
 #define USB_MAX_PATH_LEN 7
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     // Prevent stdout buffering
     setvbuf(stdout, NULL, _IONBF, 0);
 
     main_argc = argc;
-    main_argv = argv;
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char ** example_argv = malloc(((size_t) argc + 1) * sizeof(*example_argv));
+    if (example_argv == NULL) return EXIT_FAILURE;
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    main_argv = example_argv;
 
     printf("BTstack/windows-winusb booting up\n");
 
@@ -191,5 +196,6 @@ int main(int argc, const char * argv[]){
     // go
     btstack_run_loop_execute();
 
+    free(example_argv);
     return 0;
 }

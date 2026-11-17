@@ -127,7 +127,7 @@ void hal_led_toggle(void){
 }
 
 #define USB_MAX_PATH_LEN 7
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     // Prevent stdout buffering
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -162,10 +162,16 @@ int main(int argc, const char * argv[]){
     btstack_stdin_window_register_ctrl_c_callback(&trigger_shutdown);
 
     // setup app
-    btstack_main(argc, argv);
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char ** example_argv = malloc(((size_t) argc + 1) * sizeof(*example_argv));
+    if (example_argv == NULL) return EXIT_FAILURE;
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    btstack_main(argc, example_argv);
 
     // go
     btstack_run_loop_execute();
 
+    free(example_argv);
     return 0;
 }

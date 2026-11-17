@@ -175,7 +175,7 @@ static void phase2(int status){
 }
 
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
@@ -199,7 +199,12 @@ int main(int argc, const char * argv[]){
     uart_driver->init(&uart_config);
 
     main_argc = argc;
-    main_argv = argv;
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char ** example_argv = malloc(((size_t) argc + 1) * sizeof(*example_argv));
+    if (example_argv == NULL) return EXIT_FAILURE;
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    main_argv = example_argv;
 
     // phase #1 download firmware
     printf("Phase 1: Download firmware\n");
@@ -209,5 +214,6 @@ int main(int argc, const char * argv[]){
 
     // go
     btstack_run_loop_execute();
+    free(example_argv);
     return 0;
 }

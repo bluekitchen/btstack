@@ -510,12 +510,17 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
     printf("BTstack on windows booting up\n");
 
     // pick serial port
     config.device_name = "COM1";
-    btstack_main_config(argc, argv, &config, custom_address, &tlv_reset, &airoc_download_mode);
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char ** example_argv = malloc(((size_t) argc + 1) * sizeof(*example_argv));
+    if (example_argv == NULL) return EXIT_FAILURE;
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    btstack_main_config(argc, example_argv, &config, custom_address, &tlv_reset, &airoc_download_mode);
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
@@ -543,10 +548,11 @@ int main(int argc, const char * argv[]){
     btstack_stdin_window_register_ctrl_c_callback(&trigger_shutdown);
 
     // setup app
-    btstack_main(argc, argv);
+    btstack_main(argc, example_argv);
 
     // go
     btstack_run_loop_execute();
 
+    free(example_argv);
     return 0;
 }

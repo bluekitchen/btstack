@@ -210,7 +210,7 @@ static void trigger_shutdown(void){
     hci_power_control(HCI_POWER_OFF);
 }
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
@@ -257,7 +257,11 @@ int main(int argc, const char * argv[]){
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // setup app
-    btstack_main(argc, argv);
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    btstack_main(argc, example_argv);
 
     // go
     btstack_run_loop_execute();    

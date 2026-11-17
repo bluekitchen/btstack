@@ -185,7 +185,7 @@ static void intel_firmware_done(int result){
 }
 
 #define USB_MAX_PATH_LEN 7
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     uint8_t usb_path[USB_MAX_PATH_LEN];
     int usb_path_len = 0;
@@ -230,6 +230,13 @@ int main(int argc, const char * argv[]){
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
+
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    main_argc = argc;
+    main_argv = example_argv;
 
     // setup USB Transport
     transport = hci_transport_usb_instance();

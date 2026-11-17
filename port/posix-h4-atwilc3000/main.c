@@ -175,7 +175,7 @@ static void phase2(int status){
 }
 
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     int status = btstack_main_config( argc, argv, &transport_config, NULL, NULL, &airoc_download_mode );
     if (status != 0){
@@ -191,7 +191,11 @@ int main(int argc, const char * argv[]){
     uart_driver->init(&uart_config);
 
     main_argc = argc;
-    main_argv = argv;
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    main_argv = example_argv;
 
     // phase #1 download firmware
     printf("Phase 1: Download firmware\n");

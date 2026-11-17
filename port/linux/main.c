@@ -212,13 +212,13 @@ static void usage(const char *name){
     }
 }
 
-int main(int argc, const char * argv[]){
+int main(int argc, char * argv[]){
 
     const char * log_file_path = NULL;
 
     // parse command line parameters
     while(true){
-        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        int c = getopt_long( argc, argv, short_options, long_options, NULL );
         if (c < 0) {
             break;
         }
@@ -283,7 +283,11 @@ int main(int argc, const char * argv[]){
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // setup app
-    btstack_main(argc, argv);
+    // btstack_main expects an array of pointers to const characters; char ** cannot be converted safely.
+    const char * example_argv[argc + 1];
+    for (int i = 0; i < argc; i++) example_argv[i] = argv[i];
+    example_argv[argc] = NULL;
+    btstack_main(argc, example_argv);
 
     // go
     btstack_run_loop_execute();    
