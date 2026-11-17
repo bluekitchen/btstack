@@ -1413,7 +1413,7 @@ void btstack_crypto_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key
     request->state       = CCM_CALCULATE_X1;
 }
 
-void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg){
+void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, const uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg){
     // not implemented yet
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;

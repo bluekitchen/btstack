@@ -580,7 +580,7 @@ static void mesh_upper_transport_validate_access_message(void){
     btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, transmic_len);
 
     if (aad_len){
-        btstack_crypto_ccm_digest(&ccm, (uint8_t *) mesh_transport_key_it.address->label_uuid, aad_len,
+        btstack_crypto_ccm_digest(&ccm, mesh_transport_key_it.address->label_uuid, aad_len,
                                   &mesh_upper_transport_validate_access_message_digest, NULL);
     } else {
         mesh_upper_transport_validate_access_message_digest(NULL);

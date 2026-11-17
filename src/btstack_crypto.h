@@ -254,12 +254,12 @@ void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request,
 /** 
  * Digest Additional Authentication Data - can be called multipled times up to total additional_authenticated_data_len specified in btstack_crypto_ccm_init
  * @param request
- * @param additional_authenticated_data
+ * @param additional_authenticated_data must remain valid and unchanged until the callback
  * @param additional_authenticated_data_len
  * @param callback
  * @param callback_arg
  */
-void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg);
+void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, const uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg);
 
 /**
  * Encrypt block - can be called multiple times. len must be a multiply of 16 for all but the last call
