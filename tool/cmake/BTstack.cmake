@@ -245,7 +245,6 @@ set(btstack_group_dependencies_classic_hfp
     classic-sdp-client-rfcomm
     classic-sdp-server
     classic-hfp-codec
-    audio-demo
     classic-btstack-cvsd-plc
     classic-btstack-sbc-encoder-bluedroid
     classic-btstack-sbc-decoder-bluedroid
@@ -269,7 +268,6 @@ set(btstack_group_dependencies_classic_hsp_ag
     classic-sdp-client-rfcomm
     classic-sdp-server
     classic-hfp-codec
-    audio-demo
     classic-btstack-cvsd-plc
     classic-btstack-sbc-bluedroid
     classic-btstack-sbc-encoder-bluedroid
@@ -283,7 +281,6 @@ set(btstack_group_dependencies_classic_hsp_hs
     classic-sdp-client-rfcomm
     classic-sdp-server
     classic-hfp-codec
-    audio-demo
     classic-btstack-cvsd-plc
     classic-btstack-sbc-bluedroid
     classic-btstack-sbc-encoder-bluedroid

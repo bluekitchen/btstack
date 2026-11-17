@@ -110,10 +110,10 @@ btstack_declare_application(avrcp_browsing_client SOURCES avrcp_browsing_client.
           classic-avrcp-browsing-target classic-avrcp-media-item-iterator
           classic-sdp-server)
 
-btstack_declare_application(hfp_ag_demo SOURCES hfp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-ag audio)
-btstack_declare_application(hfp_hf_demo SOURCES hfp_hf_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-hf audio)
-btstack_declare_application(hsp_ag_demo SOURCES hsp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-ag audio)
-btstack_declare_application(hsp_hs_demo SOURCES hsp_hs_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-hs audio)
+btstack_declare_application(hfp_ag_demo SOURCES hfp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-ag audio-demo audio)
+btstack_declare_application(hfp_hf_demo SOURCES hfp_hf_demo.c ${sco_demo_util_sources} NEEDS classic-hfp-hf audio-demo audio)
+btstack_declare_application(hsp_ag_demo SOURCES hsp_ag_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-ag audio-demo audio)
+btstack_declare_application(hsp_hs_demo SOURCES hsp_hs_demo.c ${sco_demo_util_sources} NEEDS classic-hsp-hs audio-demo audio)
 
 btstack_declare_application(a2dp_source_demo
     SOURCES a2dp_source_demo.c
