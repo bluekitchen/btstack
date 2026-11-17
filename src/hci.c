@@ -5516,7 +5516,7 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
         case HCI_ACL_DATA_PACKET:
             acl_handler(packet, size);
             break;
-#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
+#if defined(ENABLE_CLASSIC) && (defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT))
         case HCI_SCO_DATA_PACKET:
             sco_handler(packet, size);
             break;
