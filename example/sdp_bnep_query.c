@@ -190,7 +190,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                     case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
                         if (de_get_element_type(attribute_value) != DE_DES) break;
                         for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
-                            uint8_t * element = des_iterator_get_element(&des_list_it);
+                            const uint8_t * element = des_iterator_get_element(&des_list_it);
                             if (de_get_element_type(element) != DE_UUID) continue;
                             uint32_t uuid = de_get_uuid32(element);
                             switch (uuid){
@@ -226,9 +226,9 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                             uint16_t bnep_version = 0;
                             for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
                                 if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
-                                uint8_t * des_element = des_iterator_get_element(&des_list_it);
+                                const uint8_t * des_element = des_iterator_get_element(&des_list_it);
                                 des_iterator_init(&prot_it, des_element);
-                                uint8_t * element = des_iterator_get_element(&prot_it);
+                                const uint8_t * element = des_iterator_get_element(&prot_it);
                                 
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);

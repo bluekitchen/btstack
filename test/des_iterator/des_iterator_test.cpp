@@ -18,7 +18,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 
 
-static uint8_t  des_list[] = { 
+static const uint8_t  des_list[] = {
     0x35, 0x1E, 0x35, 0x06, 0x19, 0x01, 0x00, 0x09, 0x00, 0x0F, 0x35, 0x14, 0x19, 0x00, 0x0F, 0x09, 
     0x01, 0x00, 0x35, 0x0C, 0x09, 0x08, 0x00, 0x09, 0x08, 0x06, 0x09, 0x86, 0xDD, 0x09, 0x88, 0x0B
 };
@@ -38,7 +38,7 @@ TEST_GROUP(DESParser){
     
     void CHECK_EQUAL_UINT16(des_iterator_t *it){
         uint16_t value;
-        uint8_t * element = des_iterator_get_element(it);
+        const uint8_t * element = des_iterator_get_element(it);
         if (des_iterator_get_type(it) == DE_UUID){
             value = de_get_uuid32(element);
         } else {
@@ -53,8 +53,8 @@ TEST_GROUP(DESParser){
         CHECK_EQUAL(des_iterator_get_type(des_list_it), DE_DES);
         des_iterator_t prot_it;
         des_iterator_t packet_it;
-        uint8_t * des_element;
-        uint8_t * packet_des;
+        const uint8_t * des_element;
+        const uint8_t * packet_des;
         des_element = des_iterator_get_element(des_list_it);
         for (des_iterator_init(&prot_it, des_element) ; des_iterator_has_more(&prot_it) ; des_iterator_next(&prot_it) ){
             if (des_iterator_get_type(&prot_it) != DE_DES){
@@ -84,9 +84,9 @@ TEST(DESParser, DESIterator2){
     for (des_iterator_init(&des_list_it, des_list); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
         CHECK_EQUAL(des_iterator_get_type(&des_list_it), DE_DES);
         des_iterator_t prot_it;
-        uint8_t * des_element = des_iterator_get_element(&des_list_it);
+        const uint8_t * des_element = des_iterator_get_element(&des_list_it);
         des_iterator_init(&prot_it, des_element);
-        uint8_t * element = des_iterator_get_element(&prot_it);
+        const uint8_t * element = des_iterator_get_element(&prot_it);
         CHECK_EQUAL(de_get_element_type(element), DE_UUID);
         uint32_t uuid = de_get_uuid32(element);
         switch (uuid){
@@ -127,7 +127,7 @@ TEST(DESParser, BoundedDESIteratorRejectsTruncatedChildElement){
 }
 
 TEST(DESParser, BoundedDESIteratorProvidesCurrentElementLength){
-    uint8_t nested_des[] = { 0x35, 0x02, 0x35, 0x00 };
+    const uint8_t nested_des[] = { 0x35, 0x02, 0x35, 0x00 };
     des_iterator_t nested_it;
 
     CHECK_TRUE(des_iterator_init_with_len(&des_list_it, nested_des, sizeof(nested_des)));

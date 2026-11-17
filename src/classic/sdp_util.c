@@ -281,7 +281,7 @@ void de_add_uuid128(uint8_t * sequence, const uint8_t * uuid){
 }
 
 // MARK: DES iterator
-bool des_iterator_init(des_iterator_t * it, uint8_t * element){
+bool des_iterator_init(des_iterator_t * it, const uint8_t * element){
     de_type_t type = de_get_element_type(element);
     if (type != DE_DES) return false;
 
@@ -291,7 +291,7 @@ bool des_iterator_init(des_iterator_t * it, uint8_t * element){
     return true;
 }
 
-bool des_iterator_init_with_len(des_iterator_t * it, uint8_t * element, uint32_t element_size){
+bool des_iterator_init_with_len(des_iterator_t * it, const uint8_t * element, uint32_t element_size){
     it->element = NULL;
     it->pos = 0;
     it->length = 0;
@@ -309,13 +309,13 @@ bool des_iterator_init_with_len(des_iterator_t * it, uint8_t * element, uint32_t
 }
 
 de_type_t des_iterator_get_type (des_iterator_t * it){
-    uint8_t * element = des_iterator_get_element(it);
+    const uint8_t * element = des_iterator_get_element(it);
     if (element == NULL) return DE_NIL;
     return de_get_element_type(element);
 }
 
 uint16_t des_iterator_get_size (des_iterator_t * it){
-    uint8_t * element = des_iterator_get_element(it);
+    const uint8_t * element = des_iterator_get_element(it);
     if (element == NULL) return 0;
     return (uint16_t)(des_iterator_get_element_len(it) - de_get_header_size(element));
 }
@@ -328,7 +328,7 @@ bool des_iterator_is_complete(des_iterator_t * it){
     return it->pos == it->length;
 }
 
-uint8_t * des_iterator_get_element(des_iterator_t * it){
+const uint8_t * des_iterator_get_element(des_iterator_t * it){
     if (des_iterator_get_element_len(it) == 0) return NULL;
     return &it->element[it->pos];
 }
@@ -354,7 +354,7 @@ static bool de_traverse_sequence(uint8_t * element, de_traversal_callback_t hand
     if (!des_iterator_init(&it, element)) return false;
 
     while (des_iterator_has_more(&it)){
-        uint8_t * child = des_iterator_get_element(&it);
+        uint8_t * child = element + it.pos;
 
         de_type_t elemType = des_iterator_get_type(&it);
         de_size_t elemSize = de_get_size_type(child);
@@ -372,7 +372,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
     if (!des_iterator_init(&it, element)) return;
 
     while (des_iterator_has_more(&it)){
-        uint8_t * attribute_id_element = des_iterator_get_element(&it);
+        uint8_t * attribute_id_element = element + it.pos;
         de_type_t idType = des_iterator_get_type(&it);
         de_size_t idSize = de_get_size_type(attribute_id_element);
         if ( (idType != DE_UINT) || (idSize != DE_SIZE_16) ) break; // wrong type
@@ -380,7 +380,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
         des_iterator_next(&it);
         if (!des_iterator_has_more(&it)) break;
 
-        uint8_t * attribute_value = des_iterator_get_element(&it);
+        uint8_t * attribute_value = element + it.pos;
         de_type_t valueType = des_iterator_get_type(&it);
         de_size_t valueSize = de_get_size_type(attribute_value);
         uint8_t done = (*handler)(attribute_id, attribute_value, valueType, valueSize, context);

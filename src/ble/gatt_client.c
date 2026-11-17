@@ -3896,8 +3896,8 @@ static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * 
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     if (!des_iterator_init_with_len(&des_list_it, gatt_client_classic_sdp_buffer, attribute_length)) break;
                     for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t       *des_element;
-                        uint8_t       *element;
+                        const uint8_t *des_element;
+                        const uint8_t *element;
                         uint32_t       uuid;
 
                         if (des_iterator_get_type(&des_list_it) != DE_DES){

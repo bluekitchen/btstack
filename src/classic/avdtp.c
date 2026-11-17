@@ -632,7 +632,7 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
                 case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
                     if (!des_iterator_init_with_len(&des_list_it, avdtp_attribute_value, attribute_length)) break;
                     for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t * element = des_iterator_get_element(&des_list_it);
+                        const uint8_t * element = des_iterator_get_element(&des_list_it);
                         if (de_get_element_type(element) != DE_UUID) continue;
                         uint32_t uuid = de_get_uuid32(element);
                         switch (uuid){
@@ -654,8 +654,8 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
                     // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
                     if (!des_iterator_init_with_len(&des_list_it, avdtp_attribute_value, attribute_length)) break;
                     for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t       *des_element;
-                        uint8_t       *element;
+                        const uint8_t *des_element;
+                        const uint8_t *element;
                         uint32_t       uuid;
 
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;

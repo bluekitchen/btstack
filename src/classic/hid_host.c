@@ -525,8 +525,8 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     des_iterator_t attribute_list_it;
     des_iterator_t additional_des_it;
     des_iterator_t prot_it;
-    uint8_t       *des_element;
-    uint8_t       *element;
+    const uint8_t *des_element;
+    const uint8_t *element;
     uint32_t       uuid;
     uint8_t        status = ERROR_CODE_SUCCESS;
     bool finalize_connection;

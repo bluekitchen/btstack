@@ -323,8 +323,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     if (!des_iterator_init_with_len(&des_list_it, goep_client_sdp_query_attribute_value, attribute_length)) break;
                     for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t       *des_element;
-                        uint8_t       *element;
+                        const uint8_t *des_element;
+                        const uint8_t *element;
                         uint32_t       uuid;
 
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
@@ -357,8 +357,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
                     if (!des_iterator_init_with_len(&des_list_it, goep_client_sdp_query_attribute_value, attribute_length)) break;
                     for (; des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                        uint8_t       *des_element;
-                        uint8_t       *element;
+                        const uint8_t *des_element;
+                        const uint8_t *element;
                         uint32_t       uuid;
 
                         if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
