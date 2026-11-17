@@ -165,7 +165,6 @@ void      des_iterator_next(des_iterator_t * it);
 // MARK: SDP
 uint16_t  sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint8_t *buffer);
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
-bool      sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value);
 bool      sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
 uint16_t  sdp_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
 bool      sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);
