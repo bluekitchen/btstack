@@ -336,7 +336,7 @@ int count_set_bits_uint32(uint32_t x);
  * @param len
  * @param check_sum
  */
-uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
+uint8_t btstack_crc8_check(const uint8_t* data, uint16_t len, uint8_t check_sum);
 
 /**
  * @brief Calculate CRC8 using ETSI TS 101 369 V6.3.0. 
@@ -344,7 +344,7 @@ uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
  * @param data
  * @param len
  */
-uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
+uint8_t btstack_crc8_calc(const uint8_t* data, uint16_t len);
 
 
 /**

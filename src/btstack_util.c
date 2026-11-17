@@ -601,7 +601,7 @@ static const uint8_t crc8table[256] = {    /* reversed, 8-bit, poly=0x07 */
 };
 
 /*-----------------------------------------------------------------------------------*/
-static uint8_t crc8(uint8_t *data, uint16_t len){
+static uint8_t crc8(const uint8_t* data, uint16_t len){
     uint16_t count;
     uint8_t crc = CRC8_INIT;
     for (count = 0; count < len; count++){
@@ -611,7 +611,7 @@ static uint8_t crc8(uint8_t *data, uint16_t len){
 }
 
 /*-----------------------------------------------------------------------------------*/
-uint8_t btstack_crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum){
+uint8_t btstack_crc8_check(const uint8_t* data, uint16_t len, uint8_t check_sum){
     uint8_t crc;
     crc = crc8(data, len);
     crc = crc8table[crc ^ check_sum];
@@ -623,7 +623,7 @@ uint8_t btstack_crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum){
 }
 
 /*-----------------------------------------------------------------------------------*/
-uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len){
+uint8_t btstack_crc8_calc(const uint8_t* data, uint16_t len){
     /* Ones complement */
     return 0xFFu - crc8(data, len);
 }
