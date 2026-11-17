@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP: enable send of automatically flushable packets for media transport
 - example/a2dp_source_demo: set automatic flush timeout to 150 ms
 - ESP32: allow to specify the Bluetooth type of external Bluetooth Controller
-
+- SDP Util: DES and SDP iterators work on const data, remove obsolete sdp_set_attribute_value_for_attribute_id
 
 ## Release v1.8.3
 
