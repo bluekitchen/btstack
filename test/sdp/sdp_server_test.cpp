@@ -31,6 +31,24 @@ static void check_error_response(uint16_t error_code){
     CHECK_EQUAL(error_code, big_endian_read_16(response, 5));
 }
 
+TEST(SDPServer, QueriesConstRecordAndFiltersConstAttributeList){
+    static const uint8_t pattern[] = { 0x35, 0x03, 0x19, 0x11, 0x01 };
+    static const uint8_t attributes[] = { 0x35, 0x05, 0x0a, 0x00, 0x00, 0xff, 0xff };
+    uint8_t filtered[16];
+    uint16_t used = 0;
+
+    CHECK_EQUAL(0, sdp_register_service(service_record));
+    POINTERS_EQUAL(service_record, sdp_get_record_for_handle(0x00010000));
+    POINTERS_EQUAL(&service_record[5], sdp_get_attribute_value_for_attribute_id(service_record, 0));
+    CHECK_TRUE(sdp_valid_service_search_pattern(pattern));
+    CHECK_TRUE(sdp_record_matches_service_search_pattern(service_record, pattern));
+    CHECK_TRUE(sdp_attribute_list_valid(attributes));
+    CHECK_EQUAL(sizeof(filtered), sdp_get_filtered_size(service_record, attributes));
+    CHECK_TRUE(sdp_filter_attributes_in_attributeIDList(service_record, attributes, 0, sizeof(filtered), &used, filtered));
+    CHECK_EQUAL(sizeof(filtered), used);
+    MEMCMP_EQUAL(&service_record[2], filtered, sizeof(filtered));
+}
+
 TEST(SDPServer, ServiceSearchRejectsTruncatedSearchPattern){
     uint8_t packet[] = {
         SDP_ServiceSearchRequest, 0, 0, 0, 3,

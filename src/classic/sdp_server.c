@@ -102,8 +102,7 @@ void sdp_deinit(void){
 }
 
 uint32_t sdp_get_service_record_handle(const uint8_t * record){
-    // TODO: make sdp_get_attribute_value_for_attribute_id accept const data to remove cast
-    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id((uint8_t *)record, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
+    const uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id(record, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
     if (!serviceRecordHandleAttribute) return 0;
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
     if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;
@@ -121,7 +120,7 @@ static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
     return NULL;
 }
 
-uint8_t * sdp_get_record_for_handle(uint32_t handle){
+const uint8_t * sdp_get_record_for_handle(uint32_t handle){
     service_record_item_t * record_item =  sdp_get_record_item_for_handle(handle);
     if (!record_item) return NULL;
     return record_item->service_record;
@@ -158,7 +157,7 @@ uint8_t sdp_register_service(const uint8_t * record){
 
     // set handle and record
     newRecordItem->service_record_handle = record_handle;
-    newRecordItem->service_record = (uint8_t*) record;
+    newRecordItem->service_record = record;
     
     // add to linked list
     btstack_linked_list_add(&sdp_server_service_records, (btstack_linked_item_t *) newRecordItem);

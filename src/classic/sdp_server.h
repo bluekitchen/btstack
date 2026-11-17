@@ -57,7 +57,7 @@ typedef struct {
     btstack_linked_item_t   item;
 
     uint32_t        service_record_handle;
-    uint8_t *       service_record;
+    const uint8_t * service_record;
 } service_record_item_t;
 
 int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu);
@@ -102,7 +102,7 @@ uint32_t sdp_create_service_record_handle(void);
  * @result record
  */
 
-uint8_t * sdp_get_record_for_handle(uint32_t handle);
+const uint8_t * sdp_get_record_for_handle(uint32_t handle);
 
 /**
  * @brief De-Init SDP Server

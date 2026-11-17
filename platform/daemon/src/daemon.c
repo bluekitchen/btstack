@@ -613,7 +613,7 @@ static uint32_t daemon_sdp_create_and_register_service(uint8_t * record){
     de_add_number(newRecord, DE_UINT, DE_SIZE_32, record_handle);
     
     // add other attributes
-    sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
+    sdp_append_attributes_in_attributeIDList(record, removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     uint8_t status = sdp_register_service(newRecord);
 
@@ -1121,12 +1121,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case SDP_UNREGISTER_SERVICE_RECORD:
             service_record_handle = little_endian_read_32(packet, 3);
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
-            data = sdp_get_record_for_handle(service_record_handle);
+            // The daemon allocated this record before registering it.
+            const uint8_t * sdp_record = sdp_get_record_for_handle(service_record_handle);
             sdp_unregister_service(service_record_handle);
             daemon_remove_client_sdp_service_record_handle(connection, service_record_handle);
-            if (data){
-                free(data);
-            }
+            free((void *) sdp_record);
             break;
         case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
             reverse_bd_addr(&packet[3], addr);

@@ -163,14 +163,14 @@ uint32_t  des_iterator_get_element_len(des_iterator_t * it);
 void      des_iterator_next(des_iterator_t * it);
 
 // MARK: SDP
-uint16_t  sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint8_t *buffer);
-uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
-bool      sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
-uint16_t  sdp_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
-bool      sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);
-bool      sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attributeID);
-bool      sdp_attribute_list_valid(uint8_t *attributeIDList);
-bool      sdp_valid_service_search_pattern(uint8_t *service_search_pattern);
+uint16_t  sdp_append_attributes_in_attributeIDList(const uint8_t *record, const uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint8_t *buffer);
+const uint8_t * sdp_get_attribute_value_for_attribute_id(const uint8_t * record, uint16_t attributeID);
+bool      sdp_record_matches_service_search_pattern(const uint8_t *record, const uint8_t *serviceSearchPattern);
+uint16_t  sdp_get_filtered_size(const uint8_t *record, const uint8_t *attributeIDList);
+bool      sdp_filter_attributes_in_attributeIDList(const uint8_t *record, const uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);
+bool      sdp_attribute_list_contains_id(const uint8_t *attributeIDList, uint16_t attributeID);
+bool      sdp_attribute_list_valid(const uint8_t *attributeIDList);
+bool      sdp_valid_service_search_pattern(const uint8_t *service_search_pattern);
 /*
  * @brief Returns service search pattern for given UUID-16
  * @note Uses fixed buffer
