@@ -342,11 +342,11 @@ static uint32_t iv_index_for_ivi_nid(uint8_t ivi_nid){
 }
 
 static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_pdu_t * pdu){
-    mesh_access_pdu_t * access_pdu;
-    mesh_upper_transport_pdu_t * upper_pdu;
+    const mesh_access_pdu_t * access_pdu;
+    const mesh_upper_transport_pdu_t * upper_pdu;
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
-            access_pdu = (mesh_access_pdu_t *) pdu;
+            access_pdu = (const mesh_access_pdu_t *) pdu;
             nonce[1] = ((access_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 0x80 : 0x00;
             big_endian_store_24(nonce, 2, access_pdu->seq);
             big_endian_store_16(nonce, 5, access_pdu->src);
@@ -355,7 +355,7 @@ static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_pdu_t * 
             break;
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
-            upper_pdu = (mesh_upper_transport_pdu_t *) pdu;
+            upper_pdu = (const mesh_upper_transport_pdu_t *) pdu;
             nonce[1] = ((upper_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 0x80 : 0x00;
             // 'network header'
             big_endian_store_24(nonce, 2, upper_pdu->seq);

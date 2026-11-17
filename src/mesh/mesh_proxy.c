@@ -127,7 +127,7 @@ static void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_ad
     memset(advertisement_item, 0, sizeof(adv_bearer_connectable_advertisement_data_item_t));
     advertisement_item->adv_length = adv_data_unprovisioned_template_len + 18;
     (void)memcpy(advertisement_item->adv_data,
-                 (uint8_t *)adv_data_unprovisioned_template,
+                 adv_data_unprovisioned_template,
                  adv_data_unprovisioned_template_len);
     // dynamically store device uuid into adv data
     (void)memcpy(&advertisement_item->adv_data[11], device_uuid, 16);
