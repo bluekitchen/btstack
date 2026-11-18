@@ -1,22 +1,22 @@
 # CMake Integration
 
-BTstack's CMake helpers let you add the BTstack code required by a particular Bluetooth application without maintaining a hand-written list of source files. They work in two situations: integrating BTstack into an existing CMake project, and writing a BTstack port that builds one or more examples for a board.
+BTstack's CMake helpers let you add the BTstack code required by a particular Bluetooth application without maintaining a hand-written list of source files and include directories. They work in two situations: integrating BTstack into an existing CMake project, and creating a BTstack port that builds one or more examples for a board.
 
-The helpers do not create a top-level project or select a toolchain, SDK, board, or Bluetooth controller. Those remain the responsibility of your project or port. This chapter first explains the building blocks used by the helpers, then walks through each workflow.
+The helpers do not define a top-level project or select a toolchain, a SDK, a board, or a Bluetooth controller. Thse remain the responsibility of your project or port. This chapter first explains the building blocks used by the helpers, then walks through each workflow.
 
 ## Core concepts
 
 ### Source groups
 
-A source group is a named collection of related BTstack source files. Instead of adding individual files, add the groups needed by your application. Most group names correspond to a Bluetooth protocol or profile, such as `gatt-server` or `classic-rfcomm`; others select infrastructure such as `transport-h4`, `platform-posix-run-loop`, a chipset, or third-party C code. Group names use lowercase hyphenated words. The complete catalog is in `tool/cmake/BTstackSources.cmake`.
+A source group is a named collection of related BTstack source files. Instead of adding individual files, this allows to add the groups needed by your application. Most group names correspond to a Bluetooth protocol or profile, such as `gatt-server` or `classic-rfcomm`; others select infrastructure such as `transport-h4`, `platform-posix-run-loop`, a chipset support, or third-party C code. Group names use lowercase hyphenated words. The complete catalog is in `tool/cmake/BTstackSources.cmake`.
 
-The catalog stores source lists separately from mappings for private and public include directories. CMake uses the private mapping for each selected group to find the headers needed to compile its sources. It applies BTstack's common public include paths independently of the selected groups, and adds group-specific public paths when an application uses that group's API. BlueKitchen maintains this generated catalog with `tool/create_cmake_sources.py`.
+The catalog stores source lists separately from mappings for private and public include directories. CMake uses the private mapping for each selected group to find the headers needed to compile its sources. It applies BTstack's common public include paths independently of the selected groups, and adds group-specific public paths when an application needs to use that group's API. BlueKitchen maintains this generated catalog with `tool/create_cmake_sources.py`.
 
-A group is a reusable BTstack component, not a complete board configuration. Your project still chooses a run loop, HCI transport, storage backend, chipset support, SDK integration, and board-specific files.
+<-- already mentioned, should this go somewhere? A group is a reusable BTstack component, not a complete board configuration. Your project still chooses a run loop, HCI transport, storage backend, chipset support, SDK integration, and board-specific files. --/>
 
 #### Finding groups
 
-Before choosing groups for an application or port, inspect the catalog. From the BTstack repository root, list all groups or search by name:
+To choose groups for an application or port, you can inspect the catalog. From the BTstack repository root, list all groups or search by name:
 
 ```sh
 python3 tool/btstack_groups.py list
@@ -37,7 +37,7 @@ For all commands and options, run:
 python3 tool/btstack_groups.py --help
 ```
 
-The wrapper requires CMake on `PATH`, but can be run from any directory.
+The Python wrapper requires CMake on `PATH`, but can be run from any directory.
 
 ### Resolving dependencies
 
@@ -47,16 +47,16 @@ Requested groups are only the starting point. `tool/cmake/BTstack.cmake` resolve
 
 ### Port baseline
 
-A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files—such as `main.c`, UART glue, generated controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
+A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files — such as `main.c`, UART adapter, controller firmware, and SDK sources — remain explicit because they belong to the board or project rather than the BTstack catalog.
 
 #### Typical port structure
 
-A port's `CMakeLists.txt` usually follows this order:
+A port's `CMakeLists.txt` mainly follows this order:
 
-1. Set up the project, toolchain, and board SDK, then include `BTstack.cmake`.
+1. Set up the project, toolchain, and board SDK, then include `tool/cmake/BTstack.cmake`.
 2. Declare the port with `btstack_declare_port`.
 3. Define its baseline groups and board-local sources.
-4. Register the effective `btstack_config.h` and any optional capabilities.
+4. Register the effective `btstack_config.h` and optional capabilities.
 5. Include application declarations, filter them for the port, and create the selected application libraries and executables.
 6. Optionally add diagnostic targets for inspecting the resolved port.
 
@@ -87,7 +87,7 @@ For example, a POSIX port should declare `audio` only when CMake finds the PortA
 
 Choose this workflow when your project already has an executable target, board support, and toolchain configuration. You add BTstack as a library and link it to that target.
 
-For example, a project building an LE GATT server can start with:
+For example, a project building an LE GATT server using a Bluetooth Controller over HCI H4/UART running on a POSIX-system can start with:
 
 ```cmake
 # Point to the BTstack checkout.
@@ -125,7 +125,7 @@ Use port authoring when one board configuration should build multiple BTstack ex
 
 ### Applications and requirements
 
-A port can declare the applications it supports before creating targets for them. BTstack's built-in declarations live in `example/requirements.cmake`, but an external project can use the same declaration format. A declaration describes an application's sources, optional GATT database, and requirements; it does not create a target or enable features:
+A port can declare the applications it supports before creating targets for them. BTstack's examples are declared in `example/requirements.cmake`, but an external project can use the same declaration format. A declaration describes an application's sources, optional GATT database, and requirements; it does not create a target or enable features:
 
 ```cmake
 btstack_declare_application(gatt_counter
@@ -168,7 +168,7 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
 endforeach()
 ```
 
-Call `btstack_declare_port(my-port)`, `btstack_configure_port(...)`, and any capability declarations before `btstack_filter_applications_for_port`. The filter quietly excludes applications the port intentionally cannot support. Use `application-info` later when you need to see why a particular application was excluded.
+You need to call `btstack_declare_port(my-port)`, `btstack_configure_port(...)`, and any capability declarations before `btstack_filter_applications_for_port`. The filter quietly excludes applications the port intentionally cannot support. Use `application-info` later when you need to see why a particular application was excluded.
 
 For an application with a declared `GATT_DB`, `btstack_add_application_executable` automatically invokes `btstack_target_gatt`. That helper runs the GATT compiler, adds the generated header's directory to the include path, and tracks imported `.gatt` files through a depfile. You can call it directly for an existing target. The application library provides BTstack's standard public includes; the port remains responsible for configuration and SDK include paths.
 
@@ -197,17 +197,19 @@ cmake --build build --target group-graph
 
 ## Reusing resolved example data in another build system
 
-Even if your production build does not use CMake—for example, IAR Embedded Workbench or Keil uVision—you can configure a representative BTstack port and use `example-info` as the authoritative resolved input list. First configure the reference port with CMake, then request the example to reproduce:
+Even if your production build does not use CMake — for example, IAR Embedded Workbench or Keil uVision — you can configure a representative BTstack port on a system with CMake and then use `example-info` to get the authoritative resolved input list. First configure the reference port with CMake, then request the example to reproduce:
 
 ```sh
 EXAMPLE=gatt_counter cmake --build build --target example-info
 ```
 
+This output is a resolved snapshot of one port configuration, not a project generator. It provides the sources, include paths, generated artifacts, and definitions required by another build system; that environment remains responsible for compiler flags, linker scripts, startup code, SDK integration, and debugger settings.
+
 Use the reported data when creating the project in the other build system:
 
-1. Add every reported source file, including application files, BTstack groups, port-local files, and generated firmware source when present.
+1. Add every reported source file, including application files, port-local files, and generated firmware source when present.
 2. Add every reported include directory. Keep the port configuration directory containing `btstack_config.h` ahead of generic include paths.
 3. Use the same preprocessor definitions and board SDK libraries as the reference CMake port.
 4. Reproduce generated artifacts: run `compile_gatt.py` for a declared GATT database and perform any controller firmware conversion or download step required by the selected port.
 
-This output is a resolved snapshot of one port configuration, not a project generator. It provides the sources, include paths, generated artifacts, and definitions required by another build system; that environment remains responsible for compiler flags, linker scripts, startup code, SDK integration, and debugger settings.
+
