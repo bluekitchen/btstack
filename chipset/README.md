@@ -301,8 +301,9 @@ Both nRF5 families, the nRF51 and the nRF52, can be used with HCI firmware. The 
 
 **BTstack integration**: Support for a nRF5 chipset with the Zephyr Controller is provided by *btstack_chipset_zephyr.c*. It queries the static random address during init.
 
-To use these chipsets with BTstack, you need to flash the HCI UART example from NCS or Zephyr onto the chipset.
-Please see the instructions in chipset/zephyr/nrf5340_dongle for nRF5340 DK and ADK.
+To use Nordic SoCs with BTstack, flash HCI firmware such as the
+[HCI UART ISO Timesync project](https://github.com/bluekitchen/hci_uart_iso_timesync)
+or the HCI UART example from NCS or Zephyr onto the chipset.
 
 
 ## NXP Semiconductors
