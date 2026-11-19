@@ -49,11 +49,42 @@ The helpers use the C preprocessor to evaluate the effective macros, rather than
 
 ### Capabilities
 
-A capability is a CMake-level name for an optional service a port makes available to applications, such as `audio` or `led`. It can contribute source groups, sources, and public headers through `btstack_declare_port_capability`.
+A capability is a CMake-level name for an optional service a port makes available to applications, such as `audio` or `led`. A port declares it with `btstack_declare_port_capability`, associating the service with the source groups, port-local sources, and public include directories that provide it.
 
-Capabilities and `HAVE_*` macros often reflect the same detected system state, but they have different roles. A `HAVE_*` macro controls conditional C compilation; a capability lets the resolver decide whether an application can be built and supplies its required build inputs.
+Capabilities and `HAVE_*` macros can describe related parts of a port, but they serve different purposes:
 
-For example, if CMake finds PortAudio, a POSIX port can add `HAVE_PORTAUDIO` to its compile definitions and declare the `audio` capability. It must pass the same definition to `btstack_configure_port`. If PortAudio is unavailable, it does neither, and applications that need `audio` are excluded. CMake does not infer a capability from a `HAVE_*` macro, so the port declares both when both are needed.
+- A `HAVE_*` macro is a configuration fact available to C code. For example, `HAVE_PORTAUDIO` can select the PortAudio implementation in `main.c`. A dependency on that macro asks whether the exact macro is defined; it does not add the implementation's build inputs.
+- A capability describes a service available to an application. An application that needs `audio` can request it without knowing whether the port uses PortAudio, an embedded audio driver, or another backend. The capability declaration supplies the build inputs for the port's implementation.
+
+Both can appear in an application's `NEEDS`, but they are not interchangeable. Use a macro when the application needs that particular configuration; use a capability when it needs a port-provided service independent of its implementation.
+
+#### Example: PortAudio and the `audio` capability
+
+A POSIX port can detect PortAudio and use the result to configure both C compilation and the resolver:
+
+```cmake
+btstack_declare_port(my-port)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+set(MY_PORT_COMPILE_DEFINITIONS)
+if(PORTAUDIO_FOUND)
+    add_compile_definitions(HAVE_PORTAUDIO)
+    list(APPEND MY_PORT_COMPILE_DEFINITIONS HAVE_PORTAUDIO)
+    btstack_declare_port_capability(CAPABILITY audio
+        GROUPS platform-posix-audio-portaudio platform-posix-wav)
+endif()
+
+btstack_configure_port(
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${MY_PORT_COMPILE_DEFINITIONS})
+```
+
+The compile definition lets port code select the backend. Passing it to `btstack_configure_port` also lets the configuration check see the same definition, including any conditional macros it enables in `btstack_config.h`. The port must additionally provide PortAudio's include paths and link libraries to the targets that need them, and initialize the backend in its code. The capability declaration adds the listed BTstack groups when an application requests `audio`; it does not perform those other integration steps.
+
+For example, an application declaration can use `NEEDS core audio`. When the port declares `audio`, the resolver includes its provider groups. When the capability is absent, the port's application filter excludes the application. An embedded port can satisfy the same request with different groups or port-local sources and need not define `HAVE_PORTAUDIO`.
+
+The port owns the relationship between its detected configuration and its capabilities. The shared resolver does not infer `audio` from `HAVE_PORTAUDIO`: finding a library alone does not establish that a port has integrated and initialized a usable audio service. The conditional declaration above is a port-specific rule expressing that relationship.
 
 ### Application `NEEDS`
 
@@ -80,6 +111,8 @@ The output shows its direct dependencies, the fully resolved group set, required
 ### Port baseline
 
 A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files — such as `main.c`, UART adapter, controller firmware, and SDK sources — remain explicit because they belong to the board or project rather than the BTstack catalog.
+
+The baseline must also cover dependencies used by the port itself, regardless of an application's `NEEDS`. For example, if `main.c` initializes PortAudio whenever `HAVE_PORTAUDIO` is defined, the PortAudio backend group is needed for every application in that configuration. Add it to the baseline as well as declaring it as part of the `audio` capability. The capability makes audio applications selectable and contributes their provider inputs; it only contributes those inputs to applications that request it.
 
 #### Typical port structure
 
