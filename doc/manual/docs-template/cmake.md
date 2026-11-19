@@ -12,8 +12,6 @@ A source group is a named collection of related BTstack source files. Instead of
 
 The catalog stores source lists separately from mappings for private and public include directories. CMake uses the private mapping for each selected group to find the headers needed to compile its sources. It applies BTstack's common public include paths independently of the selected groups, and adds group-specific public paths when an application needs to use that group's API. BlueKitchen maintains this generated catalog with `tool/create_cmake_sources.py`.
 
-<-- already mentioned, should this go somewhere? A group is a reusable BTstack component, not a complete board configuration. Your project still chooses a run loop, HCI transport, storage backend, chipset support, SDK integration, and board-specific files. --/>
-
 #### Finding groups
 
 To choose groups for an application or port, you can inspect the catalog. From the BTstack repository root, list all groups or search by name:
@@ -31,9 +29,29 @@ python3 tool/btstack_groups.py --help
 
 The Python wrapper requires CMake on `PATH`, but can be run from any directory.
 
+### Configuration
+
+`btstack_config.h` is the configuration header compiled with BTstack. It is the source of truth for platform properties (`HAVE_*`), enabled protocols and features (`ENABLE_*`), and options such as static-memory and persistent-storage configuration. CMake does not generate or modify this header; the project or port owns it.
+
+The helpers use the C preprocessor to evaluate the effective macros in `btstack_config.h`, rather than parsing the header as plain text. This supports any valid C preprocessor constructs in the configuration header, including conditional definitions and included headers. Supply the same preprocessor definitions and include directories used by compilation when these affect the configuration.
+
+### Capabilities
+
+A capability represents an optional service provided by a port, rather than a BTstack feature. For example, a port may provide `audio` or `led`. A capability can contribute source groups, sources, and public headers through `btstack_declare_port_capability`.
+
+For example, a POSIX port should declare `audio` only when CMake finds the PortAudio library. Applications that require audio are then excluded from ports that do not provide it.
+
+### Application `NEEDS`
+
+An application declares its dependencies with the `NEEDS` property. Each entry names a source group, a configuration macro expected in `btstack_config.h`, or a capability supplied by the port. Source groups express the BTstack implementation needed by the application; configuration macros and capabilities describe what must be available in the selected port.
+
+`NEEDS` describes and validates compatibility; it never enables a BTstack feature. Enabling or disabling features remains the responsibility of `btstack_config.h` and the project's build settings.
+
 ### Resolving dependencies
 
-Requested groups are only the starting point. `tool/cmake/BTstack.cmake` resolves the dependencies that each group requires. For example, requesting `gatt-server` also selects the ATT database, ATT dispatch, and LE support; a Classic profile can select RFCOMM, SDP, and lower protocol layers.
+Source groups, capabilities, and configuration macros are all dependencies. A resolver combines the requested dependencies and resolves their transitive requirements into the complete source-group set and the configuration macros that must be enabled.
+
+Source groups can depend on other source groups. For example, requesting `gatt-server` also selects the ATT database, ATT dispatch, and LE support; a Classic profile can select RFCOMM, SDP, and lower protocol layers. This lets an application request only the groups it needs. When resolving applications for a port, the configured macros are checked as dependencies too. If `ENABLE_CLASSIC` is disabled in `btstack_config.h`, applications requiring Classic profiles are not selected, so those profiles do not end up in the source-file list.
 
 To see what selecting a group implies, inspect it directly:
 
@@ -43,7 +61,7 @@ python3 tool/btstack_groups.py info gatt-server
 
 The output shows its direct dependencies, the fully resolved group set, required configuration macros, source files, and public include directories required by applications. Source paths are relative to the BTstack root; public include paths are absolute. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure.
 
-`btstack_resolve_groups` returns this complete group set and identifies the `ENABLE_*` configuration macros it requires, such as `ENABLE_BLE` or `ENABLE_CLASSIC`.
+`btstack_resolve_groups` returns the complete group set and identifies the `ENABLE_*` configuration macros it requires, such as `ENABLE_BLE` or `ENABLE_CLASSIC`.
 
 ### Port baseline
 
@@ -62,11 +80,9 @@ A port's `CMakeLists.txt` mainly follows this order:
 
 The SDK setup, board sources, and final executable policy remain port-specific. This section introduces the baseline and configuration in steps 2–4. The [Port authoring](#port-authoring) section covers application declarations and building in step 5, while [Inspect a configured port](#inspect-a-configured-port) covers the optional diagnostics in step 6.
 
-#### Configuration and port capabilities
+#### Registering port configuration
 
-`btstack_config.h` is the configuration header compiled with BTstack. It is the source of truth for platform properties (`HAVE_*`), enabled protocols and features (`ENABLE_*`), and options such as static-memory and persistent-storage configuration. CMake does not generate or modify this header; the project or port owns it. A port does not need to repeat its configuration macros manually in CMake: `btstack_configure_port` preprocesses the header and registers its effective macro set.
-
-To keep CMake selection aligned with compilation, source groups must match the effective `btstack_config.h`. Call `btstack_configure_port` after declaring the port so CMake can reject or omit groups and applications whose required features are disabled.
+A port does not need to repeat its configuration macros manually in CMake: `btstack_configure_port` preprocesses `btstack_config.h` and registers its effective macro set. To keep CMake selection aligned with compilation, source groups must match the effective configuration. Call `btstack_configure_port` after declaring the port so CMake can reject or omit groups and applications whose required features are disabled.
 
 A minimal port setup looks like this:
 
@@ -78,10 +94,6 @@ btstack_configure_port(
 ```
 
 Pass to `DEFINITIONS` the same preprocessor definitions used when compiling the port, especially when `btstack_config.h` enables features conditionally. `btstack_declare_port` makes that port current for helpers called in the same directory and its children. If you declare more than one port, the last declared port is current; use `PORT <name>` to select another one explicitly. Helpers report an error if no current port exists.
-
-A capability is not a BTstack feature. It represents an optional service provided by a port, such as `audio` or `led`, and can include groups, sources, and public headers declared through `btstack_declare_port_capability`.
-
-For example, a POSIX port should declare `audio` only when CMake finds the PortAudio library. Applications that require audio are then excluded from ports that do not provide it.
 
 ## Adding BTstack to an existing CMake project
 
@@ -125,7 +137,7 @@ Use port authoring when one board configuration should build multiple BTstack ex
 
 ### Applications and requirements
 
-A port can declare the applications it supports before creating targets for them. BTstack's examples are declared in `example/requirements.cmake`, but an external project can use the same declaration format. A declaration describes an application's sources, optional GATT database, and requirements; it does not create a target or enable features:
+A port can declare the applications it supports before creating targets for them. BTstack's examples are declared in `example/requirements.cmake`, but an external project can use the same declaration format. A declaration describes an application's sources, optional GATT database, and [`NEEDS`](#application-needs); it does not create a target or enable features:
 
 ```cmake
 btstack_declare_application(gatt_counter
@@ -134,11 +146,7 @@ btstack_declare_application(gatt_counter
     NEEDS gatt-server ENABLE_LE_PERIPHERAL)
 ```
 
-Each `NEEDS` entry is one of three things: a source group, a macro expected in `btstack_config.h`, or a capability supplied by the port. Groups express the BTstack implementation needed by the application; macros and capabilities let CMake decide whether the configured port can build it.
-
 Relative paths in `SOURCES` and `GATT_DB` are interpreted relative to the declaration file; absolute paths are unchanged. Query the resolved values with `btstack_get_application_property(output application SOURCES)` or `btstack_get_application_property(output application GATT_DB)`.
-
-Requirements describe and validate compatibility. They never turn on a BTstack feature for a target; that remains the responsibility of `btstack_config.h` and the project's build settings.
 
 ### Build applications declared by a port
 
