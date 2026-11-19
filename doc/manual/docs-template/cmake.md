@@ -1,192 +1,81 @@
 # CMake Integration
 
-BTstack's CMake helpers let you add the BTstack code required by a particular Bluetooth application without maintaining a hand-written list of source files and include directories. They work in two situations: integrating BTstack into an existing CMake project, and creating a BTstack port that builds one or more examples for a board.
+BTstack's CMake helpers let you add the BTstack code needed by a Bluetooth application without maintaining hand-written source-file and include-directory lists. They support two workflows:
 
-The helpers do not define a top-level project or select a toolchain, a SDK, a board, or a Bluetooth controller. Thse remain the responsibility of your project or port. This chapter first explains the building blocks used by the helpers, then walks through each workflow.
+- add BTstack to an existing CMake project that already owns its application target; or
+- author a BTstack port that builds one or more applications for a board.
 
-## Core concepts
+The helpers do not define a top-level project or choose a toolchain, SDK, board, or Bluetooth controller. Those decisions remain with your project or port.
+
+## Concepts
 
 ### Source groups
 
-A source group is a named collection of related BTstack source files. Instead of adding individual files, this allows to add the groups needed by your application. Most group names correspond to a Bluetooth protocol or profile, such as `gatt-server` or `classic-rfcomm`; others refer to infrastructure such as `transport-h4`, `platform-posix-run-loop`, a chipset support, or third-party C code. Group names use lowercase hyphenated words. The complete catalog is in `tool/cmake/BTstackSources.cmake`.
+A source group is a named collection of related BTstack source files. Request the groups needed by an application instead of adding individual files. Most group names correspond to a Bluetooth protocol or profile, such as `gatt-server` or `classic-rfcomm`. Others describe infrastructure, such as `transport-h4`, `platform-posix-run-loop`, chipset support, or third-party C code. Group names use lowercase hyphenated words.
 
-The catalog also declares:
-- private include directories needed for each source group, and
-- BTstack’s common public include directories.
+The generated catalog in `tool/cmake/BTstackSources.cmake` records the source files, private include directories, and public include directories associated with groups. It also records BTstack's common public include directories. BlueKitchen maintains the catalog with `tool/create_cmake_sources.py`.
 
-BlueKitchen maintains this generated catalog with `tool/create_cmake_sources.py`.
+Groups are reusable BTstack components, not complete board configurations. A project or port still chooses its run loop, HCI transport, storage backend, chipset support, SDK integration, and board-specific files.
 
-The CMake helpers use catalog to add the neccessary group-specific public include directories when an application uses that group’s API. 
-
-#### Finding groups
-
-To choose groups for an application or port, you can inspect the catalog. From the BTstack repository root, list all groups or search by name:
+To browse the catalog from the BTstack repository root:
 
 ```sh
 python3 tool/btstack_groups.py list
 python3 tool/btstack_groups.py list --filter run-loop
+python3 tool/btstack_groups.py info gatt-server
 ```
 
-For all commands and options, run:
+`info` shows a group's direct dependencies, resolved group set, required configuration macros, source files, and public include directories. Source paths are relative to the BTstack root; public include paths are absolute. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure. Run `python3 tool/btstack_groups.py --help` for all commands and options. The wrapper requires CMake on `PATH`, but can run from any directory.
 
-```sh
-python3 tool/btstack_groups.py --help
-```
+### Macros in `btstack_config.h`
 
-The Python wrapper requires CMake on `PATH`, but can be run from any directory.
-
-### Configuration
-
-BTstack is configured by the C preprocessor macros seen during compilation. `btstack_config.h` normally defines most of them, while the build can also supply definitions on the compiler command line. In a port that builds multiple applications, some definitions can depend on the capabilities requested by each application. Consequently, the final configuration seen by the compiler can differ between applications.
+BTstack is configured by the C preprocessor macros visible while it is compiled. `btstack_config.h` normally defines most of them, although the build can also provide compiler definitions. The header is owned by the project or port; CMake does not generate or modify it.
 
 The macros fall into three broad categories:
 
 - `HAVE_*` describes services supplied by the platform, such as dynamic memory or an audio HAL.
-- `ENABLE_*` selects BTstack protocols and features, such as Classic Bluetooth.
-- Other configuration macros set sizes, structure limits, and other implementation options.
+- `ENABLE_*` selects BTstack protocols and features, such as Classic Bluetooth or BLE.
+- Other macros set sizes, structure limits, and implementation options such as static-memory and persistent-storage configuration.
 
-For application selection, `btstack_configure_port` first uses the C preprocessor on `btstack_config.h` with the port-wide definitions and include directories. It registers the resulting `ENABLE_*` and `HAVE_*` macro names as the **port-wide configuration**. This happens at CMake configure time, before applications are filtered; capability definitions are not part of this first pass. Preprocessing, rather than reading the header as plain text, supports conditional definitions and included headers.
-
-The filter uses the port-wide configuration and the port's declared capabilities to decide which applications are supported. For a candidate whose capabilities are available, it also preprocesses the header with that candidate's capability definitions to check that they do not change the macros used for selection. It does not use this second pass to select the application. Later, the selected application's targets are given those definitions, and the compiler evaluates `btstack_config.h` with them when compiling the application. Thus the compiler sees the final, potentially application-specific configuration. The [general configuration reference](how_to.md#sec:btstackConfigHowTo) lists the available macros.
+For the complete list and their C-level meaning, see the [general configuration reference](how_to.md#sec:btstackConfigHowTo).
 
 ### Capabilities
 
-A capability is a CMake-level name for an optional service a port makes available to applications, such as `audio` or `led`. A port declares it with `btstack_declare_port_capability`, associating the service with the source groups, port-local sources, public include directories, and compile definitions that provide it.
+A capability is a CMake-level promise that a port provides an optional service to an application, such as `audio` or `led`. A port declares a capability with `btstack_declare_port_capability`, supplying the source groups, port-local sources, public include directories, and compile definitions that implement that service.
 
-Capabilities and `HAVE_*` macros can describe related parts of a port, but they serve different purposes:
+Capabilities and `HAVE_*` macros can describe related aspects of a port, but they solve different problems:
 
-- A `HAVE_*` macro is a configuration fact available to C code. For example, `HAVE_PORTAUDIO` can select the PortAudio implementation in `main.c`. A dependency on that macro asks whether the exact macro is defined; it does not add the implementation's build inputs.
-- A capability describes a service available to an application. An application that needs `audio` can request it without knowing whether the port uses PortAudio, an embedded audio driver, or another backend. The capability declaration supplies the build inputs for the port's implementation.
+| Use | Meaning | Effect |
+| --- | --- | --- |
+| `HAVE_*` macro | A C-level fact about the selected platform implementation. | Lets C code conditionally compile for that fact. It does not add source files, headers, or libraries. |
+| Capability | An application-facing service offered by the port. | Adds the build inputs required by that service when an application requests it. |
 
-Both can appear in an application's `NEEDS`, but they are not interchangeable. Use a macro when the application needs that particular configuration; use a capability when it needs a port-provided service independent of its implementation.
-
-#### Example: PortAudio and the `audio` capability
-
-A POSIX port can detect PortAudio and use the result to configure both C compilation and the resolver:
+For example, `HAVE_PORTAUDIO` can let a port's `main.c` select its PortAudio backend. The `audio` capability lets an application request audio without knowing whether the port uses PortAudio, an embedded driver, or another implementation. Discovering PortAudio and defining `HAVE_PORTAUDIO` alone does not make the `audio` capability available: the port must declare and integrate the service.
 
 ```cmake
-btstack_declare_port(my-port)
-
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PORTAUDIO portaudio-2.0)
+
 if(PORTAUDIO_FOUND)
     btstack_declare_port_capability(CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav
         DEFINES HAVE_PORTAUDIO)
 endif()
-
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 ```
 
-When an application requests `audio`, its library, its consumers, and its source groups are compiled with `HAVE_PORTAUDIO`. Port code can use that definition to initialize the backend. Applications that do not request `audio` do not receive the definition or provider groups. The port must additionally provide PortAudio's include paths and link libraries to targets that need them; the capability declaration does not find or link the external library.
-
-Capability definitions may affect conditional compilation and configuration details, but must not change the presence of `ENABLE_*` or `HAVE_*` macros used to select applications or baseline groups. Selection uses the port-wide configuration. When the port uses `btstack_configure_port`, the application filter checks this restriction by preprocessing the header with each available candidate's capability definitions and comparing the selection macros with the port-wide configuration. A difference is a configuration error, not a new selection result. Ports that register macros manually must ensure the same invariant themselves.
-
-For example, an application declaration can use `NEEDS core audio`. When the port declares `audio`, the resolver includes its provider groups. When the capability is absent, the port's application filter excludes the application. An embedded port can satisfy the same request with different groups or port-local sources and need not define `HAVE_PORTAUDIO`.
-
-The port owns the relationship between its detected configuration and its capabilities. The shared resolver does not infer `audio` from `HAVE_PORTAUDIO`: finding a library alone does not establish that a port has integrated and initialized a usable audio service. The conditional declaration above is a port-specific rule expressing that relationship.
+The capability declaration does not find or link an external library. The port must still add PortAudio's include paths and link libraries to the targets that need them.
 
 ### Application `NEEDS`
 
-An application declares its dependencies with the `NEEDS` property. Each entry names a source group, a configuration macro expected in the port-wide configuration, or a capability supplied by the port. Source groups express the BTstack implementation needed by the application; configuration macros and capabilities describe what must be available in the selected port.
+An application declares its dependencies with `NEEDS`. Each entry is one of the following:
 
-`NEEDS` describes and validates compatibility; it never enables a BTstack feature. Enabling or disabling features remains the responsibility of `btstack_config.h` and the project's build settings.
+- a source group, such as `gatt-server`;
+- a configuration macro, such as `ENABLE_LE_PERIPHERAL` or `HAVE_MALLOC`; or
+- a capability, such as `audio`.
 
-### Resolving dependencies
+Source groups express the BTstack implementation required by the application. Macro and capability requirements decide whether a port can support it. `NEEDS` only describes and validates requirements; it never enables a BTstack feature. Enable features in `btstack_config.h` and provide optional services through port capabilities.
 
-Source groups, capabilities, and configuration macros are all dependencies. A resolver combines the requested dependencies and resolves their transitive requirements into the complete source-group set and the configuration macros that must be enabled.
-
-Source groups can depend on other source groups. For example, requesting `gatt-server` also selects the ATT database, ATT dispatch, and LE support; a Classic profile can select RFCOMM, SDP, and lower protocol layers. This lets an application request only the groups it needs. When resolving applications for a port, the configured macros are checked as dependencies too. If `ENABLE_CLASSIC` is disabled in `btstack_config.h`, applications requiring Classic profiles are not selected, so those profiles do not end up in the source-file list.
-
-To see what selecting a group implies, inspect it directly:
-
-```sh
-python3 tool/btstack_groups.py info gatt-server
-```
-
-The output shows its direct dependencies, the fully resolved group set, required configuration macros, source files, and public include directories required by applications. Source paths are relative to the BTstack root; public include paths are absolute. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure.
-
-`btstack_resolve_groups` returns the complete group set and identifies the `ENABLE_*` configuration macros it requires, such as `ENABLE_BLE` or `ENABLE_CLASSIC`.
-
-### Port baseline
-
-A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files — such as `main.c`, UART adapter, controller firmware, and SDK sources — remain explicit because they belong to the board or project rather than the BTstack catalog.
-
-The baseline must also cover dependencies used by the port itself, regardless of an application's `NEEDS`. For example, a backend initialized unconditionally by `main.c` belongs in the baseline. When `main.c` initializes PortAudio only under a capability-provided `HAVE_PORTAUDIO` definition, the capability instead supplies the backend for the applications that request it.
-
-#### Typical port structure
-
-A port's `CMakeLists.txt` mainly follows this order:
-
-1. Set up the project, toolchain, and board SDK, then include `tool/cmake/BTstack.cmake`.
-2. Declare the port with `btstack_declare_port`.
-3. Define its baseline groups and board-local sources.
-4. Register the port-wide configuration from `btstack_config.h` and declare optional capabilities.
-5. Include application declarations, filter them for the port, and create the selected application libraries and executables.
-6. Optionally add diagnostic targets for inspecting the resolved port.
-
-The SDK setup, board sources, and final executable policy remain port-specific. This section introduces the baseline and configuration in steps 2–4. The [Port authoring](#port-authoring) section covers application declarations and building in step 5, while [Inspect a configured port](#inspect-a-configured-port) covers the optional diagnostics in step 6.
-
-#### Registering port configuration
-
-A port does not need to repeat the macros from `btstack_config.h` manually in CMake: `btstack_configure_port` preprocesses it and registers the port-wide `ENABLE_*` and `HAVE_*` names. Call it after declaring the port and before filtering applications, so CMake can reject or omit groups and applications whose required features are absent from that configuration.
-
-A minimal port setup looks like this:
-
-```cmake
-btstack_declare_port(my-port)
-btstack_configure_port(
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${MY_PORT_COMPILE_DEFINITIONS})
-```
-
-Pass to `DEFINITIONS` the port-wide preprocessor definitions used during compilation, especially when `btstack_config.h` enables features conditionally. Supply relevant include paths through `INCLUDE_DIRECTORIES` as well. The port must also arrange for these settings to be used by the compiler; `btstack_configure_port` uses them for preprocessing and does not apply them to targets. Definitions belonging to a capability go in its `DEFINES` argument instead; the filter checks them separately and selected application targets receive them later.
-
-`btstack_declare_port` makes that port current for helpers called in the same directory and its children. If you declare more than one port, the last declared port is current; use `PORT <name>` to select another one explicitly. Helpers report an error if no current port exists.
-
-## Adding BTstack to an existing CMake project
-
-Choose this workflow when your project already has an executable target, board support, and toolchain configuration. You add BTstack as a library and link it to that target.
-
-For example, a project building an LE GATT server using a Bluetooth Controller over HCI H4/UART running on a POSIX-system can start with:
-
-```cmake
-# Point to the BTstack checkout.
-set(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/third_party/btstack")
-include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
-
-# Select the BTstack groups used by this project.
-btstack_add_library(my_btstack
-    CONFIG "${CMAKE_CURRENT_LIST_DIR}/config/btstack_config.h"
-    GROUPS gatt-server transport-h4 platform-posix-run-loop)
-
-# Link BTstack to the application target.
-target_link_libraries(my_application PRIVATE my_btstack)
-```
-
-The example is intentionally incomplete: `gatt-server`, H4 transport, and the POSIX run loop are selected, but you must also select the storage, chipset, and other groups required by your board and controller. You must supply a matching `btstack_config.h`. For a complete POSIX H4 example, see `port/posix-h4/gatt-counter-standalone` and its README.
-
-`btstack_add_library` resolves dependent groups, creates a static library, and propagates BTstack's public and group-specific include directories—including the directory containing the configuration header—to targets that link it. Keep your board-local and SDK sources in your own targets.
-
-At configure time, the helper checks that `btstack_config.h` defines every `ENABLE_*` macro required by the selected groups. If evaluating that header requires extra definitions or include paths, pass `CONFIG_DEFINITIONS` and `CONFIG_INCLUDE_DIRECTORIES`; they are used for both validation and compilation. The configuration check uses the C compiler during configuration, so target-specific compiler flags and generator expressions are unavailable. Use the lower-level helpers when your SDK needs those settings to preprocess the header.
-
-Use `library-info` to verify the resolved library before compiling the application:
-
-```sh
-cmake --build build --target library-info
-```
-
-It prints requested and resolved groups, required and detected configuration macros, sources, and include paths. If several BTstack libraries exist, select one with `LIBRARY=my_btstack cmake --build build --target library-info`; with multi-configuration generators, also pass `--config`. The report reflects configuration-time target changes, but excludes application sources and transitive usage requirements from linked targets.
-
-If `btstack_add_library` does not fit your target layout, compose your own target with `btstack_resolve_groups` and the `btstack_collect_*` helpers. Optionally apply BTstack's warning policy with `btstack_target_warnings`. The convenience helper deliberately does not alter project-wide warnings or suppress warnings from third-party code.
-
-## Port authoring
-
-Use port authoring when one board configuration should build multiple BTstack examples or applications. A port combines a common board baseline with each application's declared requirements, then filters out applications unsupported by its configuration or capabilities. If your project builds only one application, use `btstack_add_library` instead.
-
-### Applications and requirements
-
-A port can declare the applications it supports before creating targets for them. BTstack's examples are declared in `example/requirements.cmake`, but an external project can use the same declaration format. A declaration describes an application's sources, optional GATT database, and [`NEEDS`](#application-needs); it does not create a target or enable features:
+For example:
 
 ```cmake
 btstack_declare_application(gatt_counter
@@ -195,99 +84,128 @@ btstack_declare_application(gatt_counter
     NEEDS gatt-server ENABLE_LE_PERIPHERAL)
 ```
 
-Relative paths in `SOURCES` and `GATT_DB` are interpreted relative to the declaration file; absolute paths are unchanged. Query the resolved values with `btstack_get_application_property(output application SOURCES)` or `btstack_get_application_property(output application GATT_DB)`.
+BTstack's built-in application declarations are in `example/requirements.cmake`. An external project can use the same declaration format. Relative `SOURCES` and `GATT_DB` paths are resolved against the declaration file; absolute paths are unchanged. Query the resolved values with `btstack_get_application_property(output application SOURCES)` or `btstack_get_application_property(output application GATT_DB)`.
 
-### Build applications declared by a port
+### Resolving groups
 
-For each supported application, ports normally create a small BTstack static library. `btstack_add_application_library` combines the application's requirements with the port baseline and compiles the resulting closure. Group objects are shared between applications with the same capability definitions; different definition sets get separate group objects. Other port compilation settings must remain compatible across applications.
+Requested groups are only a starting point. The resolver follows group dependencies to produce the complete source-group set. For example, `gatt-server` also selects the ATT database, ATT dispatch, and LE support; a Classic profile can select RFCOMM, SDP, and lower protocol layers. `btstack_resolve_groups` returns the resolved group set and identifies its required `ENABLE_*` macros.
 
-The following diagram follows `a2dp_sink_demo` through the libusb port when PortAudio is available:
+When CMake resolves an application for a port, it also checks the macro and capability entries in `NEEDS`. An application whose requirements are unavailable is excluded before CMake creates its targets.
 
-```text
- Application declaration                  libusb port
- ┌──────────────────────────────┐         ┌───────────────────────────────┐
- │ a2dp_sink_demo.c             │         │ btstack_config.h + build      │
- │ NEEDS: Classic audio groups, │         │ definitions → port-wide       │
- │        AVRCP groups, audio…  │         │ configuration macro names     │
- └──────────────┬───────────────┘         │                               │
-                │                         │ PortAudio found → audio       │
-                │                         │ capability:                   │
-                │                         │   groups: PortAudio, WAV      │
-                │                         │   defines: HAVE_PORTAUDIO     │
-                │                         │                               │
-                │                         │ baseline groups + main.c      │
-                │                         └───────────────┬───────────────┘
-                └─────────────────┬───────────────────────┘
-                                  ▼
-                    Filter application for the port:
-                    Check capability availability
-                    Re-preprocess with HAVE_PORTAUDIO to
-                    check selection macros do not change
-                    Resolve application groups and check
-                    their requirements against port-wide macros
-                                  │
-                      unsupported ├──────→ Exclude application
-                                  │ supported
-                                  ▼
-                    Create application library: combine
-                    resolved groups with baseline groups
-                    and collect capability definitions
-                                  │
-                                  ▼
-                    Compile group objects and main.c with
-                    HAVE_PORTAUDIO; the compiler evaluates
-                    btstack_config.h for this application
-                                  │
-                                  ▼
-                    Application-specific BTstack library
-                                  │
-                                  ▼
-                    Compile a2dp_sink_demo.c and link it
-                    with the library and port dependencies
-                                  │
-                                  ▼
-                         a2dp_sink_demo executable
+## Configuring a port
+
+A port has a common baseline and then builds the applications it supports. Its `CMakeLists.txt` normally proceeds in these stages:
+
+1. Set up the project, toolchain, and board SDK, then include `tool/cmake/BTstack.cmake`.
+2. Declare the port with `btstack_declare_port`.
+3. Define the baseline groups and board-local sources used by every application.
+4. Register the port-wide configuration from `btstack_config.h` with `btstack_configure_port`.
+5. Discover optional dependencies and declare the capabilities that the port provides.
+6. Declare or include application requirements, filter them for the port, and create targets for the selected applications.
+7. Optionally add diagnostic targets that show the resolved result.
+
+### Define the baseline
+
+The baseline contains the groups and board-local files required by every application. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files—such as `main.c`, UART glue, controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
+
+The baseline must also cover dependencies that port code uses unconditionally. For example, a backend initialized unconditionally by `main.c` belongs in the baseline. If `main.c` initializes a backend only when a capability supplies a definition such as `HAVE_PORTAUDIO`, the capability can instead supply that backend for applications that request it.
+
+### Register the port-wide configuration
+
+`btstack_configure_port` preprocesses `btstack_config.h` at CMake configure time and registers the resulting `ENABLE_*` and `HAVE_*` macro names. Do not duplicate that macro list manually in CMake. Preprocessing supports conditional definitions and included headers, so CMake evaluates the same configuration logic as the compiler.
+
+Call it after declaring the port and before filtering applications:
+
+```cmake
+btstack_declare_port(my-port)
+btstack_configure_port(
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
+    DEFINITIONS ${MY_PORT_COMPILE_DEFINITIONS}
+    INCLUDE_DIRECTORIES ${MY_PORT_CONFIG_INCLUDE_DIRECTORIES})
 ```
 
-The filter uses the port-wide configuration for eligibility; its additional preprocessing pass with `HAVE_PORTAUDIO` only checks the selection invariant. If PortAudio is unavailable, the libusb port does not declare `audio`, and the filter excludes this application. An application such as `gatt_counter` does not request `audio`, so its resolved groups and definitions do not include the PortAudio provider.
+Pass the port-wide definitions and include directories needed to preprocess `btstack_config.h`. Apply the same settings to compilation yourself: `btstack_configure_port` uses them for configuration-time preprocessing, but does not add them to targets.
 
-The following assumes that the port has already declared itself, registered its port-wide configuration, and declared any optional capabilities. The port still owns the final executable and its board policy:
+### Select applications safely
+
+The application filter uses the port-wide macro set and declared capabilities to decide whether an application is eligible. Capability definitions are not used to make an otherwise unsupported application eligible.
+
+For each eligible capability request, the filter preprocesses `btstack_config.h` again with the capability's definitions. This verifies that they do not change the `HAVE_*` or `ENABLE_*` macros used for selection. A change is a configuration error, not a different selection result. Later, selected targets receive the capability definitions and the compiler evaluates the final, potentially application-specific configuration.
+
+## Workflow: add BTstack to an existing CMake project
+
+Use this workflow when your project already has an executable target, board support, and toolchain configuration. `btstack_add_library` resolves the selected groups, validates the configuration, creates a static library, and links it to your application target.
+
+For example, an LE GATT server using an HCI H4/UART controller and POSIX run loop can start with:
+
+```cmake
+# Point to the BTstack checkout.
+set(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/third_party/btstack")
+include("${BTSTACK_ROOT}/tool/cmake/BTstack.cmake")
+
+# Create a BTstack library from the groups used by this project.
+btstack_add_library(my_btstack
+    CONFIG "${CMAKE_CURRENT_LIST_DIR}/config/btstack_config.h"
+    GROUPS gatt-server transport-h4 platform-posix-run-loop)
+
+target_link_libraries(my_application PRIVATE my_btstack)
+```
+
+This is deliberately a starting point. Select the storage, chipset, and other groups required by your board and controller, and provide a matching `btstack_config.h`. Keep board-local and SDK sources in your own targets. For a complete POSIX H4 example, see `port/posix-h4/gatt-counter-standalone` and its README.
+
+At configure time, `btstack_add_library` checks that `btstack_config.h` defines every `ENABLE_*` macro required by the selected groups. If preprocessing the header requires definitions or include paths, pass `CONFIG_DEFINITIONS` and `CONFIG_INCLUDE_DIRECTORIES`; the helper uses them for both validation and compilation. The configuration check runs at CMake configure time using the C compiler, so target-specific compiler flags and generator expressions are not available. Use the lower-level helpers if your SDK requires those settings.
+
+To inspect the library before building the application:
+
+```sh
+cmake --build build --target library-info
+```
+
+The output lists requested and resolved groups, required and detected configuration macros, sources, and include paths. If a project creates more than one BTstack library, select one with `LIBRARY=my_btstack cmake --build build --target library-info`. With a multi-configuration generator, also pass `--config`.
+
+If `btstack_add_library` does not fit your target layout, compose your own target with `btstack_resolve_groups` and the `btstack_collect_*` helpers. `btstack_target_warnings` can optionally apply BTstack's warning policy; the convenience helper does not modify project-wide warnings or suppress warnings in third-party sources.
+
+## Workflow: author a BTstack port
+
+Use this workflow when one board configuration should build multiple BTstack applications. First complete the port-configuration stages above: declare the port, define its baseline, register its port-wide configuration, and declare its optional capabilities. Then include application declarations and filter them for the port.
 
 ```cmake
 include("${BTSTACK_ROOT}/example/requirements.cmake")
-set(EXAMPLES ${btstack_declared_applications})
-btstack_filter_applications_for_port(EXAMPLES
-    CANDIDATES ${EXAMPLES})
+set(APPLICATIONS ${btstack_declared_applications})
+btstack_filter_applications_for_port(APPLICATIONS
+    CANDIDATES ${APPLICATIONS})
+```
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    # Create the BTstack library for this application's resolved requirements.
+For every selected application, `btstack_add_application_library` combines its resolved groups with the port baseline. Group objects are shared between applications with the same capability definitions; applications with different definition sets receive separate group objects. Other port compilation settings must remain compatible across applications.
+
+The port still owns its final executable and board policy:
+
+```cmake
+foreach(APPLICATION IN LISTS APPLICATIONS)
     btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
-        APPLICATION ${EXAMPLE}
+        TARGET btstack_${APPLICATION}_library
+        APPLICATION ${APPLICATION}
         BASE_GROUPS ${MY_PORT_BASE_GROUPS}
         PORT_SOURCES ${MY_PORT_SOURCES}
         PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
 
-    # Create and configure the final board executable.
-    btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
-    btstack_target_warnings(${EXAMPLE} STRICT)
-    target_link_libraries(${EXAMPLE} PRIVATE btstack_${EXAMPLE}_library)
+    btstack_add_application_executable(${APPLICATION} APPLICATION ${APPLICATION})
+    btstack_target_warnings(${APPLICATION} STRICT)
+    target_link_libraries(${APPLICATION} PRIVATE btstack_${APPLICATION}_library)
 endforeach()
 ```
 
-You need to call `btstack_declare_port(my-port)`, `btstack_configure_port(...)`, and any capability declarations before `btstack_filter_applications_for_port`. The filter quietly excludes applications the port intentionally cannot support. Use `application-info` later when you need to see why a particular application was excluded.
+For an application with a declared `GATT_DB`, `btstack_add_application_executable` automatically invokes `btstack_target_gatt`. It runs the GATT compiler, adds the generated header directory to the include path, and tracks imported `.gatt` files through a depfile. You can also call it directly for an existing target. The application library provides BTstack's standard public include paths; the port remains responsible for its configuration and SDK include paths.
 
-For an application with a declared `GATT_DB`, `btstack_add_application_executable` automatically invokes `btstack_target_gatt`. That helper runs the GATT compiler, adds the generated header's directory to the include path, and tracks imported `.gatt` files through a depfile. You can call it directly for an existing target. The application library provides BTstack's standard public includes; the port remains responsible for configuration and SDK include paths.
+### Inspect a configured port
 
-## Inspect a configured port
-
-After the normal application loop, add BTstack's diagnostic targets to the port:
+After the application loop, add BTstack's diagnostic targets:
 
 ```cmake
 btstack_add_info_targets()
 ```
 
-Configure the port as usual, then use these targets to inspect the applications and source groups CMake selected:
+After configuring the port, use these targets to inspect the result:
 
 ```sh
 cmake --build build --target port-info
@@ -298,25 +216,23 @@ EXAMPLE=gatt_counter cmake --build build --target example-info
 cmake --build build --target group-graph
 ```
 
-`port-info` shows the port-wide configuration macro names and declared capabilities. `list-applications` shows candidates for the current port, and `application-info` explains whether a selected application is included. For excluded applications, it reports missing macros or capabilities; for included applications, it prints capability definitions and the source and include-directory lists. The reported capability definitions are added to compilation; they are not a complete listing of the macros produced when the compiler preprocesses the application.
+`port-info` prints the port-wide configuration macro names and declared capabilities. `list-applications` lists candidates for the current port, and `application-info` explains whether a named application is included. For an excluded application, it reports missing macros or capabilities; for an included one, it prints capability definitions and the complete source and include-directory lists. Capability definitions are passed to compilation, but are not a complete listing of the macros produced when the compiler preprocesses the application.
 
 `list-examples` and `example-info` remain available for BTstack's built-in example workflow; `list-examples` groups examples by radio requirements. `group-graph` writes `btstack-groups.dot` to the build directory and, when Graphviz is installed, also writes an SVG.
 
-## Reusing resolved example data in another build system
+## Reusing resolved data in another build system
 
-Even if your production build does not use CMake — for example, IAR Embedded Workbench or Keil uVision — you can configure a representative BTstack port on a system with CMake and then use `example-info` to get the authoritative resolved input list. First configure the reference port with CMake, then request the example to reproduce:
+Even if your production build does not use CMake—for example, IAR Embedded Workbench or Keil uVision—you can configure a representative BTstack port with CMake and use `example-info` as the authoritative resolved input list:
 
 ```sh
 EXAMPLE=gatt_counter cmake --build build --target example-info
 ```
 
-This output is a resolved snapshot of one port configuration, not a project generator. It provides the sources, include paths, generated artifacts, and definitions required by another build system; that environment remains responsible for compiler flags, linker scripts, startup code, SDK integration, and debugger settings.
+This output is a resolved snapshot of one port configuration, not a project generator. Use it when creating the project in the other build system:
 
-Use the reported data when creating the project in the other build system:
-
-1. Add every reported source file, including application files, port-local files, and generated firmware source when present.
+1. Add every reported source file, including application files, port-local files, and generated firmware sources when present.
 2. Add every reported include directory. Keep the port configuration directory containing `btstack_config.h` ahead of generic include paths.
 3. Use the same preprocessor definitions and board SDK libraries as the reference CMake port.
 4. Reproduce generated artifacts: run `compile_gatt.py` for a declared GATT database and perform any controller firmware conversion or download step required by the selected port.
 
-
+Compiler flags, linker scripts, startup code, SDK integration, and debugger settings remain the responsibility of that build system.
