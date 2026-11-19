@@ -37,15 +37,23 @@ The Python wrapper requires CMake on `PATH`, but can be run from any directory.
 
 ### Configuration
 
-`btstack_config.h` is the configuration header compiled with BTstack. It is the source of truth for platform properties (`HAVE_*`), enabled protocols and features (`ENABLE_*`), and options such as static-memory and persistent-storage configuration. CMake does not generate or modify this header; the project or port owns it.
+BTstack is configured by the effective set of C preprocessor macros used for compilation. `btstack_config.h` normally defines most of them, but a port's CMake code can add definitions after detecting the SDK or host system. The effective configuration—not `btstack_config.h` alone—controls the build.
 
-The helpers use the C preprocessor to evaluate the effective macros in `btstack_config.h`, rather than parsing the header as plain text. This supports any valid C preprocessor constructs in the configuration header, including conditional definitions and included headers. Supply the same preprocessor definitions and include directories used by compilation when these affect the configuration.
+The macros fall into three broad categories:
+
+- `HAVE_*` describes services supplied by the platform, such as dynamic memory or an audio HAL.
+- `ENABLE_*` selects BTstack protocols and features, such as Classic Bluetooth.
+- Other configuration macros set sizes, structure limits, and other implementation options.
+
+The helpers use the C preprocessor to evaluate the effective macros, rather than parsing `btstack_config.h` as plain text. This supports any valid C preprocessor constructs in the header, including conditional definitions and included headers. Supply the same preprocessor definitions and include directories used by compilation when these affect the configuration. The [general configuration reference](how_to.md#sec:btstackConfigHowTo) lists the available macros.
 
 ### Capabilities
 
-A capability represents an optional service provided by a port, rather than a BTstack feature. For example, a port may provide `audio` or `led`. A capability can contribute source groups, sources, and public headers through `btstack_declare_port_capability`.
+A capability is a CMake-level name for an optional service a port makes available to applications, such as `audio` or `led`. It can contribute source groups, sources, and public headers through `btstack_declare_port_capability`.
 
-For example, a POSIX port should declare `audio` only when CMake finds the PortAudio library. Applications that require audio are then excluded from ports that do not provide it.
+Capabilities and `HAVE_*` macros often reflect the same detected system state, but they have different roles. A `HAVE_*` macro controls conditional C compilation; a capability lets the resolver decide whether an application can be built and supplies its required build inputs.
+
+For example, if CMake finds PortAudio, a POSIX port can add `HAVE_PORTAUDIO` to its compile definitions and declare the `audio` capability. It must pass the same definition to `btstack_configure_port`. If PortAudio is unavailable, it does neither, and applications that need `audio` are excluded. CMake does not infer a capability from a `HAVE_*` macro, so the port declares both when both are needed.
 
 ### Application `NEEDS`
 

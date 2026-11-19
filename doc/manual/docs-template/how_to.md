@@ -25,7 +25,9 @@ between BTstack and the Bluetooth chipset, we describe how to configure
 packet logging mechanism. Finally, we provide an overview on power management in Bluetooth in general and how to save energy in BTstack.
 
 ## Configuration in btstack_config.h {#sec:btstackConfigHowTo}
-The file *btstack_config.h* contains three parts:
+BTstack is configured by the effective set of C preprocessor macros used for compilation. In most ports, *btstack_config.h* defines these macros. A build system can also add definitions after detecting the target platform, SDK, or optional packages; it must use the same definitions when compiling BTstack.
+
+The configuration usually contains three parts:
 
 - \#define HAVE_* directives [listed here](#sec:haveDirectives). These directives describe available system properties, similar to config.h in a autoconf setup.
 - \#define ENABLE_* directives [listed here](#sec:enableDirectives). These directives list enabled properties, most importantly ENABLE_CLASSIC and ENABLE_BLE.
