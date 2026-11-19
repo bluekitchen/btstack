@@ -8,9 +8,15 @@ The helpers do not define a top-level project or select a toolchain, a SDK, a bo
 
 ### Source groups
 
-A source group is a named collection of related BTstack source files. Instead of adding individual files, this allows to add the groups needed by your application. Most group names correspond to a Bluetooth protocol or profile, such as `gatt-server` or `classic-rfcomm`; others select infrastructure such as `transport-h4`, `platform-posix-run-loop`, a chipset support, or third-party C code. Group names use lowercase hyphenated words. The complete catalog is in `tool/cmake/BTstackSources.cmake`.
+A source group is a named collection of related BTstack source files. Instead of adding individual files, this allows to add the groups needed by your application. Most group names correspond to a Bluetooth protocol or profile, such as `gatt-server` or `classic-rfcomm`; others refer to infrastructure such as `transport-h4`, `platform-posix-run-loop`, a chipset support, or third-party C code. Group names use lowercase hyphenated words. The complete catalog is in `tool/cmake/BTstackSources.cmake`.
 
-The catalog stores source lists separately from mappings for private and public include directories. CMake uses the private mapping for each selected group to find the headers needed to compile its sources. It applies BTstack's common public include paths independently of the selected groups, and adds group-specific public paths when an application needs to use that group's API. BlueKitchen maintains this generated catalog with `tool/create_cmake_sources.py`.
+The catalog also declares:
+- private include directories needed for each source group, and
+- BTstack’s common public include directories.
+
+BlueKitchen maintains this generated catalog with `tool/create_cmake_sources.py`.
+
+The CMake helpers use catalog to add the neccessary group-specific public include directories when an application uses that group’s API. 
 
 #### Finding groups
 
