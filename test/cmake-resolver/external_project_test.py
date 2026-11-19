@@ -2,6 +2,7 @@
 """Build a standalone consumer and check missing-feature diagnostics."""
 
 import os
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -126,6 +127,59 @@ class ExternalProjectTest(unittest.TestCase):
         result = self.cmake("--build", build, "--target", "with_gatt", "without_gatt", "--parallel", "2")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertTrue((build / "btstack-gatt" / "with_gatt" / "gatt_counter.h").is_file())
+
+    def test_capability_definitions_and_shared_groups(self):
+        source = self.directory / "capabilities"
+        source.mkdir()
+        (source / "btstack_config.h").write_text((STANDALONE / "btstack_config.h").read_text(), encoding="utf-8")
+        (source / "port.c").write_text(
+            "#ifdef EXPECT_AUDIO\n#ifndef HAVE_TEST_AUDIO\n#error missing capability\n#endif\n"
+            "#else\n#ifdef HAVE_TEST_AUDIO\n#error leaked capability\n#endif\n#endif\n"
+            "int port_function(void) { return 0; }\n", encoding="utf-8")
+        (source / "main.c").write_text("int main(void) { return 0; }\n", encoding="utf-8")
+        (source / "CMakeLists.txt").write_text(
+            'cmake_minimum_required(VERSION 3.18)\nproject(capabilities C)\n'
+            'set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\ninclude("${BTSTACK_MODULE}")\n'
+            'btstack_declare_port(test)\n'
+            'btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")\n'
+            'btstack_declare_port_capability(CAPABILITY audio GROUPS core DEFINES HAVE_TEST_AUDIO EXPECT_AUDIO)\n'
+            'btstack_declare_application(audio_app SOURCES main.c NEEDS core audio)\n'
+            'btstack_declare_application(plain_app SOURCES main.c NEEDS core)\n'
+            'btstack_filter_applications_for_port(selected CANDIDATES audio_app plain_app)\n'
+            'foreach(app IN LISTS selected)\n'
+            '  btstack_add_application_library(TARGET lib_${app} APPLICATION ${app} BASE_GROUPS core '
+            'PORT_SOURCES port.c PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")\n'
+            '  btstack_add_application_executable(${app} APPLICATION ${app})\n'
+            '  target_link_libraries(${app} PRIVATE lib_${app})\nendforeach()\n', encoding="utf-8")
+        build = self.directory / "capabilities-build"
+        result = self.cmake("-S", source, "-B", build,
+                            f"-DBTSTACK_MODULE={ROOT / 'tool' / 'cmake' / 'BTstack.cmake'}")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.cmake("--build", build, "--parallel", "2")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        commands = json.loads((build / "compile_commands.json").read_text())
+        core = [x["command"] for x in commands if x["file"].endswith("/src/btstack_memory.c")]
+        self.assertEqual(len(core), 2)
+        self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in core), 1)
+        mains = [x["command"] for x in commands if x["file"].endswith("/main.c")]
+        self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in mains), 1)
+
+    def test_capability_cannot_change_selection(self):
+        source = self.directory / "circular"
+        source.mkdir()
+        (source / "btstack_config.h").write_text(
+            "#ifdef USE_AUDIO\n#define ENABLE_BLE\n#endif\n", encoding="utf-8")
+        (source / "CMakeLists.txt").write_text(
+            'cmake_minimum_required(VERSION 3.18)\nproject(circular C)\n'
+            'include("${BTSTACK_MODULE}")\nbtstack_declare_port(test)\n'
+            'btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")\n'
+            'btstack_declare_port_capability(CAPABILITY audio GROUPS core DEFINES USE_AUDIO)\n'
+            'btstack_declare_application(app SOURCES main.c NEEDS audio)\n'
+            'btstack_filter_applications_for_port(selected CANDIDATES app)\n', encoding="utf-8")
+        result = self.cmake("-S", source, "-B", self.directory / "circular-build",
+                            f"-DBTSTACK_MODULE={ROOT / 'tool' / 'cmake' / 'BTstack.cmake'}")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("change selection macro 'ENABLE_BLE'", result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

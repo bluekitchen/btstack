@@ -906,6 +906,9 @@ function(btstack_configure_port)
     btstack_set_port_configuration_macros("${port}" ${configuration})
     string(REPLACE "-" "_" port_suffix "${port}")
     set("btstack_port_${port_suffix}_configuration_macros" "${configuration}" PARENT_SCOPE)
+    set("btstack_port_${port_suffix}_config_file" "${ARG_CONFIG}" PARENT_SCOPE)
+    set("btstack_port_${port_suffix}_config_definitions" "${ARG_DEFINITIONS}" PARENT_SCOPE)
+    set("btstack_port_${port_suffix}_config_includes" "${ARG_INCLUDE_DIRECTORIES}" PARENT_SCOPE)
     if(ARG_OUTPUT)
         set(${ARG_OUTPUT} "${configuration}" PARENT_SCOPE)
     endif()
@@ -994,12 +997,12 @@ function(btstack_declare_port_capability)
     set(arguments ${ARGN})
     if(arguments)
         list(GET arguments 0 first_argument)
-        if(NOT first_argument MATCHES "^(PORT|CAPABILITY|GROUPS|SOURCES|PUBLIC_INCLUDE_DIRECTORIES)$")
+        if(NOT first_argument MATCHES "^(PORT|CAPABILITY|GROUPS|SOURCES|PUBLIC_INCLUDE_DIRECTORIES|DEFINES)$")
             set(positional_port "${first_argument}")
             list(REMOVE_AT arguments 0)
         endif()
     endif()
-    cmake_parse_arguments(ARG "" "PORT;CAPABILITY" "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES" ${arguments})
+    cmake_parse_arguments(ARG "" "PORT;CAPABILITY" "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES;DEFINES" ${arguments})
     if(positional_port AND ARG_PORT)
         message(FATAL_ERROR "btstack_declare_port_capability: provide only one port")
     endif()
@@ -1015,9 +1018,9 @@ function(btstack_declare_port_capability)
     if(NOT ARG_CAPABILITY)
         message(FATAL_ERROR "btstack_declare_port_capability(${port}) requires CAPABILITY")
     endif()
-    if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES)
+    if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES AND NOT ARG_DEFINES)
         message(FATAL_ERROR
-            "btstack_declare_port_capability(${port}) requires GROUPS, SOURCES, or PUBLIC_INCLUDE_DIRECTORIES")
+            "btstack_declare_port_capability(${port}) requires GROUPS, SOURCES, PUBLIC_INCLUDE_DIRECTORIES, or DEFINES")
     endif()
 
     foreach(group IN LISTS ARG_GROUPS)
@@ -1048,6 +1051,9 @@ function(btstack_declare_port_capability)
     set(provider_sources ${${provider_sources_variable}} ${ARG_SOURCES})
     list(REMOVE_DUPLICATES provider_sources)
     set(${provider_sources_variable} "${provider_sources}" PARENT_SCOPE)
+    set(provider_defines ${${provider_variable}_defines} ${ARG_DEFINES})
+    list(REMOVE_DUPLICATES provider_defines)
+    set(${provider_variable}_defines "${provider_defines}" PARENT_SCOPE)
     set(${provider_variable}_declared TRUE PARENT_SCOPE)
     get_property(port_capabilities GLOBAL PROPERTY "btstack_info_${port_suffix}_capabilities")
     list(APPEND port_capabilities "${ARG_CAPABILITY}")
@@ -1078,7 +1084,7 @@ function(btstack_resolve_example_requirements example port groups_output_variabl
             string(REPLACE "-" "_" requirement_suffix "${requirement}")
             list(APPEND configuration_requirements
                 ${btstack_group_configuration_requirements_${requirement_suffix}})
-        elseif(requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+        elseif(requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
             list(APPEND configuration_requirements "${requirement}")
         elseif(NOT "${port}" STREQUAL "")
             string(REPLACE "-" "_" port_suffix "${port}")
@@ -1124,7 +1130,7 @@ function(btstack_collect_example_port_provider_property output_variable port exa
     set(values)
     foreach(requirement IN LISTS btstack_application_${example}_needs)
         list(FIND btstack_source_groups "${requirement}" group_index)
-        if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+        if(NOT group_index EQUAL -1 OR requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
             continue()
         endif()
 
@@ -1139,6 +1145,19 @@ function(btstack_collect_example_port_provider_property output_variable port exa
     endforeach()
 
     list(REMOVE_DUPLICATES values)
+    if(property STREQUAL "defines")
+        set(definition_names)
+        foreach(definition IN LISTS values)
+            if(NOT definition MATCHES "^[A-Za-z_][A-Za-z0-9_]*(=.*)?$")
+                message(FATAL_ERROR "Invalid capability definition '${definition}'")
+            endif()
+            string(REGEX REPLACE "=.*$" "" definition_name "${definition}")
+            if(definition_name IN_LIST definition_names)
+                message(FATAL_ERROR "Conflicting capability definitions for '${definition_name}' in application '${example}'")
+            endif()
+            list(APPEND definition_names "${definition_name}")
+        endforeach()
+    endif()
     set(${output_variable} "${values}" PARENT_SCOPE)
 endfunction()
 
@@ -1178,6 +1197,17 @@ function(btstack_filter_examples_for_port output_variable)
     string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
     set(configuration_macros
         ${btstack_port_${port_suffix}_configuration_macros})
+    # Capability definitions must not change any macro used to select an
+    # application or baseline group. Eligibility is deliberately port-wide.
+    btstack_collect_group_configuration_requirements(selection_macros GROUPS ${btstack_source_groups})
+    foreach(candidate IN LISTS btstack_declared_applications)
+        foreach(requirement IN LISTS btstack_application_${candidate}_needs)
+            if(requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
+                list(APPEND selection_macros "${requirement}")
+            endif()
+        endforeach()
+    endforeach()
+    list(REMOVE_DUPLICATES selection_macros)
     set(selected_examples)
     set_property(GLOBAL PROPERTY "btstack_info_${port_suffix}_examples" "${ARG_CANDIDATES}")
     foreach(example IN LISTS ARG_CANDIDATES)
@@ -1191,7 +1221,7 @@ function(btstack_filter_examples_for_port output_variable)
         set(missing_configuration)
         foreach(requirement IN LISTS btstack_application_${example}_needs)
             list(FIND btstack_source_groups "${requirement}" group_index)
-            if(NOT group_index EQUAL -1 OR requirement MATCHES "^ENABLE_[A-Z0-9_]+$")
+            if(NOT group_index EQUAL -1 OR requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
                 continue()
             endif()
 
@@ -1206,6 +1236,20 @@ function(btstack_filter_examples_for_port output_variable)
         endforeach()
 
         if(supported)
+            btstack_collect_example_port_provider_property(capability_defines
+                "${ARG_PORT}" "${example}" defines)
+            if(capability_defines AND btstack_port_${port_suffix}_config_file)
+                btstack_collect_port_configuration_macros(capability_configuration
+                    CONFIG "${btstack_port_${port_suffix}_config_file}"
+                    DEFINITIONS ${btstack_port_${port_suffix}_config_definitions} ${capability_defines}
+                    INCLUDE_DIRECTORIES ${btstack_port_${port_suffix}_config_includes})
+                foreach(macro IN LISTS selection_macros)
+                    if((macro IN_LIST configuration_macros AND NOT macro IN_LIST capability_configuration)
+                            OR (macro IN_LIST capability_configuration AND NOT macro IN_LIST configuration_macros))
+                        message(FATAL_ERROR "Capability definitions for '${example}' change selection macro '${macro}'; capability definitions must not affect application or group eligibility")
+                    endif()
+                endforeach()
+            endif()
             btstack_resolve_example_for_port(${ARG_PORT} ${example}
                 example_groups example_configuration_requirements)
             btstack_collect_group_configuration_requirements(group_configuration_requirements
@@ -1319,6 +1363,8 @@ function(btstack_add_info_targets)
         get_property(missing_capabilities GLOBAL PROPERTY
             "btstack_info_${port_suffix}_${example_suffix}_missing_capabilities")
         get_property(sources GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_sources")
+        get_property(defines GLOBAL PROPERTY "btstack_info_${port_suffix}_${example_suffix}_defines")
+        file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_DEFINES [==[${defines}]==])\n")
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_STATUS [==[${selected}]==])\n")
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_MISSING_CONFIGURATION [==[${missing_configuration}]==])\n")
         file(APPEND "${info_file}" "set(BTSTACK_INFO_${example_suffix}_MISSING_CAPABILITIES [==[${missing_capabilities}]==])\n")
@@ -1394,7 +1440,7 @@ endfunction()
 function(btstack_add_scoped_group_object_library)
     cmake_parse_arguments(ARG ""
         "OUTPUT_TARGET;TARGET_PREFIX;GROUP"
-        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS"
+        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;DEFINES"
         ${ARGN})
 
     foreach(required OUTPUT_TARGET TARGET_PREFIX GROUP)
@@ -1410,7 +1456,11 @@ function(btstack_add_scoped_group_object_library)
     endif()
 
     string(REPLACE "-" "_" group_suffix "${ARG_GROUP}")
-    set(target "${ARG_TARGET_PREFIX}_group_${group_suffix}_objects")
+    set(definition_key ${ARG_DEFINES})
+    list(SORT definition_key)
+    string(SHA256 definition_hash "${definition_key}")
+    string(SUBSTRING "${definition_hash}" 0 16 definition_hash)
+    set(target "${ARG_TARGET_PREFIX}_group_${group_suffix}_${definition_hash}_objects")
     if(NOT TARGET ${target})
         set(group_relative_sources ${btstack_sources_${group_suffix}})
         set(exclusion_variable "btstack_group_object_excluded_sources_${group_suffix}")
@@ -1452,6 +1502,7 @@ function(btstack_add_scoped_group_object_library)
             btstack_target_warnings(${target} STRICT)
         endif()
         target_compile_options(${target} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
+        target_compile_definitions(${target} PRIVATE ${ARG_DEFINES})
         target_include_directories(${target} PRIVATE
             ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
             ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
@@ -1478,8 +1529,8 @@ endfunction()
 #
 # CONFIGURATION_REQUIREMENTS_OUTPUT is optional. If set, it receives the
 # example's unresolved ENABLE_* requirements for future port validation.
-# Each source group is compiled once per port and shared between applications.
-# Calls for the same port must use the same compilation settings.
+# Each source group is shared for applications with the same capability
+# definitions. Calls for the same port must otherwise use the same settings.
 function(btstack_add_application_library)
     cmake_parse_arguments(ARG ""
         "TARGET;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT"
@@ -1534,6 +1585,8 @@ function(btstack_add_application_library)
         example_port_public_include_directories ${ARG_PORT} ${ARG_APPLICATION})
     btstack_collect_example_port_sources(example_port_sources
         ${ARG_PORT} ${ARG_APPLICATION})
+    btstack_collect_example_port_provider_property(example_defines
+        "${ARG_PORT}" "${ARG_APPLICATION}" defines)
     btstack_filter_groups_for_port(active_base_groups
         PORT ${ARG_PORT}
         GROUPS ${ARG_BASE_GROUPS})
@@ -1555,6 +1608,7 @@ function(btstack_add_application_library)
             OUTPUT_TARGET group_object_target
             TARGET_PREFIX "btstack_${ARG_PORT}"
             GROUP "${group}"
+            DEFINES ${example_defines}
             PUBLIC_INCLUDE_DIRECTORIES ${public_include_directories}
             PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
             PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
@@ -1585,9 +1639,12 @@ function(btstack_add_application_library)
     string(REPLACE "-" "_" info_example_suffix "${ARG_APPLICATION}")
     set_property(GLOBAL PROPERTY
         "btstack_info_${info_port_suffix}_${info_example_suffix}_sources" "${info_sources}")
+    set_property(GLOBAL PROPERTY
+        "btstack_info_${info_port_suffix}_${info_example_suffix}_defines" "${example_defines}")
 
     add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)
+    target_compile_definitions(${ARG_TARGET} PUBLIC ${example_defines})
     target_compile_options(${ARG_TARGET} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
     if(public_include_directories OR example_port_public_include_directories
             OR example_consumer_include_directories)

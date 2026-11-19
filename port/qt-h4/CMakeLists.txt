@@ -12,15 +12,15 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-h4)
-add_compile_definitions(HAVE_PORTAUDIO)
+
 btstack_declare_port_capability(CAPABILITY audio
+    DEFINES HAVE_PORTAUDIO
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
 btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS HAVE_PORTAUDIO)
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
@@ -32,7 +32,7 @@ set(BTSTACK_QT_H4_GROUPS
     platform-posix-hci-dump platform-posix-network platform-posix-uart
     transport-h4
     platform-posix-signal platform-posix-stdin platform-posix-hal-led
-    platform-posix-audio-portaudio chipset-bcm chipset-cc256x chipset-csr
+    chipset-bcm chipset-cc256x chipset-csr
     third-party-micro-ecc third-party-rijndael)
 set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 

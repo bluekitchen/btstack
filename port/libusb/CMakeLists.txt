@@ -30,8 +30,8 @@ find_package(Threads)
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
     message("HAVE_PORTAUDIO")
-    add_compile_definitions(HAVE_PORTAUDIO)
     btstack_declare_port_capability(CAPABILITY audio
+        DEFINES HAVE_PORTAUDIO
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 endif()
@@ -60,22 +60,12 @@ set(BTSTACK_LIBUSB_GROUPS
         third-party-micro-ecc
         third-party-rijndael
 )
-if(PORTAUDIO_FOUND)
-    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
-    list(APPEND BTSTACK_LIBUSB_GROUPS platform-posix-audio-portaudio)
-endif()
 
 # Use the C preprocessor to obtain the effective BTstack configuration macros.
 # This lets the resolver use the same conditional configuration that
 # compilation sees, without requiring btstack_config.h to be generated.
-set(BTSTACK_CONFIG_DEFINITIONS)
-if(PORTAUDIO_FOUND)
-    # Keep this invocation consistent with add_compile_definitions above.
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
-endif()
 btstack_configure_port(OUTPUT BTSTACK_CONFIG_MACROS
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
 message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_DISPLAY}")

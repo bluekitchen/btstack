@@ -19,8 +19,8 @@ if (PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
-        add_compile_definitions(HAVE_PORTAUDIO)
         btstack_declare_port_capability(CAPABILITY audio
+            DEFINES HAVE_PORTAUDIO
             GROUPS platform-posix-audio-portaudio platform-posix-wav
         )
     endif()
@@ -41,12 +41,7 @@ btstack_add_nxp_firmware_downloads(
     FILES_VARIABLE NXP_FIRMWARE_FILES
 )
 
-set(BTSTACK_CONFIG_DEFINITIONS)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
-endif()
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 
 # Get the declared examples supported by this port configuration and providers.
@@ -63,10 +58,6 @@ set(BTSTACK_POSIX_H4_NXP_RUNTIME_PLATFORM_GROUPS
     platform-posix-signal
     platform-posix-stdin
 )
-if(PORTAUDIO_FOUND)
-    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
-    list(APPEND BTSTACK_POSIX_H4_NXP_RUNTIME_PLATFORM_GROUPS platform-posix-audio-portaudio)
-endif()
 
 # This is a dual-mode port. All Classic examples support pairing, and
 # cross-transport key derivation requires SM when BLE is enabled.
