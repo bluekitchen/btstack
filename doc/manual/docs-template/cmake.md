@@ -23,14 +23,6 @@ python3 tool/btstack_groups.py list
 python3 tool/btstack_groups.py list --filter run-loop
 ```
 
-To see what selecting a group implies, inspect it directly:
-
-```sh
-python3 tool/btstack_groups.py info gatt-server
-```
-
-The output shows its direct dependencies, the fully resolved group set, required configuration macros, source files, and public include directories required by applications. Source paths are relative to the BTstack root; public include paths are absolute. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure.
-
 For all commands and options, run:
 
 ```sh
@@ -42,6 +34,14 @@ The Python wrapper requires CMake on `PATH`, but can be run from any directory.
 ### Resolving dependencies
 
 Requested groups are only the starting point. `tool/cmake/BTstack.cmake` resolves the dependencies that each group requires. For example, requesting `gatt-server` also selects the ATT database, ATT dispatch, and LE support; a Classic profile can select RFCOMM, SDP, and lower protocol layers.
+
+To see what selecting a group implies, inspect it directly:
+
+```sh
+python3 tool/btstack_groups.py info gatt-server
+```
+
+The output shows its direct dependencies, the fully resolved group set, required configuration macros, source files, and public include directories required by applications. Source paths are relative to the BTstack root; public include paths are absolute. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure.
 
 `btstack_resolve_groups` returns this complete group set and identifies the `ENABLE_*` configuration macros it requires, such as `ENABLE_BLE` or `ENABLE_CLASSIC`.
 
