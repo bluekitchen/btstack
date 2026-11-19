@@ -12,6 +12,19 @@ SBOM generator.
 It does not describe a particular application or firmware build. External dependencies that are not bundled with the
 source distribution, such as separately installed SDKs, system libraries, and build tools, are outside its scope.
 
+Generate CycloneDX 1.6 JSON from the repository root with:
+
+```sh
+python3 tool/generate_sbom.py                 # stdout
+python3 tool/generate_sbom.py -o sbom.json    # file
+```
+
+The generator requires Python 3 and no extra packages. It records inventory paths, revisions, license-file paths,
+usage, and notes as component properties. Custom `LicenseRef-` values are recorded as license names; SPDX expressions
+remain expressions. Descriptions such as `Git snapshot` are kept as inventory properties rather than release versions.
+Components without a PURL or CPE are listed on stderr, leaving stdout as valid JSON.
+Package identifiers are maintained in [sbom-identifiers.json](sbom-identifiers.json). 
+
 
 ## Inventory metadata
 

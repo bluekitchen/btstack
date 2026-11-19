@@ -1,0 +1,64 @@
+{
+  "hxcmod-player": {
+    "version": "Git snapshot",
+    "revision": "cb5c9f586b61eacc3b6f038f2129db9fb9a1e08e",
+    "purl": "pkg:github/jfdelnero/hxcmodplayer@cb5c9f586b61eacc3b6f038f2129db9fb9a1e08e"
+  },
+  "lc3-google": {
+    "version": "1.1.3",
+    "revision": "ce2e41faf8c06d038df9f32504c61109a14130be",
+    "purl": "pkg:github/google/liblc3@ce2e41faf8c06d038df9f32504c61109a14130be"
+  },
+  "lwip/core": {
+    "version": "2.2.0d",
+    "revision": "b3a939417e936a933ba287aee79eff8662198cad",
+    "purl": "pkg:github/lwip-tcpip/lwip@b3a939417e936a933ba287aee79eff8662198cad"
+  },
+  "micro-ecc": {
+    "version": "Git snapshot",
+    "revision": "e4d264b582a7d885e562c6b2bb2919aaec9b21c8",
+    "purl": "pkg:github/kmackay/micro-ecc@e4d264b582a7d885e562c6b2bb2919aaec9b21c8"
+  },
+  "qr-code-generator": {
+    "version": "1.8",
+    "revision": "720f62bddb7226106071d4728c292cb1df519ceb",
+    "purl": "pkg:github/nayuki/qr-code-generator@v1.8.0#c"
+  },
+  "STM32CubeF4/Drivers/CMSIS/Include": {
+    "version": "v1.28.0",
+    "revision": "9e7d2aa86197059fc29cf89931d46d0ab64e6081",
+    "purl": "pkg:github/stmicroelectronics/stm32cubef4@v1.28.0#Drivers/CMSIS/Include"
+  },
+  "STM32CubeF4/Drivers/CMSIS/Device/ST/STM32F4xx": {
+    "version": "CubeF4 v1.28.0",
+    "revision": "3b64b7b0b546cefe84f13c65508126eea58b97d8",
+    "purl": "pkg:github/stmicroelectronics/cmsis_device_f4@3b64b7b0b546cefe84f13c65508126eea58b97d8"
+  },
+  "STM32CubeF4/Drivers/STM32F4xx_HAL_Driver": {
+    "version": "CubeF4 v1.28.0",
+    "revision": "bfa4a8fde4fa5141619be006df8ef3e08265bd65",
+    "purl": "pkg:github/stmicroelectronics/stm32f4xx_hal_driver@bfa4a8fde4fa5141619be006df8ef3e08265bd65"
+  },
+  "STM32CubeF4/Drivers/BSP": {
+    "version": "v1.28.0",
+    "revision": "9e7d2aa86197059fc29cf89931d46d0ab64e6081",
+    "purl": "pkg:github/stmicroelectronics/stm32cubef4@v1.28.0#Drivers/BSP"
+  },
+  "tinydir": {
+    "version": "1.2.6",
+    "revision": "6ba79293a5e4ea015343e20453b4f4595c644515",
+    "purl": "pkg:github/cxong/tinydir@1.2.6",
+    "cpe": "cpe:2.3:a:cxong:tinydir:1.2.6:*:*:*:*:*:*:*"
+  },
+  "stb/stb_vorbis.c": {
+    "version": "v1.25",
+    "revision": "033efa1bcb750136ac98e997d53833b758e0089b",
+    "purl": "pkg:github/nothings/stb@033efa1bcb750136ac98e997d53833b758e0089b#stb_vorbis.c",
+    "cpe": "cpe:2.3:a:nothings:stb_vorbis.c:1.25:*:*:*:*:*:*:*"
+  },
+  "lwip/dhcp-server": {
+    "version": "Git snapshot",
+    "revision": "7821a98ecffdc335141dae793d1a2940da1608e4",
+    "purl": "pkg:github/fetisov/lrndis#lrndis/dhcp-server"
+  }
+}
