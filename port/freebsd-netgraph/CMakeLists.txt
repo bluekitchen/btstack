@@ -14,18 +14,14 @@ if(PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO QUIET portaudio-2.0)
 endif()
 if(PORTAUDIO_FOUND)
-    add_compile_definitions(HAVE_PORTAUDIO)
+
     btstack_declare_port_capability(CAPABILITY audio
+        DEFINES HAVE_PORTAUDIO
         GROUPS platform-posix-audio-portaudio platform-posix-wav)
 endif()
 find_package(Threads REQUIRED)
 
-set(BTSTACK_CONFIG_DEFINITIONS)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
-endif()
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 
 # main.c sets up both persistent key databases and the POSIX event loop.
@@ -33,10 +29,6 @@ set(BTSTACK_NETGRAPH_BASE_GROUPS
     ble le-device-db-tlv link-key-db-tlv platform-posix-tlv
     platform-posix-run-loop platform-posix-signal platform-posix-stdin
     platform-posix-hci-dump third-party-micro-ecc third-party-rijndael)
-if(PORTAUDIO_FOUND)
-    # main.c uses the audio backend even when the example does not require it.
-    list(APPEND BTSTACK_NETGRAPH_BASE_GROUPS platform-posix-audio-portaudio)
-endif()
 set(SOURCES_PORT main.c hci_transport_netgraph.c)
 # The existing Netgraph callbacks have intentionally unused parameters.
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")

@@ -15,8 +15,8 @@ if(PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
-        add_compile_definitions(HAVE_PORTAUDIO)
         btstack_declare_port_capability(CAPABILITY audio
+            DEFINES HAVE_PORTAUDIO
             GROUPS platform-posix-audio-portaudio platform-posix-wav)
     endif()
 endif()
@@ -41,9 +41,6 @@ set(BTSTACK_POSIX_H4_LE_BASE_GROUPS
     platform-posix-hci-dump
     chipset-da145xx chipset-da145xx-531
     third-party-micro-ecc third-party-rijndael)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_POSIX_H4_LE_BASE_GROUPS platform-posix-audio-portaudio)
-endif()
 
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(

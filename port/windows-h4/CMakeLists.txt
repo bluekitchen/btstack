@@ -10,8 +10,8 @@ if(PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
-        add_compile_definitions(HAVE_PORTAUDIO)
         btstack_declare_port_capability(CAPABILITY audio
+            DEFINES HAVE_PORTAUDIO
             GROUPS platform-posix-audio-portaudio platform-posix-wav)
     endif()
 endif()
@@ -29,11 +29,7 @@ btstack_add_firmware_download(TARGET cyw55310_patchram
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}"
     URL "${BTSTACK_CYW55310_PATCHRAM_URL}" SHA256 "${BTSTACK_CYW55310_PATCHRAM_SHA256}")
 set(BTSTACK_WINDOWS_H4_FIRMWARE_TARGETS bcm43430a1_patchram cyw55310_patchram)
-set(BTSTACK_CONFIG_DEFINITIONS)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
-endif()
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h" DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES ${btstack_declared_applications})
@@ -44,9 +40,6 @@ set(BTSTACK_WINDOWS_H4_BASE_GROUPS
     chipset-bcm chipset-cc256x chipset-csr chipset-em9301 chipset-realtek
     chipset-stlc2500d chipset-tc3566x chipset-zephyr
     third-party-micro-ecc third-party-rijndael)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_WINDOWS_H4_BASE_GROUPS platform-posix-audio-portaudio)
-endif()
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library

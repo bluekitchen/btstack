@@ -18,14 +18,14 @@ find_package(ALSA)
 
 if(PORTAUDIO_FOUND)
     message("PortAudio audio port selected")
-    add_compile_definitions(HAVE_PORTAUDIO)
     btstack_declare_port_capability(CAPABILITY audio
+        DEFINES HAVE_PORTAUDIO
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 elseif(ALSA_FOUND)
     message("ALSA audio port selected")
-    add_compile_definitions(HAVE_ALSA)
     btstack_declare_port_capability(CAPABILITY audio
+        DEFINES HAVE_ALSA
         GROUPS platform-linux-audio-alsa platform-posix-wav
     )
 endif()
@@ -36,14 +36,7 @@ btstack_declare_port_capability(CAPABILITY led
 
 find_package(Threads)
 
-set(BTSTACK_CONFIG_DEFINITIONS)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
-elseif(ALSA_FOUND)
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_ALSA)
-endif()
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)

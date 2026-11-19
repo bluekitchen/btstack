@@ -13,15 +13,15 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-usb)
-add_compile_definitions(HAVE_PORTAUDIO)
+
 btstack_declare_port_capability(CAPABILITY audio
+    DEFINES HAVE_PORTAUDIO
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
 btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
     PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/platform/embedded")
 
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS HAVE_PORTAUDIO)
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 
 include(${BTSTACK_ROOT}/example/requirements.cmake)
@@ -31,7 +31,7 @@ btstack_filter_examples_for_port(EXAMPLES
 set(BTSTACK_QT_USB_GROUPS
     ble le-device-db-tlv link-key-db-tlv tlv-none platform-posix-tlv
     platform-posix-hci-dump platform-posix-network platform-posix-signal
-    platform-posix-stdin platform-posix-hal-led platform-posix-audio-portaudio
+    platform-posix-stdin platform-posix-hal-led
     platform-libusb-h2 third-party-micro-ecc third-party-rijndael)
 
 foreach(EXAMPLE IN LISTS EXAMPLES)

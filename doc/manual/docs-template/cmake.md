@@ -67,20 +67,18 @@ btstack_declare_port(my-port)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PORTAUDIO portaudio-2.0)
-set(MY_PORT_COMPILE_DEFINITIONS)
 if(PORTAUDIO_FOUND)
-    add_compile_definitions(HAVE_PORTAUDIO)
-    list(APPEND MY_PORT_COMPILE_DEFINITIONS HAVE_PORTAUDIO)
     btstack_declare_port_capability(CAPABILITY audio
-        GROUPS platform-posix-audio-portaudio platform-posix-wav)
+        GROUPS platform-posix-audio-portaudio platform-posix-wav
+        DEFINES HAVE_PORTAUDIO)
 endif()
 
-btstack_configure_port(
-    CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${MY_PORT_COMPILE_DEFINITIONS})
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 ```
 
-The compile definition lets port code select the backend. Passing it to `btstack_configure_port` also lets the configuration check see the same definition, including any conditional macros it enables in `btstack_config.h`. The port must additionally provide PortAudio's include paths and link libraries to the targets that need them, and initialize the backend in its code. The capability declaration adds the listed BTstack groups when an application requests `audio`; it does not perform those other integration steps.
+When an application requests `audio`, its library, its consumers, and its source groups are compiled with `HAVE_PORTAUDIO`. Port code can use that definition to initialize the backend. Applications that do not request `audio` do not receive the definition or provider groups. The port must additionally provide PortAudio's include paths and link libraries to targets that need them; the capability declaration does not find or link the external library.
+
+Capability definitions may affect conditional compilation and configuration details, but must not change the `ENABLE_*` or `HAVE_*` macros used to select applications or baseline groups. Selection uses the port-wide configuration, before capability definitions are applied. When the port uses `btstack_configure_port`, the application filter checks this restriction against declared application and group requirements to prevent circular dependencies. Ports that register macros manually must ensure the same invariant themselves.
 
 For example, an application declaration can use `NEEDS core audio`. When the port declares `audio`, the resolver includes its provider groups. When the capability is absent, the port's application filter excludes the application. An embedded port can satisfy the same request with different groups or port-local sources and need not define `HAVE_PORTAUDIO`.
 
@@ -112,7 +110,7 @@ The output shows its direct dependencies, the fully resolved group set, required
 
 A port defines a baseline: the groups and board-local files required by every application it builds. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files — such as `main.c`, UART adapter, controller firmware, and SDK sources — remain explicit because they belong to the board or project rather than the BTstack catalog.
 
-The baseline must also cover dependencies used by the port itself, regardless of an application's `NEEDS`. For example, if `main.c` initializes PortAudio whenever `HAVE_PORTAUDIO` is defined, the PortAudio backend group is needed for every application in that configuration. Add it to the baseline as well as declaring it as part of the `audio` capability. The capability makes audio applications selectable and contributes their provider inputs; it only contributes those inputs to applications that request it.
+The baseline must also cover dependencies used by the port itself, regardless of an application's `NEEDS`. For example, a backend initialized unconditionally by `main.c` belongs in the baseline. When `main.c` initializes PortAudio only under a capability-provided `HAVE_PORTAUDIO` definition, the capability instead supplies the backend for the applications that request it.
 
 #### Typical port structure
 
@@ -197,7 +195,52 @@ Relative paths in `SOURCES` and `GATT_DB` are interpreted relative to the declar
 
 ### Build applications declared by a port
 
-For each supported application, ports normally create a small BTstack static library. `btstack_add_application_library` combines the application's requirements with the port baseline and compiles the resulting closure. Shared port components are reused; consequently, all selected applications must use compatible compilation settings.
+For each supported application, ports normally create a small BTstack static library. `btstack_add_application_library` combines the application's requirements with the port baseline and compiles the resulting closure. Group objects are shared between applications with the same capability definitions; different definition sets get separate group objects. Other port compilation settings must remain compatible across applications.
+
+The following diagram follows `a2dp_sink_demo` through the libusb port when PortAudio is available:
+
+```text
+ Application declaration                  libusb port
+ ┌──────────────────────────────┐         ┌───────────────────────────────┐
+ │ a2dp_sink_demo.c             │         │ btstack_config.h + build      │
+ │ NEEDS: Classic audio groups, │         │ definitions → effective       │
+ │        AVRCP groups, audio…  │         │ configuration macros          │
+ └──────────────┬───────────────┘         │                               │
+                │                         │ PortAudio found → audio       │
+                │                         │ capability:                   │
+                │                         │   groups: PortAudio, WAV      │
+                │                         │   defines: HAVE_PORTAUDIO     │
+                │                         │                               │
+                │                         │ baseline groups + main.c      │
+                │                         └───────────────┬───────────────┘
+                └─────────────────┬───────────────────────┘
+                                  ▼
+                    Filter application for the port
+                    Check required configuration macros
+                    and availability of capabilities
+                                  │
+                      unsupported ├──────→ Exclude application
+                                  │ supported
+                                  ▼
+                    Resolve groups and their dependencies
+                    Add baseline and audio provider groups
+                                  │
+                                  ▼
+                    Compile resolved group objects and
+                    main.c with HAVE_PORTAUDIO
+                                  │
+                                  ▼
+                    Application-specific BTstack library
+                                  │
+                                  ▼
+                    Compile a2dp_sink_demo.c and link it
+                    with the library and port dependencies
+                                  │
+                                  ▼
+                         a2dp_sink_demo executable
+```
+
+The port-wide configuration is checked before capability definitions are applied. If PortAudio is unavailable, the libusb port does not declare `audio`, and the filter excludes this application. An application such as `gatt_counter` does not request `audio`, so its resolved groups and definitions do not include the PortAudio provider.
 
 The following assumes that the port has already declared itself, registered its effective configuration, and declared any optional capabilities. The port still owns the final executable and its board policy:
 
@@ -246,7 +289,7 @@ EXAMPLE=gatt_counter cmake --build build --target example-info
 cmake --build build --target group-graph
 ```
 
-`port-info` shows the effective BTstack configuration macros and declared capabilities. `list-applications` shows candidates for the current port, and `application-info` explains whether a selected application is included. For excluded applications, it reports missing macros or capabilities; for included applications, it prints the complete source and include-directory lists.
+`port-info` shows the effective BTstack configuration macros and declared capabilities. `list-applications` shows candidates for the current port, and `application-info` explains whether a selected application is included. For excluded applications, it reports missing macros or capabilities; for included applications, it prints capability definitions and the source and include-directory lists.
 
 `list-examples` and `example-info` remain available for BTstack's built-in example workflow; `list-examples` groups examples by radio requirements. `group-graph` writes `btstack-groups.dot` to the build directory and, when Graphviz is installed, also writes an SVG.
 

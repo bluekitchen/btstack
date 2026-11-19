@@ -29,8 +29,8 @@ if (PkgConfig_FOUND)
     pkg_check_modules(PORTAUDIO portaudio-2.0)
     if(PORTAUDIO_FOUND)
         message("HAVE_PORTAUDIO")
-        add_compile_definitions(HAVE_PORTAUDIO)
         btstack_declare_port_capability(CAPABILITY audio
+            DEFINES HAVE_PORTAUDIO
             GROUPS platform-posix-audio-portaudio platform-posix-wav
         )
     endif()
@@ -51,12 +51,7 @@ set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 list(APPEND SOURCES_PORT ${CC256X_INIT_SCRIPT_SOURCES})
 
-set(BTSTACK_CONFIG_DEFINITIONS)
-if(PORTAUDIO_FOUND)
-    list(APPEND BTSTACK_CONFIG_DEFINITIONS HAVE_PORTAUDIO)
-endif()
-btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h"
-    DEFINITIONS ${BTSTACK_CONFIG_DEFINITIONS})
+btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
 
 
 # Get the declared examples supported by this port configuration and providers.
@@ -73,10 +68,6 @@ set(BTSTACK_POSIX_H5_RUNTIME_PLATFORM_GROUPS
     platform-posix-signal
     platform-posix-stdin
 )
-if(PORTAUDIO_FOUND)
-    # main.c selects the PortAudio instances when HAVE_PORTAUDIO is enabled.
-    list(APPEND BTSTACK_POSIX_H5_RUNTIME_PLATFORM_GROUPS platform-posix-audio-portaudio)
-endif()
 
 # Scoped Bluetooth examples use the H5 port's controller setup plus their
 # implementation closure resolved from each example declaration.
