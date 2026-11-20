@@ -105,6 +105,10 @@ foreach(example IN ITEMS dut_mode_classic gap_dedicated_bonding gap_inquiry gap_
 endforeach()
 
 btstack_declare_application(pbap_client_demo SOURCES pbap_client_demo.c NEEDS classic-pbap-client)
+btstack_declare_application(pan_lwip_http_server
+    SOURCES pan_lwip_http_server.c
+    NEEDS bnep-lwip classic-pan classic-sdp-server lwip-httpd-service lwip-dhcp-service
+)
 btstack_declare_application(avrcp_browsing_client SOURCES avrcp_browsing_client.c
     NEEDS classic-a2dp-sink classic-avrcp-browsing-controller
           classic-avrcp-browsing-target classic-avrcp-media-item-iterator

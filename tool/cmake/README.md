@@ -33,7 +33,14 @@ aggregate source lists into new edges, or select port capability providers.
 ## lwIP providers
 
 `bnep-lwip` depends on BTstack's `bnep` group and the port's `lwip`
-capability. A port that uses the bundled NO_SYS integration can register:
+capability. After declaring the port, a port using the bundled NO_SYS
+integration and its HTTP and DHCP services can register all three with:
+
+```cmake
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
+```
+
+Alternatively, a port can register just the lwIP stack:
 
 ```cmake
 btstack_declare_port_capability(CAPABILITY lwip
