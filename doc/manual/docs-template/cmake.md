@@ -91,7 +91,7 @@ btstack_declare_application(gatt_counter
 
 BTstack's built-in application declarations are in `example/requirements.cmake`. An external project can use the same declaration format. Relative `SOURCES` and `GATT_DB` paths are resolved against the declaration file; absolute paths are unchanged. Query the resolved values with `btstack_get_application_property(output application SOURCES)` or `btstack_get_application_property(output application GATT_DB)`.
 
-### Resolving groups
+### Resolving groups and applications
 
 Requested groups are only a starting point. The resolver follows group dependencies to produce the complete source-group set. For example, `gatt-server` also selects the ATT database, ATT dispatch, and LE support; a Classic profile can select RFCOMM, SDP, and lower protocol layers. `btstack_resolve_groups` returns the resolved group set and identifies its required `ENABLE_*` macros.
 
@@ -111,13 +111,15 @@ A port has a common baseline and then builds the applications it supports. Its `
 
 ### Define the baseline
 
-The baseline contains the groups and board-local files required by every application. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and common cryptography. Board-local files—such as `main.c`, UART glue, controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
+The baseline contains the groups and board-local files required by every application. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and cryptography providers. Board-local files—such as `main.c`, UART implementation, controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
 
 The baseline must also cover dependencies that port code uses unconditionally. For example, a backend initialized unconditionally by `main.c` belongs in the baseline. If `main.c` initializes a backend only when a capability supplies a definition such as `HAVE_PORTAUDIO`, the capability can instead supply that backend for applications that request it.
 
 ### Register the port-wide configuration
 
-`btstack_configure_port` preprocesses `btstack_config.h` at CMake configure time and registers the resulting `ENABLE_*` and `HAVE_*` macro names. Do not duplicate that macro list manually in CMake. Preprocessing supports conditional definitions and included headers, so CMake evaluates the same configuration logic as the compiler.
+`btstack_configure_port` normally preprocesses `btstack_config.h` at CMake configure time and registers the resulting `ENABLE_*` and `HAVE_*` macro names. Preprocessing supports conditional definitions and included headers, so CMake evaluates the same configuration logic as the compiler.
+
+For MSVC, we have not found a way to use its preprocessor to obtain the complete macro list needed by the resolver. The helper instead uses a limited parser for `btstack_config.h` that handles simple `#define`, `#ifdef`, `#ifndef`, and `#else` directives. It does not evaluate general `#if` expressions or included headers, so keep the configuration compatible with this parser when using MSVC.
 
 Call it after declaring the port and before filtering applications:
 
@@ -227,7 +229,7 @@ cmake --build build --target group-graph
 
 ## Reusing resolved data in another build system
 
-Even if your production build does not use CMake—for example, IAR Embedded Workbench or Keil uVision—you can configure a representative BTstack port with CMake and use `example-info` as the authoritative resolved input list:
+Even if your project build does not use CMake — for example, when using IAR Embedded Workbench or Keil uVision — you can configure a representative BTstack port with CMake and use `example-info` as the authoritative resolved input list:
 
 ```sh
 EXAMPLE=gatt_counter cmake --build build --target example-info
