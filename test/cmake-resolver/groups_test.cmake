@@ -22,6 +22,9 @@ foreach(expected IN ITEMS "Description: GATT server" "att-dispatch" "src/ble/att
     endif()
 endforeach()
 check_command("platform/posix" -DMODE=info -DGROUP=platform-posix-run-loop)
+if(NOT command_output MATCHES "Consumer include directories \\(relative to BTstack root\\):\n  platform/posix")
+    message(FATAL_ERROR "Group consumer include path is not relative: ${command_output}")
+endif()
 check_command("No groups match" -DMODE=list -DFILTER=not-a-real-group)
 execute_process(COMMAND "${CMAKE_COMMAND}" -DMODE=info -DGROUP=not-a-real-group -P "${groups_script}"
     RESULT_VARIABLE result ERROR_VARIABLE error)
