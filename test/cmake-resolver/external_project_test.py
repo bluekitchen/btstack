@@ -177,6 +177,33 @@ class ExternalProjectTest(unittest.TestCase):
         mains = [x["command"] for x in commands if x["file"].endswith("/main.c")]
         self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in mains), 1)
 
+    def test_transitive_lwip_provider_build(self):
+        source = self.directory / "lwip-provider"
+        source.mkdir()
+        (source / "btstack_config.h").write_text(
+            (ROOT / "port" / "libusb" / "btstack_config.h").read_text(), encoding="utf-8")
+        (source / "main.c").write_text('#include "bnep_lwip.h"\nint main(void) { return 0; }\n', encoding="utf-8")
+        (source / "port.c").write_text('void test_port(void) {}\n', encoding="utf-8")
+        (source / "CMakeLists.txt").write_text(
+            'cmake_minimum_required(VERSION 3.18)\nproject(lwip_provider C)\n'
+            'include("${BTSTACK_MODULE}")\n'
+            'btstack_declare_port(test)\n'
+            'btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")\n'
+            'btstack_declare_port_capability(CAPABILITY lwip GROUPS third-party-lwip PUBLIC_INCLUDE_DIRECTORIES '
+            '"${BTSTACK_ROOT}/3rd-party/lwip/core/src/include" "${BTSTACK_ROOT}/platform/lwip/port")\n'
+            'btstack_declare_application(app SOURCES main.c NEEDS bnep-lwip)\n'
+            'btstack_add_application_library(TARGET app_lib APPLICATION app BASE_GROUPS core PORT_SOURCES port.c '
+            'PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")\n'
+            'btstack_add_application_executable(app APPLICATION app)\n'
+            'target_link_libraries(app PRIVATE app_lib)\n', encoding="utf-8")
+        build = self.directory / "lwip-provider-build"
+        result = self.cmake("-S", source, "-B", build,
+                            f"-DBTSTACK_MODULE={ROOT / 'tool' / 'cmake' / 'BTstack.cmake'}",
+                            f"-DBTSTACK_ROOT={ROOT}")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.cmake("--build", build, "--target", "app_lib", "--parallel", "2")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_capability_cannot_change_selection(self):
         source = self.directory / "circular"
         source.mkdir()

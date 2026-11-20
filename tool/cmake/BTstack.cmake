@@ -100,10 +100,15 @@ set(btstack_group_dependencies_classic_obex_srm_server
 set(btstack_group_dependencies_classic_pan
     core-classic
 )
-# lwIP headers and configuration come from the port's chosen provider.
+set(btstack_group_dependencies_bnep
+    l2cap
+    core-classic
+)
 set(btstack_group_dependencies_bnep_lwip
     bnep
 )
+# The implementation and configuration are selected by the port.
+set(btstack_group_capabilities_bnep_lwip lwip)
 set(btstack_group_dependencies_classic_sdp_util
     core-classic
 )
@@ -1022,6 +1027,9 @@ function(btstack_declare_port_capability)
     if(NOT ARG_CAPABILITY)
         message(FATAL_ERROR "btstack_declare_port_capability(${port}) requires CAPABILITY")
     endif()
+    if(ARG_CAPABILITY IN_LIST btstack_source_groups)
+        message(FATAL_ERROR "Capability '${ARG_CAPABILITY}' conflicts with a BTstack source group")
+    endif()
     if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES AND NOT ARG_INCLUDE_DIRECTORIES AND NOT ARG_LINK_DIRECTORIES AND NOT ARG_LINK_LIBRARIES AND NOT ARG_DEFINES)
         message(FATAL_ERROR
             "btstack_declare_port_capability(${port}) requires build inputs")
@@ -1079,38 +1087,71 @@ endfunction()
 #
 # Usage:
 #   btstack_resolve_example(gatt_counter BTSTACK_GROUPS BTSTACK_CONFIG_NEEDS)
+function(btstack_collect_application_requirements example port groups_out capabilities_out missing_out)
+    set(groups)
+    set(capabilities)
+    set(missing)
+    foreach(requirement IN LISTS btstack_application_${example}_needs)
+        if(requirement IN_LIST btstack_source_groups)
+            list(APPEND groups "${requirement}")
+        elseif(NOT requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
+            list(APPEND capabilities "${requirement}")
+        endif()
+    endforeach()
+    set(processed_capabilities)
+    while(TRUE)
+        if(groups)
+            btstack_resolve_groups(groups GROUPS ${groups})
+        endif()
+        foreach(group IN LISTS groups)
+            string(REPLACE "-" "_" suffix "${group}")
+            list(APPEND capabilities ${btstack_group_capabilities_${suffix}})
+        endforeach()
+        list(REMOVE_DUPLICATES capabilities)
+        set(pending ${capabilities})
+        if(processed_capabilities)
+            list(REMOVE_ITEM pending ${processed_capabilities})
+        endif()
+        if(NOT pending)
+            break()
+        endif()
+        foreach(capability IN LISTS pending)
+            list(APPEND processed_capabilities "${capability}")
+            string(REPLACE "-" "_" port_suffix "${port}")
+            string(REPLACE "-" "_" capability_suffix "${capability}")
+            set(provider "btstack_port_${port_suffix}_provider_${capability_suffix}")
+            if(NOT "${port}" STREQUAL "" AND DEFINED ${provider}_declared)
+                list(APPEND groups ${${provider}})
+                list(REMOVE_DUPLICATES groups)
+            else()
+                list(APPEND missing "${capability}")
+            endif()
+        endforeach()
+    endwhile()
+    set(${groups_out} "${groups}" PARENT_SCOPE)
+    set(${capabilities_out} "${capabilities}" PARENT_SCOPE)
+    set(${missing_out} "${missing}" PARENT_SCOPE)
+endfunction()
+
 function(btstack_resolve_example_requirements example port groups_output_variable configuration_output_variable)
     list(FIND btstack_declared_applications "${example}" example_index)
     if(example_index EQUAL -1)
         message(FATAL_ERROR "BTstack application '${example}' has not been declared")
     endif()
 
-    set(source_groups)
+    btstack_collect_application_requirements("${example}" "${port}" source_groups capabilities missing)
+    if(missing)
+        message(FATAL_ERROR "BTstack application '${example}' needs capability '${missing}', but port '${port}' does not provide it")
+    endif()
     set(configuration_requirements)
     foreach(requirement IN LISTS btstack_application_${example}_needs)
         list(FIND btstack_source_groups "${requirement}" group_index)
         if(NOT group_index EQUAL -1)
-            list(APPEND source_groups "${requirement}")
             string(REPLACE "-" "_" requirement_suffix "${requirement}")
             list(APPEND configuration_requirements
                 ${btstack_group_configuration_requirements_${requirement_suffix}})
         elseif(requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
             list(APPEND configuration_requirements "${requirement}")
-        elseif(NOT "${port}" STREQUAL "")
-            string(REPLACE "-" "_" port_suffix "${port}")
-            string(REPLACE "-" "_" capability_suffix "${requirement}")
-            set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
-            if(DEFINED ${provider_variable}_declared)
-                list(APPEND source_groups ${${provider_variable}})
-            else()
-                message(FATAL_ERROR
-                    "BTstack application '${example}' needs capability '${requirement}', "
-                    "but port '${port}' does not provide it")
-            endif()
-        else()
-            message(FATAL_ERROR
-                "BTstack application '${example}' has unknown requirement '${requirement}'. "
-                "Requirements must be source groups or ENABLE_* configuration symbols")
         endif()
     endforeach()
 
@@ -1138,11 +1179,8 @@ function(btstack_collect_example_port_provider_property output_variable port exa
 
     string(REPLACE "-" "_" port_suffix "${port}")
     set(values)
-    foreach(requirement IN LISTS btstack_application_${example}_needs)
-        list(FIND btstack_source_groups "${requirement}" group_index)
-        if(NOT group_index EQUAL -1 OR requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
-            continue()
-        endif()
+    btstack_collect_application_requirements("${example}" "${port}" unused_groups capabilities missing)
+    foreach(requirement IN LISTS capabilities)
 
         string(REPLACE "-" "_" capability_suffix "${requirement}")
         set(provider_variable "btstack_port_${port_suffix}_provider_${capability_suffix}")
@@ -1231,21 +1269,11 @@ function(btstack_filter_examples_for_port output_variable)
         set(supported TRUE)
         set(missing_capabilities)
         set(missing_configuration)
-        foreach(requirement IN LISTS btstack_application_${example}_needs)
-            list(FIND btstack_source_groups "${requirement}" group_index)
-            if(NOT group_index EQUAL -1 OR requirement MATCHES "^(ENABLE|HAVE)_[A-Z0-9_]+$")
-                continue()
-            endif()
-
-            string(REPLACE "-" "_" capability_suffix "${requirement}")
-            set(provider_variable
-                "btstack_port_${port_suffix}_provider_${capability_suffix}")
-            if(NOT DEFINED ${provider_variable}_declared)
-                set(supported FALSE)
-                list(APPEND missing_capabilities "${requirement}")
-                break()
-            endif()
-        endforeach()
+        btstack_collect_application_requirements("${example}" "${ARG_PORT}"
+            unused_groups unused_capabilities missing_capabilities)
+        if(missing_capabilities)
+            set(supported FALSE)
+        endif()
 
         if(supported)
             btstack_collect_example_port_provider_property(capability_defines
@@ -1626,7 +1654,7 @@ function(btstack_add_application_library)
             TARGET_PREFIX "btstack_${ARG_PORT}"
             GROUP "${group}"
             DEFINES ${example_defines}
-            CAPABILITY_INCLUDE_DIRECTORIES ${example_capability_include_directories}
+            CAPABILITY_INCLUDE_DIRECTORIES ${example_capability_include_directories} ${example_port_public_include_directories}
             PUBLIC_INCLUDE_DIRECTORIES ${public_include_directories}
             PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
             PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}

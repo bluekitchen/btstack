@@ -29,3 +29,25 @@ The exporter reads `btstack_group_dependencies_*` and
 It shows the complete port-independent internal group graph, including legacy
 aggregate groups. It does not infer dependencies from source includes, expand
 aggregate source lists into new edges, or select port capability providers.
+
+## lwIP providers
+
+`bnep-lwip` depends on BTstack's `bnep` group and the port's `lwip`
+capability. A port that uses the bundled NO_SYS integration can register:
+
+```cmake
+btstack_declare_port_capability(CAPABILITY lwip
+    GROUPS third-party-lwip
+    PUBLIC_INCLUDE_DIRECTORIES
+        "${BTSTACK_ROOT}/3rd-party/lwip/core/src/include"
+        "${BTSTACK_ROOT}/platform/lwip/port")
+```
+
+A port using an SDK can instead register its lwIP library with
+`LINK_LIBRARIES` and expose its lwIP headers and configuration directories
+with `PUBLIC_INCLUDE_DIRECTORIES`. These directories must be provided explicitly
+for the separately compiled BTstack source groups. The provider must integrate
+lwIP timers and execution with the port's run loop and configure the APIs used
+by the BNEP adapter. HTTP and DHCP servers are separate from this capability.
+Applications requesting `bnep-lwip` are filtered out when the port does not
+provide `lwip`.

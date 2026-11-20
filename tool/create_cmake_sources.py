@@ -240,10 +240,7 @@ LWIP_GROUPS = [
     "lwip-core",
     "lwip-ipv4",
     "lwip-netif",
-    "lwip-httpd",
-    "lwip-dhcp-server",
     "lwip-platform",
-    "bnep-lwip",
 ]
 
 BLUEDROID_SBC_GROUPS = [
@@ -310,11 +307,9 @@ GROUP_INCLUDE_DIRECTORIES = {
     ],
     # The port's chosen lwIP supplies its headers and lwipopts.h.
     "bnep-lwip": ["src", "platform/lwip"],
-    "lwip": [
+    "third-party-lwip": [
         "src",
         "3rd-party/lwip/core/src/include",
-        "3rd-party/lwip/dhcp-server",
-        "platform/lwip",
         "platform/lwip/port",
     ],
     "third-party-bluedroid-sbc-decoder": [
@@ -345,6 +340,7 @@ GROUP_INCLUDE_DIRECTORIES = {
 # directory. wav_util.h is used by the LE Audio demo utilities when a desktop
 # audio backend provides the audio capability.
 GROUP_CONSUMER_INCLUDE_DIRECTORIES = {
+    "bnep-lwip": ["platform/lwip"],
     "platform-embedded-run-loop": ["platform/embedded"],
     "platform-posix-run-loop": ["platform/posix"],
     "platform-posix-wav": ["platform/posix"],
@@ -490,7 +486,7 @@ def collect_sources(root: Path) -> tuple[dict[str, list[str]], list[str]]:
             )
         groups[aggregate] = sources_for(leaf_groups)
 
-    groups["lwip"] = sources_for(LWIP_GROUPS)
+    groups["third-party-lwip"] = sources_for(LWIP_GROUPS)
     groups["third-party-bluedroid-sbc"] = sources_for(BLUEDROID_SBC_GROUPS)
     groups["platform-posix-audio"] = sources_for(PLATFORM_POSIX_AUDIO_GROUPS)
     groups["platform-posix"] = sources_for(PLATFORM_POSIX_GROUPS)

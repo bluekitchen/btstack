@@ -134,7 +134,6 @@ set(btstack_source_groups
     link-key-db-memory
     link-key-db-static
     link-key-db-tlv
-    lwip
     lwip-core
     lwip-dhcp-server
     lwip-httpd
@@ -174,6 +173,7 @@ set(btstack_source_groups
     third-party-bluedroid-sbc-encoder
     third-party-hxcmod
     third-party-lc3-google
+    third-party-lwip
     third-party-md5
     third-party-micro-ecc
     third-party-qr-code-generator
@@ -242,6 +242,11 @@ set(btstack_sources_bnep_lwip
 )
 
 set(btstack_include_directories_bnep_lwip
+    src
+    platform/lwip
+)
+
+set(btstack_consumer_include_directories_bnep_lwip
     platform/lwip
 )
 
@@ -1278,44 +1283,6 @@ set(btstack_include_directories_link_key_db_tlv
     src
 )
 
-set(btstack_sources_lwip
-    3rd-party/lwip/core/src/core/def.c
-    3rd-party/lwip/core/src/core/inet_chksum.c
-    3rd-party/lwip/core/src/core/init.c
-    3rd-party/lwip/core/src/core/ip.c
-    3rd-party/lwip/core/src/core/mem.c
-    3rd-party/lwip/core/src/core/memp.c
-    3rd-party/lwip/core/src/core/netif.c
-    3rd-party/lwip/core/src/core/pbuf.c
-    3rd-party/lwip/core/src/core/tcp.c
-    3rd-party/lwip/core/src/core/tcp_in.c
-    3rd-party/lwip/core/src/core/tcp_out.c
-    3rd-party/lwip/core/src/core/timeouts.c
-    3rd-party/lwip/core/src/core/udp.c
-    3rd-party/lwip/core/src/core/ipv4/acd.c
-    3rd-party/lwip/core/src/core/ipv4/dhcp.c
-    3rd-party/lwip/core/src/core/ipv4/etharp.c
-    3rd-party/lwip/core/src/core/ipv4/icmp.c
-    3rd-party/lwip/core/src/core/ipv4/ip4.c
-    3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
-    3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
-    3rd-party/lwip/core/src/netif/ethernet.c
-    3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
-    3rd-party/lwip/core/src/apps/http/fs.c
-    3rd-party/lwip/core/src/apps/http/httpd.c
-    3rd-party/lwip/dhcp-server/dhserver.c
-    platform/lwip/port/sys_arch.c
-    platform/lwip/bnep_lwip.c
-)
-
-set(btstack_include_directories_lwip
-    src
-    3rd-party/lwip/core/src/include
-    3rd-party/lwip/dhcp-server
-    platform/lwip
-    platform/lwip/port
-)
-
 set(btstack_sources_lwip_core
     3rd-party/lwip/core/src/core/def.c
     3rd-party/lwip/core/src/core/inet_chksum.c
@@ -1791,6 +1758,37 @@ set(btstack_sources_third_party_lc3_google
 
 set(btstack_include_directories_third_party_lc3_google
     3rd-party/lc3-google/include
+)
+
+set(btstack_sources_third_party_lwip
+    3rd-party/lwip/core/src/core/def.c
+    3rd-party/lwip/core/src/core/inet_chksum.c
+    3rd-party/lwip/core/src/core/init.c
+    3rd-party/lwip/core/src/core/ip.c
+    3rd-party/lwip/core/src/core/mem.c
+    3rd-party/lwip/core/src/core/memp.c
+    3rd-party/lwip/core/src/core/netif.c
+    3rd-party/lwip/core/src/core/pbuf.c
+    3rd-party/lwip/core/src/core/tcp.c
+    3rd-party/lwip/core/src/core/tcp_in.c
+    3rd-party/lwip/core/src/core/tcp_out.c
+    3rd-party/lwip/core/src/core/timeouts.c
+    3rd-party/lwip/core/src/core/udp.c
+    3rd-party/lwip/core/src/core/ipv4/acd.c
+    3rd-party/lwip/core/src/core/ipv4/dhcp.c
+    3rd-party/lwip/core/src/core/ipv4/etharp.c
+    3rd-party/lwip/core/src/core/ipv4/icmp.c
+    3rd-party/lwip/core/src/core/ipv4/ip4.c
+    3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
+    3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
+    3rd-party/lwip/core/src/netif/ethernet.c
+    platform/lwip/port/sys_arch.c
+)
+
+set(btstack_include_directories_third_party_lwip
+    src
+    3rd-party/lwip/core/src/include
+    platform/lwip/port
 )
 
 set(btstack_sources_third_party_md5
