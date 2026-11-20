@@ -29,7 +29,7 @@ python3 tool/btstack_groups.py info gatt-server
 
 ### Macros in `btstack_config.h`
 
-BTstack is configured by the C preprocessor macros visible while it is compiled. `btstack_config.h` normally defines most of them, although the build can also provide compiler definitions. The header is owned by the project or port; CMake does not generate or modify it.
+BTstack is configured by the C preprocessor macros visible while it is compiled. `btstack_config.h` defines most of them, although the build can also provide additional compiler definitions. This header file is owned by the project or port; the CMake helpers do not generate or modify it.
 
 The macros fall into three broad categories:
 
@@ -41,7 +41,7 @@ For the complete list and their C-level meaning, see the [general configuration 
 
 ### Capabilities
 
-A capability is a CMake-level promise that a port provides an optional service to an application, such as `audio` or `led`. A port declares a capability with `btstack_declare_port_capability`, supplying the source groups, port-local sources, public include directories, and compile definitions that implement that service.
+A capability is an optional service a port provides to applications, such as `audio` or `led`. A port declares a capability with `btstack_declare_port_capability`, supplying its source groups, port-local sources, public include directories, and compile definitions. The public include directories contain headers needed by the application or other consumers of the capability; they are added to the application library and passed to targets that link it.
 
 Capabilities and `HAVE_*` macros can describe related aspects of a port, but they solve different problems:
 
