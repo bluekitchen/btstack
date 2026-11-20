@@ -32,6 +32,9 @@ if(PORTAUDIO_FOUND)
     message("HAVE_PORTAUDIO")
     btstack_declare_port_capability(CAPABILITY audio
         DEFINES HAVE_PORTAUDIO
+        INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES ${PORTAUDIO_LIBRARIES}
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 endif()
@@ -90,15 +93,12 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
             ${LIBUSB_INCLUDE_DIRS}
-            ${PORTAUDIO_INCLUDE_DIRS}
         LINK_DIRECTORIES
             ${LIBUSB_LIBRARY_DIRS}
-            ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES
             ${LIBUSB_LIBRARIES}
             ${CMAKE_THREAD_LIBS_INIT}
             m
-            ${PORTAUDIO_LIBRARIES}
     )
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})

@@ -997,12 +997,12 @@ function(btstack_declare_port_capability)
     set(arguments ${ARGN})
     if(arguments)
         list(GET arguments 0 first_argument)
-        if(NOT first_argument MATCHES "^(PORT|CAPABILITY|GROUPS|SOURCES|PUBLIC_INCLUDE_DIRECTORIES|DEFINES)$")
+        if(NOT first_argument MATCHES "^(PORT|CAPABILITY|GROUPS|SOURCES|PUBLIC_INCLUDE_DIRECTORIES|INCLUDE_DIRECTORIES|LINK_DIRECTORIES|LINK_LIBRARIES|DEFINES)$")
             set(positional_port "${first_argument}")
             list(REMOVE_AT arguments 0)
         endif()
     endif()
-    cmake_parse_arguments(ARG "" "PORT;CAPABILITY" "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES;DEFINES" ${arguments})
+    cmake_parse_arguments(ARG "" "PORT;CAPABILITY" "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES;INCLUDE_DIRECTORIES;LINK_DIRECTORIES;LINK_LIBRARIES;DEFINES" ${arguments})
     if(positional_port AND ARG_PORT)
         message(FATAL_ERROR "btstack_declare_port_capability: provide only one port")
     endif()
@@ -1018,9 +1018,9 @@ function(btstack_declare_port_capability)
     if(NOT ARG_CAPABILITY)
         message(FATAL_ERROR "btstack_declare_port_capability(${port}) requires CAPABILITY")
     endif()
-    if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES AND NOT ARG_DEFINES)
+    if(NOT ARG_GROUPS AND NOT ARG_SOURCES AND NOT ARG_PUBLIC_INCLUDE_DIRECTORIES AND NOT ARG_INCLUDE_DIRECTORIES AND NOT ARG_LINK_DIRECTORIES AND NOT ARG_LINK_LIBRARIES AND NOT ARG_DEFINES)
         message(FATAL_ERROR
-            "btstack_declare_port_capability(${port}) requires GROUPS, SOURCES, PUBLIC_INCLUDE_DIRECTORIES, or DEFINES")
+            "btstack_declare_port_capability(${port}) requires build inputs")
     endif()
 
     foreach(group IN LISTS ARG_GROUPS)
@@ -1046,6 +1046,12 @@ function(btstack_declare_port_capability)
     list(REMOVE_DUPLICATES provider_include_directories)
     set(${provider_include_directories_variable}
         "${provider_include_directories}" PARENT_SCOPE)
+
+    foreach(property IN ITEMS INCLUDE_DIRECTORIES LINK_DIRECTORIES LINK_LIBRARIES)
+        string(TOLOWER "${property}" property_suffix)
+        set(property_variable "${provider_variable}_${property_suffix}")
+        set(${property_variable} ${${property_variable}} ${ARG_${property}} PARENT_SCOPE)
+    endforeach()
 
     set(provider_sources_variable "${provider_variable}_sources")
     set(provider_sources ${${provider_sources_variable}} ${ARG_SOURCES})
@@ -1144,7 +1150,9 @@ function(btstack_collect_example_port_provider_property output_variable port exa
         list(APPEND values ${${provider_variable}_${property}})
     endforeach()
 
-    list(REMOVE_DUPLICATES values)
+    if(NOT property STREQUAL "link_libraries")
+        list(REMOVE_DUPLICATES values)
+    endif()
     if(property STREQUAL "defines")
         set(definition_names)
         foreach(definition IN LISTS values)
@@ -1440,7 +1448,7 @@ endfunction()
 function(btstack_add_scoped_group_object_library)
     cmake_parse_arguments(ARG ""
         "OUTPUT_TARGET;TARGET_PREFIX;GROUP"
-        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;DEFINES"
+        "PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;CAPABILITY_INCLUDE_DIRECTORIES;DEFINES"
         ${ARGN})
 
     foreach(required OUTPUT_TARGET TARGET_PREFIX GROUP)
@@ -1458,7 +1466,7 @@ function(btstack_add_scoped_group_object_library)
     string(REPLACE "-" "_" group_suffix "${ARG_GROUP}")
     set(definition_key ${ARG_DEFINES})
     list(SORT definition_key)
-    string(SHA256 definition_hash "${definition_key}")
+    string(SHA256 definition_hash "${definition_key}|${ARG_CAPABILITY_INCLUDE_DIRECTORIES}")
     string(SUBSTRING "${definition_hash}" 0 16 definition_hash)
     set(target "${ARG_TARGET_PREFIX}_group_${group_suffix}_${definition_hash}_objects")
     if(NOT TARGET ${target})
@@ -1506,6 +1514,7 @@ function(btstack_add_scoped_group_object_library)
         target_include_directories(${target} PRIVATE
             ${ARG_PUBLIC_INCLUDE_DIRECTORIES}
             ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+            ${ARG_CAPABILITY_INCLUDE_DIRECTORIES}
             ${group_include_directories}
         )
     endif()
@@ -1587,6 +1596,10 @@ function(btstack_add_application_library)
         ${ARG_PORT} ${ARG_APPLICATION})
     btstack_collect_example_port_provider_property(example_defines
         "${ARG_PORT}" "${ARG_APPLICATION}" defines)
+    foreach(property IN ITEMS include_directories link_directories link_libraries)
+        btstack_collect_example_port_provider_property(example_capability_${property}
+            "${ARG_PORT}" "${ARG_APPLICATION}" "${property}")
+    endforeach()
     btstack_filter_groups_for_port(active_base_groups
         PORT ${ARG_PORT}
         GROUPS ${ARG_BASE_GROUPS})
@@ -1609,6 +1622,7 @@ function(btstack_add_application_library)
             TARGET_PREFIX "btstack_${ARG_PORT}"
             GROUP "${group}"
             DEFINES ${example_defines}
+            CAPABILITY_INCLUDE_DIRECTORIES ${example_capability_include_directories}
             PUBLIC_INCLUDE_DIRECTORIES ${public_include_directories}
             PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
             PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
@@ -1655,13 +1669,14 @@ function(btstack_add_application_library)
     endif()
     target_include_directories(${ARG_TARGET} PRIVATE
         ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+        ${example_capability_include_directories}
         ${example_include_directories}
     )
-    if(ARG_LINK_DIRECTORIES)
-        target_link_directories(${ARG_TARGET} PUBLIC ${ARG_LINK_DIRECTORIES})
+    if(ARG_LINK_DIRECTORIES OR example_capability_link_directories)
+        target_link_directories(${ARG_TARGET} PUBLIC ${ARG_LINK_DIRECTORIES} ${example_capability_link_directories})
     endif()
-    if(ARG_LINK_LIBRARIES)
-        target_link_libraries(${ARG_TARGET} PUBLIC ${ARG_LINK_LIBRARIES})
+    if(ARG_LINK_LIBRARIES OR example_capability_link_libraries)
+        target_link_libraries(${ARG_TARGET} PUBLIC ${ARG_LINK_LIBRARIES} ${example_capability_link_libraries})
     endif()
 
     get_target_property(info_include_directories ${ARG_TARGET} INCLUDE_DIRECTORIES)

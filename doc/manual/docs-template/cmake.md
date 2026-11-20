@@ -43,7 +43,7 @@ For the complete list and their C-level meaning, see the [general configuration 
 
 ### Capabilities
 
-A capability is an optional service a port provides to applications, such as `audio` or `led`. A port declares a capability with `btstack_declare_port_capability`, supplying its source groups, port-local sources, public include directories, and compile definitions. The public include directories contain headers needed by the application or other consumers of the capability; they are added to the application library and passed to targets that link it.
+A capability is an optional service a port provides to applications, such as `audio` or `led`. A port declares a capability with `btstack_declare_port_capability`, supplying its source groups, port-local sources, include directories, compile definitions, and link dependencies. The public include directories contain headers needed by the application or other consumers of the capability; they are added to the application library and passed to targets that link it.
 
 Capabilities and `HAVE_*` macros can describe related aspects of a port, but they solve different problems:
 
@@ -52,7 +52,7 @@ Capabilities and `HAVE_*` macros can describe related aspects of a port, but the
 | `HAVE_*` macro | A C-level fact about the selected platform implementation. | Lets C code conditionally compile for that fact. It does not add source files, headers, or libraries. |
 | Capability | An application-facing service offered by the port. | Adds the build inputs required by that service when an application requests it. |
 
-For example, `HAVE_PORTAUDIO` can let a port's `main.c` select its PortAudio backend. The `audio` capability lets an application request audio without knowing whether the port uses PortAudio, an embedded driver, or another implementation. Discovering PortAudio and defining `HAVE_PORTAUDIO` alone does not make the `audio` capability available: the port must declare and integrate the service.
+For example, `HAVE_PORTAUDIO` allows a port's `main.c` to select its PortAudio backend. The `audio` capability lets an application request audio without knowing whether the port uses PortAudio, an embedded driver, or another implementation. Discovering PortAudio and defining `HAVE_PORTAUDIO` alone does not make the `audio` capability available: the port must declare and integrate the service.
 
 ```cmake
 find_package(PkgConfig REQUIRED)
@@ -61,11 +61,14 @@ pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
     btstack_declare_port_capability(CAPABILITY audio
         GROUPS platform-posix-audio-portaudio platform-posix-wav
-        DEFINES HAVE_PORTAUDIO)
+        DEFINES HAVE_PORTAUDIO
+        INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES ${PORTAUDIO_LIBRARIES})
 endif()
 ```
 
-The capability declaration does not find or link an external library. The port must still add PortAudio's include paths and link libraries to the targets that need them.
+The port detects PortAudio before declaring the capability. `INCLUDE_DIRECTORIES` supplies private paths to the application library’s port sources and group objects; `PUBLIC_INCLUDE_DIRECTORIES` is for headers also needed by targets linking that library. Link directories and libraries are propagated to the final executable only when the capability is requested. Group object targets are shared only when capability definitions and private include paths match.
 
 ### Application `NEEDS`
 

@@ -17,6 +17,9 @@ if(PORTAUDIO_FOUND)
 
     btstack_declare_port_capability(CAPABILITY audio
         DEFINES HAVE_PORTAUDIO
+        INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES ${PORTAUDIO_LIBRARIES}
         GROUPS platform-posix-audio-portaudio platform-posix-wav)
 endif()
 find_package(Threads REQUIRED)
@@ -51,9 +54,7 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
             "${BTSTACK_ROOT}/platform/posix"
-            ${PORTAUDIO_INCLUDE_DIRS}
-        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
-        LINK_LIBRARIES Threads::Threads netgraph m ${PORTAUDIO_LIBRARIES})
+        LINK_LIBRARIES Threads::Threads netgraph m)
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)
