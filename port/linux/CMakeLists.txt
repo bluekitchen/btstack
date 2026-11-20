@@ -20,12 +20,18 @@ if(PORTAUDIO_FOUND)
     message("PortAudio audio port selected")
     btstack_declare_port_capability(CAPABILITY audio
         DEFINES HAVE_PORTAUDIO
+        INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+        LINK_LIBRARIES ${PORTAUDIO_LIBRARIES}
         GROUPS platform-posix-audio-portaudio platform-posix-wav
     )
 elseif(ALSA_FOUND)
     message("ALSA audio port selected")
     btstack_declare_port_capability(CAPABILITY audio
         DEFINES HAVE_ALSA
+        INCLUDE_DIRECTORIES ${ALSA_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${ALSA_LIBRARY_DIRS}
+        LINK_LIBRARIES ${ALSA_LIBRARIES}
         GROUPS platform-linux-audio-alsa platform-posix-wav
     )
 endif()
@@ -69,16 +75,10 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
-            ${PORTAUDIO_INCLUDE_DIRS}
-            ${ALSA_INCLUDE_DIRS}
-        LINK_DIRECTORIES
-            ${PORTAUDIO_LIBRARY_DIRS}
-            ${ALSA_LIBRARY_DIRS}
         LINK_LIBRARIES
             ${CMAKE_THREAD_LIBS_INIT}
             m
-            ${PORTAUDIO_LIBRARIES}
-            ${ALSA_LIBRARIES}
+
     )
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})

@@ -132,25 +132,36 @@ class ExternalProjectTest(unittest.TestCase):
         source = self.directory / "capabilities"
         source.mkdir()
         (source / "btstack_config.h").write_text((STANDALONE / "btstack_config.h").read_text(), encoding="utf-8")
+        (source / "audio-include").mkdir()
+        (source / "audio-include" / "audio_test.h").write_text("int audio_test(void);\n", encoding="utf-8")
+        (source / "audio.c").write_text("int audio_test(void) { return 0; }\n", encoding="utf-8")
         (source / "port.c").write_text(
-            "#ifdef EXPECT_AUDIO\n#ifndef HAVE_TEST_AUDIO\n#error missing capability\n#endif\n"
+            "#ifdef EXPECT_AUDIO\n#include <audio_test.h>\n#ifndef HAVE_TEST_AUDIO\n#error missing capability\n#endif\n"
             "#else\n#ifdef HAVE_TEST_AUDIO\n#error leaked capability\n#endif\n#endif\n"
-            "int port_function(void) { return 0; }\n", encoding="utf-8")
-        (source / "main.c").write_text("int main(void) { return 0; }\n", encoding="utf-8")
+            "int port_function(void) {\n#ifdef EXPECT_AUDIO\n return audio_test();\n#else\n return 0;\n#endif\n}\n", encoding="utf-8")
+        (source / "main.c").write_text("int port_function(void); int main(void) { return port_function(); }\n", encoding="utf-8")
         (source / "CMakeLists.txt").write_text(
             'cmake_minimum_required(VERSION 3.18)\nproject(capabilities C)\n'
             'set(CMAKE_EXPORT_COMPILE_COMMANDS ON)\ninclude("${BTSTACK_MODULE}")\n'
             'btstack_declare_port(test)\n'
+            'add_library(audio_dependency STATIC audio.c)\n'
             'btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")\n'
-            'btstack_declare_port_capability(CAPABILITY audio GROUPS core DEFINES HAVE_TEST_AUDIO EXPECT_AUDIO)\n'
+            'btstack_declare_port_capability(CAPABILITY audio GROUPS core DEFINES HAVE_TEST_AUDIO EXPECT_AUDIO '
+            'INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/audio-include" LINK_LIBRARIES audio_dependency)\n'
             'btstack_declare_application(audio_app SOURCES main.c NEEDS core audio)\n'
             'btstack_declare_application(plain_app SOURCES main.c NEEDS core)\n'
             'btstack_filter_applications_for_port(selected CANDIDATES audio_app plain_app)\n'
+            'btstack_add_scoped_group_object_library(OUTPUT_TARGET obj_a TARGET_PREFIX check GROUP core CAPABILITY_INCLUDE_DIRECTORIES /one)\n'
+            'btstack_add_scoped_group_object_library(OUTPUT_TARGET obj_b TARGET_PREFIX check GROUP core CAPABILITY_INCLUDE_DIRECTORIES /two)\n'
+            'if(obj_a STREQUAL obj_b)\n message(FATAL_ERROR "Include paths must distinguish group targets")\nendif()\n'
+            'set_target_properties(${obj_a} ${obj_b} PROPERTIES EXCLUDE_FROM_ALL TRUE)\n'
             'foreach(app IN LISTS selected)\n'
             '  btstack_add_application_library(TARGET lib_${app} APPLICATION ${app} BASE_GROUPS core '
             'PORT_SOURCES port.c PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")\n'
             '  btstack_add_application_executable(${app} APPLICATION ${app})\n'
-            '  target_link_libraries(${app} PRIVATE lib_${app})\nendforeach()\n', encoding="utf-8")
+            '  target_link_libraries(${app} PRIVATE lib_${app})\nendforeach()\n'
+            'get_target_property(plain_links lib_plain_app INTERFACE_LINK_LIBRARIES)\n'
+            'if(plain_links MATCHES "audio_dependency")\n message(FATAL_ERROR "Audio dependency leaked to plain app")\nendif()\n', encoding="utf-8")
         build = self.directory / "capabilities-build"
         result = self.cmake("-S", source, "-B", build,
                             f"-DBTSTACK_MODULE={ROOT / 'tool' / 'cmake' / 'BTstack.cmake'}")
@@ -158,9 +169,11 @@ class ExternalProjectTest(unittest.TestCase):
         result = self.cmake("--build", build, "--parallel", "2")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         commands = json.loads((build / "compile_commands.json").read_text())
-        core = [x["command"] for x in commands if x["file"].endswith("/src/btstack_memory.c")]
+        core = [x["command"] for x in commands if x["file"].endswith("/src/btstack_memory.c")
+                and "check_group_core" not in x["command"]]
         self.assertEqual(len(core), 2)
         self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in core), 1)
+        self.assertEqual(sum("audio-include" in command for command in core), 1)
         mains = [x["command"] for x in commands if x["file"].endswith("/main.c")]
         self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in mains), 1)
 

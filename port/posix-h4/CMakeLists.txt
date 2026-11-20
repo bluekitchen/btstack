@@ -31,6 +31,9 @@ if (PkgConfig_FOUND)
         message("HAVE_PORTAUDIO")
         btstack_declare_port_capability(CAPABILITY audio
             DEFINES HAVE_PORTAUDIO
+            INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+            LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+            LINK_LIBRARIES ${PORTAUDIO_LIBRARIES}
             GROUPS platform-posix-audio-portaudio platform-posix-wav
         )
     endif()
@@ -130,13 +133,10 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PUBLIC_INCLUDE_DIRECTORIES
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
-            ${PORTAUDIO_INCLUDE_DIRS}
         PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
-        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
         LINK_LIBRARIES
             ${CMAKE_THREAD_LIBS_INIT}
             m
-            ${PORTAUDIO_LIBRARIES}
     )
     add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
 

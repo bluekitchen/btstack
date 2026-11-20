@@ -12,6 +12,9 @@ if(PkgConfig_FOUND)
         message("HAVE_PORTAUDIO")
         btstack_declare_port_capability(CAPABILITY audio
             DEFINES HAVE_PORTAUDIO
+            INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+            LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+            LINK_LIBRARIES ${PORTAUDIO_LIBRARIES}
             GROUPS platform-posix-audio-portaudio platform-posix-wav)
     endif()
 endif()
@@ -47,11 +50,10 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         BASE_GROUPS ${BTSTACK_WINDOWS_H4_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
-            "${CMAKE_CURRENT_SOURCE_DIR}" ${PORTAUDIO_INCLUDE_DIRS}
+            "${CMAKE_CURRENT_SOURCE_DIR}"
         PRIVATE_INCLUDE_DIRECTORIES
             "${BTSTACK_ROOT}/chipset/cc256x"
-        LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
-        LINK_LIBRARIES ${PORTAUDIO_LIBRARIES})
+    )
     add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)

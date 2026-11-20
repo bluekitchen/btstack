@@ -16,6 +16,9 @@ btstack_declare_port(qt-usb)
 
 btstack_declare_port_capability(CAPABILITY audio
     DEFINES HAVE_PORTAUDIO
+    INCLUDE_DIRECTORIES ${PORTAUDIO_INCLUDE_DIRS}
+    LINK_DIRECTORIES ${PORTAUDIO_LIBRARY_DIRS}
+    LINK_LIBRARIES ${PORTAUDIO_LIBRARIES}
     GROUPS platform-posix-audio-portaudio platform-posix-wav)
 btstack_declare_port_capability(CAPABILITY led
     GROUPS platform-posix-hal-led
@@ -40,9 +43,9 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
  APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_QT_USB_GROUPS}
         PUBLIC_INCLUDE_DIRECTORIES
-            "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS} ${PORTAUDIO_INCLUDE_DIRS}
-        LINK_DIRECTORIES ${LIBUSB_LIBRARY_DIRS} ${PORTAUDIO_LIBRARY_DIRS}
-        LINK_LIBRARIES ${LIBUSB_LIBRARIES} ${PORTAUDIO_LIBRARIES} Qt5::Core)
+            "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS}
+        LINK_DIRECTORIES ${LIBUSB_LIBRARY_DIRS}
+        LINK_LIBRARIES ${LIBUSB_LIBRARIES} Qt5::Core)
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE}
         SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
             "${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp")
