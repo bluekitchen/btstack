@@ -12,6 +12,7 @@ pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(qt-h4)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 
 btstack_declare_port_capability(CAPABILITY audio
     DEFINES HAVE_PORTAUDIO

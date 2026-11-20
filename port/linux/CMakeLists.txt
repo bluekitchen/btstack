@@ -6,6 +6,7 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(linux)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 
 set(SOURCES_PORT main.c)
 

@@ -15,6 +15,7 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 btstack_declare_port(posix-h4)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 # Port specific files
 set(SOURCES_PORT
     main.c

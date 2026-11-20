@@ -54,6 +54,7 @@ set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(stm32-f4discovery-cyw55310)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 btstack_declare_port_capability(CAPABILITY audio
     GROUPS platform-embedded-audio
     PUBLIC_INCLUDE_DIRECTORIES

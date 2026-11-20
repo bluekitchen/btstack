@@ -11,6 +11,7 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 # Set up port
 btstack_declare_port(libusb)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 # Port specific files
 set(SOURCES_PORT
     main.c

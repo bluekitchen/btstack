@@ -25,6 +25,7 @@ get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(rp2040-vela-if820)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 btstack_declare_port_capability(CAPABILITY audio
     PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
 

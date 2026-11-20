@@ -5,6 +5,7 @@ project(BTstack-libusb-intel)
 set(BTSTACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 btstack_declare_port(libusb-intel)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)

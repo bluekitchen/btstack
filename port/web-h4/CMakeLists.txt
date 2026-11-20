@@ -10,6 +10,7 @@ include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 include(${BTSTACK_ROOT}/tool/cmake/BTstackFirmware.cmake)
 include(${BTSTACK_ROOT}/chipset/bcm/btstack_bcm_patchram.cmake)
 btstack_declare_port(web-h4)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 
 set(PATCHRAM_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BTSTACK_CYW55310_PATCHRAM_FILE}")
 btstack_add_firmware_download(

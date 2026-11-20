@@ -5,6 +5,7 @@ get_filename_component(BTSTACK_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 include(${BTSTACK_ROOT}/tool/cmake/BTstack.cmake)
 
 btstack_declare_port(freebsd-netgraph)
+include(${BTSTACK_ROOT}/platform/lwip/btstack_lwip.cmake)
 
 # main.c supplies the LED implementation and uses PortAudio when available.
 btstack_declare_port_capability(CAPABILITY led
