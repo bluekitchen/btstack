@@ -15,6 +15,8 @@ A source group is a named collection of related BTstack source files. Request th
 
 The generated catalog in `tool/cmake/BTstackSources.cmake` records the source files, private include directories, and public include directories associated with groups. It also records BTstack's common public include directories. BlueKitchen maintains the catalog with `tool/create_cmake_sources.py`.
 
+Private include directories are used to compile an implementation. Public include directories contain headers needed by code using the library and are passed to targets that link it. Groups, ports, and capabilities can each contribute public include directories when they are selected.
+
 Groups are reusable BTstack components, not complete board configurations. A project or port still chooses its run loop, HCI transport, storage backend, chipset support, SDK integration, and board-specific files.
 
 To browse the catalog from the BTstack repository root:
@@ -25,7 +27,7 @@ python3 tool/btstack_groups.py list --filter run-loop
 python3 tool/btstack_groups.py info gatt-server
 ```
 
-`info` shows a group's direct dependencies, resolved group set, required configuration macros, source files, and consumer include directories. Both source and include paths are relative to the BTstack root. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure. Run `python3 tool/btstack_groups.py --help` for all commands and options. The wrapper requires CMake on `PATH`, but can run from any directory.
+`info` shows a group's direct dependencies, resolved group set, required configuration macros, source files, and public include directories. Both source and include paths are relative to the BTstack root. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure. Run `python3 tool/btstack_groups.py --help` for all commands and options. The wrapper requires CMake on `PATH`, but can run from any directory.
 
 ### Macros in `btstack_config.h`
 
