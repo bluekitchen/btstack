@@ -31,11 +31,8 @@ btstack_declare_port_capability(CAPABILITY audio
 # The feature macros live in btstack_config.h. Keeping ENABLE_BLE and
 # ENABLE_CLASSIC in that file (rather than inheriting them from pico-sdk's
 # pico_btstack_ble/classic targets) makes it the single source of truth.
-btstack_configure_port(OUTPUT BTSTACK_CONFIG_MACROS
+btstack_configure_port(
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
-
-string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
-message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_DISPLAY}")
 
 # port specific source files
 set(SOURCES_PORT
