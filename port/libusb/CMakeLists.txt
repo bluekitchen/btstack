@@ -67,11 +67,8 @@ set(BTSTACK_LIBUSB_GROUPS
 # Use the C preprocessor to obtain the effective BTstack configuration macros.
 # This lets the resolver use the same conditional configuration that
 # compilation sees, without requiring btstack_config.h to be generated.
-btstack_configure_port(OUTPUT BTSTACK_CONFIG_MACROS
+btstack_configure_port(
     CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")
-
-string(JOIN ", " BTSTACK_CONFIG_MACROS_DISPLAY ${BTSTACK_CONFIG_MACROS})
-message(STATUS "BTstack config ENABLE_*/HAVE_* macros: ${BTSTACK_CONFIG_MACROS_DISPLAY}")
 
 
 # Get the declared examples supported by this port configuration and providers.
