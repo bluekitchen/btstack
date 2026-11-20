@@ -25,6 +25,7 @@ set(btstack_source_groups
     audio-demo
     ble
     bnep
+    bnep-lwip
     chipset-atwilc3000
     chipset-bcm
     chipset-cc256x
@@ -234,6 +235,14 @@ set(btstack_sources_bnep
 
 set(btstack_include_directories_bnep
     src
+)
+
+set(btstack_sources_bnep_lwip
+    platform/lwip/bnep_lwip.c
+)
+
+set(btstack_include_directories_bnep_lwip
+    platform/lwip
 )
 
 set(btstack_sources_chipset_atwilc3000
@@ -1370,13 +1379,11 @@ set(btstack_include_directories_lwip_netif
 
 set(btstack_sources_lwip_platform
     platform/lwip/port/sys_arch.c
-    platform/lwip/bnep_lwip.c
 )
 
 set(btstack_include_directories_lwip_platform
     src
     3rd-party/lwip/core/src/include
-    platform/lwip
     platform/lwip/port
 )
 

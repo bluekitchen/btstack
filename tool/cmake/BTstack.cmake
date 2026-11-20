@@ -100,6 +100,10 @@ set(btstack_group_dependencies_classic_obex_srm_server
 set(btstack_group_dependencies_classic_pan
     core-classic
 )
+# lwIP headers and configuration come from the port's chosen provider.
+set(btstack_group_dependencies_bnep_lwip
+    bnep
+)
 set(btstack_group_dependencies_classic_sdp_util
     core-classic
 )

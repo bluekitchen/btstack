@@ -171,6 +171,8 @@ EXPLICIT_GROUP_SOURCES = {
     ],
     "lwip-platform": [
         "platform/lwip/port/sys_arch.c",
+    ],
+    "bnep-lwip": [
         "platform/lwip/bnep_lwip.c",
     ],
     "third-party-bluedroid-sbc-decoder": [
@@ -241,6 +243,7 @@ LWIP_GROUPS = [
     "lwip-httpd",
     "lwip-dhcp-server",
     "lwip-platform",
+    "bnep-lwip",
 ]
 
 BLUEDROID_SBC_GROUPS = [
@@ -303,9 +306,10 @@ GROUP_INCLUDE_DIRECTORIES = {
     "lwip-platform": [
         "src",
         "3rd-party/lwip/core/src/include",
-        "platform/lwip",
         "platform/lwip/port",
     ],
+    # The port's chosen lwIP supplies its headers and lwipopts.h.
+    "bnep-lwip": ["src", "platform/lwip"],
     "lwip": [
         "src",
         "3rd-party/lwip/core/src/include",
