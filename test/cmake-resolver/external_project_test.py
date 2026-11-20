@@ -189,7 +189,7 @@ class ExternalProjectTest(unittest.TestCase):
             'include("${BTSTACK_MODULE}")\n'
             'btstack_declare_port(test)\n'
             'btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")\n'
-            'btstack_declare_port_capability(CAPABILITY lwip GROUPS third-party-lwip PUBLIC_INCLUDE_DIRECTORIES '
+            'btstack_declare_port_capability(CAPABILITY lwip GROUPS third-party-lwip lwip-platform PUBLIC_INCLUDE_DIRECTORIES '
             '"${BTSTACK_ROOT}/3rd-party/lwip/core/src/include" "${BTSTACK_ROOT}/platform/lwip/port")\n'
             'btstack_declare_application(app SOURCES main.c NEEDS bnep-lwip)\n'
             'btstack_add_application_library(TARGET app_lib APPLICATION app BASE_GROUPS core PORT_SOURCES port.c '

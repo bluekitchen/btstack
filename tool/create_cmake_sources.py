@@ -240,7 +240,6 @@ LWIP_GROUPS = [
     "lwip-core",
     "lwip-ipv4",
     "lwip-netif",
-    "lwip-platform",
 ]
 
 BLUEDROID_SBC_GROUPS = [
@@ -310,7 +309,6 @@ GROUP_INCLUDE_DIRECTORIES = {
     "third-party-lwip": [
         "src",
         "3rd-party/lwip/core/src/include",
-        "platform/lwip/port",
     ],
     "third-party-bluedroid-sbc-decoder": [
         "3rd-party/bluedroid/decoder/include",

@@ -99,7 +99,7 @@ else()
     btstack_declare_application(test_bnep_lwip SOURCES "${BTSTACK_ROOT}/example/spp_counter.c" NEEDS bnep-lwip)
     btstack_declare_port(test-lwip-bundled)
     btstack_set_port_configuration_macros(test-lwip-bundled ENABLE_CLASSIC)
-    btstack_declare_port_capability(test-lwip-bundled CAPABILITY lwip GROUPS third-party-lwip
+    btstack_declare_port_capability(test-lwip-bundled CAPABILITY lwip GROUPS third-party-lwip lwip-platform
         PUBLIC_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/3rd-party/lwip/core/src/include")
     btstack_declare_port(test-lwip-external)
     btstack_set_port_configuration_macros(test-lwip-external ENABLE_CLASSIC)
@@ -115,9 +115,26 @@ else()
     btstack_collect_example_port_public_include_directories(external_includes test-lwip-external test_bnep_lwip)
     btstack_collect_example_port_provider_property(external_libraries test-lwip-external test_bnep_lwip link_libraries)
     if(NOT "bnep" IN_LIST external_groups OR NOT "third-party-lwip" IN_LIST bundled_groups OR
+       NOT "lwip-platform" IN_LIST bundled_groups OR "lwip-platform" IN_LIST external_groups OR
        "third-party-lwip" IN_LIST external_groups OR NOT "${external_includes}" STREQUAL "/external/lwip/include" OR
        NOT "${external_libraries}" STREQUAL "external_lwip")
         message(FATAL_ERROR "lwIP provider resolution failed")
+    endif()
+    if("platform/lwip/port/sys_arch.c" IN_LIST btstack_sources_third_party_lwip OR
+       "platform/lwip/port" IN_LIST btstack_include_directories_third_party_lwip OR
+       NOT "platform/lwip/port/sys_arch.c" IN_LIST btstack_sources_lwip_platform)
+        message(FATAL_ERROR "Bundled lwIP must not include the BTstack system integration")
+    endif()
+    btstack_filter_examples_for_port(pan_without_services PORT test-lwip-bundled
+        CANDIDATES pan_lwip_http_server)
+    btstack_declare_port_capability(test-lwip-bundled CAPABILITY lwip-httpd-service GROUPS lwip-httpd)
+    btstack_filter_examples_for_port(pan_without_dhcp PORT test-lwip-bundled
+        CANDIDATES pan_lwip_http_server)
+    btstack_declare_port_capability(test-lwip-bundled CAPABILITY lwip-dhcp-service GROUPS lwip-dhcp-server)
+    btstack_filter_examples_for_port(pan_with_services PORT test-lwip-bundled
+        CANDIDATES pan_lwip_http_server)
+    if(pan_without_services OR pan_without_dhcp OR NOT "${pan_with_services}" STREQUAL "pan_lwip_http_server")
+        message(FATAL_ERROR "PAN HTTP example must require lwIP HTTP and DHCP services")
     endif()
     set(btstack_current_port test-classic)
     btstack_set_port_configuration_macros(ENABLE_CLASSIC)

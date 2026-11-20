@@ -37,11 +37,16 @@ capability. A port that uses the bundled NO_SYS integration can register:
 
 ```cmake
 btstack_declare_port_capability(CAPABILITY lwip
-    GROUPS third-party-lwip
+    GROUPS third-party-lwip lwip-platform
     PUBLIC_INCLUDE_DIRECTORIES
         "${BTSTACK_ROOT}/3rd-party/lwip/core/src/include"
         "${BTSTACK_ROOT}/platform/lwip/port")
 ```
+
+`third-party-lwip` contains the bundled lwIP sources. `lwip-platform` adds
+BTstack's NO_SYS `sys_now()` implementation and configuration. A port can use
+the bundled sources with a different system integration by choosing its own
+configuration and system implementation instead of `lwip-platform`.
 
 A port using an SDK can instead register its lwIP library with
 `LINK_LIBRARIES` and expose its lwIP headers and configuration directories
@@ -50,4 +55,7 @@ for the separately compiled BTstack source groups. The provider must integrate
 lwIP timers and execution with the port's run loop and configure the APIs used
 by the BNEP adapter. HTTP and DHCP servers are separate from this capability.
 Applications requesting `bnep-lwip` are filtered out when the port does not
-provide `lwip`.
+provide `lwip`. `pan_lwip_http_server` additionally requires the
+`lwip-httpd-service` and `lwip-dhcp-service` capabilities. Their providers must
+expose compatible lwIP HTTP server APIs and the `dhserver.h` DHCP server API,
+respectively, and use the same lwIP configuration as the selected provider.

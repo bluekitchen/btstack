@@ -1782,13 +1782,11 @@ set(btstack_sources_third_party_lwip
     3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
     3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
     3rd-party/lwip/core/src/netif/ethernet.c
-    platform/lwip/port/sys_arch.c
 )
 
 set(btstack_include_directories_third_party_lwip
     src
     3rd-party/lwip/core/src/include
-    platform/lwip/port
 )
 
 set(btstack_sources_third_party_md5
