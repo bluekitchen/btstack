@@ -25,7 +25,7 @@ python3 tool/btstack_groups.py list --filter run-loop
 python3 tool/btstack_groups.py info gatt-server
 ```
 
-`info` shows a group's direct dependencies, resolved group set, required configuration macros, source files, and public include directories. Source paths are relative to the BTstack root; public include paths are absolute. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure. Run `python3 tool/btstack_groups.py --help` for all commands and options. The wrapper requires CMake on `PATH`, but can run from any directory.
+`info` shows a group's direct dependencies, resolved group set, required configuration macros, source files, and consumer include directories. Both source and include paths are relative to the BTstack root. Some direct dependencies are internal configuration markers, so they are not selectable groups and do not appear in the resolved source closure. Run `python3 tool/btstack_groups.py --help` for all commands and options. The wrapper requires CMake on `PATH`, but can run from any directory.
 
 ### Macros in `btstack_config.h`
 
