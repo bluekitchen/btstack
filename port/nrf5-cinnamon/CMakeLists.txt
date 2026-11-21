@@ -36,6 +36,7 @@ btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/port/btstack_config.h
 
 set(PORT_INCLUDES
     "${BTSTACK_ROOT}/platform/embedded"
+    "${BTSTACK_ROOT}/3rd-party/segger-rtt"
     "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/port"
     "${CMAKE_CURRENT_SOURCE_DIR}/pca10040/config"
     "${NRF5_SDK_ROOT}/integration/nrfx" "${NRF5_SDK_ROOT}/integration/nrfx/legacy"
@@ -50,7 +51,8 @@ set(PORT_SOURCES main.c port/hal_timer_nrf5.c port/ll_nrf5.c port/radio_nrf5.c
     "${NRF5_SDK_ROOT}/modules/nrfx/mdk/system_nrf52.c"
     "${NRF5_SDK_ROOT}/components/boards/boards.c")
 set(BASE_GROUPS core ble le-device-db-tlv tlv-none chipset-cinnamon
-    platform-embedded-run-loop third-party-segger-rtt third-party-micro-ecc third-party-rijndael)
+    platform-embedded-run-loop third-party-segger-rtt-core third-party-segger-rtt-printf
+    third-party-segger-rtt-syscalls third-party-micro-ecc third-party-rijndael)
 
 # Cinnamon currently supports only the examples built by the existing Makefile;
 # encryption and central connections are not implemented by its controller.

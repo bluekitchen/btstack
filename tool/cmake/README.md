@@ -30,6 +30,25 @@ It shows the complete port-independent internal group graph, including legacy
 aggregate groups. It does not infer dependencies from source includes, expand
 aggregate source lists into new edges, or select port capability providers.
 
+## SEGGER RTT
+
+Embedded ports select the RTT implementation and its matching headers directly.
+`third-party-segger-rtt-core`, `third-party-segger-rtt-printf`, and
+`third-party-segger-rtt-syscalls` contain the bundled core, formatted output,
+and GCC syscall retargeting respectively. Select only the pieces the port needs:
+the embedded RTT stdin adapter needs the core, while the RTT HCI dump also
+needs RTT printf. Syscall retargeting is optional; do not select it when the
+port supplies its own `_write` implementation. Add the chosen RTT header and
+configuration directories to the port's include directories for all relevant
+source groups.
+
+An SDK may supply the core instead of `third-party-segger-rtt-core`. For
+example, Pico SDK's `pico_stdio_rtt` supplies the core but not RTT printf; a
+port may select `third-party-segger-rtt-printf` with compatible SDK headers.
+Pico SDK interface sources must be linked only once, and Pico stdio and
+BTstack RTT stdin must not both consume RTT channel 0. The port must keep its
+source selections consistent with `ENABLE_SEGGER_RTT`.
+
 ## lwIP providers
 
 `bnep-lwip` depends on BTstack's `bnep` group and the port's `lwip`

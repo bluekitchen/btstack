@@ -388,15 +388,8 @@ set(btstack_group_dependencies_classic_spp_server
     core-classic
 )
 
-# These embedded adapters use SEGGER RTT when ENABLE_SEGGER_RTT is selected
-# in the port configuration.  Keep the header and implementation in the
-# same scoped closure as the adapters that consume them.
-set(btstack_group_dependencies_platform_embedded_hci_dump_segger_rtt
-    third-party-segger-rtt
-)
-set(btstack_group_dependencies_platform_embedded_stdin
-    third-party-segger-rtt
-)
+# Ports explicitly select an RTT core, printf and syscall retargeting as
+# needed, and provide matching headers when ENABLE_SEGGER_RTT is enabled.
 
 # During the incremental split, l2cap sources remain in the legacy core group
 # as well as their l2cap leaf group. Group object targets give each source one

@@ -178,7 +178,9 @@ set(btstack_source_groups
     third-party-micro-ecc
     third-party-qr-code-generator
     third-party-rijndael
-    third-party-segger-rtt
+    third-party-segger-rtt-core
+    third-party-segger-rtt-printf
+    third-party-segger-rtt-syscalls
     third-party-yxml
     tlv-none
     transport-em9304-spi
@@ -1821,14 +1823,28 @@ set(btstack_include_directories_third_party_rijndael
     3rd-party/rijndael
 )
 
-set(btstack_sources_third_party_segger_rtt
+set(btstack_sources_third_party_segger_rtt_core
     3rd-party/segger-rtt/SEGGER_RTT.c
-    3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
+)
+
+set(btstack_include_directories_third_party_segger_rtt_core
+    src
+)
+
+set(btstack_sources_third_party_segger_rtt_printf
     3rd-party/segger-rtt/SEGGER_RTT_printf.c
 )
 
-set(btstack_include_directories_third_party_segger_rtt
-    3rd-party/segger-rtt
+set(btstack_include_directories_third_party_segger_rtt_printf
+    src
+)
+
+set(btstack_sources_third_party_segger_rtt_syscalls
+    3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
+)
+
+set(btstack_include_directories_third_party_segger_rtt_syscalls
+    src
 )
 
 set(btstack_sources_third_party_yxml

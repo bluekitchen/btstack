@@ -129,10 +129,14 @@ EXPLICIT_GROUP_SOURCES = {
     "platform-embedded-hci-dump-segger-rtt": [
         "platform/embedded/hci_dump_segger_rtt_stdout.c",
     ],
-    "third-party-segger-rtt": [
+    "third-party-segger-rtt-core": [
         "3rd-party/segger-rtt/SEGGER_RTT.c",
-        "3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c",
+    ],
+    "third-party-segger-rtt-printf": [
         "3rd-party/segger-rtt/SEGGER_RTT_printf.c",
+    ],
+    "third-party-segger-rtt-syscalls": [
+        "3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c",
     ],
     "lwip-core": [
         "3rd-party/lwip/core/src/core/def.c",
@@ -281,7 +285,10 @@ GROUP_INCLUDE_DIRECTORIES = {
     "platform-embedded-uart-block": ["platform/embedded"],
     "platform-embedded-hci-dump-stdout": ["platform/embedded"],
     "platform-embedded-hci-dump-segger-rtt": ["platform/embedded"],
-    "third-party-segger-rtt": ["3rd-party/segger-rtt"],
+    # RTT headers come from the port's selected implementation.
+    "third-party-segger-rtt-core": ["src"],
+    "third-party-segger-rtt-printf": ["src"],
+    "third-party-segger-rtt-syscalls": ["src"],
     # btstack_crypto.c uses these optional crypto provider headers directly.
     "core": ["3rd-party/micro-ecc", "3rd-party/rijndael"],
     # btstack_link_key_db_fs.c in this group uses tinydir's header-only API.

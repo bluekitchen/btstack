@@ -87,7 +87,8 @@ list(REMOVE_ITEM EXAMPLES
 set(BTSTACK_STM32_F4_BASE_GROUPS
     core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-cc256x
     third-party-micro-ecc third-party-rijndael third-party-hxcmod
-    third-party-segger-rtt platform-embedded-audio platform-embedded-run-loop
+    third-party-segger-rtt-core third-party-segger-rtt-printf
+    third-party-segger-rtt-syscalls platform-embedded-audio platform-embedded-run-loop
     platform-embedded-stdin platform-embedded-tlv-flash-bank
     platform-embedded-uart-block platform-embedded-hci-dump-segger-rtt)
 
@@ -99,6 +100,7 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PORT_SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}/port"
+            "${BTSTACK_ROOT}/3rd-party/segger-rtt"
         PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
         LINK_LIBRARIES stm32cubemx bsp)
     add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})

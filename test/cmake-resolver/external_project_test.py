@@ -3,6 +3,7 @@
 
 import os
 import json
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -25,6 +26,53 @@ class ExternalProjectTest(unittest.TestCase):
     def cmake(self, *args):
         return subprocess.run(["cmake", *map(str, args)], cwd=self.directory,
                               env=self.env, text=True, capture_output=True)
+
+    def test_rtt_bundled_and_pico_sdk_core(self):
+        compiler = shutil.which("arm-none-eabi-gcc")
+        linker = shutil.which("arm-none-eabi-ld")
+        nm = shutil.which("arm-none-eabi-nm")
+        sdk = Path(os.environ.get("PICO_SDK_PATH", ROOT.parent / "pico" / "pico-sdk"))
+        sdk_rtt = sdk / "src/rp2_common/pico_stdio_rtt/SEGGER"
+        if not compiler or not linker or not nm or not (sdk_rtt / "RTT/SEGGER_RTT.c").is_file():
+            self.skipTest("Pico SDK RTT sources and ARM toolchain are required")
+
+        bundled = ROOT / "3rd-party/segger-rtt"
+        (self.directory / "btstack_config.h").write_text("#define ENABLE_SEGGER_RTT\n", encoding="utf-8")
+        (self.directory / "main.c").write_text(
+            '#include "SEGGER_RTT.h"\nint main(void) { return SEGGER_RTT_printf(0, "%d", 42); }\n',
+            encoding="utf-8")
+        for name, core, includes, use_syscalls in (
+            ("bundled", bundled / "SEGGER_RTT.c", [bundled], True),
+            ("pico", sdk_rtt / "RTT/SEGGER_RTT.c", [sdk_rtt / "RTT", sdk_rtt / "Config"], False),
+        ):
+            with self.subTest(provider=name):
+                build = self.directory / name
+                build.mkdir()
+                sources = [core, bundled / "SEGGER_RTT_printf.c", self.directory / "main.c"]
+                if use_syscalls:
+                    sources.append(bundled / "SEGGER_RTT_Syscalls_GCC.c")
+                objects = []
+                for index, source in enumerate(sources):
+                    obj = build / f"{index}.o"
+                    command = [compiler, "-mcpu=cortex-m0plus", "-mthumb", "-c", str(source), "-o", str(obj),
+                               "-I", str(self.directory)]
+                    for directory in includes:
+                        command.extend(["-I", str(directory)])
+                    result = subprocess.run(command, text=True, capture_output=True, env=self.env)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    objects.append(obj)
+                combined = build / "rtt.o"
+                result = subprocess.run([linker, "-r", "-o", str(combined), *map(str, objects)],
+                                        text=True, capture_output=True, env=self.env)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                result = subprocess.run([nm, "-g", str(combined)], text=True, capture_output=True, env=self.env)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                symbols = [line.split() for line in result.stdout.splitlines()]
+                for symbol in ("_SEGGER_RTT", "SEGGER_RTT_Write", "SEGGER_RTT_printf"):
+                    self.assertEqual(sum(parts[-1] == symbol and parts[-2] != "U" for parts in symbols), 1)
+                    self.assertFalse(any(parts[-1] == symbol and parts[-2] == "U" for parts in symbols))
+                self.assertEqual(sum(parts[-1] == "_write" and parts[-2] != "U" for parts in symbols),
+                                 int(use_syscalls))
 
     @unittest.skipIf(os.name == "nt", "the standalone example requires POSIX")
     def test_standalone_project_build(self):
