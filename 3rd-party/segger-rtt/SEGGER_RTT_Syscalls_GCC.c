@@ -55,7 +55,7 @@ Revision: $Rev: 24316 $
 #ifdef ENABLE_SEGGER_RTT
 
 #include <reent.h>  // required for _write_r
-#include "SEGGER_RTT.h"
+#include <SEGGER_RTT.h>
 
 
 /*********************************************************************
