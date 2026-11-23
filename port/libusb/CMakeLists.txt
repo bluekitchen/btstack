@@ -1,6 +1,5 @@
 cmake_minimum_required (VERSION 3.12)
 
-SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(BTstack-libusb)
@@ -144,11 +143,9 @@ add_library(btstack STATIC ${SOURCES})
 # pkgconfig required to link libusb
 find_package(PkgConfig REQUIRED)
 
-# libusb
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-target_include_directories(btstack PUBLIC ${LIBUSB_INCLUDE_DIRS})
-target_link_directories(btstack PUBLIC ${LIBUSB_LIBRARY_DIRS})
-target_link_libraries(btstack ${LIBUSB_LIBRARIES})
+# libusb (including the temporary macOS workaround)
+include(${CMAKE_CURRENT_LIST_DIR}/libusb.cmake)
+btstack_configure_libusb(btstack)
 
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)

@@ -5,9 +5,9 @@ This port runs BTstack on Linux or macOS with a USB Bluetooth Controller through
 ## Compilation
 The quickest way to try BTstack is on a Linux or macOS system with an
 additional USB Bluetooth dongle. It requires
-[pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
-and [libusb-1.0](http://libusb.info) or higher to be
-installed.
+[pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/).
+The system [libusb-1.0](http://libusb.info) is also required unless CMake
+selects the bundled build described below.
 
 On a recent Debian-based system, all you need is:
 
@@ -68,28 +68,28 @@ Note: if you get this error,
 and you didn't start another instance and you didn't assign the USB Controller to a virtual machine,
 macOS uses the plugged-in Bluetooth Controller. Please configure NVRAM as explained and try again after a reboot.
 
-#### macOS 26 Tahoe
+#### libusb on macOS 26 and later
 
-BTstack works with libusb 1.0.27 on macOS 26 when libusb is built without
-`pipe2`. macOS 26 does not provide `pipe2` at runtime, but the macOS 27 SDK
-declares it. As a result, libusb's Autoconf check can enable `pipe2` while
-building on macOS 26; the resulting application then crashes in
-`libusb_init()`. The version alone is therefore not sufficient: rebuilding
-1.0.27 with a macOS 27 SDK needs the workaround below as well.
+CMake automatically downloads, verifies, and statically links libusb 1.0.27
+when building on macOS 26 or later. This avoids a kernel panic seen when
+opening USB devices with libusb 1.0.28 or newer on macOS 27. The library is
+built inside the CMake build directory with `pipe2` disabled: the macOS 27 SDK
+declares it, but macOS 26 does not provide it at runtime. The first build needs
+network access and make; no system-wide installation is needed.
 
-The current Homebrew `libusb` formula installs a newer release. To build
-libusb 1.0.27 directly, use the official release tarball and disable the
-incorrect Autoconf result:
+Set `BTSTACK_LIBUSB` when configuring CMake to override the selection:
 
-	curl -LO https://github.com/libusb/libusb/releases/download/v1.0.27/libusb-1.0.27.tar.bz2
-	tar xjf libusb-1.0.27.tar.bz2
-	cd libusb-1.0.27
-	ac_cv_func_pipe2=no ./configure
-	make
-	sudo make install
+    cmake -S . -B build -G Ninja -DBTSTACK_LIBUSB=bundled
+    cmake --build build --target gatt_counter
 
-Configure CMake in a new build directory, or run `make`. Both build systems
-use `pkg-config` to select libusb.
+`bundled` also allows testing the workaround on older macOS releases;
+`system` uses pkg-config, and `auto` (the default) chooses based on the build
+host's macOS version. For a binary built on an older host to run on macOS 26
+or later, select `bundled` explicitly. On macOS, the bundled build supports one
+target architecture at a time. The Makefile continues to use the system libusb.
+
+libusb is licensed under LGPL 2.1 or later; account for its licensing terms
+when distributing statically linked binaries.
 
 There is also a separate macOS 26 kernel bug in the USB host stack that can
 panic the system for particular devices and operations. BTstack avoids device
