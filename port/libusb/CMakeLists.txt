@@ -20,7 +20,8 @@ set(SOURCES_PORT
 # Get libraries needed for this port
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+include(${CMAKE_CURRENT_LIST_DIR}/libusb.cmake)
+btstack_configure_libusb()
 
 # pthread
 find_package(Threads)
@@ -88,14 +89,15 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         PUBLIC_INCLUDE_DIRECTORIES
             # btstack_config.h is the port configuration seen by applications.
             "${CMAKE_CURRENT_SOURCE_DIR}"
-            ${LIBUSB_INCLUDE_DIRS}
-        LINK_DIRECTORIES
-            ${LIBUSB_LIBRARY_DIRS}
+            ${BTSTACK_LIBUSB_INCLUDE_DIRS}
         LINK_LIBRARIES
-            ${LIBUSB_LIBRARIES}
+            btstack_libusb_dependency
             ${CMAKE_THREAD_LIBS_INIT}
             m
     )
+    if(TARGET btstack_libusb_build)
+        add_dependencies(btstack_${EXAMPLE}_library btstack_libusb_build)
+    endif()
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
 
@@ -106,5 +108,17 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
     # Add all libraries
     target_link_libraries(${EXAMPLE} btstack_${EXAMPLE}_library)
 endforeach()
+
+if(TARGET btstack_libusb_build)
+    # Shared group object targets compile separately from application libraries.
+    # Ensure the downloaded header is installed before the USB transport builds.
+    get_property(port_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(port_target IN LISTS port_targets)
+        get_target_property(port_sources ${port_target} SOURCES)
+        if("${port_sources}" MATCHES "(^|;)[^;]*platform/libusb/hci_transport_h2_libusb\\.c(;|$)")
+            add_dependencies(${port_target} btstack_libusb_build)
+        endif()
+    endforeach()
+endif()
 
 btstack_add_info_targets()

@@ -5,7 +5,7 @@ include(ExternalProject)
 set(BTSTACK_LIBUSB "auto" CACHE STRING "libusb selection: auto, bundled, or system")
 set_property(CACHE BTSTACK_LIBUSB PROPERTY STRINGS auto bundled system)
 
-function(btstack_configure_libusb target)
+function(btstack_configure_libusb)
     if(NOT BTSTACK_LIBUSB MATCHES "^(auto|bundled|system)$")
         message(FATAL_ERROR "BTSTACK_LIBUSB must be auto, bundled, or system")
     endif()
@@ -30,12 +30,14 @@ function(btstack_configure_libusb target)
         endif()
     endif()
 
+    add_library(btstack_libusb_dependency INTERFACE)
     if(NOT use_bundled)
         message(STATUS "libusb: system pkg-config (${BTSTACK_LIBUSB})")
         pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-        target_include_directories(${target} PUBLIC ${LIBUSB_INCLUDE_DIRS})
-        target_link_directories(${target} PUBLIC ${LIBUSB_LIBRARY_DIRS})
-        target_link_libraries(${target} ${LIBUSB_LIBRARIES})
+        set(BTSTACK_LIBUSB_INCLUDE_DIRS "${LIBUSB_INCLUDE_DIRS}" PARENT_SCOPE)
+        target_include_directories(btstack_libusb_dependency INTERFACE ${LIBUSB_INCLUDE_DIRS})
+        target_link_directories(btstack_libusb_dependency INTERFACE ${LIBUSB_LIBRARY_DIRS})
+        target_link_libraries(btstack_libusb_dependency INTERFACE ${LIBUSB_LIBRARIES})
         return()
     endif()
 
@@ -62,6 +64,8 @@ function(btstack_configure_libusb target)
     endif()
     set(usb_prefix "${CMAKE_CURRENT_BINARY_DIR}/libusb-1.0.27")
     set(usb_archive "${usb_prefix}/lib/libusb-1.0.a")
+    set(usb_include_dir "${usb_prefix}/include/libusb-1.0")
+    set(BTSTACK_LIBUSB_INCLUDE_DIRS "${usb_include_dir}" PARENT_SCOPE)
     # The imported target's include path must exist at CMake generation time.
     file(MAKE_DIRECTORY "${usb_prefix}/include/libusb-1.0")
     # Preserve the release tarball's Autotools timestamps so make does not
@@ -89,9 +93,8 @@ function(btstack_configure_libusb target)
     add_library(btstack_libusb STATIC IMPORTED GLOBAL)
     set_target_properties(btstack_libusb PROPERTIES
         IMPORTED_LOCATION "${usb_archive}"
-        INTERFACE_INCLUDE_DIRECTORIES "${usb_prefix}/include/libusb-1.0"
+        INTERFACE_INCLUDE_DIRECTORIES "${usb_include_dir}"
         INTERFACE_LINK_LIBRARIES "-framework IOKit;-framework CoreFoundation;-framework Security;-lobjc")
     add_dependencies(btstack_libusb btstack_libusb_build)
-    add_dependencies(${target} btstack_libusb_build)
-    target_link_libraries(${target} btstack_libusb)
+    target_link_libraries(btstack_libusb_dependency INTERFACE btstack_libusb)
 endfunction()
