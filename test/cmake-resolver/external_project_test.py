@@ -218,7 +218,8 @@ class ExternalProjectTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         commands = json.loads((build / "compile_commands.json").read_text())
         core = [x["command"] for x in commands if x["file"].endswith("/src/btstack_memory.c")
-                and "check_group_core" not in x["command"]]
+                and "check_group_core" not in x["command"]
+                and "CMakeFiles/btstack.dir/" not in x["command"]]
         self.assertEqual(len(core), 2)
         self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in core), 1)
         self.assertEqual(sum("audio-include" in command for command in core), 1)

@@ -1,3 +1,21 @@
+# Compile-check target
+
+Ports using `btstack_configure_port()` provide an on-demand `btstack` target:
+
+```sh
+cmake -S port/posix-h4 -B build-posix-h4
+cmake --build build-posix-h4 --target btstack
+```
+
+It compiles the catalogued C sources under `src/` with the port's configuration
+and warnings enabled, without linking them or adding them to the default build.
+Classic and BLE source directories are omitted when the corresponding feature
+is disabled. Preprocessor-disabled code is not checked; use multiple port
+configurations to cover it. Platform, chipset and third-party catalog sources
+need platform-specific dependencies and are checked by the port targets that
+select them. Ports that do not use `btstack_configure_port()` do not get this
+target automatically. An existing target named `btstack` is left untouched.
+
 # Resolver dependency graph
 
 Generate the complete source-group dependency graph without configuring a port:
