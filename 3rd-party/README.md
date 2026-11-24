@@ -28,17 +28,39 @@ python3 tool/generate_sbom.py --sources build-posix-h4/btstack-application-sourc
 ```
 
 The export overwrites the manifest for each application. It contains the
-resolver's application, port and group source files, include directories and
-configuration macros as absolute paths, so generate and use it in the same
-checkout. The filter includes an inventory component when a selected source is
-within it, or when an include directory is inside it or contains it. The latter
-conservatively includes header-only components and may include unused libraries,
-especially where public include directories are shared. The manifest does not
-include every transitive linked target or later target modification; system SDKs,
-prebuilt libraries, and non-inventoried code remain outside the SBOM's scope.
-Preprocessor conditions and the linker can further reduce what is actually used.
-An unresolved CMake generator expression causes export to fail rather than
-silently omit a path. Ports must use the resolver and register info targets.
+resolver's application, port and group source files, resolved groups, declared
+component dependencies, include directories and configuration macros. Source
+and include paths are absolute, so generate and use it in the same checkout.
+Version 2 manifests are required; regenerate older manifests after updating.
+
+The filter includes a component when a selected source is within its inventory
+path or when a resolved group, application or port declares it explicitly.
+Include paths are retained for inspection but do not select components: shared
+public paths alone do not mean a library is used. Associations are conservative
+for conditional code. The manifest does not include every transitive linked
+target or later target modification; system SDKs and non-inventoried code remain
+outside the SBOM's scope. Preprocessor conditions and the linker can further
+reduce what is actually used. An unresolved CMake generator expression causes
+export to fail rather than silently omit a path.
+
+Maintain associations in `SOURCE_COMPONENT_DEPENDENCIES` in
+[`tool/create_cmake_sources.py`](../tool/create_cmake_sources.py) when a
+catalogued source directly uses a bundled library whose source selection may
+not reveal that dependency (for example, tinydir or an included `.c` file).
+Each path names a component in this inventory relative to the repository root;
+the generator attaches it to every group containing that source, including
+aggregate groups. Regenerate `BTstackSources.cmake` after changes.
+
+For application-owned sources, add `COMPONENTS` to `btstack_declare_application`.
+For a capability provider's local sources or prebuilt libraries, add it to
+`btstack_declare_port_capability`. For port-wide local sources and linked
+libraries, pass it to `btstack_add_application_library`; ports constructing
+manifests manually pass it to `btstack_record_application_components`. The
+STM32F4 ports demonstrate port-wide declarations for CubeMX and BSP targets.
+Use only the repository-relative inventory path, e.g. `3rd-party/tinydir`.
+The SBOM generator rejects unknown paths so an incorrect declaration cannot be
+silently ignored. Review these declarations when code, providers or inventory
+entries change. Ports must use the resolver and register info targets.
 
 The generator requires Python 3 and no extra packages. It records inventory paths, revisions, license-file paths,
 usage, and notes as component properties. Custom `LicenseRef-` values are recorded as license names; SPDX expressions

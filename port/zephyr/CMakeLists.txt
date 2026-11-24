@@ -157,6 +157,7 @@ foreach(example IN LISTS BTSTACK_ZEPHYR_EXAMPLES)
         GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS})
     btstack_resolve_groups(example_all_groups
         GROUPS ${example_groups} ${example_base_groups})
+    btstack_record_application_components(PORT zephyr APPLICATION "${example}" GROUPS ${example_all_groups})
     btstack_collect_sources(example_sources
         GROUPS ${example_all_groups})
     list(APPEND example_sources

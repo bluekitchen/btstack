@@ -33,21 +33,42 @@ class GenerateSbomTest(unittest.TestCase):
         self.assertTrue(result["metadata"]["component"]["cpe"].startswith("cpe:2.3:a:bluekitchen-gmbh:btstack:"))
         self.assertEqual(len({c["bom-ref"] for c in result["components"]}), len(rows))
 
-    def test_filter_sources_and_include_directories(self):
-        manifest = {"schema_version": 1, "port": "test", "application": "demo", "configuration": [],
+    def test_filter_sources_and_declared_components(self):
+        manifest = {"schema_version": 2, "port": "test", "application": "demo", "configuration": [],
+                    "groups": ["core"], "components": ["3rd-party/tinydir"],
                     "sources": [str(ROOT / "3rd-party/md5/md5.c")],
-                    "include_directories": [str(ROOT / "3rd-party/tinydir")]}
+                    "include_directories": [str(ROOT / "3rd-party/bluedroid/encoder/include")]}
         result = sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
         self.assertEqual({c["name"] for c in result["components"]}, {"md5", "tinydir"})
-        manifest["include_directories"] = [str(ROOT / "3rd-party/bluedroid/encoder/include")]
-        result = sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
-        self.assertEqual({c["name"] for c in result["components"]}, {"md5", "Android SBC Encoder"})
-        manifest["include_directories"] = [str(ROOT / "3rd-party/stb")]
+        manifest["components"] = ["3rd-party/stb/stb_vorbis.c"]
         result = sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
         self.assertIn("stb_vorbis", {c["name"] for c in result["components"]})
+        manifest["components"] = ["3rd-party/missing"]
+        with self.assertRaisesRegex(ValueError, "unknown inventory"):
+            sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+        manifest["components"] = []
         manifest["sources"] = ["relative.c"]
         with self.assertRaisesRegex(ValueError, "absolute"):
             sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+        manifest["schema_version"] = 1
+        with self.assertRaisesRegex(ValueError, "unsupported"):
+            sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+
+    def test_catalog_associations_reference_inventory(self):
+        catalog_spec = importlib.util.spec_from_file_location("create_cmake_sources", ROOT / "tool/create_cmake_sources.py")
+        catalog = importlib.util.module_from_spec(catalog_spec)
+        catalog_spec.loader.exec_module(catalog)
+        groups, _ = catalog.collect_sources(ROOT)
+        catalog_sources = {source for sources in groups.values() for source in sources}
+        inventory = {next(p["value"] for p in item["properties"] if p["name"] == "btstack:source:path")
+                     for item in sbom.generate_sbom()["components"]}
+        for source, components in catalog.SOURCE_COMPONENT_DEPENDENCIES.items():
+            self.assertIn(source, catalog_sources)
+            self.assertTrue(set(components) <= inventory, (source, components))
+        for group in ("platform-posix", "platform-posix-link-key-db-fs", "chipset-bcm"):
+            dependencies = {component for source in groups[group]
+                            for component in catalog.SOURCE_COMPONENT_DEPENDENCIES.get(source, [])}
+            self.assertIn("3rd-party/tinydir", dependencies)
 
     def test_rejects_stale_identifiers(self):
         rows = sbom.parse_inventory(sbom.INVENTORY.read_text(encoding="utf-8"))

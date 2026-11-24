@@ -245,6 +245,51 @@ class ExternalProjectTest(unittest.TestCase):
         mains = [x["command"] for x in commands if x["file"].endswith("/main.c")]
         self.assertEqual(sum("HAVE_TEST_AUDIO" in command for command in mains), 1)
 
+    def test_manifest_component_associations(self):
+        source = self.directory / "component-associations"
+        source.mkdir()
+        (source / "btstack_config.h").write_text("#define ENABLE_CLASSIC\n#define ENABLE_BLE\n", encoding="utf-8")
+        (source / "main.c").write_text("int main(void) { return 0; }\n", encoding="utf-8")
+        (source / "CMakeLists.txt").write_text(
+            'cmake_minimum_required(VERSION 3.18)\nproject(component_associations C)\n'
+            'include("${BTSTACK_MODULE}")\n'
+            'btstack_declare_port(test)\n'
+            'btstack_configure_port(CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/btstack_config.h")\n'
+            'btstack_declare_port_capability(CAPABILITY leds SOURCES main.c COMPONENTS 3rd-party/tinydir)\n'
+            'btstack_declare_application(plain SOURCES main.c NEEDS core leds COMPONENTS 3rd-party/qr-code-generator)\n'
+            'btstack_declare_application(audio SOURCES main.c NEEDS classic-a2dp-sink)\n'
+            'btstack_filter_applications_for_port(selected CANDIDATES plain audio)\n'
+            'foreach(app IN LISTS selected)\n'
+            '  btstack_add_application_library(TARGET lib_${app} APPLICATION ${app} BASE_GROUPS core '
+            'PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}" COMPONENTS 3rd-party/md5)\n'
+            'endforeach()\n'
+            'btstack_add_info_targets()\n', encoding="utf-8")
+        build = self.directory / "component-associations-build"
+        result = self.cmake("-S", source, "-B", build,
+                            f"-DBTSTACK_MODULE={ROOT / 'tool/cmake/BTstack.cmake'}")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        for app, expected_codec in (("plain", False), ("audio", True)):
+            self.env["APPLICATION"] = app
+            result = self.cmake("--build", build, "--target", "application-sources")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            path = build / "btstack-application-sources.json"
+            manifest = json.loads(path.read_text())
+            self.assertIn("core", manifest["groups"])
+            if app == "plain":
+                self.assertIn("3rd-party/tinydir", manifest["components"])
+                self.assertIn("3rd-party/qr-code-generator", manifest["components"])
+                self.assertIn("3rd-party/md5", manifest["components"])
+                self.assertIn(str(ROOT / "3rd-party/bluedroid/encoder/include"), manifest["include_directories"])
+            result = subprocess.run([sys.executable, str(ROOT / "tool/generate_sbom.py"), "--sources", str(path)],
+                                    text=True, capture_output=True, env=self.env)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            names = {item["name"] for item in json.loads(result.stdout)["components"]}
+            self.assertEqual("Android SBC Encoder" in names, expected_codec)
+            self.assertEqual("Android SBC Decoder" in names, expected_codec)
+            if app == "plain":
+                self.assertIn("tinydir", names)
+                self.assertNotIn("Google LC3 Codec", names)
+
     def test_transitive_lwip_provider_build(self):
         source = self.directory / "lwip-provider"
         source.mkdir()

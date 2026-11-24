@@ -98,6 +98,14 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
         APPLICATION ${EXAMPLE}
         BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
         PORT_SOURCES ${SOURCES_PORT}
+        # These libraries and headers are supplied by the linked CubeMX/BSP
+        # targets, so they are not in the resolver's source groups.
+        COMPONENTS
+            3rd-party/STM32CubeF4/Drivers/CMSIS/Include
+            3rd-party/STM32CubeF4/Drivers/CMSIS/Device/ST/STM32F4xx
+            3rd-party/STM32CubeF4/Drivers/STM32F4xx_HAL_Driver
+            3rd-party/STM32CubeF4/Drivers/BSP
+            3rd-party/STM32CubeF4/Middlewares/ST/STM32_Audio/Addons/PDM
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}/port"
             "${BTSTACK_ROOT}/3rd-party/segger-rtt"

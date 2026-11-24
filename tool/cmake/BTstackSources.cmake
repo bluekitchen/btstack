@@ -223,6 +223,11 @@ set(btstack_include_directories_audio_demo
     src
 )
 
+set(btstack_component_dependencies_audio_demo
+    3rd-party/hxcmod-player
+    3rd-party/stb/stb_vorbis.c
+)
+
 set(btstack_sources_ble
     src/ble/sm.c
 )
@@ -270,6 +275,10 @@ set(btstack_include_directories_chipset_bcm
     3rd-party/tinydir
     src
     chipset/bcm
+)
+
+set(btstack_component_dependencies_chipset_bcm
+    3rd-party/tinydir
 )
 
 set(btstack_sources_chipset_cc256x
@@ -469,6 +478,14 @@ set(btstack_include_directories_classic
     src
 )
 
+set(btstack_component_dependencies_classic
+    3rd-party/bluedroid/decoder
+    3rd-party/bluedroid/encoder
+    3rd-party/lc3-google
+    3rd-party/md5
+    3rd-party/yxml
+)
+
 set(btstack_sources_classic_a2dp
     src/classic/a2dp.c
 )
@@ -624,12 +641,22 @@ set(btstack_include_directories_classic_btstack_sbc
     src
 )
 
+set(btstack_component_dependencies_classic_btstack_sbc
+    3rd-party/bluedroid/decoder
+    3rd-party/bluedroid/encoder
+)
+
 set(btstack_sources_classic_btstack_sbc_bluedroid
     src/classic/btstack_sbc_bluedroid.c
 )
 
 set(btstack_include_directories_classic_btstack_sbc_bluedroid
     src
+)
+
+set(btstack_component_dependencies_classic_btstack_sbc_bluedroid
+    3rd-party/bluedroid/decoder
+    3rd-party/bluedroid/encoder
 )
 
 set(btstack_sources_classic_btstack_sbc_decoder_bluedroid
@@ -640,12 +667,20 @@ set(btstack_include_directories_classic_btstack_sbc_decoder_bluedroid
     src
 )
 
+set(btstack_component_dependencies_classic_btstack_sbc_decoder_bluedroid
+    3rd-party/bluedroid/decoder
+)
+
 set(btstack_sources_classic_btstack_sbc_encoder_bluedroid
     src/classic/btstack_sbc_encoder_bluedroid.c
 )
 
 set(btstack_include_directories_classic_btstack_sbc_encoder_bluedroid
     src
+)
+
+set(btstack_component_dependencies_classic_btstack_sbc_encoder_bluedroid
+    3rd-party/bluedroid/encoder
 )
 
 set(btstack_sources_classic_btstack_sbc_plc
@@ -710,6 +745,12 @@ set(btstack_sources_classic_hfp_codec
 
 set(btstack_include_directories_classic_hfp_codec
     src
+)
+
+set(btstack_component_dependencies_classic_hfp_codec
+    3rd-party/bluedroid/decoder
+    3rd-party/bluedroid/encoder
+    3rd-party/lc3-google
 )
 
 set(btstack_sources_classic_hfp_gsm_model
@@ -825,6 +866,11 @@ set(btstack_include_directories_classic_pbap_client
     src
 )
 
+set(btstack_component_dependencies_classic_pbap_client
+    3rd-party/md5
+    3rd-party/yxml
+)
+
 set(btstack_sources_classic_rfcomm
     src/classic/rfcomm.c
 )
@@ -913,6 +959,11 @@ set(btstack_include_directories_core
     3rd-party/micro-ecc
     3rd-party/rijndael
     src
+)
+
+set(btstack_component_dependencies_core
+    3rd-party/micro-ecc
+    3rd-party/rijndael
 )
 
 set(btstack_sources_gatt
@@ -1234,6 +1285,10 @@ set(btstack_include_directories_lc3
     src
 )
 
+set(btstack_component_dependencies_lc3
+    3rd-party/lc3-google
+)
+
 set(btstack_sources_le_audio
     src/le-audio/broadcast_audio_uri_builder.c
     src/le-audio/le_audio_base_builder.c
@@ -1497,6 +1552,10 @@ set(btstack_include_directories_platform_posix
     platform/posix
 )
 
+set(btstack_component_dependencies_platform_posix
+    3rd-party/tinydir
+)
+
 set(btstack_sources_platform_posix_audio
     platform/posix/btstack_audio_portaudio.c
     platform/posix/btstack_audio_sdl2.c
@@ -1553,6 +1612,10 @@ set(btstack_sources_platform_posix_link_key_db_fs
 set(btstack_include_directories_platform_posix_link_key_db_fs
     src
     platform/posix
+)
+
+set(btstack_component_dependencies_platform_posix_link_key_db_fs
+    3rd-party/tinydir
 )
 
 set(btstack_sources_platform_posix_main_config

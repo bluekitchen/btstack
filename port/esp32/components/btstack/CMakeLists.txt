@@ -210,6 +210,7 @@ foreach(example IN LISTS BTSTACK_ESP32_EXAMPLES)
     btstack_resolve_example_for_port(esp32 "${example}" example_groups example_configuration)
     btstack_resolve_groups(example_all_groups
         GROUPS ${example_groups} ${BTSTACK_ESP32_ACTIVE_BASE_GROUPS})
+    btstack_record_application_components(PORT esp32 APPLICATION "${example}" GROUPS ${example_all_groups})
     btstack_collect_sources(example_sources GROUPS ${example_all_groups})
     btstack_get_application_property(application_sources "${example}" SOURCES)
     foreach(source IN LISTS application_sources)

@@ -274,6 +274,23 @@ PLATFORM_POSIX_AUDIO_GROUPS = [
     "platform-posix-wav",
 ]
 
+# Repository-relative inventory paths used by individual catalog sources.
+# Associations apply to every group containing the source, including aggregates.
+# Conditional includes are deliberately conservative; alternative external SDK
+# providers (e.g. lwIP or RTT) must be declared by the selecting port instead.
+SOURCE_COMPONENT_DEPENDENCIES = {
+    "chipset/bcm/btstack_chipset_bcm.c": ["3rd-party/tinydir"],
+    "platform/posix/btstack_link_key_db_fs.c": ["3rd-party/tinydir"],
+    "src/btstack_crypto.c": ["3rd-party/micro-ecc", "3rd-party/rijndael"],
+    "src/btstack_audio_generator.c": ["3rd-party/hxcmod-player", "3rd-party/stb/stb_vorbis.c"],
+    "src/btstack_lc3_google.c": ["3rd-party/lc3-google"],
+    "src/classic/pbap_client.c": ["3rd-party/md5", "3rd-party/yxml"],
+    "src/classic/btstack_sbc_bluedroid.c": ["3rd-party/bluedroid/decoder", "3rd-party/bluedroid/encoder"],
+    "src/classic/btstack_sbc_decoder_bluedroid.c": ["3rd-party/bluedroid/decoder"],
+    "src/classic/btstack_sbc_encoder_bluedroid.c": ["3rd-party/bluedroid/encoder"],
+    "src/classic/hfp_codec.c": ["3rd-party/bluedroid/decoder", "3rd-party/bluedroid/encoder", "3rd-party/lc3-google"],
+}
+
 # Include directories are curated metadata, not inferred from #include lines.
 # The source catalog can derive the simple in-tree cases below; dependencies
 # whose public headers live elsewhere are listed explicitly.
@@ -558,6 +575,13 @@ def render(groups: dict[str, list[str]], unclassified: list[str]) -> str:
         lines.append(f"set(btstack_include_directories_{variable_suffix(group)}")
         lines.extend(f"    {directory}" for directory in group_include_directories[group])
         lines.extend([")", ""])
+
+        components = sorted({component for source in groups[group]
+                             for component in SOURCE_COMPONENT_DEPENDENCIES.get(source, [])})
+        if components:
+            lines.append(f"set(btstack_component_dependencies_{variable_suffix(group)}")
+            lines.extend(f"    {component}" for component in components)
+            lines.extend([")", ""])
 
         consumer_include_directories = GROUP_CONSUMER_INCLUDE_DIRECTORIES.get(group)
         if consumer_include_directories:

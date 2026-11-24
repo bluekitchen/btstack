@@ -184,13 +184,13 @@ def generate_sbom():
 
 
 def filter_for_manifest(bom, manifest):
-    """Keep inventoried components touched by sources or visible include paths."""
-    if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
+    """Keep inventoried components selected by sources or explicit associations."""
+    if not isinstance(manifest, dict) or manifest.get("schema_version") != 2:
         raise ValueError("unsupported application source manifest")
     for field in ("port", "application"):
         if not isinstance(manifest.get(field), str) or not manifest[field]:
             raise ValueError(f"manifest requires a nonempty {field}")
-    for field in ("sources", "include_directories", "configuration"):
+    for field in ("sources", "include_directories", "configuration", "groups", "components"):
         if not isinstance(manifest.get(field), list) or not all(isinstance(x, str) and x for x in manifest[field]):
             raise ValueError(f"manifest {field} must be a list of nonempty strings")
     if not manifest["sources"]:
@@ -200,7 +200,11 @@ def filter_for_manifest(bom, manifest):
     if any(not path.is_absolute() for path in sources + includes):
         raise ValueError("manifest source and include paths must be absolute")
     sources = [path.resolve() for path in sources]
-    includes = [path.resolve() for path in includes]
+    inventory_paths = {next(p["value"] for p in item["properties"] if p["name"] == "btstack:source:path")
+                       for item in bom["components"]}
+    unknown = set(manifest["components"]) - inventory_paths
+    if unknown:
+        raise ValueError("manifest references unknown inventory components: " + ", ".join(sorted(unknown)))
 
     def contains(parent, child):
         return parent == child or parent in child.parents
@@ -208,13 +212,11 @@ def filter_for_manifest(bom, manifest):
     def selected(item):
         relative = next(p["value"] for p in item["properties"] if p["name"] == "btstack:source:path")
         component_path = (ROOT / relative).resolve()
-        return (any(contains(component_path, source) for source in sources) or
-                any(contains(component_path, directory) or contains(directory, component_path)
-                    for directory in includes))
+        return relative in manifest["components"] or any(contains(component_path, source) for source in sources)
 
     bom["components"] = [item for item in bom["components"] if selected(item)]
     bom["metadata"]["properties"] = [
-        {"name": "btstack:sbom:scope", "value": "Bundled inventory components selected conservatively by application sources and include directories; external and unreviewed dependencies are not covered."},
+        {"name": "btstack:sbom:scope", "value": "Bundled inventory components selected conservatively by application sources and declared component dependencies; external and unreviewed dependencies are not covered."},
         {"name": "btstack:build:port", "value": manifest["port"]},
         {"name": "btstack:build:application", "value": manifest["application"]},
         *[{"name": "btstack:build:configuration", "value": value} for value in manifest["configuration"]],
