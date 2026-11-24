@@ -86,7 +86,7 @@ list(REMOVE_ITEM EXAMPLES
 
 set(BTSTACK_STM32_F4_BASE_GROUPS
     core ble le-device-db-tlv link-key-db-tlv transport-h4 chipset-cc256x
-    third-party-micro-ecc third-party-rijndael third-party-hxcmod
+    third-party-micro-ecc third-party-rijndael
     third-party-segger-rtt-core third-party-segger-rtt-printf
     third-party-segger-rtt-syscalls platform-embedded-audio platform-embedded-run-loop
     platform-embedded-stdin platform-embedded-tlv-flash-bank
