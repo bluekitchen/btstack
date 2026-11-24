@@ -19,6 +19,27 @@ python3 tool/generate_sbom.py                 # stdout
 python3 tool/generate_sbom.py -o sbom.json    # file
 ```
 
+To filter the inventory conservatively for an application on a CMake port that
+provides `application-sources`:
+
+```sh
+APPLICATION=gatt_counter cmake --build build-posix-h4 --target application-sources
+python3 tool/generate_sbom.py --sources build-posix-h4/btstack-application-sources.json -o sbom.json
+```
+
+The export overwrites the manifest for each application. It contains the
+resolver's application, port and group source files, include directories and
+configuration macros as absolute paths, so generate and use it in the same
+checkout. The filter includes an inventory component when a selected source is
+within it, or when an include directory is inside it or contains it. The latter
+conservatively includes header-only components and may include unused libraries,
+especially where public include directories are shared. The manifest does not
+include every transitive linked target or later target modification; system SDKs,
+prebuilt libraries, and non-inventoried code remain outside the SBOM's scope.
+Preprocessor conditions and the linker can further reduce what is actually used.
+An unresolved CMake generator expression causes export to fail rather than
+silently omit a path. Ports must use the resolver and register info targets.
+
 The generator requires Python 3 and no extra packages. It records inventory paths, revisions, license-file paths,
 usage, and notes as component properties. Custom `LicenseRef-` values are recorded as license names; SPDX expressions
 remain expressions. Descriptions such as `Git snapshot` are kept as inventory properties rather than release versions.

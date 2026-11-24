@@ -183,12 +183,54 @@ def generate_sbom():
     }
 
 
+def filter_for_manifest(bom, manifest):
+    """Keep inventoried components touched by sources or visible include paths."""
+    if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
+        raise ValueError("unsupported application source manifest")
+    for field in ("port", "application"):
+        if not isinstance(manifest.get(field), str) or not manifest[field]:
+            raise ValueError(f"manifest requires a nonempty {field}")
+    for field in ("sources", "include_directories", "configuration"):
+        if not isinstance(manifest.get(field), list) or not all(isinstance(x, str) and x for x in manifest[field]):
+            raise ValueError(f"manifest {field} must be a list of nonempty strings")
+    if not manifest["sources"]:
+        raise ValueError("manifest contains no sources")
+    sources = [Path(path) for path in manifest["sources"]]
+    includes = [Path(path) for path in manifest["include_directories"]]
+    if any(not path.is_absolute() for path in sources + includes):
+        raise ValueError("manifest source and include paths must be absolute")
+    sources = [path.resolve() for path in sources]
+    includes = [path.resolve() for path in includes]
+
+    def contains(parent, child):
+        return parent == child or parent in child.parents
+
+    def selected(item):
+        relative = next(p["value"] for p in item["properties"] if p["name"] == "btstack:source:path")
+        component_path = (ROOT / relative).resolve()
+        return (any(contains(component_path, source) for source in sources) or
+                any(contains(component_path, directory) or contains(directory, component_path)
+                    for directory in includes))
+
+    bom["components"] = [item for item in bom["components"] if selected(item)]
+    bom["metadata"]["properties"] = [
+        {"name": "btstack:sbom:scope", "value": "Bundled inventory components selected conservatively by application sources and include directories; external and unreviewed dependencies are not covered."},
+        {"name": "btstack:build:port", "value": manifest["port"]},
+        {"name": "btstack:build:application", "value": manifest["application"]},
+        *[{"name": "btstack:build:configuration", "value": value} for value in manifest["configuration"]],
+    ]
+    return bom
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-o", "--output", type=Path, help="write JSON to this file instead of stdout")
+    parser.add_argument("--sources", type=Path, help="filter using an application source manifest")
     args = parser.parse_args()
     try:
         bom = generate_sbom()
+        if args.sources:
+            bom = filter_for_manifest(bom, json.loads(args.sources.read_text(encoding="utf-8")))
         content = json.dumps(bom, indent=2, ensure_ascii=False) + "\n"
         if args.output:
             args.output.write_text(content, encoding="utf-8")

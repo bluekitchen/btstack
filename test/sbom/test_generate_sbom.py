@@ -33,6 +33,22 @@ class GenerateSbomTest(unittest.TestCase):
         self.assertTrue(result["metadata"]["component"]["cpe"].startswith("cpe:2.3:a:bluekitchen-gmbh:btstack:"))
         self.assertEqual(len({c["bom-ref"] for c in result["components"]}), len(rows))
 
+    def test_filter_sources_and_include_directories(self):
+        manifest = {"schema_version": 1, "port": "test", "application": "demo", "configuration": [],
+                    "sources": [str(ROOT / "3rd-party/md5/md5.c")],
+                    "include_directories": [str(ROOT / "3rd-party/tinydir")]}
+        result = sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+        self.assertEqual({c["name"] for c in result["components"]}, {"md5", "tinydir"})
+        manifest["include_directories"] = [str(ROOT / "3rd-party/bluedroid/encoder/include")]
+        result = sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+        self.assertEqual({c["name"] for c in result["components"]}, {"md5", "Android SBC Encoder"})
+        manifest["include_directories"] = [str(ROOT / "3rd-party/stb")]
+        result = sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+        self.assertIn("stb_vorbis", {c["name"] for c in result["components"]})
+        manifest["sources"] = ["relative.c"]
+        with self.assertRaisesRegex(ValueError, "absolute"):
+            sbom.filter_for_manifest(sbom.generate_sbom(), manifest)
+
     def test_rejects_stale_identifiers(self):
         rows = sbom.parse_inventory(sbom.INVENTORY.read_text(encoding="utf-8"))
         row = next(row for row in rows if row["Path"] == "`tinydir`")

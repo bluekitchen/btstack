@@ -1450,6 +1450,12 @@ function(btstack_add_info_targets)
     add_custom_target(application-info
         COMMAND "${CMAKE_COMMAND}" -DINFO_FILE="${info_file}" -DINFO_MODE=application -P "${btstack_info_script}"
         COMMENT "Display BTstack application information")
+    add_custom_target(application-sources
+        COMMAND "${CMAKE_COMMAND}" "-DINFO_FILE=${info_file}" -DINFO_MODE=manifest
+            "-DOUTPUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/btstack-application-sources.json"
+            -P "${btstack_info_script}"
+        COMMENT "Export BTstack application sources and include directories"
+        VERBATIM)
 endfunction()
 
 function(btstack_resolve_example example groups_output_variable configuration_output_variable)

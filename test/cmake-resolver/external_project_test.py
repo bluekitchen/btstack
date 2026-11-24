@@ -6,6 +6,7 @@ import json
 import shutil
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -208,6 +209,7 @@ class ExternalProjectTest(unittest.TestCase):
             'PORT_SOURCES port.c PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")\n'
             '  btstack_add_application_executable(${app} APPLICATION ${app})\n'
             '  target_link_libraries(${app} PRIVATE lib_${app})\nendforeach()\n'
+            'btstack_add_info_targets()\n'
             'get_target_property(plain_links lib_plain_app INTERFACE_LINK_LIBRARIES)\n'
             'if(plain_links MATCHES "audio_dependency")\n message(FATAL_ERROR "Audio dependency leaked to plain app")\nendif()\n', encoding="utf-8")
         build = self.directory / "capabilities-build"
@@ -216,6 +218,23 @@ class ExternalProjectTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         result = self.cmake("--build", build, "--parallel", "2")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.env["APPLICATION"] = "audio_app"
+        result = self.cmake("--build", build, "--target", "application-sources")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        manifest = json.loads((build / "btstack-application-sources.json").read_text())
+        self.assertEqual((manifest["port"], manifest["application"]), ("test", "audio_app"))
+        self.assertIn(str(source / "port.c"), manifest["sources"])
+        self.assertIn(str(source / "audio-include"), manifest["include_directories"])
+        result = subprocess.run([sys.executable, str(ROOT / "tool/generate_sbom.py"), "--sources",
+                                 str(build / "btstack-application-sources.json")],
+                                text=True, capture_output=True, env=self.env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        bom = json.loads(result.stdout)
+        self.assertIn({"name": "btstack:build:application", "value": "audio_app"},
+                      bom["metadata"]["properties"])
+        self.env["APPLICATION"] = "unknown"
+        result = self.cmake("--build", build, "--target", "application-sources")
+        self.assertNotEqual(result.returncode, 0)
         commands = json.loads((build / "compile_commands.json").read_text())
         core = [x["command"] for x in commands if x["file"].endswith("/src/btstack_memory.c")
                 and "check_group_core" not in x["command"]
