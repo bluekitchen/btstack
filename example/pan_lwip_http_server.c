@@ -156,6 +156,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
  * @text Listing PanBnepSetup shows the setup of the PAN setup
  */
  
+static void bnep_lwip_ready(uint8_t status){
+    if (status != ERROR_CODE_SUCCESS){
+        printf("BNEP lwIP initialization failed: 0x%02x\n", status);
+        return;
+    }
+    status = bnep_lwip_register_service(BLUETOOTH_SERVICE_CLASS_NAP, 1691);
+    if (status != ERROR_CODE_SUCCESS){
+        printf("BNEP service registration failed: 0x%02x\n", status);
+    }
+}
+
 /* LISTING_START(PanBnepSetup): Configure GAP, register PAN NAP servier, register PAN NA SDP record. */
 static void pan_bnep_setup(void){
 
@@ -194,14 +205,11 @@ static void pan_bnep_setup(void){
     btstack_assert(de_get_len( pan_sdp_record) <= sizeof(pan_sdp_record));
     sdp_register_service(pan_sdp_record);
 
-    // Init BNEP lwIP Adapter
-    bnep_lwip_init();
-
-    // Setup NAP Service via BENP lwIP adapter
-    bnep_lwip_register_service(BLUETOOTH_SERVICE_CLASS_NAP, 1691);
-
     // register callback - to print state
     bnep_lwip_register_packet_handler(packet_handler);
+
+    // Register the NAP service after the network interface is ready.
+    bnep_lwip_init_with_callback(bnep_lwip_ready);
 }
 /* LISTING_END */
 
