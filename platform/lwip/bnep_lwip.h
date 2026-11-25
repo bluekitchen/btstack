@@ -56,9 +56,20 @@ extern "C" {
 #endif
 
 /**
- * @brief Initialize BNEP Adapter
+ * @brief Initialize the BNEP adapter.
+ * @note In RTOS mode initialization is asynchronous. Use the callback variant
+ * to wait for completion before registering a service or connecting.
+ * The lwIP core must already be initialized and ready.
  */
 void bnep_lwip_init(void);
+
+/**
+ * @brief Initialize the BNEP adapter and report completion in BTstack context.
+ * @param callback Called once with ERROR_CODE_SUCCESS or an error status. May
+ * be called before this function returns, including on allocation failure.
+ * @note The lwIP core must already be initialized and ready. Call only once.
+ */
+void bnep_lwip_init_with_callback(void (*callback)(uint8_t status));
 
 /**
  * @brief Register packet handler for BNEP events

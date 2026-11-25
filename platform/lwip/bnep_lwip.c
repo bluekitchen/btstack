@@ -74,9 +74,11 @@
 #ifdef HAVE_FREERTOS_INCLUDE_PREFIX
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #else
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
 #endif
 #endif
 
@@ -91,6 +93,23 @@ static bool bnep_lwip_outgoing_packets_empty(void);
 
 // lwip data
 static struct netif btstack_netif;
+static bool bnep_lwip_initialized;
+static void (*bnep_lwip_init_callback)(uint8_t status);
+
+#if !NO_SYS
+// Protected by netif_mutex. The BTstack thread publishes desired state, and
+// the TCP/IP thread applies it. A generation prevents lost updates.
+static SemaphoreHandle_t netif_mutex;
+static bool netif_callback_pending;
+static bool netif_desired_up;
+static bd_addr_t netif_desired_address;
+static uint16_t netif_desired_mtu;
+static uint32_t netif_desired_epoch;
+static uint32_t netif_generation;
+static btstack_timer_source_t netif_retry_timer;
+static btstack_context_callback_registration_t netif_init_complete_registration;
+static uint8_t netif_init_status;
+#endif
 
 // outgoing queue
 #if NO_SYS
@@ -273,36 +292,129 @@ static err_t bnep_lwip_netif_init(struct netif *netif){
     return ERR_OK;
 }
 
-static int bnep_lwip_netif_up(bd_addr_t network_address){
-    log_info("bnep_lwip_netif_up start addr %s", bd_addr_to_str(network_address));
-
-    // set mac address
+static void bnep_lwip_netif_up(const bd_addr_t network_address, uint16_t mtu){
     btstack_netif.hwaddr_len = 6;
     memcpy(btstack_netif.hwaddr, network_address, 6);
-
-    // link is up
-    btstack_netif.flags |= NETIF_FLAG_LINK_UP;
-
-    // if up
+    btstack_netif.mtu = mtu;
+    netif_set_link_up(&btstack_netif);
     netif_set_up(&btstack_netif);
-
-    return 0;
 }
 
-/**
- * @brief Bring up network interfacd
- * @param network_address
- * @return 0 if ok
- */
-static int bnep_lwip_netif_down(void){
-    log_info("bnep_lwip_netif_down");
-
-    // link is down
-    btstack_netif.flags &= ~NETIF_FLAG_LINK_UP;
-
+static void bnep_lwip_netif_down(void){
+    netif_set_link_down(&btstack_netif);
     netif_set_down(&btstack_netif);
-    return 0;
 }
+
+static bool bnep_lwip_netif_add(void){
+    ip4_addr_t ipaddr, netmask, gw;
+    IP4_ADDR(&ipaddr, 192U, 168U, 7U, 1U);
+    IP4_ADDR(&netmask, 255U, 255U, 255U, 0U);
+    IP4_ADDR(&gw, 0U, 0U, 0U, 0U);
+#if NO_SYS
+    netif_input_fn input = ethernet_input;
+#else
+    netif_input_fn input = tcpip_input;
+#endif
+    if (netif_add(&btstack_netif, &ipaddr, &netmask, &gw, NULL, bnep_lwip_netif_init, input) == NULL){
+        return false;
+    }
+    netif_set_default(&btstack_netif);
+    return true;
+}
+
+#if !NO_SYS
+static void bnep_lwip_netif_init_complete(void * arg){
+    UNUSED(arg);
+    bnep_lwip_initialized = netif_init_status == ERROR_CODE_SUCCESS;
+    if (bnep_lwip_init_callback != NULL){
+        bnep_lwip_init_callback(netif_init_status);
+    }
+}
+
+static void bnep_lwip_netif_apply(void * arg){
+    UNUSED(arg);
+    static bool netif_added;
+    static uint32_t applied_epoch;
+    if (!netif_added){
+        netif_added = bnep_lwip_netif_add();
+        netif_init_status = netif_added ? ERROR_CODE_SUCCESS : BTSTACK_MEMORY_ALLOC_FAILED;
+        netif_init_complete_registration.callback = &bnep_lwip_netif_init_complete;
+        btstack_run_loop_execute_on_main_thread(&netif_init_complete_registration);
+        if (!netif_added){
+            xSemaphoreTake(netif_mutex, portMAX_DELAY);
+            netif_callback_pending = false;
+            xSemaphoreGive(netif_mutex);
+            return;
+        }
+    }
+    for (;;){
+        bd_addr_t address;
+        uint16_t mtu;
+        uint32_t generation, epoch;
+        bool up;
+        xSemaphoreTake(netif_mutex, portMAX_DELAY);
+        up = netif_desired_up;
+        epoch = netif_desired_epoch;
+        mtu = netif_desired_mtu;
+        bd_addr_copy(address, netif_desired_address);
+        generation = netif_generation;
+        xSemaphoreGive(netif_mutex);
+
+        if (applied_epoch && (!up || (applied_epoch != epoch))){
+            bnep_lwip_netif_down();
+            applied_epoch = 0;
+        }
+        if (up && !applied_epoch){
+            bnep_lwip_netif_up(address, mtu);
+            applied_epoch = epoch;
+        }
+        xSemaphoreTake(netif_mutex, portMAX_DELAY);
+        if (generation == netif_generation){
+            netif_callback_pending = false;
+            xSemaphoreGive(netif_mutex);
+            return;
+        }
+        xSemaphoreGive(netif_mutex);
+    }
+}
+
+static void bnep_lwip_netif_schedule(void);
+static void bnep_lwip_netif_retry(btstack_timer_source_t * timer){
+    UNUSED(timer);
+    bnep_lwip_netif_schedule();
+}
+
+// Called only in BTstack context. Never wait for the TCP/IP thread.
+static void bnep_lwip_netif_schedule(void){
+    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+    if (!netif_callback_pending){
+        netif_callback_pending = true;
+        if (tcpip_try_callback(&bnep_lwip_netif_apply, NULL) != ERR_OK){
+            netif_callback_pending = false;
+            xSemaphoreGive(netif_mutex);
+            btstack_run_loop_remove_timer(&netif_retry_timer);
+            btstack_run_loop_set_timer(&netif_retry_timer, 10);
+            btstack_run_loop_add_timer(&netif_retry_timer);
+            return;
+        }
+    }
+    xSemaphoreGive(netif_mutex);
+}
+
+static void bnep_lwip_netif_update(bool up, const bd_addr_t address, uint16_t mtu){
+    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+    netif_desired_up = up;
+    if (up){
+        netif_desired_epoch++;
+        if (netif_desired_epoch == 0) netif_desired_epoch++;
+    }
+    netif_desired_mtu = mtu;
+    if (address != NULL) bd_addr_copy(netif_desired_address, address);
+    netif_generation++;
+    xSemaphoreGive(netif_mutex);
+    bnep_lwip_netif_schedule();
+}
+#endif
 
 /**
  * @brief Forward packet to TCP/IP stack
@@ -472,12 +584,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     bnep_cid = event_cid;
                     // The event MTU is the maximum Ethernet payload. Leave room
                     // for the Ethernet header in the outgoing staging buffer.
-                    btstack_netif.mtu = btstack_min(bnep_event_channel_opened_get_mtu(packet),
-                                                   sizeof(btstack_network_outgoing_buffer) - 14);
+                    uint16_t mtu = btstack_min(bnep_event_channel_opened_get_mtu(packet),
+                                               sizeof(btstack_network_outgoing_buffer) - 14);
 
                     /* Setup network interface */
                     gap_local_bd_addr(local_addr);
-                    bnep_lwip_netif_up(local_addr);
+#if NO_SYS
+                    bnep_lwip_netif_up(local_addr, mtu);
+#else
+                    bnep_lwip_netif_update(true, local_addr, mtu);
+#endif
 
 #if NO_SYS
                     // start timer
@@ -507,9 +623,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     bnep_lwip_discard_packets();
 
                     // Mark Link as Down
-                    bnep_lwip_netif_down();
 #if NO_SYS
+                    bnep_lwip_netif_down();
                     btstack_run_loop_remove_timer(&bnep_lwip_timer);
+#else
+                    bnep_lwip_netif_update(false, NULL, 0);
 #endif
                     break;
 
@@ -551,34 +669,31 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
  * @brief Initialize network interface
  * @param send_packet_callback
  */
-void bnep_lwip_init(void){
-
-    // set up outgoing queue
-    int error = bnep_lwip_outgoing_init_queue();
-    if (error) return;
-
-    ip4_addr_t fsl_netif0_ipaddr, fsl_netif0_netmask, fsl_netif0_gw;
-#if 0
-    // when using DHCP Client, no address
-    IP4_ADDR(&fsl_netif0_ipaddr, 0U, 0U, 0U, 0U);
-    IP4_ADDR(&fsl_netif0_netmask, 0U, 0U, 0U, 0U);
-#else
-    // when playing DHCP Server, set address
-    IP4_ADDR(&fsl_netif0_ipaddr, 192U, 168U, 7U, 1U);
-    IP4_ADDR(&fsl_netif0_netmask, 255U, 255U, 255U, 0U);
-#endif
-    IP4_ADDR(&fsl_netif0_gw, 0U, 0U, 0U, 0U);
-
-    // input function differs for sys vs nosys
-    netif_input_fn input_function;
+void bnep_lwip_init_with_callback(void (*callback)(uint8_t status)){
+    bnep_lwip_init_callback = callback;
+    if (bnep_lwip_outgoing_init_queue() != 0){
+        if (callback != NULL) callback(BTSTACK_MEMORY_ALLOC_FAILED);
+        return;
+    }
 #if NO_SYS
-    input_function = ethernet_input;
+    bnep_lwip_initialized = bnep_lwip_netif_add();
+    if (callback != NULL){
+        callback(bnep_lwip_initialized ? ERROR_CODE_SUCCESS : BTSTACK_MEMORY_ALLOC_FAILED);
+    }
 #else
-    input_function = tcpip_input;
+    netif_mutex = xSemaphoreCreateMutex();
+    if (netif_mutex == NULL){
+        vQueueDelete(bnep_lwip_outgoing_queue);
+        if (callback != NULL) callback(BTSTACK_MEMORY_ALLOC_FAILED);
+        return;
+    }
+    btstack_run_loop_set_timer_handler(&netif_retry_timer, &bnep_lwip_netif_retry);
+    bnep_lwip_netif_schedule();
 #endif
+}
 
-    netif_add(&btstack_netif, &fsl_netif0_ipaddr, &fsl_netif0_netmask, &fsl_netif0_gw, NULL, bnep_lwip_netif_init, input_function);
-    netif_set_default(&btstack_netif);
+void bnep_lwip_init(void){
+    bnep_lwip_init_with_callback(NULL);
 }
 
 /**
@@ -595,6 +710,7 @@ void bnep_lwip_register_packet_handler(btstack_packet_handler_t handler){
  * @Param max_frame_size
  */
 uint8_t bnep_lwip_register_service(uint16_t service_uuid, uint16_t max_frame_size){
+    if (!bnep_lwip_initialized) return ERROR_CODE_COMMAND_DISALLOWED;
     return bnep_register_service(packet_handler, service_uuid, max_frame_size);
 }
 
@@ -608,7 +724,7 @@ uint8_t bnep_lwip_register_service(uint16_t service_uuid, uint16_t max_frame_siz
  * @return status
  */
 uint8_t bnep_lwip_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest){
-    if (bnep_cid || bnep_lwip_outgoing_connection_pending) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (!bnep_lwip_initialized || bnep_cid || bnep_lwip_outgoing_connection_pending) return ERROR_CODE_COMMAND_DISALLOWED;
     bnep_lwip_outgoing_connection_pending = true;
     bd_addr_copy(bnep_lwip_outgoing_address, addr);
     int status = bnep_connect(packet_handler, addr, l2cap_psm, uuid_src, uuid_dest);
