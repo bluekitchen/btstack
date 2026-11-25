@@ -132,6 +132,19 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
+static void bnep_emit_incoming_connection(bnep_channel_t *channel){
+    uint8_t event[16];
+    event[0] = BNEP_EVENT_INCOMING_CONNECTION;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel->l2cap_cid);
+    little_endian_store_16(event, 4, channel->uuid_source);
+    little_endian_store_16(event, 6, channel->uuid_dest);
+    reverse_bd_addr(channel->remote_addr, &event[8]);
+    little_endian_store_16(event, 14, channel->con_handle);
+    hci_dump_btstack_event(event, sizeof(event));
+    (*channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void bnep_emit_channel_timeout(bnep_channel_t *channel) 
 {
     log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s", bd_addr_to_str(channel->remote_addr));
@@ -908,6 +921,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
             (channel->uuid_source != BLUETOOTH_SERVICE_CLASS_GN)) {
             log_error("BNEP_CONNECTION_REQUEST: Invalid source service UUID: %04x", channel->uuid_source);
             channel->uuid_source = 0;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
         }
 
         /* Check if we have registered a service for the requested destination UUID */
@@ -925,13 +939,20 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         } 
     }
 
-    /* Set flag to send out the connection response on next statemachine cycle */
+    // A setup request on an established channel is a retransmission, not a
+    // new incoming connection. Otherwise ask the registered service to decide.
+    const uint16_t consumed = 1 + 1 + (2 * uuid_size);
+    if ((response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) &&
+        (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST)) {
+        channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CLIENT;
+        bnep_emit_incoming_connection(channel);
+        return consumed;
+    }
+
     bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
     channel->response_code = response_code;
     l2cap_request_can_send_now_event(channel->l2cap_cid);
-        
-    /* Return the number of processed package bytes = BNEP Type, BNEP Control Type, UUID-Size + 2 * UUID */
-    return 1 + 1 + (2 * uuid_size);
+    return consumed;
 }
 
 static bnep_control_packet_result_t bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet,
@@ -1225,7 +1246,12 @@ static bnep_control_packet_result_t bnep_handle_control_packet(bnep_channel_t *c
                               channel->l2cap_cid);
                     return BNEP_CONTROL_PACKET_INVALID;
                 } else {
+                    uint16_t cid = channel->l2cap_cid;
                     len = bnep_handle_connection_request(channel, packet, size);
+                    if (bnep_channel_for_l2cap_cid(cid) != channel){
+                        *consumed = len;
+                        return BNEP_CONTROL_PACKET_CHANNEL_CLOSED;
+                    }
                 }
                 break;
             case BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE:
@@ -1409,6 +1435,8 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             switch (channel->state) {
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST:
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE:
+                case BNEP_CHANNEL_STATE_WAIT_FOR_CLIENT:
+                case BNEP_CHANNEL_STATE_WAIT_FOR_SETUP_RESPONSE_SEND:
                     // emit channel open failed
                     bnep_emit_open_channel_complete(channel, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
                     if (bnep_channel_for_l2cap_cid(l2cap_cid) == channel) {
@@ -1599,15 +1627,16 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
         }
         if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE) {
             int emit_connected = 0;
-            if ((channel->state == BNEP_CHANNEL_STATE_CLOSED) ||
-                (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST)) {
-                /* Set channel state to STATE_CONNECTED */
+            if ((channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_SETUP_RESPONSE_SEND) &&
+                (channel->response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS)) {
                 channel->state = BNEP_CHANNEL_STATE_CONNECTED;
-                /* Stop timeout timer! */
                 bnep_channel_stop_timer(channel);
                 emit_connected = 1;
+            } else if (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_SETUP_RESPONSE_SEND) {
+                // The peer may retry; retain the setup timer until it disconnects.
+                channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST;
             }
-            
+
             bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
             bnep_send_connection_response(channel, channel->response_code);
             if (emit_connected){
@@ -1763,6 +1792,26 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     btstack_linked_list_add(&bnep_services, (btstack_linked_item_t *) service);
     
     return 0;
+}
+
+static uint8_t bnep_respond_to_incoming_connection(uint16_t bnep_cid, uint16_t response_code){
+    bnep_channel_t * channel = bnep_channel_for_l2cap_cid(bnep_cid);
+    if (channel == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (channel->state != BNEP_CHANNEL_STATE_WAIT_FOR_CLIENT) return ERROR_CODE_COMMAND_DISALLOWED;
+
+    channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_SETUP_RESPONSE_SEND;
+    channel->response_code = response_code;
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
+    l2cap_request_can_send_now_event(bnep_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t bnep_accept_connection(uint16_t bnep_cid){
+    return bnep_respond_to_incoming_connection(bnep_cid, BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS);
+}
+
+uint8_t bnep_decline_connection(uint16_t bnep_cid){
+    return bnep_respond_to_incoming_connection(bnep_cid, BNEP_SETUP_CONNECTION_RESPONSE_CONNECTION_NOT_ALLOWED);
 }
 
 void bnep_unregister_service(uint16_t service_uuid)

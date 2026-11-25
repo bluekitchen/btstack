@@ -66,6 +66,8 @@ typedef enum {
 	BNEP_CHANNEL_STATE_CLOSED = 1,
     BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST,
     BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE,
+    BNEP_CHANNEL_STATE_WAIT_FOR_CLIENT,
+    BNEP_CHANNEL_STATE_WAIT_FOR_SETUP_RESPONSE_SEND,
 	BNEP_CHANNEL_STATE_CONNECTED,
 } BNEP_CHANNEL_STATE;
 
@@ -225,9 +227,24 @@ int bnep_connect(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint16
 void bnep_disconnect(bd_addr_t addr);
 
 /**
- * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter. 
+ * @brief Register a BNEP service with a maximum incoming frame size and packet handler.
+ * The handler must accept or decline BNEP_EVENT_INCOMING_CONNECTION using its CID.
  */
 uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t service_uuid, uint16_t max_frame_size_incoming);
+
+/**
+ * @brief Accept an incoming BNEP setup request.
+ * @param bnep_cid CID from BNEP_EVENT_INCOMING_CONNECTION
+ * @return ERROR_CODE_SUCCESS, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, or ERROR_CODE_COMMAND_DISALLOWED
+ */
+uint8_t bnep_accept_connection(uint16_t bnep_cid);
+
+/**
+ * @brief Decline an incoming BNEP setup request.
+ * @param bnep_cid CID from BNEP_EVENT_INCOMING_CONNECTION
+ * @return ERROR_CODE_SUCCESS, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, or ERROR_CODE_COMMAND_DISALLOWED
+ */
+uint8_t bnep_decline_connection(uint16_t bnep_cid);
 
 /**
  * @brief Unregister BNEP service.
