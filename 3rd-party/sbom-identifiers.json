@@ -9,6 +9,21 @@
     "revision": "e8c3d75b75493911ebf0f99c83676359657178f7",
     "purl": "pkg:generic/bluedroid-sbc@e8c3d75b75493911ebf0f99c83676359657178f7?vcs_url=git%2Bhttps%3A%2F%2Fandroid.googlesource.com%2Fplatform%2Fexternal%2Fbluetooth%2Fbluedroid#embdrv/sbc/decoder"
   },
+  "../chipset/sx128x/SMTC_Drivers": {
+    "version": "v1.p6",
+    "revision": "N/A",
+    "purl": "pkg:generic/semtech/smtc_drivers@v1.p6"
+  },
+  "md5": {
+    "version": "Unversioned",
+    "revision": "N/A",
+    "purl": "pkg:generic/openwall/solar-designer-md5"
+  },
+  "rijndael": {
+    "version": "20020903",
+    "revision": "N/A",
+    "purl": "pkg:generic/philip-j-erdelsky/rijndael@20020903"
+  },
   "segger-rtt": {
     "version": "V8.58 + fix",
     "revision": "9106eaa39babe53e00994d7828c1afb29390cdc1",
