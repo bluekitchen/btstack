@@ -1,52 +1,19 @@
 /*********************************************************************
-*                    SEGGER Microcontroller GmbH                     *
+*                   (c) SEGGER Microcontroller GmbH                  *
 *                        The Embedded Experts                        *
+*                           www.segger.com                           *
 **********************************************************************
 *                                                                    *
-*            (c) 1995 - 2019 SEGGER Microcontroller GmbH             *
-*                                                                    *
-*       www.segger.com     Support: support@segger.com               *
-*                                                                    *
-**********************************************************************
-*                                                                    *
-*       SEGGER RTT * Real Time Transfer for embedded targets         *
+*        SEGGER RTT * Real Time Transfer for embedded targets        *
+*                  https://github.com/SEGGERMicro/RTT                *
 *                                                                    *
 **********************************************************************
-*                                                                    *
-* All rights reserved.                                               *
-*                                                                    *
-* SEGGER strongly recommends to not make any changes                 *
-* to or modify the source code of this software in order to stay     *
-* compatible with the RTT protocol and J-Link.                       *
-*                                                                    *
-* Redistribution and use in source and binary forms, with or         *
-* without modification, are permitted provided that the following    *
-* condition is met:                                                  *
-*                                                                    *
-* o Redistributions of source code must retain the above copyright   *
-*   notice, this condition and the following disclaimer.             *
-*                                                                    *
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND             *
-* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,        *
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF           *
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE           *
-* DISCLAIMED. IN NO EVENT SHALL SEGGER Microcontroller BE LIABLE FOR *
-* ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR           *
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT  *
-* OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;    *
-* OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF      *
-* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT          *
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE  *
-* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH   *
-* DAMAGE.                                                            *
-*                                                                    *
-**********************************************************************
+
 ---------------------------END-OF-HEADER------------------------------
-File    : RTT_Syscalls_KEIL.c
 Purpose : Retargeting module for KEIL MDK-CM3.
           Low-level functions for using printf() via RTT
-Revision: $Rev: 24316 $
-Notes   : (1) https://wiki.segger.com/Keil_MDK-ARM#RTT_in_uVision
+Notes   : (1) https://kb.segger.com/Keil_MDK-ARM#RTT_in_uVision
+
 ----------------------------------------------------------------------
 */
 #if (defined __CC_ARM) || (defined __ARMCC_VERSION)
@@ -113,7 +80,7 @@ const char __stderr_name[] = "STDERR";
 *
 *  Parameters:
 *    c    - character to output
-*  
+*
 */
 void _ttywrch(int c) {
   fputc(c, stdout); // stdout
@@ -130,9 +97,9 @@ void _ttywrch(int c) {
 *  Parameters:
 *    sName        - sName of the device/file to open
 *    OpenMode    - This parameter is currently ignored
-*  
+*
 *  Return value:
-*    != 0     - Handle to the object to open, otherwise 
+*    != 0     - Handle to the object to open, otherwise
 *    == 0     -"device" is not handled by this module
 *
 */
@@ -156,7 +123,7 @@ FILEHANDLE _sys_open(const char * sName, int OpenMode) {
 *
 *  Parameters:
 *    hFile    - Handle to a file opened via _sys_open
-*  
+*
 *  Return value:
 *    0     - device/file closed
 *
@@ -179,7 +146,7 @@ int _sys_close(FILEHANDLE hFile) {
 *    pBuffer  - Pointer to the data that shall be written
 *    NumBytes      - Number of bytes to write
 *    Mode     - The Mode that shall be used
-*  
+*
 *  Return value:
 *    Number of bytes *not* written to the file/device
 *
@@ -197,41 +164,15 @@ int _sys_write(FILEHANDLE hFile, const unsigned char * pBuffer, unsigned NumByte
 
 /*********************************************************************
 *
-*       _sys_read
-*
-*  Function description:
-*    Reads data from an open handle.
-*    Currently this modules does nothing.
-*
-*  Parameters:
-*    hFile    - Handle to a file opened via _sys_open
-*    pBuffer  - Pointer to buffer to store the read data
-*    NumBytes      - Number of bytes to read
-*    Mode     - The Mode that shall be used
-*  
-*  Return value:
-*    Number of bytes read from the file/device
-*
-*/
-int _sys_read(FILEHANDLE hFile, unsigned char * pBuffer, unsigned NumBytes, int Mode) {
-  (void)hFile;
-  (void)pBuffer;
-  (void)NumBytes;
-  (void)Mode;
-  return (0);  // Not implemented
-}
-
-/*********************************************************************
-*
 *       _sys_istty
 *
 *  Function description:
-*    This function shall return whether the opened file 
+*    This function shall return whether the opened file
 *    is a console device or not.
 *
 *  Parameters:
 *    hFile    - Handle to a file opened via _sys_open
-*  
+*
 *  Return value:
 *    1       - Device is     a console
 *    0       - Device is not a console
@@ -253,35 +194,16 @@ int _sys_istty(FILEHANDLE hFile) {
 *
 *  Parameters:
 *    hFile  - Handle to a file opened via _sys_open
-*    Pos    - 
-*  
+*    Pos    -
+*
 *  Return value:
-*    int       - 
+*    int       -
 *
 */
 int _sys_seek(FILEHANDLE hFile, long Pos) {
   (void)hFile;
   (void)Pos;
   return (0);  // Not implemented
-}
-
-/*********************************************************************
-*
-*       _sys_ensure
-*
-*  Function description:
-*    
-*
-*  Parameters:
-*    hFile    - Handle to a file opened via _sys_open
-*  
-*  Return value:
-*    int       - 
-*
-*/
-int _sys_ensure(FILEHANDLE hFile) {
-  (void)hFile;
-  return (-1);  // Not implemented
 }
 
 /*********************************************************************
@@ -293,7 +215,7 @@ int _sys_ensure(FILEHANDLE hFile) {
 *
 *  Parameters:
 *    hFile    - Handle to a file opened via _sys_open
-*  
+*
 *  Return value:
 *    Length of the file
 *
@@ -303,30 +225,85 @@ long _sys_flen(FILEHANDLE hFile) {
   return (0);  // Not implemented
 }
 
+#if (__ARMCC_VERSION <= 6000000) // The following functions are not required to be implemented for CC version > 6.
+/*********************************************************************
+*
+*       _sys_read
+*
+*  Function description:
+*    Reads data from an open handle.
+*    Currently this modules does nothing.
+*
+*  Parameters:
+*    hFile    - Handle to a file opened via _sys_open
+*    pBuffer  - Pointer to buffer to store the read data
+*    NumBytes      - Number of bytes to read
+*    Mode     - The Mode that shall be used
+*
+*  Return value:
+*    Number of bytes read from the file/device
+*
+*/
+int _sys_read(FILEHANDLE hFile, unsigned char * pBuffer, unsigned NumBytes, int Mode) {
+  (void)hFile;
+  (void)pBuffer;
+  (void)NumBytes;
+  (void)Mode;
+  return (0);  // Not implemented
+}
+
+/*********************************************************************
+*
+*       _sys_ensure
+*
+*  Function description:
+*
+*
+*  Parameters:
+*    hFile    - Handle to a file opened via _sys_open
+*
+*  Return value:
+*    int       -
+*
+*/
+int _sys_ensure(FILEHANDLE hFile) {
+  (void)hFile;
+  return (-1);  // Not implemented
+}
+
 /*********************************************************************
 *
 *       _sys_tmpnam
 *
 *  Function description:
-*    This function converts the file number fileno for a temporary 
+*    This function converts the file number fileno for a temporary
 *    file to a unique filename, for example, tmp0001.
 *
 *  Parameters:
 *    pBuffer    - Pointer to a buffer to store the name
 *    FileNum    - file number to convert
 *    MaxLen     - Size of the buffer
-*  
+*
 *  Return value:
 *     1 - Error
-*     0 - Success  
+*     0 - Success
 *
 */
+#if __ARMCC_VERSION >= 6190000
+void _sys_tmpnam(char * pBuffer, int FileNum, unsigned MaxLen) {
+  (void)pBuffer;
+  (void)FileNum;
+  (void)MaxLen;
+  return;      // Not implemented
+}
+#else
 int _sys_tmpnam(char * pBuffer, int FileNum, unsigned MaxLen) {
   (void)pBuffer;
   (void)FileNum;
   (void)MaxLen;
   return (1);  // Not implemented
 }
+#endif
 
 /*********************************************************************
 *
@@ -338,7 +315,7 @@ int _sys_tmpnam(char * pBuffer, int FileNum, unsigned MaxLen) {
 *  Parameters:
 *    cmd    - Pointer to the command string
 *    len    - Length of the string
-*  
+*
 *  Return value:
 *    == NULL - Command was not successfully executed
 *    == sCmd - Command was passed successfully
@@ -358,7 +335,7 @@ char * _sys_command_string(char * cmd, int len) {
 *
 *  Parameters:
 *    ReturnCode    - Return code from the main function
-*  
+*
 *
 */
 void _sys_exit(int ReturnCode) {
@@ -376,7 +353,7 @@ void _sys_exit(int ReturnCode) {
 *
 *  Parameters:
 *    ch    - Character to output
-*  
+*
 *
 */
 int stdout_putchar(int ch) {
@@ -385,5 +362,6 @@ int stdout_putchar(int ch) {
 }
 #endif
 
-#endif
+#endif // #if __ARMCC_VERSION <= 6000000
+#endif // #if (defined __CC_ARM) || (defined __ARMCC_VERSION)
 /*************************** End of file ****************************/

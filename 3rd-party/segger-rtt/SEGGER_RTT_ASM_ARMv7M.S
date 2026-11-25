@@ -3,15 +3,20 @@
 *                        The Embedded Experts                        *
 *                           www.segger.com                           *
 **********************************************************************
+*                                                                    *
+*        SEGGER RTT * Real Time Transfer for embedded targets        *
+*                  https://github.com/SEGGERMicro/RTT                *
+*                                                                    *
+**********************************************************************
 
--------------------------- END-OF-HEADER -----------------------------
-
-File    : SEGGER_RTT_ASM_ARMv7M.S
+---------------------------END-OF-HEADER------------------------------
 Purpose : Assembler implementation of RTT functions for ARMv7M
 
 Additional information:
   This module is written to be assembler-independent and works with
   GCC and clang (Embedded Studio) and IAR.
+
+----------------------------------------------------------------------
 */
 
 #define SEGGER_RTT_ASM      // Used to control processed input from header file

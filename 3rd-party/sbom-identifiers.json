@@ -9,6 +9,11 @@
     "revision": "e8c3d75b75493911ebf0f99c83676359657178f7",
     "purl": "pkg:generic/bluedroid-sbc@e8c3d75b75493911ebf0f99c83676359657178f7?vcs_url=git%2Bhttps%3A%2F%2Fandroid.googlesource.com%2Fplatform%2Fexternal%2Fbluetooth%2Fbluedroid#embdrv/sbc/decoder"
   },
+  "segger-rtt": {
+    "version": "V8.58 + fix",
+    "revision": "9106eaa39babe53e00994d7828c1afb29390cdc1",
+    "purl": "pkg:github/seggermicro/rtt@9106eaa39babe53e00994d7828c1afb29390cdc1"
+  },
   "yxml": {
     "version": "Git snapshot",
     "revision": "10f968b0e78b9aeee357d0de81a46b445c3fb27b",
