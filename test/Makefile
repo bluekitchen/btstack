@@ -14,6 +14,7 @@ SUBDIRS :=  \
 	avdtp \
 	avdtp_util \
 	base64 \
+	bnep \
 	ble_client \
 	chunk_buffer \
 	btstack-event \
