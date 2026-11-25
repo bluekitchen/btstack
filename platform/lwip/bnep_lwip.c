@@ -138,13 +138,11 @@ static void bnep_lwip_outgoing_reset_queue(void){
 #endif
 }
 
-static void bnep_lwip_outgoing_queue_packet(struct pbuf *p){
+static bool bnep_lwip_outgoing_queue_packet(struct pbuf *p){
 #if NO_SYS
-    // queue up
-    btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *));
+    return btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *)) == 0;
 #else
-    // queue up
-    xQueueSendToBack(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
+    return xQueueSendToBack(bnep_lwip_outgoing_queue, &p, portMAX_DELAY) == pdPASS;
 #endif
 }
 
@@ -227,8 +225,11 @@ static err_t low_level_output( struct netif *netif, struct pbuf *p ){
     // queue empty now?
     int queue_empty = bnep_lwip_outgoing_packets_empty();
 
-    // queue up
-    bnep_lwip_outgoing_queue_packet(p);
+    // queue up; release the reference if the queue is full
+    if (!bnep_lwip_outgoing_queue_packet(p)){
+        pbuf_free(p);
+        return ERR_MEM;
+    }
 
     // trigger processing if queue was empty (might be new packet)
     if (queue_empty){
