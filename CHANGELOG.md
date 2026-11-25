@@ -17,17 +17,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: correctly cancel an outgoing Classic channel before its ACL connection completes
 - AVDTP Util: limit Content Protection data
 - AVRCP Browsing Target: fix AVRCP_SUBEVENT_BROWSING_SEARCH
+- BNEP: free queued packets on disconnect, drop packets when queue is full, honor negotiated MTU
 - HFP HF: support codec negotiation with active audio connection
 - gatt_client, avdtp, avrcp, hid_host: validate nested SDP descriptors
 - sdp_util: avoid OOB read in SDP Attribute List
 - btstack_hid_parser: ignore reserved global items
 - obex_parser: ignore additional bytes
+- bnep_lwip: add bnep_lwip_init_with_callback, copy packets in multhreading setup
 
 ### Changed
 - GATT Compiler: allow to use service range and attribute handles in C++ namespaces
 - L2CAP: reduce size of l2cap_channel_t by moving ERTM state into user-provided ERTM buffer.
          Applications should provide additional buffer storage
 - AVDTP: enable send of automatically flushable packets for media transport
+- BNEP: emit incoming connection and add accept/decline functions 
 - example/a2dp_source_demo: set automatic flush timeout to 150 ms
 - ESP32: allow to specify the Bluetooth type of external Bluetooth Controller
 - SDP Util: DES and SDP iterators work on const data, remove obsolete sdp_set_attribute_value_for_attribute_id
