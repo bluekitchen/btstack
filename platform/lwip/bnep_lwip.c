@@ -130,14 +130,6 @@ static int bnep_lwip_outgoing_init_queue(void){
     return 0;
 }
 
-static void bnep_lwip_outgoing_reset_queue(void){
-#if NO_SYS
-    btstack_ring_buffer_init(&bnep_lwip_outgoing_queue, bnep_lwip_outgoing_queue_storage, sizeof(bnep_lwip_outgoing_queue_storage));
-#else
-    xQueueReset(bnep_lwip_outgoing_queue);
-#endif
-}
-
 static bool bnep_lwip_outgoing_queue_packet(struct pbuf *p){
 #if NO_SYS
     return btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *)) == 0;
@@ -153,7 +145,7 @@ static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
     btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *), &bytes_read);
     (void) bytes_read;
 #else
-    // don't block: the queue may have been reset by bnep_lwip_discard_packets() after this was scheduled
+    // Do not block if the queue was drained after processing was scheduled.
     xQueueReceive(bnep_lwip_outgoing_queue, &p, 0);
 #endif
     return p;
@@ -420,8 +412,11 @@ static void bnep_lwip_discard_packets(void){
         bnep_lwip_outgoing_packet_processed();
     }
 
-    // reset queue
-    bnep_lwip_outgoing_reset_queue();
+    // Release every queued reference before discarding the queue contents.
+    struct pbuf * p;
+    while ((p = bnep_lwip_outgoing_pop_packet()) != NULL){
+        bnep_lwip_free_pbuf(p);
+    }
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
