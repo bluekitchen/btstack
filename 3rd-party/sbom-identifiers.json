@@ -1,4 +1,19 @@
 {
+  "bluedroid/encoder": {
+    "version": "Git snapshot",
+    "revision": "e8c3d75b75493911ebf0f99c83676359657178f7",
+    "purl": "pkg:generic/bluedroid-sbc@e8c3d75b75493911ebf0f99c83676359657178f7?vcs_url=git%2Bhttps%3A%2F%2Fandroid.googlesource.com%2Fplatform%2Fexternal%2Fbluetooth%2Fbluedroid#embdrv/sbc/encoder"
+  },
+  "bluedroid/decoder": {
+    "version": "Git snapshot",
+    "revision": "e8c3d75b75493911ebf0f99c83676359657178f7",
+    "purl": "pkg:generic/bluedroid-sbc@e8c3d75b75493911ebf0f99c83676359657178f7?vcs_url=git%2Bhttps%3A%2F%2Fandroid.googlesource.com%2Fplatform%2Fexternal%2Fbluetooth%2Fbluedroid#embdrv/sbc/decoder"
+  },
+  "yxml": {
+    "version": "Git snapshot",
+    "revision": "10f968b0e78b9aeee357d0de81a46b445c3fb27b",
+    "purl": "pkg:github/julstrat/yxml@10f968b0e78b9aeee357d0de81a46b445c3fb27b"
+  },
   "hxcmod-player": {
     "version": "Git snapshot",
     "revision": "cb5c9f586b61eacc3b6f038f2129db9fb9a1e08e",
@@ -43,6 +58,11 @@
     "version": "v1.28.0",
     "revision": "9e7d2aa86197059fc29cf89931d46d0ab64e6081",
     "purl": "pkg:github/stmicroelectronics/stm32cubef4@v1.28.0#Drivers/BSP"
+  },
+  "STM32CubeF4/Middlewares/ST/STM32_Audio/Addons/PDM": {
+    "version": "CubeF4 v1.28.0",
+    "revision": "N/A",
+    "purl": "pkg:generic/stmicroelectronics/stm32cubef4@1.28.0#Middlewares/ST/STM32_Audio/Addons/PDM"
   },
   "tinydir": {
     "version": "1.2.6",
