@@ -13,6 +13,8 @@ void btstack_run_loop_set_timer(btstack_timer_source_t * timer, uint32_t ms){ (v
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*handler)(btstack_timer_source_t *)){ (void) timer; (void) handler; }
 void gap_local_bd_addr(bd_addr_t addr){ memset(addr, 0, sizeof(bd_addr_t)); }
 void netif_set_up(struct netif * netif){ netif->flags |= NETIF_FLAG_UP; }
+void netif_set_link_up(struct netif * netif){ netif->flags |= NETIF_FLAG_LINK_UP; }
+void netif_set_link_down(struct netif * netif){ netif->flags &= (u8_t) ~NETIF_FLAG_LINK_UP; }
 void netif_set_down(struct netif * netif){ netif->flags &= (u8_t) ~NETIF_FLAG_UP; }
 struct pbuf * pbuf_alloc(pbuf_layer layer, u16_t len, pbuf_type type){ (void) layer; (void) len; (void) type; return NULL; }
 u8_t pbuf_free(struct pbuf * p){ (void) p; return 1; }
@@ -55,6 +57,7 @@ static void timeout(uint16_t cid, const bd_addr_t address){
 }
 int main(void){
     bnep_lwip_outgoing_init_queue();
+    bnep_lwip_initialized = true;
     client_handler = client;
     incoming(0x40);
     assert(accepted == 1 && accepted_cid == 0x40 && bnep_cid == 0x40);
