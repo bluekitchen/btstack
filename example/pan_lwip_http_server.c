@@ -331,6 +331,55 @@ void fs_close_custom(struct fs_file *file){
  
 /* LISTING_START(LwipSetup): Report lwIP version, init lwIP, start DHCP Serverr */
 
+static err_t network_start_servers(void){
+    err_t status = dhserv_init(&dhcp_config);
+    if (status != ERR_OK){
+        return status;
+    }
+    httpd_init();
+    return ERR_OK;
+}
+
+#if !NO_SYS
+static btstack_context_callback_registration_t network_start_registration;
+static err_t network_start_status;
+
+static void network_start_btstack(void * context){
+    UNUSED(context);
+    if (network_start_status != ERR_OK){
+        printf("DHCP server initialization failed: %d\n", (int) network_start_status);
+        return;
+    }
+    pan_bnep_setup();
+    hci_power_control(HCI_POWER_ON);
+}
+
+// Called in the TCP/IP thread, either by tcpip_init or tcpip_try_callback.
+static void network_start_core(void * context){
+    UNUSED(context);
+    network_start_status = network_start_servers();
+    network_start_registration.callback = &network_start_btstack;
+    btstack_run_loop_execute_on_main_thread(&network_start_registration);
+}
+
+#ifdef HAVE_LWIP
+static btstack_timer_source_t network_start_retry_timer;
+
+static void network_start_schedule(void);
+static void network_start_retry(btstack_timer_source_t * timer){
+    UNUSED(timer);
+    network_start_schedule();
+}
+
+static void network_start_schedule(void){
+    if (tcpip_try_callback(&network_start_core, NULL) != ERR_OK){
+        btstack_run_loop_set_timer(&network_start_retry_timer, 10);
+        btstack_run_loop_add_timer(&network_start_retry_timer);
+    }
+}
+#endif
+#endif
+
 static void network_setup(void){
     printf("lwIP version: " LWIP_VERSION_STRING "\n");
 
@@ -342,20 +391,26 @@ static void network_setup(void){
     }
 #endif
 
-#ifndef HAVE_LWIP
-    // init lwIP stack
 #if NO_SYS
+#ifndef HAVE_LWIP
     lwip_init();
+#endif
+    err_t status = network_start_servers();
+    if (status != ERR_OK){
+        printf("DHCP server initialization failed: %d\n", (int) status);
+        return;
+    }
+    pan_bnep_setup();
+    hci_power_control(HCI_POWER_ON);
 #else
-    tcpip_init(NULL, NULL);
+#ifdef HAVE_LWIP
+    // The platform must have initialized lwIP and its TCP/IP thread already.
+    btstack_run_loop_set_timer_handler(&network_start_retry_timer, &network_start_retry);
+    network_start_schedule();
+#else
+    tcpip_init(&network_start_core, NULL);
 #endif
 #endif
-
-    // start DHCP Server
-    dhserv_init(&dhcp_config);
-
-    // start HTTP Server
-    httpd_init();
 }
 /* LISTING_END */
 
@@ -372,14 +427,8 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    // setup lwIP, HTTP, DHCP
+    // Start lwIP and the servers; PAN setup follows when they are ready.
     network_setup();
-
-    // setup Classic PAN NAP Service
-    pan_bnep_setup();
-
-    // Turn on the device 
-    hci_power_control(HCI_POWER_ON);
     return 0;
 }
 /* LISTING_END */
