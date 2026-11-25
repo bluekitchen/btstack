@@ -67,7 +67,7 @@ void bnep_lwip_register_packet_handler(btstack_packet_handler_t handler);
 
 /**
  * @brief Register BNEP service
- * @brief Same as benp_register_service, but bnep lwip adapter handles all events
+ * @brief Incoming connections are accepted when the adapter is available; additional connections are declined.
  * @param service_uuid 
  * @Param max_frame_size
  */

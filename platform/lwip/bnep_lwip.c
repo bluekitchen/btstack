@@ -106,7 +106,10 @@ static btstack_timer_source_t   bnep_lwip_timer;
 #endif
 
 // bnep data
+// A CID is reserved as soon as an incoming connection is accepted.
 static uint16_t  bnep_cid;
+static bool bnep_lwip_outgoing_connection_pending;
+static bd_addr_t bnep_lwip_outgoing_address;
 static btstack_packet_handler_t client_handler;
 
 // next packet only modified from btstack context
@@ -422,9 +425,9 @@ static void bnep_lwip_discard_packets(void){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
 /* LISTING_PAUSE */
-    UNUSED(channel);
-
     bd_addr_t local_addr;
+    bd_addr_t remote_addr;
+    uint16_t event_cid;
   
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -439,10 +442,34 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  * The event contains both the source and destination UUIDs, as well as the MTU for this connection and
                  * the BNEP Channel ID, which is used for sending Ethernet packets over BNEP.
                  */  
-                case BNEP_EVENT_CHANNEL_OPENED:
-                    if (bnep_event_channel_opened_get_status(packet) != 0) break;
+                case BNEP_EVENT_INCOMING_CONNECTION:
+                    event_cid = bnep_event_incoming_connection_get_bnep_cid(packet);
+                    if (bnep_cid || bnep_lwip_outgoing_connection_pending){
+                        log_info("Declining additional BNEP connection, cid 0x%04x", event_cid);
+                        bnep_decline_connection(event_cid);
+                        return;
+                    }
+                    bnep_cid = event_cid;
+                    if (bnep_accept_connection(event_cid) != ERROR_CODE_SUCCESS){
+                        bnep_cid = 0;
+                    }
+                    break;
 
-                    bnep_cid = bnep_event_channel_opened_get_bnep_cid(packet);
+                case BNEP_EVENT_CHANNEL_OPENED:
+                    event_cid = bnep_event_channel_opened_get_bnep_cid(packet);
+                    bnep_event_channel_opened_get_remote_address(packet, remote_addr);
+                    if (bnep_lwip_outgoing_connection_pending &&
+                        (memcmp(remote_addr, bnep_lwip_outgoing_address, sizeof(bd_addr_t)) == 0)){
+                        bnep_lwip_outgoing_connection_pending = false;
+                    } else if (event_cid != bnep_cid){
+                        return;
+                    }
+                    if (bnep_event_channel_opened_get_status(packet) != 0){
+                        if (event_cid == bnep_cid) bnep_cid = 0;
+                        break;
+                    }
+
+                    bnep_cid = event_cid;
                     // The event MTU is the maximum Ethernet payload. Leave room
                     // for the Ethernet header in the outgoing staging buffer.
                     btstack_netif.mtu = btstack_min(bnep_event_channel_opened_get_mtu(packet),
@@ -462,18 +489,35 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 
                 /* @text BNEP_EVENT_CHANNEL_CLOSED is received when the connection gets closed.
                  */
+                case BNEP_EVENT_CHANNEL_TIMEOUT:
+                    event_cid = bnep_event_channel_timeout_get_bnep_cid(packet);
+                    if (event_cid == bnep_cid){
+                        bnep_cid = 0;
+                    } else {
+                        bnep_event_channel_timeout_get_remote_address(packet, remote_addr);
+                        if (!bnep_lwip_outgoing_connection_pending ||
+                            memcmp(remote_addr, bnep_lwip_outgoing_address, sizeof(bd_addr_t)) != 0) return;
+                        bnep_lwip_outgoing_connection_pending = false;
+                    }
+                    break;
+
                 case BNEP_EVENT_CHANNEL_CLOSED:
+                    if (bnep_event_channel_closed_get_bnep_cid(packet) != bnep_cid) return;
                     bnep_cid = 0;
                     bnep_lwip_discard_packets();
 
                     // Mark Link as Down
                     bnep_lwip_netif_down();
+#if NO_SYS
+                    btstack_run_loop_remove_timer(&bnep_lwip_timer);
+#endif
                     break;
 
                 /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the send of a 
                  * stored network packet. The tap datas source can be enabled again
                  */
                 case BNEP_EVENT_CAN_SEND_NOW:
+                    if (bnep_event_can_send_now_get_bnep_cid(packet) != bnep_cid) return;
                     bnep_lwip_send_packet();
                     bnep_lwip_packet_sent();
                     break;
@@ -487,7 +531,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
          * It is forwarded to the TAP interface.
          */
         case BNEP_DATA_PACKET:
-            if (bnep_cid == 0) break;
+            if ((bnep_cid == 0) || (channel != bnep_cid)) return;
             // Write out the ethernet frame to the network interface
             bnep_lwip_netif_process_packet(packet, size);
             break;            
@@ -564,8 +608,12 @@ uint8_t bnep_lwip_register_service(uint16_t service_uuid, uint16_t max_frame_siz
  * @return status
  */
 uint8_t bnep_lwip_connect(bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest){
+    if (bnep_cid || bnep_lwip_outgoing_connection_pending) return ERROR_CODE_COMMAND_DISALLOWED;
+    bnep_lwip_outgoing_connection_pending = true;
+    bd_addr_copy(bnep_lwip_outgoing_address, addr);
     int status = bnep_connect(packet_handler, addr, l2cap_psm, uuid_src, uuid_dest);
     if (status != 0){
+        bnep_lwip_outgoing_connection_pending = false;
         return ERROR_CODE_UNSPECIFIED_ERROR;
     } else {
         return ERROR_CODE_SUCCESS;
