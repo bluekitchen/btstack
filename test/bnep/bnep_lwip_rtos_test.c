@@ -17,6 +17,7 @@ static bd_addr_t last_addr;
 
 void bnep_request_can_send_now_event(uint16_t cid){ (void) cid; }
 err_t etharp_output(struct netif * n, struct pbuf * p, const ip4_addr_t * addr){ (void) n; (void) p; (void) addr; return ERR_OK; }
+u16_t pbuf_copy_partial(const struct pbuf * p, void * dst, u16_t len, u16_t offset){ (void) p; (void) dst; (void) offset; return len; }
 void pbuf_ref(struct pbuf * p){ (void) p; }
 u8_t pbuf_free(struct pbuf * p){ (void) p; return 1; }
 err_t pbuf_free_callback(struct pbuf * p){ (void) p; return ERR_OK; }

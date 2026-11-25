@@ -116,9 +116,26 @@ static uint8_t netif_init_status;
 static uint8_t bnep_lwip_outgoing_queue_storage[ (TCP_SND_QUEUELEN+1) * sizeof(struct pbuf *)];
 static btstack_ring_buffer_t bnep_lwip_outgoing_queue;
 #else
-static QueueHandle_t bnep_lwip_outgoing_queue;
+#ifndef BNEP_LWIP_OUTGOING_QUEUE_SIZE
+#define BNEP_LWIP_OUTGOING_QUEUE_SIZE TCP_SND_QUEUELEN
 #endif
-btstack_context_callback_registration_t bnep_lwip_outgoing_callback_registration;
+#if BNEP_LWIP_OUTGOING_QUEUE_SIZE < 1
+#error "BNEP_LWIP_OUTGOING_QUEUE_SIZE must be positive"
+#endif
+typedef struct {
+    bool used;
+    uint16_t len;
+    uint8_t data[HCI_ACL_PAYLOAD_SIZE];
+} bnep_lwip_frame_t;
+static bnep_lwip_frame_t bnep_lwip_frames[BNEP_LWIP_OUTGOING_QUEUE_SIZE];
+static QueueHandle_t bnep_lwip_outgoing_queue;
+// Protected by netif_mutex, including the queue's connection boundary.
+static bool bnep_lwip_tx_link_up;
+static bool bnep_lwip_outgoing_callback_pending;
+static struct pbuf * bnep_lwip_pending_rx_free;
+static btstack_timer_source_t bnep_lwip_rx_free_timer;
+static btstack_context_callback_registration_t bnep_lwip_outgoing_callback_registration;
+#endif
 
 #if NO_SYS
 static btstack_timer_source_t   bnep_lwip_timer;
@@ -132,10 +149,16 @@ static bd_addr_t bnep_lwip_outgoing_address;
 static btstack_packet_handler_t client_handler;
 
 // next packet only modified from btstack context
+#if NO_SYS
 static struct pbuf * bnep_lwip_outgoing_next_packet;
+#else
+static bnep_lwip_frame_t * bnep_lwip_outgoing_next_packet;
+#endif
 
 // temp buffer to unchain buffer
+#if NO_SYS
 static uint8_t btstack_network_outgoing_buffer[HCI_ACL_PAYLOAD_SIZE];
+#endif
 
 // helper functions to hide NO_SYS vs. FreeRTOS implementations
 
@@ -143,7 +166,7 @@ static int bnep_lwip_outgoing_init_queue(void){
 #if NO_SYS
     btstack_ring_buffer_init(&bnep_lwip_outgoing_queue, bnep_lwip_outgoing_queue_storage, sizeof(bnep_lwip_outgoing_queue_storage));
 #else
-    bnep_lwip_outgoing_queue = xQueueCreate(TCP_SND_QUEUELEN, sizeof(struct pbuf *));
+    bnep_lwip_outgoing_queue = xQueueCreate(BNEP_LWIP_OUTGOING_QUEUE_SIZE, sizeof(bnep_lwip_frame_t *));
     if (bnep_lwip_outgoing_queue == NULL){
         log_error("cannot allocate outgoing queue");
         return 1;
@@ -152,59 +175,80 @@ static int bnep_lwip_outgoing_init_queue(void){
     return 0;
 }
 
-static bool bnep_lwip_outgoing_queue_packet(struct pbuf *p){
 #if NO_SYS
-    return btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *)) == 0;
-#else
-    return xQueueSendToBack(bnep_lwip_outgoing_queue, &p, portMAX_DELAY) == pdPASS;
-#endif
+static bool bnep_lwip_outgoing_queue_packet(struct pbuf *p){
+    return btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(p)) == 0;
 }
 
 static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
     struct pbuf * p = NULL;
-#if NO_SYS
     uint32_t bytes_read = 0;
-    btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *), &bytes_read);
-    (void) bytes_read;
-#else
-    // Do not block if the queue was drained after processing was scheduled.
-    xQueueReceive(bnep_lwip_outgoing_queue, &p, 0);
-#endif
+    btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(p), &bytes_read);
     return p;
 }
+#else
+static bnep_lwip_frame_t * bnep_lwip_outgoing_pop_packet(void){
+    bnep_lwip_frame_t * frame = NULL;
+    xQueueReceive(bnep_lwip_outgoing_queue, &frame, 0);
+    return frame;
+}
+
+static void bnep_lwip_rx_free_retry(btstack_timer_source_t * timer){
+    if (pbuf_free_callback(bnep_lwip_pending_rx_free) == ERR_OK){
+        bnep_lwip_pending_rx_free = NULL;
+        return;
+    }
+    btstack_run_loop_set_timer(timer, 10);
+    btstack_run_loop_add_timer(timer);
+}
+#endif
 
 static bool bnep_lwip_outgoing_packets_empty(void){
 #if NO_SYS
     return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue) != 0;
- #else
+#else
     return uxQueueMessagesWaiting(bnep_lwip_outgoing_queue) == 0;
 #endif
 }
 
+// Incoming buffers are released from the BTstack context. If posting their
+// release fails, retain one pbuf and drop new input until the retry succeeds.
 static void bnep_lwip_free_pbuf(struct pbuf * p){
 #if NO_SYS
-    // release buffer / decrease refcount
     pbuf_free(p);
- #else
-    // release buffer / decrease refcount
-    pbuf_free_callback(p);
+#else
+    if (pbuf_free_callback(p) != ERR_OK){
+        btstack_assert(bnep_lwip_pending_rx_free == NULL);
+        bnep_lwip_pending_rx_free = p;
+        btstack_run_loop_set_timer(&bnep_lwip_rx_free_timer, 10);
+        btstack_run_loop_add_timer(&bnep_lwip_rx_free_timer);
+    }
 #endif
 }
 
 static void bnep_lwip_outgoing_packet_processed(void){
-    // free pbuf 
-    bnep_lwip_free_pbuf(bnep_lwip_outgoing_next_packet);
-    // mark as done
+#if NO_SYS
+    pbuf_free(bnep_lwip_outgoing_next_packet);
+#else
+    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+    bnep_lwip_outgoing_next_packet->used = false;
+    xSemaphoreGive(netif_mutex);
+#endif
     bnep_lwip_outgoing_next_packet = NULL;
 }
 
-static void bnep_lwip_trigger_outgoing_process(void){
-#if NO_SYS
-    bnep_lwip_outgoing_process(NULL);
-#else
-    bnep_lwip_outgoing_callback_registration.callback = &bnep_lwip_outgoing_process;
-    btstack_run_loop_execute_on_main_thread(&bnep_lwip_outgoing_callback_registration);
+#if !NO_SYS
+static void bnep_lwip_outgoing_callback(void * arg){
+    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+    bnep_lwip_outgoing_callback_pending = false;
+    xSemaphoreGive(netif_mutex);
+    bnep_lwip_outgoing_process(arg);
+}
 #endif
+
+static void bnep_lwip_trigger_outgoing_process(void){
+    // Called in the BTstack context after a packet has been sent.
+    bnep_lwip_outgoing_process(NULL);
 }
 
 /// lwIP functions
@@ -219,10 +263,8 @@ static void bnep_lwip_trigger_outgoing_process(void){
  * @return ERR_OK if the packet could be sent
  *         an err_t value if the packet couldn't be sent
  *
- * @note Returning ERR_MEM here if a DMA queue of your MAC is full can lead to
- *       strange results. You might consider waiting for space in the DMA queue
- *       to become availale since the stack doesn't retry to send a packet
- *       dropped because of memory failure (except for the TCP timers).
+ * @note Returns ERR_MEM when the bounded transmit queue is full; lwIP does
+ *       not retry every protocol's dropped packets.
  */
 
 static err_t low_level_output( struct netif *netif, struct pbuf *p ){
@@ -230,26 +272,48 @@ static err_t low_level_output( struct netif *netif, struct pbuf *p ){
     
     log_info("low_level_output: packet %p, len %u, total len %u ", p, p->len, p->tot_len);
 
-    // bnep up?
-    if (bnep_cid == 0) return ERR_OK;
-
-    // inc refcount
-    pbuf_ref( p );
-
-    // queue empty now?
-    int queue_empty = bnep_lwip_outgoing_packets_empty();
-
-    // queue up; release the reference if the queue is full
+#if NO_SYS
+    if (bnep_cid == 0) return ERR_IF;
+    pbuf_ref(p);
+    bool queue_empty = bnep_lwip_outgoing_packets_empty();
     if (!bnep_lwip_outgoing_queue_packet(p)){
         pbuf_free(p);
         return ERR_MEM;
     }
-
-    // trigger processing if queue was empty (might be new packet)
-    if (queue_empty){
-        bnep_lwip_trigger_outgoing_process();
+    if (queue_empty) bnep_lwip_trigger_outgoing_process();
+#else
+    if (p->tot_len > HCI_ACL_PAYLOAD_SIZE) return ERR_BUF;
+    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+    if (!bnep_lwip_tx_link_up){
+        xSemaphoreGive(netif_mutex);
+        return ERR_IF;
     }
-
+    bnep_lwip_frame_t * frame = NULL;
+    for (unsigned int i = 0; i < BNEP_LWIP_OUTGOING_QUEUE_SIZE; i++){
+        if (!bnep_lwip_frames[i].used){
+            frame = &bnep_lwip_frames[i];
+            break;
+        }
+    }
+    if (frame == NULL){
+        xSemaphoreGive(netif_mutex);
+        return ERR_MEM;
+    }
+    frame->used = true;
+    frame->len = p->tot_len;
+    if ((pbuf_copy_partial(p, frame->data, frame->len, 0) != frame->len) ||
+        (xQueueSendToBack(bnep_lwip_outgoing_queue, &frame, 0) != pdPASS)){
+        frame->used = false;
+        xSemaphoreGive(netif_mutex);
+        return ERR_MEM;
+    }
+    bool schedule = !bnep_lwip_outgoing_callback_pending;
+    if (schedule) bnep_lwip_outgoing_callback_pending = true;
+    xSemaphoreGive(netif_mutex);
+    if (schedule){
+        btstack_run_loop_execute_on_main_thread(&bnep_lwip_outgoing_callback_registration);
+    }
+#endif
     return ERR_OK;
 }
 
@@ -365,8 +429,16 @@ static void bnep_lwip_netif_apply(void * arg){
             applied_epoch = 0;
         }
         if (up && !applied_epoch){
-            bnep_lwip_netif_up(address, mtu);
-            applied_epoch = epoch;
+            // Only enable output for the connection whose netif state is
+            // about to be applied. A close can invalidate this snapshot.
+            xSemaphoreTake(netif_mutex, portMAX_DELAY);
+            bool current = netif_desired_up && (generation == netif_generation);
+            if (current) bnep_lwip_tx_link_up = true;
+            xSemaphoreGive(netif_mutex);
+            if (current){
+                bnep_lwip_netif_up(address, mtu);
+                applied_epoch = epoch;
+            }
         }
         xSemaphoreTake(netif_mutex, portMAX_DELAY);
         if (generation == netif_generation){
@@ -423,6 +495,9 @@ static void bnep_lwip_netif_update(bool up, const bd_addr_t address, uint16_t mt
  */
 static void bnep_lwip_netif_process_packet(const uint8_t * packet, uint16_t size){
 
+#if !NO_SYS
+    if (bnep_lwip_pending_rx_free != NULL) return;
+#endif
     /* We allocate a pbuf chain of pbufs from the pool. */
     struct pbuf * p = pbuf_alloc(PBUF_RAW, size, PBUF_POOL);
     log_debug("bnep_lwip_netif_process_packet, pbuf_alloc = %p", p);
@@ -497,7 +572,7 @@ static void bnep_lwip_send_packet(void){
         return;
     }
 
-    // flatten into our buffer
+#if NO_SYS
     uint32_t len = bnep_lwip_outgoing_next_packet->tot_len;
     if (len > sizeof(btstack_network_outgoing_buffer)){
         log_error("BNEP outgoing frame too large: %u", (unsigned int) len);
@@ -505,6 +580,10 @@ static void bnep_lwip_send_packet(void){
     }
     pbuf_copy_partial(bnep_lwip_outgoing_next_packet, btstack_network_outgoing_buffer, len, 0);
     int status = bnep_send(bnep_cid, btstack_network_outgoing_buffer, len);
+#else
+    int status = bnep_send(bnep_cid, bnep_lwip_outgoing_next_packet->data,
+                           bnep_lwip_outgoing_next_packet->len);
+#endif
     if (status != 0){
         log_error("BNEP send failed: %d", status);
     }
@@ -528,10 +607,19 @@ static void bnep_lwip_discard_packets(void){
     }
 
     // Release every queued reference before discarding the queue contents.
+#if NO_SYS
     struct pbuf * p;
     while ((p = bnep_lwip_outgoing_pop_packet()) != NULL){
-        bnep_lwip_free_pbuf(p);
+        pbuf_free(p);
     }
+#else
+    bnep_lwip_frame_t * frame;
+    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+    while ((frame = bnep_lwip_outgoing_pop_packet()) != NULL){
+        frame->used = false;
+    }
+    xSemaphoreGive(netif_mutex);
+#endif
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
@@ -585,7 +673,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // The event MTU is the maximum Ethernet payload. Leave room
                     // for the Ethernet header in the outgoing staging buffer.
                     uint16_t mtu = btstack_min(bnep_event_channel_opened_get_mtu(packet),
-                                               sizeof(btstack_network_outgoing_buffer) - 14);
+                                               HCI_ACL_PAYLOAD_SIZE - 14);
 
                     /* Setup network interface */
                     gap_local_bd_addr(local_addr);
@@ -620,6 +708,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     if (bnep_event_channel_closed_get_bnep_cid(packet) != bnep_cid) return;
                     bnep_cid = 0;
+#if !NO_SYS
+                    xSemaphoreTake(netif_mutex, portMAX_DELAY);
+                    bnep_lwip_tx_link_up = false;
+                    xSemaphoreGive(netif_mutex);
+#endif
                     bnep_lwip_discard_packets();
 
                     // Mark Link as Down
@@ -688,6 +781,8 @@ void bnep_lwip_init_with_callback(void (*callback)(uint8_t status)){
         return;
     }
     btstack_run_loop_set_timer_handler(&netif_retry_timer, &bnep_lwip_netif_retry);
+    btstack_run_loop_set_timer_handler(&bnep_lwip_rx_free_timer, &bnep_lwip_rx_free_retry);
+    bnep_lwip_outgoing_callback_registration.callback = &bnep_lwip_outgoing_callback;
     bnep_lwip_netif_schedule();
 #endif
 }
