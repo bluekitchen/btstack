@@ -363,6 +363,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  * The event contains both the source and destination UUIDs, as well as the MTU for this connection and
                  * the BNEP Channel ID, which is used for sending Ethernet packets over BNEP.
                  */  
+                case BNEP_EVENT_INCOMING_CONNECTION:
+                    bnep_accept_connection(bnep_event_incoming_connection_get_bnep_cid(packet));
+                    break;
+
 				case BNEP_EVENT_CHANNEL_OPENED:
                     if (bnep_event_channel_opened_get_status(packet)) {
                         printf("BNEP channel open failed, status 0x%02x\n", bnep_event_channel_opened_get_status(packet));
