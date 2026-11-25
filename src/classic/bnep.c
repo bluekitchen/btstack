@@ -553,10 +553,6 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
         }
     }
 
-    /* Reserve l2cap packet buffer */    
-    l2cap_reserve_packet_buffer();
-    bnep_out_buffer = l2cap_get_outgoing_buffer();
-
     /* Check if source address is the same as our local address and if the 
        destination address is the same as the remote addr. Maybe we can use
        the compressed data format
@@ -569,7 +565,11 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
         log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size_outgoing, payload_len);
         return BNEP_DATA_LEN_EXCEEDS_MTU;
     }
-    
+
+    /* Reserve the buffer only after all checks that can reject the packet. */
+    l2cap_reserve_packet_buffer();
+    bnep_out_buffer = l2cap_get_outgoing_buffer();
+
     /* Fill in the package type depending on the given source and destination address */
     if (has_source && has_dest) {
         bnep_out_buffer[pos_out++] = BNEP_PKT_TYPE_GENERAL_ETHERNET;

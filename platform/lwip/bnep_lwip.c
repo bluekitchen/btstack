@@ -257,8 +257,8 @@ static err_t bnep_lwip_netif_init(struct netif *netif){
     netif->name[0] = IFNAME0;
     netif->name[1] = IFNAME1;
 
-    // mtu
-    netif->mtu = 1600;
+    // Set to the negotiated BNEP payload limit when the channel opens.
+    netif->mtu = 0;
 
     /* device capabilities */
     netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
@@ -390,9 +390,16 @@ static void bnep_lwip_send_packet(void){
     }
 
     // flatten into our buffer
-    uint32_t len = btstack_min(sizeof(btstack_network_outgoing_buffer), bnep_lwip_outgoing_next_packet->tot_len);
+    uint32_t len = bnep_lwip_outgoing_next_packet->tot_len;
+    if (len > sizeof(btstack_network_outgoing_buffer)){
+        log_error("BNEP outgoing frame too large: %u", (unsigned int) len);
+        return;
+    }
     pbuf_copy_partial(bnep_lwip_outgoing_next_packet, btstack_network_outgoing_buffer, len, 0);
-    bnep_send(bnep_cid, (uint8_t*) btstack_network_outgoing_buffer, len);
+    int status = bnep_send(bnep_cid, btstack_network_outgoing_buffer, len);
+    if (status != 0){
+        log_error("BNEP send failed: %d", status);
+    }
 }
 
 static void bnep_lwip_packet_sent(void){
@@ -440,7 +447,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (bnep_event_channel_opened_get_status(packet) != 0) break;
 
                     bnep_cid = bnep_event_channel_opened_get_bnep_cid(packet);
-                    
+                    // The event MTU is the maximum Ethernet payload. Leave room
+                    // for the Ethernet header in the outgoing staging buffer.
+                    btstack_netif.mtu = btstack_min(bnep_event_channel_opened_get_mtu(packet),
+                                                   sizeof(btstack_network_outgoing_buffer) - 14);
+
                     /* Setup network interface */
                     gap_local_bd_addr(local_addr);
                     bnep_lwip_netif_up(local_addr);
