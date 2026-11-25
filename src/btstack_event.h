@@ -3695,6 +3695,52 @@ static inline void bnep_event_can_send_now_get_remote_address(const uint8_t * ev
     reverse_bytes(&event[8], remote_address, 6);
 }
 
+/**
+ * @brief Get field bnep_cid from event BNEP_EVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return bnep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_incoming_connection_get_bnep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field source_uuid from event BNEP_EVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return source_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_incoming_connection_get_source_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field destination_uuid from event BNEP_EVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return destination_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t bnep_event_incoming_connection_get_destination_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field remote_address from event BNEP_EVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @param Pointer to storage for remote_address
+ * @note: btstack_type B
+ */
+static inline void bnep_event_incoming_connection_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
+    reverse_bytes(&event[8], remote_address, 6);
+}
+/**
+ * @brief Get field con_handle from event BNEP_EVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t bnep_event_incoming_connection_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event SM_EVENT_SECURITY_REQUEST

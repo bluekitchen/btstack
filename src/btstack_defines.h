@@ -1859,6 +1859,17 @@ typedef SSIZE_T ssize_t;
  #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4u
 
 /**
+ * Incoming BNEP setup request. Accept or decline using the BNEP CID.
+ * @format 222BH
+ * @param bnep_cid
+ * @param source_uuid
+ * @param destination_uuid
+ * @param remote_address
+ * @param con_handle
+ */
+#define BNEP_EVENT_INCOMING_CONNECTION                           0xC5u
+
+/**
  * @format H1B1
  * @param handle
  * @param addr_type
