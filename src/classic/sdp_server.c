@@ -569,6 +569,16 @@ static uint16_t sdp_waiting_list_get(void){
     return cid;
 }
 
+static void sdp_waiting_list_remove(uint16_t cid){
+    for (int i = 0; i < sdp_server_l2cap_waiting_list_count; i++){
+        if (sdp_server_l2cap_waiting_list_cids[i] != cid) continue;
+        sdp_server_l2cap_waiting_list_count--;
+        memmove(&sdp_server_l2cap_waiting_list_cids[i], &sdp_server_l2cap_waiting_list_cids[i + 1],
+                (sdp_server_l2cap_waiting_list_count - i) * sizeof(uint16_t));
+        return;
+    }
+}
+
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	uint16_t transaction_id;
@@ -667,6 +677,9 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         // accept connection
                         sdp_server_response_size = 0;
                         l2cap_accept_connection(sdp_server_l2cap_cid);
+                    } else {
+                        // queued request closed before it was accepted, e.g. on HCI disconnect
+                        sdp_waiting_list_remove(channel);
                     }
                     break;
 					                    
