@@ -579,14 +579,21 @@ static void sdp_waiting_list_remove(uint16_t cid){
     }
 }
 
-static void sdp_accept_next_waiting(void){
-    sdp_server_l2cap_cid = 0;
-    if (!sdp_server_l2cap_waiting_list_count) return;
-
-    sdp_server_l2cap_cid = sdp_waiting_list_get();
-    log_info("accept queued cid 0x%04x, now %u waiting", sdp_server_l2cap_cid, sdp_server_l2cap_waiting_list_count);
+static void sdp_accept_connection(uint16_t cid){
+    sdp_server_l2cap_cid = cid;
     sdp_server_response_size = 0;
-    l2cap_accept_connection(sdp_server_l2cap_cid);
+    l2cap_accept_connection(cid);
+}
+
+static void sdp_accept_next_waiting(void){
+    // no active connection
+    sdp_server_l2cap_cid = 0;
+    // no pending connection
+    if (sdp_server_l2cap_waiting_list_count == 0) return;
+
+    uint16_t cid = sdp_waiting_list_get();
+    log_info("accept queued cid 0x%04x, now %u waiting", cid, sdp_server_l2cap_waiting_list_count);
+    sdp_accept_connection(cid);
 }
 
 // we assume that we don't get two requests in a row
@@ -633,7 +640,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     sdp_server_response_size = sdp_create_error_response(transaction_id, SDP_ERROR_CODE_INVALID_PDU_SIZE);
                     break;
             }
-            if (!sdp_server_response_size) break;
+            if (sdp_server_response_size == 0) break;
             l2cap_request_can_send_now_event(sdp_server_l2cap_cid);
 			break;
 			
@@ -655,9 +662,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         break;
                     }
                     // accept
-                    sdp_server_l2cap_cid = channel;
-                    sdp_server_response_size = 0;
-                    l2cap_accept_connection(sdp_server_l2cap_cid);
+                    sdp_accept_connection(channel);
 					break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
