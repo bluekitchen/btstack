@@ -33,6 +33,7 @@ static void mock_hci_transport_register_packet_handler(void (*packet_handler)(ui
     mock_hci_transport_packet_handler = packet_handler;
 }
 static int mock_hci_transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    UNUSED(packet_type);
     mock_hci_transport_outgoing_packet_size = size;
     memcpy(mock_hci_transport_outgoing_packet_buffer, packet, size);
     if (mock_hci_transport_outgoing_packet_history_count < 2){

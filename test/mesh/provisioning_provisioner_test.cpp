@@ -99,6 +99,7 @@ void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler){
 
 void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t size){
     UNUSED(pb_transport_cid);
+    UNUSED(size);
     pdu_data = (uint8_t*) pdu;
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
