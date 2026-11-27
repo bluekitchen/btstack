@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: provide the ISO interval in BIG Created and BIG Sync Created events
 - btstack_crypto: support CMAC messages longer than one AES block
 - btstack_util: add `btstack_atoi_n` for fixed-length numeric strings
+- L2CAP: return error on unknown cid for accept/decline connection
 - A2DP Sink: add `a2dp_sink_delay_report`
 - A2DP Source: add `a2dp_source_stop_stream`
 - GOEP Server: add 'goep_server_header_add_body' and 'goep_server_header_add_body_or_end_of_body'

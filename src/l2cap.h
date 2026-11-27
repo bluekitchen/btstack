@@ -559,13 +559,17 @@ uint8_t l2cap_unregister_service(uint16_t psm);
 
 /** 
  * @brief Accepts incoming L2CAP connection.
+ * @param local_cid
+ * @return ERROR_CODE_SUCCESS or L2CAP_LOCAL_CID_DOES_NOT_EXIST
  */
-void l2cap_accept_connection(uint16_t local_cid);
+uint8_t l2cap_accept_connection(uint16_t local_cid);
 
 /** 
  * @brief Deny incoming L2CAP connection.
+ * @param local_cid
+ * @return ERROR_CODE_SUCCESS or L2CAP_LOCAL_CID_DOES_NOT_EXIST
  */
-void l2cap_decline_connection(uint16_t local_cid);
+uint8_t l2cap_decline_connection(uint16_t local_cid);
 
 /** 
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module

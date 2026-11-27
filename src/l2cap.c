@@ -3516,12 +3516,12 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
 }
 
-void l2cap_accept_connection(uint16_t local_cid){
+uint8_t l2cap_accept_connection(uint16_t local_cid){
     log_info("L2CAP_ACCEPT_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("accept called but local_cid 0x%x not found", local_cid);
-        return;
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -3533,18 +3533,20 @@ void l2cap_accept_connection(uint16_t local_cid){
 
     // process
     l2cap_run();
+    return ERROR_CODE_SUCCESS;
 }
 
-void l2cap_decline_connection(uint16_t local_cid){
+uint8_t l2cap_decline_connection(uint16_t local_cid){
     log_info("decline local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
-    if (!channel) {
+    if (channel == NULL) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
-        return;
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
     channel->reason = L2CAP_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE;
     l2cap_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 static void l2cap_signaling_handle_unknown_option_type(l2cap_channel_t* channel, uint8_t option_type) {
