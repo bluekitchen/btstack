@@ -40,14 +40,16 @@ set(BTSTACK_QT_H4_GROUPS
     third-party-micro-ecc third-party-rijndael)
 set(SOURCES_PORT bluetooth_init_cc2564C_1.3.c)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
- APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_QT_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_QT_H4_GROUPS} SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
         LINK_LIBRARIES Qt5::Core)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE}
         SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
             "${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp")

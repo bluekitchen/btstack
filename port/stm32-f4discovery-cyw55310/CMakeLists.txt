@@ -109,12 +109,9 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
     platform-embedded-tlv-flash-bank platform-embedded-uart-block
     platform-embedded-hci-dump-stdout)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
-        APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
+        SOURCES ${SOURCES_PORT}
         # These libraries and headers are supplied by the linked CubeMX/BSP
         # targets, so they are not in the resolver's source groups.
         COMPONENTS
@@ -127,6 +124,11 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             "${CMAKE_CURRENT_SOURCE_DIR}/port"
         PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}"
         LINK_LIBRARIES stm32cubemx bsp)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
     add_dependencies(btstack_${EXAMPLE}_library cyw55310_patchram_source)
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})

@@ -111,11 +111,9 @@ string(REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$]
     "\$<1:SHELL:-imacros \\1>"
     BTSTACK_ZEPHYR_COMPILE_OPTIONS "${external_project_cflags}")
 
-btstack_add_application_library(
-    TARGET btstack_zephyr
-    APPLICATION ${BTSTACK_ZEPHYR_EXAMPLE}
-    BASE_GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS}
-    PORT_SOURCES ${BTSTACK_ZEPHYR_PORT_SOURCES}
+btstack_set_port_baseline(
+    GROUPS ${BTSTACK_ZEPHYR_BASE_GROUPS}
+    SOURCES ${BTSTACK_ZEPHYR_PORT_SOURCES}
     PUBLIC_INCLUDE_DIRECTORIES
         ${BTSTACK_ZEPHYR_PUBLIC_INCLUDE_DIRECTORIES}
         "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -124,6 +122,11 @@ btstack_add_application_library(
         "${BTSTACK_ROOT}/platform/embedded"
         "${BTSTACK_ROOT}/platform/zephyr"
     PRIVATE_COMPILE_OPTIONS ${BTSTACK_ZEPHYR_COMPILE_OPTIONS})
+
+btstack_add_application_library(
+    TARGET btstack_zephyr
+    APPLICATION ${BTSTACK_ZEPHYR_EXAMPLE}
+)
 # The BTstack library is external to Zephyr's normal app target dependency
 # chain. Wait for both the standard interface and generated headers (including
 # heap_constants.h, which upstream Zephyr creates separately).

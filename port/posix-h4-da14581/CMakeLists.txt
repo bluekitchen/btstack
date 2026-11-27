@@ -45,15 +45,17 @@ set(BTSTACK_POSIX_H4_LE_BASE_GROUPS
     chipset-da145xx chipset-da145xx-581
     third-party-micro-ecc third-party-rijndael)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
-        APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_POSIX_H4_LE_BASE_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_POSIX_H4_LE_BASE_GROUPS}
+        SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
         LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} m)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)

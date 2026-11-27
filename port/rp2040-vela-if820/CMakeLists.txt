@@ -77,12 +77,9 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     list(APPEND BTSTACK_RP2040_VELA_PRIVATE_COMPILE_OPTIONS -Wno-error)
 endif()
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
-        APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_RP2040_VELA_BASE_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_RP2040_VELA_BASE_GROUPS}
+        SOURCES ${SOURCES_PORT}
         PRIVATE_COMPILE_OPTIONS ${BTSTACK_RP2040_VELA_PRIVATE_COMPILE_OPTIONS}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -98,6 +95,11 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             pico_stdio_usb
             tinyusb_device
             tinyusb_board)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
 

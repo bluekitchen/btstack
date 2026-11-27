@@ -92,12 +92,9 @@ set(BTSTACK_STM32_F4_BASE_GROUPS
     platform-embedded-stdin platform-embedded-tlv-flash-bank
     platform-embedded-uart-block platform-embedded-hci-dump-segger-rtt)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
-        APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_STM32_F4_BASE_GROUPS}
+        SOURCES ${SOURCES_PORT}
         # These libraries and headers are supplied by the linked CubeMX/BSP
         # targets, so they are not in the resolver's source groups.
         COMPONENTS
@@ -111,6 +108,11 @@ foreach(EXAMPLE IN LISTS EXAMPLES)
             "${BTSTACK_ROOT}/3rd-party/segger-rtt"
         PRIVATE_INCLUDE_DIRECTORIES "${BTSTACK_ROOT}/chipset/cc256x"
         LINK_LIBRARIES stm32cubemx bsp)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
     add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})

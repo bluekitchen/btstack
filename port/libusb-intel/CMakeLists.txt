@@ -39,16 +39,18 @@ set(BTSTACK_LIBUSB_INTEL_GROUPS
     platform-posix-hci-dump platform-libusb-h2 chipset-intel
     platform-posix-hal-led third-party-micro-ecc third-party-rijndael)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
- APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_LIBUSB_INTEL_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_LIBUSB_INTEL_GROUPS}
+        SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS}
         LINK_DIRECTORIES ${LIBUSB_LIBRARY_DIRS}
         LINK_LIBRARIES ${LIBUSB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} m)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)

@@ -44,17 +44,19 @@ set(BTSTACK_WINDOWS_H4_BASE_GROUPS
     chipset-bcm chipset-cc256x chipset-csr chipset-em9301 chipset-realtek
     chipset-stlc2500d chipset-tc3566x chipset-zephyr
     third-party-micro-ecc third-party-rijndael)
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
- APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_WINDOWS_H4_BASE_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_WINDOWS_H4_BASE_GROUPS}
+        SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
         PRIVATE_INCLUDE_DIRECTORIES
             "${BTSTACK_ROOT}/chipset/cc256x"
     )
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
     add_dependencies(btstack_${EXAMPLE}_library ${CC256X_INIT_SCRIPT_TARGETS})
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)

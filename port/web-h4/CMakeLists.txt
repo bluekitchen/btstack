@@ -58,13 +58,15 @@ set(EXPORTED_FUNCTIONS
     _hci_transport_h4_packet_sent)
 string(JOIN "," EXPORTED_FUNCTIONS_STR ${EXPORTED_FUNCTIONS})
 
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_WEB_H4_GROUPS} SOURCES ${SOURCES_PORT}
+        PUBLIC_INCLUDE_DIRECTORIES
+            "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
- APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_WEB_H4_GROUPS} PORT_SOURCES ${SOURCES_PORT}
-        PUBLIC_INCLUDE_DIRECTORIES
-            "${CMAKE_CURRENT_SOURCE_DIR}/src")
+        APPLICATION ${EXAMPLE})
     add_dependencies(btstack_${EXAMPLE}_library web_h4_patchram_download)
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})

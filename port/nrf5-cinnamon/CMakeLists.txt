@@ -59,14 +59,17 @@ set(BASE_GROUPS core ble le-device-db-tlv tlv-none chipset-cinnamon
 include(${BTSTACK_ROOT}/example/requirements.cmake)
 set(EXAMPLES gap_le_advertisements gatt_counter gatt_streamer_server)
 btstack_filter_examples_for_port(EXAMPLES CANDIDATES ${EXAMPLES})
+btstack_set_port_baseline(
+    GROUPS ${BASE_GROUPS}
+    SOURCES ${PORT_SOURCES}
+    # Match the legacy Makefile warning policy for the Cinnamon port.
+    PRIVATE_COMPILE_OPTIONS -Wno-extra -Wno-switch-default
+    PUBLIC_INCLUDE_DIRECTORIES ${PORT_INCLUDES})
+
 foreach(EXAMPLE IN LISTS EXAMPLES)
     btstack_add_application_library(
         TARGET btstack_${EXAMPLE}_library
- APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BASE_GROUPS} PORT_SOURCES ${PORT_SOURCES}
-        # Match the legacy Makefile warning policy for the Cinnamon port.
-        PRIVATE_COMPILE_OPTIONS -Wno-extra -Wno-switch-default
-        PUBLIC_INCLUDE_DIRECTORIES ${PORT_INCLUDES})
+        APPLICATION ${EXAMPLE})
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE}
         SOURCES port/syscalls.c "${NRF5_SDK_ROOT}/modules/nrfx/mdk/gcc_startup_nrf52.S")
     set_target_properties(${EXAMPLE} PROPERTIES SUFFIX .elf LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/pca10040/armgcc/nrf52832_xxaa.ld")

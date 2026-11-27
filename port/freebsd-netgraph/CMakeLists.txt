@@ -46,16 +46,18 @@ btstack_filter_examples_for_port(EXAMPLES
 # Preserve the existing port's Mesh exclusion.
 list(REMOVE_ITEM EXAMPLES mesh_node_demo)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
-        APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_NETGRAPH_BASE_GROUPS}
-        PORT_SOURCES ${SOURCES_PORT}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_NETGRAPH_BASE_GROUPS}
+        SOURCES ${SOURCES_PORT}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}"
             "${BTSTACK_ROOT}/platform/posix"
         LINK_LIBRARIES Threads::Threads netgraph m)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
 
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE})
     btstack_target_warnings(${EXAMPLE} STRICT)

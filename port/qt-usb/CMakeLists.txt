@@ -38,15 +38,17 @@ set(BTSTACK_QT_USB_GROUPS
     platform-posix-stdin platform-posix-hal-led
     platform-libusb-h2 third-party-micro-ecc third-party-rijndael)
 
-foreach(EXAMPLE IN LISTS EXAMPLES)
-    btstack_add_application_library(
-        TARGET btstack_${EXAMPLE}_library
- APPLICATION ${EXAMPLE}
-        BASE_GROUPS ${BTSTACK_QT_USB_GROUPS}
+btstack_set_port_baseline(
+        GROUPS ${BTSTACK_QT_USB_GROUPS}
         PUBLIC_INCLUDE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}" ${LIBUSB_INCLUDE_DIRS}
         LINK_DIRECTORIES ${LIBUSB_LIBRARY_DIRS}
         LINK_LIBRARIES ${LIBUSB_LIBRARIES} Qt5::Core)
+
+foreach(EXAMPLE IN LISTS EXAMPLES)
+    btstack_add_application_library(
+        TARGET btstack_${EXAMPLE}_library
+        APPLICATION ${EXAMPLE})
     btstack_add_application_executable(${EXAMPLE} APPLICATION ${EXAMPLE}
         SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
             "${BTSTACK_ROOT}/platform/qt/btstack_run_loop_qt.cpp")

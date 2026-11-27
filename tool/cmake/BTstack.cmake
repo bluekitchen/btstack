@@ -803,6 +803,41 @@ function(btstack_declare_port port)
 
 endfunction()
 
+# Register the build inputs shared by every application built by a port.
+# Applications contribute their own requirements; this baseline supplies the
+# board, controller, SDK, and other port-local inputs.
+function(btstack_set_port_baseline)
+    cmake_parse_arguments(ARG "" "PORT"
+        "GROUPS;SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;LINK_LIBRARIES;LINK_DIRECTORIES;COMPONENTS"
+        ${ARGN})
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "btstack_set_port_baseline: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
+    if(NOT ARG_GROUPS)
+        message(FATAL_ERROR "btstack_set_port_baseline requires GROUPS")
+    endif()
+
+    btstack_select_port(port "${ARG_PORT}")
+    foreach(group IN LISTS ARG_GROUPS)
+        list(FIND btstack_source_groups "${group}" group_index)
+        if(group_index EQUAL -1)
+            message(FATAL_ERROR
+                "BTstack port '${port}' baseline has unknown source group '${group}'")
+        endif()
+    endforeach()
+
+    string(REPLACE "-" "_" port_suffix "${port}")
+    foreach(property IN ITEMS GROUPS SOURCES PUBLIC_INCLUDE_DIRECTORIES
+            PRIVATE_INCLUDE_DIRECTORIES PRIVATE_COMPILE_OPTIONS LINK_LIBRARIES
+            LINK_DIRECTORIES COMPONENTS)
+        string(TOLOWER "${property}" property_suffix)
+        set("btstack_port_${port_suffix}_baseline_${property_suffix}"
+            "${ARG_${property}}" PARENT_SCOPE)
+    endforeach()
+    set("btstack_port_${port_suffix}_baseline_registered" TRUE PARENT_SCOPE)
+endfunction()
+
 # Use an explicit port, or the most recently declared port in this scope.
 function(btstack_select_port output_variable requested_port)
     if(requested_port)
@@ -1616,18 +1651,14 @@ function(btstack_add_scoped_group_object_library)
 endfunction()
 
 # Create a static BTstack library for one example's resolved source closure.
-# Port policy remains with the caller: it supplies the baseline source groups,
-# port-local sources, and all target include/link settings.
+# The declared port supplies its common baseline; the application supplies only
+# its name and target.
 #
 # Usage:
 #   btstack_add_application_library(
 #       TARGET btstack_gatt_counter
 #       PORT libusb
 #       APPLICATION gatt_counter
-#       BASE_GROUPS ${BTSTACK_LIBUSB_BASE_GROUPS}
-#       PORT_SOURCES ${SOURCES_PORT}
-#       PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
-#       LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT} m
 #   )
 #
 # CONFIGURATION_REQUIREMENTS_OUTPUT is optional. If set, it receives the
@@ -1637,8 +1668,12 @@ endfunction()
 function(btstack_add_application_library)
     cmake_parse_arguments(ARG ""
         "TARGET;PORT;APPLICATION;CONFIGURATION_REQUIREMENTS_OUTPUT"
-        "BASE_GROUPS;PORT_SOURCES;PUBLIC_INCLUDE_DIRECTORIES;PRIVATE_INCLUDE_DIRECTORIES;PRIVATE_COMPILE_OPTIONS;LINK_LIBRARIES;LINK_DIRECTORIES;COMPONENTS"
+        ""
         ${ARGN})
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "btstack_add_application_library: unknown arguments: ${ARG_UNPARSED_ARGUMENTS}")
+    endif()
 
     btstack_select_port(ARG_PORT "${ARG_PORT}")
     foreach(required TARGET APPLICATION)
@@ -1647,8 +1682,20 @@ function(btstack_add_application_library)
         endif()
     endforeach()
 
+    string(REPLACE "-" "_" port_suffix "${ARG_PORT}")
+    if(NOT DEFINED btstack_port_${port_suffix}_baseline_registered)
+        message(FATAL_ERROR
+            "BTstack port '${ARG_PORT}' has no baseline; call btstack_set_port_baseline first")
+    endif()
+    foreach(property IN ITEMS groups sources public_include_directories
+            private_include_directories private_compile_options link_libraries
+            link_directories components)
+        set(baseline_${property}
+            "${btstack_port_${port_suffix}_baseline_${property}}")
+    endforeach()
+
     btstack_collect_public_include_directories(public_include_directories)
-    list(APPEND public_include_directories ${ARG_PUBLIC_INCLUDE_DIRECTORIES})
+    list(APPEND public_include_directories ${baseline_public_include_directories})
     list(REMOVE_DUPLICATES public_include_directories)
 
     # Shared group targets must not silently reuse a different configuration.
@@ -1661,11 +1708,11 @@ function(btstack_add_application_library)
     foreach(setting IN ITEMS public_includes private_includes compile_options
             directory_includes directory_definitions directory_options)
         if(setting STREQUAL "public_includes")
-            set(configuration_${setting} "${ARG_PUBLIC_INCLUDE_DIRECTORIES}")
+            set(configuration_${setting} "${baseline_public_include_directories}")
         elseif(setting STREQUAL "private_includes")
-            set(configuration_${setting} "${ARG_PRIVATE_INCLUDE_DIRECTORIES}")
+            set(configuration_${setting} "${baseline_private_include_directories}")
         elseif(setting STREQUAL "compile_options")
-            set(configuration_${setting} "${ARG_PRIVATE_COMPILE_OPTIONS}")
+            set(configuration_${setting} "${baseline_private_compile_options}")
         endif()
         set(property "btstack_application_${port_key}_${setting}")
         get_property(configured GLOBAL PROPERTY "${property}" SET)
@@ -1696,14 +1743,14 @@ function(btstack_add_application_library)
     endforeach()
     btstack_filter_groups_for_port(active_base_groups
         PORT ${ARG_PORT}
-        GROUPS ${ARG_BASE_GROUPS})
+        GROUPS ${baseline_groups})
     set(requested_library_groups
         ${example_groups}
         ${active_base_groups}
     )
     btstack_resolve_groups(library_groups GROUPS ${requested_library_groups})
     btstack_record_application_components(PORT "${ARG_PORT}" APPLICATION "${ARG_APPLICATION}"
-        GROUPS ${library_groups} COMPONENTS ${ARG_COMPONENTS})
+        GROUPS ${library_groups} COMPONENTS ${baseline_components})
     btstack_collect_include_directories(example_include_directories
         GROUPS ${library_groups}
     )
@@ -1711,7 +1758,7 @@ function(btstack_add_application_library)
         GROUPS ${library_groups}
     )
 
-    set(example_library_sources ${ARG_PORT_SOURCES} ${example_port_sources})
+    set(example_library_sources ${baseline_sources} ${example_port_sources})
     foreach(group IN LISTS library_groups)
         btstack_add_scoped_group_object_library(
             OUTPUT_TARGET group_object_target
@@ -1720,8 +1767,8 @@ function(btstack_add_application_library)
             DEFINES ${example_defines}
             CAPABILITY_INCLUDE_DIRECTORIES ${example_capability_include_directories} ${example_port_public_include_directories}
             PUBLIC_INCLUDE_DIRECTORIES ${public_include_directories}
-            PRIVATE_INCLUDE_DIRECTORIES ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
-            PRIVATE_COMPILE_OPTIONS ${ARG_PRIVATE_COMPILE_OPTIONS}
+            PRIVATE_INCLUDE_DIRECTORIES ${baseline_private_include_directories}
+            PRIVATE_COMPILE_OPTIONS ${baseline_private_compile_options}
         )
         if(group_object_target)
             list(APPEND example_library_sources "$<TARGET_OBJECTS:${group_object_target}>")
@@ -1733,7 +1780,7 @@ function(btstack_add_application_library)
     btstack_collect_sources(info_library_sources
         GROUPS ${library_groups})
     set(info_port_sources)
-    foreach(source IN LISTS ARG_PORT_SOURCES example_port_sources)
+    foreach(source IN LISTS baseline_sources example_port_sources)
         if(IS_ABSOLUTE "${source}")
             list(APPEND info_port_sources "${source}")
         else()
@@ -1755,7 +1802,7 @@ function(btstack_add_application_library)
     add_library(${ARG_TARGET} STATIC ${example_library_sources})
     btstack_target_warnings(${ARG_TARGET} STRICT)
     target_compile_definitions(${ARG_TARGET} PUBLIC ${example_defines})
-    target_compile_options(${ARG_TARGET} PRIVATE ${ARG_PRIVATE_COMPILE_OPTIONS})
+    target_compile_options(${ARG_TARGET} PRIVATE ${baseline_private_compile_options})
     if(public_include_directories OR example_port_public_include_directories
             OR example_consumer_include_directories)
         target_include_directories(${ARG_TARGET} PUBLIC
@@ -1764,15 +1811,15 @@ function(btstack_add_application_library)
             ${example_consumer_include_directories})
     endif()
     target_include_directories(${ARG_TARGET} PRIVATE
-        ${ARG_PRIVATE_INCLUDE_DIRECTORIES}
+        ${baseline_private_include_directories}
         ${example_capability_include_directories}
         ${example_include_directories}
     )
-    if(ARG_LINK_DIRECTORIES OR example_capability_link_directories)
-        target_link_directories(${ARG_TARGET} PUBLIC ${ARG_LINK_DIRECTORIES} ${example_capability_link_directories})
+    if(baseline_link_directories OR example_capability_link_directories)
+        target_link_directories(${ARG_TARGET} PUBLIC ${baseline_link_directories} ${example_capability_link_directories})
     endif()
-    if(ARG_LINK_LIBRARIES OR example_capability_link_libraries)
-        target_link_libraries(${ARG_TARGET} PUBLIC ${ARG_LINK_LIBRARIES} ${example_capability_link_libraries})
+    if(baseline_link_libraries OR example_capability_link_libraries)
+        target_link_libraries(${ARG_TARGET} PUBLIC ${baseline_link_libraries} ${example_capability_link_libraries})
     endif()
 
     get_target_property(info_include_directories ${ARG_TARGET} INCLUDE_DIRECTORIES)
