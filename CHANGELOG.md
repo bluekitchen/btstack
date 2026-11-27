@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - RFCOMM: validate incoming frames and send parameters, and release channels that fail setup
 - SDP: validate client and server data-element parsing, continuation state, and query parameters
 - SDP Server: reject invalid MaximumAttributeByteCount values
+- SDP Server: handle disconnect of queued connection requests 
 - SM: fix BR/EDR->LE CTKD overwrite of BR/EDR link key
 - SM: fix BR/EDR->LE CTKD check for existing LTK
 - A2DP: ignore unexpected responses, keep state for Delay Report response
