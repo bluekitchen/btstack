@@ -100,21 +100,13 @@ static void ias_client_finalize_connection(ias_client_connection_t * connection)
     btstack_linked_list_remove(&ias_connections, (btstack_linked_item_t*) connection);
 }
 
-static void ias_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
-    UNUSED(size);
-    btstack_assert(callback != NULL);
-    // execute callback
-    packet[2] = subevent_id;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 static void ias_client_connected(ias_client_connection_t * connection, uint8_t status, uint8_t * packet, uint16_t size) {
     if (status == ERROR_CODE_SUCCESS){
         connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_READY;
     } else {
         connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_IDLE;
     }
-    ias_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
+    gatt_service_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                             GATTSERVICE_SUBEVENT_IAS_CLIENT_CONNECTED);
 }
 
@@ -184,7 +176,7 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = ias_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
                     ias_client_finalize_connection(connection);
-                    ias_client_replace_subevent_id_and_emit(connection->packet_handler,
+                    gatt_service_client_replace_subevent_id_and_emit(connection->packet_handler,
                                                             packet, size,
                                                             GATTSERVICE_SUBEVENT_IAS_CLIENT_DISCONNECTED);
                     break;

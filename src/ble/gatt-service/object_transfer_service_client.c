@@ -209,14 +209,6 @@ static void ots_client_operations_start_timer(ots_client_connection_t * connecti
     btstack_run_loop_add_timer(&connection->operation_timer);
 }
 
-static void ots_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
-    UNUSED(size);
-    btstack_assert(callback != NULL);
-    // execute callback
-    packet[2] = subevent_id;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 static uint16_t ots_client_value_handle_for_index(ots_client_connection_t * connection){
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
@@ -766,7 +758,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                         l2cap_disconnect(l2cap_cid);
                     }
                     ots_client_finalize_connection(connection);
-                    ots_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED);
+                    gatt_service_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
