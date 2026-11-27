@@ -125,17 +125,31 @@ A port's `CMakeLists.txt` normally proceeds in these stages:
 
 1. Set up the project, toolchain, and board SDK, then include `tool/cmake/BTstack.cmake`.
 2. Declare the port with `btstack_declare_port`.
-3. Define the baseline groups and board-local sources used by every application.
+3. Discover optional dependencies and declare the capabilities they enable with `btstack_declare_port_capability`.
 4. Register the port-wide configuration from `btstack_config.h` with `btstack_configure_port`.
-5. Discover optional dependencies and declare the capabilities that the port provides.
-6. Declare or include application requirements, filter them for the port, and create targets for the selected applications.
-7. Optionally add diagnostic targets that show the resolved result.
+5. Declare or include application requirements and filter them for the port.
+6. Define the baseline groups and board-local sources used by every application with `btstack_set_port_baseline`, then create the selected targets.
+7. Optionally add diagnostic targets that show the resolved result with `btstack_add_info_targets`.
 
 ### Define the baseline
 
 The baseline contains the groups and board-local files required by every application. Typical baseline groups provide the run loop, HCI transport, persistent storage, chipset support, and cryptography providers. Board-local files—such as `main.c`, UART implementation, controller firmware, and SDK sources—remain explicit because they belong to the board or project rather than the BTstack catalog.
 
 The baseline must also cover dependencies that port code uses unconditionally. For example, a backend initialized unconditionally by `main.c` belongs in the baseline. If `main.c` initializes a backend only when a capability supplies a definition such as `HAVE_PORTAUDIO`, the capability can instead supply that backend for applications that request it.
+
+Register the baseline once, after its variables have been defined and before creating application libraries:
+
+```cmake
+btstack_set_port_baseline(
+    GROUPS ${MY_PORT_BASE_GROUPS}
+    SOURCES ${MY_PORT_SOURCES}
+    PUBLIC_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}"
+    PRIVATE_INCLUDE_DIRECTORIES ${MY_PORT_PRIVATE_INCLUDE_DIRECTORIES}
+    PRIVATE_COMPILE_OPTIONS ${MY_PORT_COMPILE_OPTIONS}
+    LINK_LIBRARIES ${MY_PORT_LIBRARIES})
+```
+
+`btstack_add_application_library` reads this registered baseline automatically. This keeps all port-wide build inputs in one place and makes each application call describe only the application it builds.
 
 ### Register the port-wide configuration
 
@@ -196,7 +210,7 @@ If `btstack_add_library` does not fit your target layout, compose your own targe
 
 ## Workflow: author a BTstack port
 
-Use this workflow when one board configuration should build multiple BTstack applications. First complete the port-configuration stages above: declare the port, define its baseline, register its port-wide configuration, and declare its optional capabilities. Then include application declarations and filter them for the port.
+Use this workflow when one board configuration should build multiple BTstack applications. First complete the port-configuration stages above: declare the port, discover and declare optional capabilities, and register its port-wide configuration. Then include application declarations, filter them for the port, register the baseline, and create the selected application targets.
 
 ```cmake
 include("${BTSTACK_ROOT}/example/requirements.cmake")
@@ -207,16 +221,18 @@ btstack_filter_applications_for_port(APPLICATIONS
 
 For every selected application, `btstack_add_application_library` combines its resolved groups with the port baseline. Group objects are shared between applications with the same capability definitions; applications with different definition sets receive separate group objects. Other port compilation settings must remain compatible across applications.
 
-The port still owns its final executable and board policy:
+Register the port baseline once before the application loop. The port still owns its final executable and board policy:
 
 ```cmake
+btstack_set_port_baseline(
+    GROUPS ${MY_PORT_BASE_GROUPS}
+    SOURCES ${MY_PORT_SOURCES}
+    PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
+
 foreach(APPLICATION IN LISTS APPLICATIONS)
     btstack_add_application_library(
         TARGET btstack_${APPLICATION}_library
-        APPLICATION ${APPLICATION}
-        BASE_GROUPS ${MY_PORT_BASE_GROUPS}
-        PORT_SOURCES ${MY_PORT_SOURCES}
-        PRIVATE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}")
+        APPLICATION ${APPLICATION})
 
     btstack_add_application_executable(${APPLICATION} APPLICATION ${APPLICATION})
     btstack_target_warnings(${APPLICATION} STRICT)
