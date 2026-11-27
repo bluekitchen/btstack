@@ -138,11 +138,13 @@ static battery_service_client_t * battery_service_get_client_for_cid(uint16_t ba
 }
 
 static void battery_service_emit_connection_established(battery_service_client_t * client, uint8_t status){
-    uint8_t event[8];
+    uint8_t event[10];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2u;
     event[pos++] = GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED;
+    little_endian_store_16(event, pos, client->con_handle);
+    pos += 2;
     little_endian_store_16(event, pos, client->cid);
     pos += 2;
     event[pos++] = status;

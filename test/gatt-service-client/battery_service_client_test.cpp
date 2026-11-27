@@ -117,6 +117,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED:
+            CHECK_EQUAL(10, size);
+            CHECK_EQUAL(con_handle, gattservice_subevent_battery_service_connected_get_con_handle(packet));
             status = gattservice_subevent_battery_service_connected_get_status(packet);
             switch (status){
                 case ERROR_CODE_SUCCESS:

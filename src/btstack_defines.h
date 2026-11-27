@@ -4447,8 +4447,9 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03u
 
 /**
- * @format 12111
+ * @format 122111
  * @param subevent_code
+ * @param con_handle
  * @param bas_cid
  * @param status
  * @param num_instances
