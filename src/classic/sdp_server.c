@@ -579,21 +579,26 @@ static void sdp_waiting_list_remove(uint16_t cid){
     }
 }
 
-static void sdp_accept_connection(uint16_t cid){
+static uint8_t sdp_accept_connection(uint16_t cid){
     sdp_server_l2cap_cid = cid;
     sdp_server_response_size = 0;
-    l2cap_accept_connection(cid);
+    uint8_t status = l2cap_accept_connection(cid);
+    if (status != ERROR_CODE_SUCCESS){
+        sdp_server_l2cap_cid = 0;
+    }
+    return status;
 }
 
 static void sdp_accept_next_waiting(void){
     // no active connection
     sdp_server_l2cap_cid = 0;
-    // no pending connection
-    if (sdp_server_l2cap_waiting_list_count == 0) return;
-
-    uint16_t cid = sdp_waiting_list_get();
-    log_info("accept queued cid 0x%04x, now %u waiting", cid, sdp_server_l2cap_waiting_list_count);
-    sdp_accept_connection(cid);
+    // accept next queued connections
+    while (sdp_server_l2cap_waiting_list_count != 0){
+        uint16_t cid = sdp_waiting_list_get();
+        uint8_t status = sdp_accept_connection(cid);
+        log_info("accept queued cid 0x%04x, %u more waiting -> %02x", cid, sdp_server_l2cap_waiting_list_count, status);
+        if (status == ERROR_CODE_SUCCESS) return;
+    }
 }
 
 // we assume that we don't get two requests in a row
