@@ -579,6 +579,16 @@ static void sdp_waiting_list_remove(uint16_t cid){
     }
 }
 
+static void sdp_accept_next_waiting(void){
+    sdp_server_l2cap_cid = 0;
+    if (!sdp_server_l2cap_waiting_list_count) return;
+
+    sdp_server_l2cap_cid = sdp_waiting_list_get();
+    log_info("accept queued cid 0x%04x, now %u waiting", sdp_server_l2cap_cid, sdp_server_l2cap_waiting_list_count);
+    sdp_server_response_size = 0;
+    l2cap_accept_connection(sdp_server_l2cap_cid);
+}
+
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	uint16_t transaction_id;
@@ -651,9 +661,9 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 					break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    if (packet[2]) {
-                        // open failed -> reset
-                        sdp_server_l2cap_cid = 0;
+                    if (packet[2] && (channel == sdp_server_l2cap_cid)) {
+                        // open failed -> serve next queued request
+                        sdp_accept_next_waiting();
                     }
                     break;
 
@@ -663,20 +673,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     if (channel == sdp_server_l2cap_cid){
-                        // reset
-                        sdp_server_l2cap_cid = 0;
-
-                        // other request queued?
-                        if (!sdp_server_l2cap_waiting_list_count) break;
-
-                        // get first item 
-                        sdp_server_l2cap_cid = sdp_waiting_list_get();
-
-                        log_info("disconnect, accept queued cid 0x%04x, now %u waiting", sdp_server_l2cap_cid, sdp_server_l2cap_waiting_list_count);
-
-                        // accept connection
-                        sdp_server_response_size = 0;
-                        l2cap_accept_connection(sdp_server_l2cap_cid);
+                        sdp_accept_next_waiting();
                     } else {
                         // queued request closed before it was accepted, e.g. on HCI disconnect
                         sdp_waiting_list_remove(channel);
