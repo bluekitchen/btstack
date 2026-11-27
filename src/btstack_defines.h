@@ -4589,17 +4589,21 @@ typedef SSIZE_T ssize_t;
 #define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES   0x12u
 
 /**
- * @format 1H1
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
+ * @param cid
+ * @param num_included_services
  * @param status
  */
 #define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED            0x13u
 
 /**
- * @format 1H
+ * @format 1H21
  * @param subevent_code
  * @param con_handle
+ * @param cid
+ * @param status
  */
 #define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED         0x14u
 

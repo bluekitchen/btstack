@@ -16111,13 +16111,31 @@ static inline hci_con_handle_t gattservice_subevent_scan_parameters_service_conn
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
+ * @param event packet
+ * @return cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_scan_parameters_service_connected_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field num_included_services from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
+ * @param event packet
+ * @return num_included_services
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get_num_included_services(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field status from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get_status(const uint8_t * event){
-    return event[5];
+    return event[8];
 }
 
 /**
@@ -16128,6 +16146,24 @@ static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get
  */
 static inline hci_con_handle_t gattservice_subevent_scan_parameters_service_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED
+ * @param event packet
+ * @return cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_scan_parameters_service_disconnected_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_scan_parameters_service_disconnected_get_status(const uint8_t * event){
+    return event[7];
 }
 
 /**
