@@ -36,6 +36,7 @@ build-coverage/btstack_event_test: ${COMMON_OBJ_COVERAGE}
 build-asan/btstack_event_test: ${COMMON_OBJ_ASAN}
 
 test: build-asan/btstack_event_test
+	python3 ${BTSTACK_ROOT}/tool/check_gatt_service_client_event_formats.py
 	$<
 
 coverage: build-coverage/btstack_event_test.info
